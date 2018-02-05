@@ -1,22 +1,27 @@
 package com.neighborhood.aka.laplce.estuary.mysql.actors
 
 import java.io.IOException
+import java.nio.ByteBuffer
 import java.util
 import java.util.List
 
 import akka.actor.Actor
+import com.alibaba.otter.canal.parse.driver.mysql.packets.HeaderPacket
+import com.alibaba.otter.canal.parse.driver.mysql.packets.client.BinlogDumpCommandPacket
 import com.alibaba.otter.canal.parse.driver.mysql.packets.server.ResultSetPacket
+import com.alibaba.otter.canal.parse.driver.mysql.utils.PacketManager
 import com.alibaba.otter.canal.parse.exception.CanalParseException
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
 import com.alibaba.otter.canal.parse.inbound.mysql.dbsync.DirectLogFetcher
 import com.alibaba.otter.canal.protocol.position.EntryPosition
-import com.taobao.tddl.dbsync.binlog.{LogContext, LogDecoder, LogEvent}
+import com.taobao.tddl.dbsync.binlog.event.FormatDescriptionLogEvent
+import com.taobao.tddl.dbsync.binlog.{LogContext, LogDecoder, LogEvent, LogPosition}
 import org.apache.commons.lang.StringUtils
 
 /**
   * Created by john_liu on 2018/2/5.
   */
-class DSPMysqlBinlogFetcher(conn: MysqlConnection = null) extends Actor {
+class DSPMysqlBinlogFetcher(conn: MysqlConnection = null,slaveId:Long) extends Actor {
   var entryPosition: Option[EntryPosition] = None
   var mysqlConnection: Option[MysqlConnection] = Option(conn)
   var binlogChecksum = 0
@@ -64,6 +69,9 @@ class DSPMysqlBinlogFetcher(conn: MysqlConnection = null) extends Actor {
     fetcher.start(connector.getChannel)
     val decoder = new LogDecoder(LogEvent.UNKNOWN_EVENT, LogEvent.ENUM_END_EVENT)
     val context = new LogContext
+    context.setLogPosition(new LogPosition(binlogFileName))
+    context.setFormatDescription(new FormatDescriptionLogEvent(4, binlogChecksum))
+
   }
 
   def updateSettings :Unit = {
@@ -78,7 +86,6 @@ class DSPMysqlBinlogFetcher(conn: MysqlConnection = null) extends Actor {
 
   }
 
-  // ====================== help method ====================
   private def loadBinlogChecksum(): Unit = {
     var rs: ResultSetPacket = null
     try
@@ -90,5 +97,20 @@ class DSPMysqlBinlogFetcher(conn: MysqlConnection = null) extends Actor {
     val columnValues: util.List[String] = rs.getFieldValues
     if (columnValues != null && columnValues.size >= 1 && columnValues.get(0).toUpperCase == "CRC32") binlogChecksum = LogEvent.BINLOG_CHECKSUM_ALG_CRC32
     else binlogChecksum = LogEvent.BINLOG_CHECKSUM_ALG_OFF
+  }
+
+  @throws[IOException]
+  private def sendBinlogDump(binlogfilename: String, binlogPosition: Long) = {
+    val binlogDumpCmd = new BinlogDumpCommandPacket
+    binlogDumpCmd.binlogFileName = binlogfilename
+    binlogDumpCmd.binlogPosition = binlogPosition
+    binlogDumpCmd.slaveServerId = this.slaveId
+    val cmdBody = binlogDumpCmd.toBytes
+    //todo logstash
+    val binlogDumpHeader = new HeaderPacket
+    binlogDumpHeader.setPacketBodyLength(cmdBody.length)
+    binlogDumpHeader.setPacketSequenceNumber(0x00.toByte)
+    PacketManager.write(mysqlConnection.get.getConnector.getChannel, Array[ByteBuffer](ByteBuffer.wrap(binlogDumpHeader.toBytes), ByteBuffer.wrap(cmdBody)))
+    mysqlConnection.get.getConnector.setDumping(true)
   }
 }

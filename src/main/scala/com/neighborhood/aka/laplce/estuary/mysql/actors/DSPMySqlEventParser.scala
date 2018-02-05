@@ -193,7 +193,7 @@ class DSPMySqlEventParser[EVENT](rm: MysqlTaskInfoResourceManager) extends Abstr
     //初始化HeartBeatsListener
     context.actorOf(Props(classOf[MysqlConnectionListenerActor],mysqlConnection), "heartBeatsListener")
     //初始化binlogFetcher
-    context.actorOf(Props(classOf[DSPMysqlBinlogFetcher],mysqlConnection),"binlogFetcher")
+    context.actorOf(Props(classOf[DSPMysqlBinlogFetcher],mysqlConnection,resourceManager.slaveId),"binlogFetcher")
   }
 
   //正常关闭时会调用，关闭资源
