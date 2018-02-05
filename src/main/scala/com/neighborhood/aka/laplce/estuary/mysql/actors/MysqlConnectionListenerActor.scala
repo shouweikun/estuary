@@ -9,10 +9,10 @@ import scala.util.Try
 /**
   * Created by john_liu on 2018/2/1.
   */
-class MysqlConnectionListenerActor extends Actor {
+class MysqlConnectionListenerActor(conn:MysqlConnection) extends Actor {
 
   //数据库连接
-  var connection: Option[MysqlConnection] = None
+  var connection: Option[MysqlConnection] = Option(conn)
   //配置
   val config = context.system.settings.config
   //监听心跳用sql
@@ -20,7 +20,7 @@ class MysqlConnectionListenerActor extends Actor {
   //慢查询阈值
   val queryTimeOut = config.getInt("common.query.timeout")
   //重试次数
-  var retryTimes = config.getInt("common.query.retrytime")
+  var retryTimes = config.getInt("common.process.retrytime")
   // 状态位
   //var state      =
 
@@ -113,8 +113,7 @@ class MysqlConnectionListenerActor extends Actor {
   }
 
   override def preStart(): Unit = {
-    //请求connection引用
-    context.parent ! ListenerMessage("connection")
+
   }
 
   override def postStop(): Unit = super.postStop()

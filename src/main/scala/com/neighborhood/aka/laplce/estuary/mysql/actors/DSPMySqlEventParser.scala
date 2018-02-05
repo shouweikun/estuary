@@ -12,6 +12,8 @@ import com.alibaba.otter.canal.parse.inbound.mysql.{AbstractMysqlEventParser, My
 import com.alibaba.otter.canal.protocol.position.EntryPosition
 import com.neighborhood.aka.laplce.estuary.mysql.MysqlTaskInfoResourceManager
 import org.apache.commons.lang.StringUtils
+import scala.concurrent.duration._
+import scala.util.{Failure, Success, Try}
 
 /**
   * Created by john_liu on 2018/2/1.
@@ -59,7 +61,11 @@ class DSPMySqlEventParser[EVENT](rm: MysqlTaskInfoResourceManager) extends Abstr
           }
     }
   val logPositionFinder = resourceManager.logPositionFinder
+  val dumpErrorCountThreshold = 3
+  var dumpErrorCount = 0
+  val retryBackoff = Option(config.getInt("common.retry.backoff")).getOrElse(30)
   var entryPosition: EntryPosition = null
+
 
   //offline 状态
   override def receive: Receive = {
@@ -73,7 +79,6 @@ class DSPMySqlEventParser[EVENT](rm: MysqlTaskInfoResourceManager) extends Abstr
         case "connection" => {
           //todo logStash
           sender() ! mysqlConnection
-          sender() ! EventParserMessage("start")
         }
         case "reconnect" => {
           mysqlConnection.reconnect()
@@ -107,23 +112,41 @@ class DSPMySqlEventParser[EVENT](rm: MysqlTaskInfoResourceManager) extends Abstr
         }
         case "findLog" => {
           //寻找log
-          entryPosition = logPositionFinder.findEndPosition(mysqlConnection)
-          //重新连接，因为在找position过程中可能有状态，需要断开后重建
-          //由于mysqlConnection同时也被listener持有，所以synchronized
-          //这个设计很蠢-_-!
-          mysqlConnection.synchronized {
-            mysqlConnection.reconnect
+
+          Try(entryPosition = logPositionFinder.findStartPosition(mysqlConnection)(retryCountdown)) match {
+            case Success(x) => {
+              //重新连接，因为在找position过程中可能有状态，需要断开后重建
+              //由于mysqlConnection同时也被listener持有，所以synchronized
+              //这个设计很蠢-_-!
+              mysqlConnection.synchronized {
+                mysqlConnection.reconnect
+              }
+              self ! EventParserMessage("dump")
+            }
+            case Failure(e) => {
+              processDumpError(e)
+              if (retryCountdown) {
+                self ! EventParserMessage("findLog")
+              }
+              context.become(retryBack)
+              context.system.scheduler.scheduleOnce(retryBackoff minutes)(self ! "restart")
+            }
           }
-          self ! EventParserMessage("dump")
+
         }
         case "dump" => {
-          if (StringUtils.isEmpty(entryPosition.getJournalName) && Option(entryPosition.getTimestamp).isDefined) erosaConnection.dump(startPosition.getTimestamp, sinkHandler)
-          else erosaConnection.dump(startPosition.getJournalName, startPosition.getPosition, sinkHandler)
+
         }
       }
     }
   }
 
+  def retryBack: Receive = {
+    case "restart" => {
+        context.become(receive)
+        self ! "start"
+    }
+  }
 
   /**
     * @return 返回MysqlConnection 而不是 其父类ErosaConnection
@@ -131,6 +154,10 @@ class DSPMySqlEventParser[EVENT](rm: MysqlTaskInfoResourceManager) extends Abstr
     */
   override def buildErosaConnection(): MysqlConnection = {
     resourceManager.mysqlConnection
+  }
+
+  def retryCountdown: Boolean = {
+    dumpErrorCountThreshold >= 0 && dumpErrorCount > dumpErrorCountThreshold
   }
 
   override def buildParser(): DSPBinlogParser = {
@@ -164,7 +191,9 @@ class DSPMySqlEventParser[EVENT](rm: MysqlTaskInfoResourceManager) extends Abstr
   override def preStart(): Unit = {
     //todo logstash
     //初始化HeartBeatsListener
-    context.actorOf(Props(classOf[MysqlConnectionListenerActor]), "heartBeatsListener")
+    context.actorOf(Props(classOf[MysqlConnectionListenerActor],mysqlConnection), "heartBeatsListener")
+    //初始化binlogFetcher
+    context.actorOf(Props(classOf[DSPMysqlBinlogFetcher],mysqlConnection),"binlogFetcher")
   }
 
   //正常关闭时会调用，关闭资源
@@ -189,7 +218,7 @@ class DSPMySqlEventParser[EVENT](rm: MysqlTaskInfoResourceManager) extends Abstr
     if (e.isInstanceOf[IOException]) {
       val message = e.getMessage
       if (StringUtils.contains(message, "errno = 1236")) { // 1236 errorCode代表ER_MASTER_FATAL_ERROR_READING_BINLOG
-        resourceManager.logPositionFinder.dumpErrorCount += 1
+        dumpErrorCount += 1
       }
     }
   }

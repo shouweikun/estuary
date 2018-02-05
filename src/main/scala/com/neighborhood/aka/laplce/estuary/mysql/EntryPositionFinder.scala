@@ -15,19 +15,19 @@ import org.apache.commons.lang.StringUtils
   */
 class EntryPositionFinder(manager: ZooKeeperLogPositionManager, master: Option[EntryPosition] = None, standby: Option[EntryPosition] = None) {
   val logPositionManager = manager
-  val dumpErrorCountThreshold = 3
-  var dumpErrorCount = 0
 
+  def findStartPosition(connection: ErosaConnection)(flag:Boolean) :EntryPosition = {
+    findStartPositionInternal(connection)(flag:Boolean)
+  }
   /**
     * 寻找逻辑
     * 首先先到zookeeper里寻址，以taskMark作为唯一标识
     * 否则检查是是否有传入的entryPosition
     * 否则默认读取最后一个binlog
-    *
     * @todo 主备切换
     * @todo timeStamp
     */
-  def findStartPositionInternal(connection: ErosaConnection): EntryPosition = {
+  def findStartPositionInternal(connection: ErosaConnection)(flag:Boolean): EntryPosition = {
     val mysqlConnection = connection.asInstanceOf[MysqlConnection]
     //用taskMark来作为zookeeper中的destination
     val destination = "todo"
@@ -35,16 +35,16 @@ class EntryPositionFinder(manager: ZooKeeperLogPositionManager, master: Option[E
 
     val entryPosition = logPosition match {
       case Some(logPosition) => {
-        if (logPosition.getIdentity.getSourceAddress == mysqlConnection.getConnector.getAddress) {
+//        if (logPosition.getIdentity.getSourceAddress == mysqlConnection.getConnector.getAddress) {
           //如果定位失败
-          if (dumpErrorCountThreshold >= 0 && dumpErrorCount > dumpErrorCountThreshold) { // binlog定位位点失败,可能有两个原因:
+          if (flag) { // binlog定位位点失败,可能有两个原因:
             // 1. binlog位点被删除
             // 2.vip模式的mysql,发生了主备切换,判断一下serverId是否变化,针对这种模式可以发起一次基于时间戳查找合适的binlog位点
             //todo 主备切换
           }
           // 其余情况
           logPosition.getPostion
-        }
+//        }
         //        else {
         //          todo 针对切换的情况，考虑回退时间
         //        }
@@ -64,7 +64,7 @@ class EntryPositionFinder(manager: ZooKeeperLogPositionManager, master: Option[E
         position
       }
     }
-
+    entryPosition
   }
 
   /**
