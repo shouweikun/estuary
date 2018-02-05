@@ -11,6 +11,7 @@ import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection.{BinlogFormat
 import com.alibaba.otter.canal.parse.inbound.mysql.{AbstractMysqlEventParser, MysqlConnection}
 import com.alibaba.otter.canal.protocol.position.EntryPosition
 import com.neighborhood.aka.laplce.estuary.mysql.MysqlTaskInfoResourceManager
+import org.apache.commons.lang.StringUtils
 
 /**
   * Created by john_liu on 2018/2/1.
@@ -57,27 +58,16 @@ class DSPMySqlEventParser[EVENT](rm: MysqlTaskInfoResourceManager) extends Abstr
               }
           }
     }
-  //val masterFirstPosition =
+  val logPositionFinder = resourceManager.logPositionFinder
+  var entryPosition: EntryPosition = null
 
   //offline 状态
   override def receive: Receive = {
     case "start" => {
       context.become(online)
-      preDump(mysqlConnection)
-      mysqlConnection.connect()
-      //todo 获取最后的位置信息
-      //重新连接，因为在找position过程中可能有状态，需要断开后重建
-      mysqlConnection.reconnect()
+      self ! EventParserMessage("predump")
 
     }
-    case ListenerMessage(msg) => {
-      msg match {
-        case _ => {}
-      }
-    }
-  }
-
-  def online: Receive = {
     case ListenerMessage(msg) => {
       msg match {
         case "connection" => {
@@ -92,6 +82,47 @@ class DSPMySqlEventParser[EVENT](rm: MysqlTaskInfoResourceManager) extends Abstr
     }
   }
 
+  def online: Receive = {
+
+    case ListenerMessage(msg) => {
+      msg match {
+        case "connection" => {
+          //todo logStash
+          sender() ! mysqlConnection
+          sender() ! EventParserMessage("start")
+        }
+        case "reconnect" => {
+          mysqlConnection.reconnect()
+        }
+      }
+    }
+    case EventParserMessage(msg) => {
+      msg match {
+        case "predump" => {
+          preDump(mysqlConnection)
+          mysqlConnection.connect()
+          self ! EventParserMessage("findLog")
+
+
+        }
+        case "findLog" => {
+          //寻找log
+          entryPosition = logPositionFinder.findEndPosition(mysqlConnection)
+          //重新连接，因为在找position过程中可能有状态，需要断开后重建
+          //由于mysqlConnection同时也被listener持有，所以synchronized
+          //这个设计很蠢-_-!
+          mysqlConnection.synchronized {
+            mysqlConnection.reconnect
+          }
+          self ! EventParserMessage("dump")
+        }
+        case "dump" => {
+          if (StringUtils.isEmpty(entryPosition.getJournalName) && Option(entryPosition.getTimestamp).isDefined) erosaConnection.dump(startPosition.getTimestamp, sinkHandler)
+          else erosaConnection.dump(startPosition.getJournalName, startPosition.getPosition, sinkHandler)
+        }
+      }
+    }
+  }
 
 
   /**
@@ -154,5 +185,12 @@ class DSPMySqlEventParser[EVENT](rm: MysqlTaskInfoResourceManager) extends Abstr
     super.postRestart(reason)
   }
 
-
+  override protected def processDumpError(e: Throwable): Unit = {
+    if (e.isInstanceOf[IOException]) {
+      val message = e.getMessage
+      if (StringUtils.contains(message, "errno = 1236")) { // 1236 errorCode代表ER_MASTER_FATAL_ERROR_READING_BINLOG
+        resourceManager.logPositionFinder.dumpErrorCount += 1
+      }
+    }
+  }
 }

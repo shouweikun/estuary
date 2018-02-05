@@ -26,7 +26,7 @@ class MysqlTaskInfoResourceManager(commonConfig: Config, taskInfoBean: MysqlSync
   val binlogParser: DSPBinlogParser = DSPBinlogParser.apply
   val tableMetaCache: TableMetaCache = new TableMetaCache(metaConnection)
   val logPostionManager: ZooKeeperLogPositionManager = buildZooKeeperLogPositionManager
-
+  val logPositionFinder:EntryPositionFinder = new EntryPositionFinder(logPostionManager)
   def buildZooKeeperLogPositionManager: ZooKeeperLogPositionManager = {
     val servers = config.getString("common.zookeeper.servers")
     val timeout = config.getInt("common.zookeeper.timeout")

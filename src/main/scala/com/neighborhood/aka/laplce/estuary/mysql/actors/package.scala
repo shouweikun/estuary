@@ -7,4 +7,5 @@ package object actors {
   case class EventParserMessage(msg:String)
   case class ListenerMessage(msg:String)
   case class SinkerMessage(msg:String)
+  case class FetcherMessage(msg:String)
 }
