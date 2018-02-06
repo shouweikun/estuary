@@ -17,14 +17,16 @@ import com.alibaba.otter.canal.protocol.position.EntryPosition
 import com.taobao.tddl.dbsync.binlog.event.FormatDescriptionLogEvent
 import com.taobao.tddl.dbsync.binlog.{LogContext, LogDecoder, LogEvent, LogPosition}
 import org.apache.commons.lang.StringUtils
+
+import scala.annotation.tailrec
+
 /**
   * Created by john_liu on 2018/2/5.
   */
-class DSPMysqlBinlogFetcher(conn: MysqlConnection = null,slaveId:Long,binlogEventBatcher:ActorRef) extends Actor {
+class DSPMysqlBinlogFetcher(conn: MysqlConnection = null, slaveId: Long, binlogEventBatcher: ActorRef) extends Actor {
   var entryPosition: Option[EntryPosition] = None
   var mysqlConnection: Option[MysqlConnection] = Option(conn)
   var binlogChecksum = 0
-
 
 
   //offline
@@ -53,7 +55,9 @@ class DSPMysqlBinlogFetcher(conn: MysqlConnection = null,slaveId:Long,binlogEven
       msg match {
         case "start" => {
           val startPosition = entryPosition.get
-          if (StringUtils.isEmpty(startPosition.getJournalName) && Option(startPosition.getTimestamp).isEmpty) {}
+          if (StringUtils.isEmpty(startPosition.getJournalName) && Option(startPosition.getTimestamp).isEmpty) {} else {
+            dump(startPosition.getJournalName,startPosition.getPosition)
+          }
         }
       }
     }
@@ -71,11 +75,25 @@ class DSPMysqlBinlogFetcher(conn: MysqlConnection = null,slaveId:Long,binlogEven
     val logContext = new LogContext
     logContext.setLogPosition(new LogPosition(binlogFileName))
     logContext.setFormatDescription(new FormatDescriptionLogEvent(4, binlogChecksum))
+    loopFetch
 
+    @tailrec
+    def loopFetch: Unit = {
+      if (fetcher.fetch()) {
+        val event = decoder.decode(fetcher, logContext)
+        if (Option(event).isDefined) {
+          binlogEventBatcher ! event
+        } else {
+          //todo 出现null值处理
+        }
+      }
+      loopFetch
+
+    }
 
   }
 
-  def updateSettings :Unit = {
+  def updateSettings: Unit = {
     val settings = List(
       "set wait_timeout=9999999",
       "set net_write_timeout=1800",

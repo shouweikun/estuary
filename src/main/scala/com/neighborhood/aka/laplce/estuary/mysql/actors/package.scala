@@ -8,4 +8,5 @@ package object actors {
   case class ListenerMessage(msg:String)
   case class SinkerMessage(msg:String)
   case class FetcherMessage(msg:String)
+  case class BatcherMessage(msg:String)
 }

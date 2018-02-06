@@ -90,7 +90,7 @@ class MysqlConnectionListenerActor(conn:MysqlConnection) extends Actor {
     }
   }
 
-  def listenHeartBeats = {
+  def listenHeartBeats :Unit= {
     //todo connection None情况
     connection.map {
       conn =>
