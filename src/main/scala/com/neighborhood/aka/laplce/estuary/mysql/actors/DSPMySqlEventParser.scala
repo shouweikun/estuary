@@ -192,8 +192,11 @@ class DSPMySqlEventParser[EVENT](rm: MysqlTaskInfoResourceManager) extends Abstr
     //todo logstash
     //初始化HeartBeatsListener
     context.actorOf(Props(classOf[MysqlConnectionListenerActor],mysqlConnection), "heartBeatsListener")
+    //初始化binlogEventBatcher
+   val binlogEventBatcher = context.actorOf(Props(classOf[BinlogEventBatcher])
+    ),"binlogEventBatcher")
     //初始化binlogFetcher
-    context.actorOf(Props(classOf[DSPMysqlBinlogFetcher],mysqlConnection,resourceManager.slaveId),"binlogFetcher")
+    context.actorOf(Props(classOf[DSPMysqlBinlogFetcher],mysqlConnection,resourceManager.slaveId,binlogEventBatcher,binlogEventBatcher),"binlogFetcher")
   }
 
   //正常关闭时会调用，关闭资源

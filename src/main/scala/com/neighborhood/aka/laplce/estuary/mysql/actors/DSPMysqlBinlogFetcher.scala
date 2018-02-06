@@ -5,7 +5,7 @@ import java.nio.ByteBuffer
 import java.util
 import java.util.List
 
-import akka.actor.Actor
+import akka.actor.{Actor, ActorRef, Props}
 import com.alibaba.otter.canal.parse.driver.mysql.packets.HeaderPacket
 import com.alibaba.otter.canal.parse.driver.mysql.packets.client.BinlogDumpCommandPacket
 import com.alibaba.otter.canal.parse.driver.mysql.packets.server.ResultSetPacket
@@ -17,14 +17,14 @@ import com.alibaba.otter.canal.protocol.position.EntryPosition
 import com.taobao.tddl.dbsync.binlog.event.FormatDescriptionLogEvent
 import com.taobao.tddl.dbsync.binlog.{LogContext, LogDecoder, LogEvent, LogPosition}
 import org.apache.commons.lang.StringUtils
-
 /**
   * Created by john_liu on 2018/2/5.
   */
-class DSPMysqlBinlogFetcher(conn: MysqlConnection = null,slaveId:Long) extends Actor {
+class DSPMysqlBinlogFetcher(conn: MysqlConnection = null,slaveId:Long,binlogEventBatcher:ActorRef) extends Actor {
   var entryPosition: Option[EntryPosition] = None
   var mysqlConnection: Option[MysqlConnection] = Option(conn)
   var binlogChecksum = 0
+
 
 
   //offline
@@ -68,9 +68,10 @@ class DSPMysqlBinlogFetcher(conn: MysqlConnection = null,slaveId:Long) extends A
     val fetcher = new DirectLogFetcher(connector.getReceiveBufferSize)
     fetcher.start(connector.getChannel)
     val decoder = new LogDecoder(LogEvent.UNKNOWN_EVENT, LogEvent.ENUM_END_EVENT)
-    val context = new LogContext
-    context.setLogPosition(new LogPosition(binlogFileName))
-    context.setFormatDescription(new FormatDescriptionLogEvent(4, binlogChecksum))
+    val logContext = new LogContext
+    logContext.setLogPosition(new LogPosition(binlogFileName))
+    logContext.setFormatDescription(new FormatDescriptionLogEvent(4, binlogChecksum))
+
 
   }
 
