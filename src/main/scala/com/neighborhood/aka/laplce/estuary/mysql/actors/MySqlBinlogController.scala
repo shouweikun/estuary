@@ -5,12 +5,12 @@ import java.io.IOException
 import akka.actor.{Actor, Props}
 import com.alibaba.otter.canal.filter.aviater.AviaterRegexFilter
 import com.alibaba.otter.canal.parse.CanalEventParser
-import com.alibaba.otter.canal.parse.exception.CanalParseException
 import com.alibaba.otter.canal.parse.inbound.ErosaConnection
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection.{BinlogFormat, BinlogImage}
 import com.alibaba.otter.canal.parse.inbound.mysql.{AbstractMysqlEventParser, MysqlConnection}
 import com.alibaba.otter.canal.protocol.position.EntryPosition
-import com.neighborhood.aka.laplce.estuary.mysql.{Mysql2KafkaTaskInfoManager, MysqlTaskInfoResourceManager}
+import com.neighborhood.aka.laplce.estuary.core.lifecycle.SyncController
+import com.neighborhood.aka.laplce.estuary.mysql.{Mysql2KafkaTaskInfoManager, MysqlBinlogParser}
 import org.apache.commons.lang.StringUtils
 
 import scala.concurrent.duration._
@@ -20,7 +20,7 @@ import scala.util.{Failure, Success, Try}
   * Created by john_liu on 2018/2/1.
   */
 
-class DSPMySqlEventParser[EVENT](rm: Mysql2KafkaTaskInfoManager) extends AbstractMysqlEventParser with CanalEventParser[EVENT] with Actor {
+class MySqlBinlogController[EVENT](rm: Mysql2KafkaTaskInfoManager) extends AbstractMysqlEventParser with CanalEventParser[EVENT] with SyncController with Actor {
   //资源管理器，一次同步任务所有的resource都由resourceManager负责
   val resourceManager = rm
   //配置
@@ -72,7 +72,7 @@ class DSPMySqlEventParser[EVENT](rm: Mysql2KafkaTaskInfoManager) extends Abstrac
   override def receive: Receive = {
     case "start" => {
       context.become(online)
-      self ! EventParserMessage("predump")
+      self ! SyncControllerMessage("predump")
 
     }
     case ListenerMessage(msg) => {
@@ -95,19 +95,19 @@ class DSPMySqlEventParser[EVENT](rm: Mysql2KafkaTaskInfoManager) extends Abstrac
         case "connection" => {
           //todo logStash
           sender() ! mysqlConnection
-          sender() ! EventParserMessage("start")
+          sender() ! SyncControllerMessage("start")
         }
         case "reconnect" => {
           mysqlConnection.reconnect()
         }
       }
     }
-    case EventParserMessage(msg) => {
+    case SyncControllerMessage(msg) => {
       msg match {
         case "predump" => {
           preDump(mysqlConnection)
           mysqlConnection.connect()
-          self ! EventParserMessage("findLog")
+          self ! SyncControllerMessage("findLog")
 
 
         }
@@ -122,12 +122,12 @@ class DSPMySqlEventParser[EVENT](rm: Mysql2KafkaTaskInfoManager) extends Abstrac
               mysqlConnection.synchronized {
                 mysqlConnection.reconnect
               }
-              self ! EventParserMessage("dump")
+              self ! SyncControllerMessage("dump")
             }
             case Failure(e) => {
               processDumpError(e)
               if (retryCountdown) {
-                self ! EventParserMessage("findLog")
+                self ! SyncControllerMessage("findLog")
               }
               context.become(retryBack)
               context.system.scheduler.scheduleOnce(retryBackoff minutes)(self ! "restart")
@@ -156,12 +156,15 @@ class DSPMySqlEventParser[EVENT](rm: Mysql2KafkaTaskInfoManager) extends Abstrac
   override def buildErosaConnection(): MysqlConnection = {
     resourceManager.mysqlConnection
   }
-
+  /**
+    * 
+    *
+    */
   def retryCountdown: Boolean = {
     dumpErrorCountThreshold >= 0 && dumpErrorCount > dumpErrorCountThreshold
   }
 
-  override def buildParser(): DSPBinlogParser = {
+  override def buildParser(): MysqlBinlogParser = {
     val convert = resourceManager.binlogParser
     if (eventFilter != null && eventFilter.isInstanceOf[AviaterRegexFilter]) convert.setNameFilter(eventFilter.asInstanceOf[AviaterRegexFilter])
 

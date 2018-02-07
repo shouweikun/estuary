@@ -12,6 +12,15 @@ trait TaskManager {
     */
   @volatile
   var status = Status.OFFLINE
-
+  /**
+    * 任务类型
+    * 由三部分组成
+    * DataSourceType-DataSyncType-DataSinkType
+    */
   def taskType:String
+
+
+}
+object TaskManager {
+
 }

@@ -10,7 +10,7 @@ trait MysqlBean extends DataSourceBase {
   /**
     * dataSourceType置为MYSQL
     */
-  this.dataSourceType = DataSourceType.MYSQL
+  override var dataSourceType = DataSourceType.MYSQL
   /**
     * 主服务器（服务器地址，端口，用户名，密码）
     */

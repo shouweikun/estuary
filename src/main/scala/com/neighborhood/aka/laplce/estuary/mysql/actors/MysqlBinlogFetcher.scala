@@ -15,6 +15,9 @@ import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
 import com.alibaba.otter.canal.parse.inbound.mysql.dbsync.DirectLogFetcher
 import com.alibaba.otter.canal.protocol.CanalEntry
 import com.alibaba.otter.canal.protocol.position.EntryPosition
+import com.neighborhood.aka.laplce.estuary.core.lifecycle.SourceDataFetcher
+import com.neighborhood.aka.laplce.estuary.core.task.TaskManager
+import com.neighborhood.aka.laplce.estuary.mysql.MysqlBinlogParser
 import com.taobao.tddl.dbsync.binlog.event.FormatDescriptionLogEvent
 import com.taobao.tddl.dbsync.binlog.{LogContext, LogDecoder, LogEvent, LogPosition}
 import org.apache.commons.lang.StringUtils
@@ -24,7 +27,9 @@ import scala.annotation.tailrec
 /**
   * Created by john_liu on 2018/2/5.
   */
-class DSPMysqlBinlogFetcher(conn: MysqlConnection = null, slaveId: Long, binlogParser: DSPBinlogParser,binlogEventBatcher: ActorRef) extends Actor {
+class MysqlBinlogFetcher(conn: MysqlConnection = null, slaveId: Long, binlogParser: MysqlBinlogParser, binlogEventBatcher: ActorRef) extends Actor with SourceDataFetcher {
+
+
   var entryPosition: Option[EntryPosition] = None
   var mysqlConnection: Option[MysqlConnection] = Option(conn)
   var binlogChecksum = 0
@@ -46,8 +51,12 @@ class DSPMysqlBinlogFetcher(conn: MysqlConnection = null, slaveId: Long, binlogP
     case FetcherMessage(msg) => {
 
     }
-    case EventParserMessage(msg) => {
+    case SyncControllerMessage(msg) => {
+       msg match {
+         case  "stop" => {
 
+       }
+       }
     }
   }
 
@@ -57,12 +66,12 @@ class DSPMysqlBinlogFetcher(conn: MysqlConnection = null, slaveId: Long, binlogP
         case "start" => {
           val startPosition = entryPosition.get
           if (StringUtils.isEmpty(startPosition.getJournalName) && Option(startPosition.getTimestamp).isEmpty) {} else {
-            dump(startPosition.getJournalName,startPosition.getPosition)
+            dump(startPosition.getJournalName, startPosition.getPosition)
           }
         }
       }
     }
-    case EventParserMessage(msg) => {
+    case SyncControllerMessage(msg) => {
 
     }
   }
@@ -82,9 +91,9 @@ class DSPMysqlBinlogFetcher(conn: MysqlConnection = null, slaveId: Long, binlogP
     def loopFetch: Unit = {
       if (fetcher.fetch()) {
         val event = decoder.decode(fetcher, logContext)
-        val entry = parseAndProfilingIfNecessary(event,false)
+        val entry = parseAndProfilingIfNecessary(event, false)
         if (entry.isDefined) {
-          binlogEventBatcher ! entry
+          binlogEventBatcher ! entry.get
         } else {
           //todo 出现null值处理
         }
@@ -116,8 +125,8 @@ class DSPMysqlBinlogFetcher(conn: MysqlConnection = null, slaveId: Long, binlogP
         throw new CanalParseException(e)
     }
     val columnValues: util.List[String] = rs.getFieldValues
-    if (columnValues != null && columnValues.size >= 1 && columnValues.get(0).toUpperCase == "CRC32") binlogChecksum = LogEvent.BINLOG_CHECKSUM_ALG_CRC32
-    else binlogChecksum = LogEvent.BINLOG_CHECKSUM_ALG_OFF
+    binlogChecksum = if (columnValues != null && columnValues.size >= 1 && columnValues.get(0).toUpperCase == "CRC32") LogEvent.BINLOG_CHECKSUM_ALG_CRC32
+    else LogEvent.BINLOG_CHECKSUM_ALG_OFF
   }
 
   @throws[IOException]
@@ -134,9 +143,10 @@ class DSPMysqlBinlogFetcher(conn: MysqlConnection = null, slaveId: Long, binlogP
     PacketManager.write(mysqlConnection.get.getConnector.getChannel, Array[ByteBuffer](ByteBuffer.wrap(binlogDumpHeader.toBytes), ByteBuffer.wrap(cmdBody)))
     mysqlConnection.get.getConnector.setDumping(true)
   }
-  def parseAndProfilingIfNecessary(event:LogEvent,necessary:Boolean):Option[CanalEntry.Entry] = {
 
-    if(necessary){
+  def parseAndProfilingIfNecessary(event: LogEvent, necessary: Boolean): Option[CanalEntry.Entry] = {
+
+    if (necessary) {
       //todo
     }
     binlogParser.parse(Option(event))

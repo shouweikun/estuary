@@ -13,6 +13,10 @@ import com.neighborhood.aka.laplce.estuary.bean.resource.MysqlBean
 class Mysql2KafkaTaskInfoBean extends MysqlBean with KafkaBean with BaseExtractBean{
 
 
+  /**
+    * 数据同步形式
+    */
+  override var dataSyncType: DataSyncType = _
   //从库id
   var slaveId :Long = System.currentTimeMillis()
   //binlog

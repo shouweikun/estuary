@@ -2,6 +2,7 @@ package com.neighborhood.aka.laplce.estuary.mysql.actors
 
 import akka.actor.{Actor, SupervisorStrategy}
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
+import com.neighborhood.aka.laplce.estuary.core.lifecycle.HeartBeatListener
 
 import scala.concurrent.duration._
 import scala.util.Try
@@ -9,7 +10,7 @@ import scala.util.Try
 /**
   * Created by john_liu on 2018/2/1.
   */
-class MysqlConnectionListenerActor(conn:MysqlConnection) extends Actor {
+class MysqlConnectionListener(conn:MysqlConnection) extends Actor with HeartBeatListener{
 
   //数据库连接
   var connection: Option[MysqlConnection] = Option(conn)
@@ -29,7 +30,7 @@ class MysqlConnectionListenerActor(conn:MysqlConnection) extends Actor {
     case conn: MysqlConnection => {
       connection = Option(conn)
     }
-    case EventParserMessage(msg) => {
+    case SyncControllerMessage(msg) => {
       msg match {
         case "start" => {
           //todo logstash
@@ -76,7 +77,7 @@ class MysqlConnectionListenerActor(conn:MysqlConnection) extends Actor {
         }
       }
     }
-    case EventParserMessage(msg: String) => {
+    case SyncControllerMessage(msg: String) => {
       msg match {
         case "stop" => {
           //connection清空
