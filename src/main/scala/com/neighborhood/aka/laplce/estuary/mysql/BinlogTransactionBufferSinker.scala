@@ -14,6 +14,7 @@ import scala.annotation.tailrec
 /**
   * Created by john_liu on 2018/2/6.
   */
+//todo scala 风格的RingBuffer
 class BinlogTransactionBufferSinker extends Actor with ActorLogging{
   private val INIT_SQEUENCE = -1
   private var bufferSize = 1024
@@ -40,14 +41,14 @@ class BinlogTransactionBufferSinker extends Actor with ActorLogging{
   def preBuffer = {
     if (Integer.bitCount(bufferSize) != 1) throw new IllegalArgumentException("bufferSize must be a power of 2")
     indexMask = bufferSize - 1
-
+    entries = new Array(bufferSize)
   }
 
   def afterBuffer = {
     putSequence.set(INIT_SQEUENCE)
     flushSequence.set(INIT_SQEUENCE)
     //可能会有问题
-    entries = new Array(bufferSize)
+    entries = Array.empty
 
 
   }
@@ -89,8 +90,8 @@ class BinlogTransactionBufferSinker extends Actor with ActorLogging{
       entries(getIndex(next)) = data
       putSequence.set(next)
     } else {
-      flush()
-      put(data)
+      flush() //buffer区满了，刷新一下
+      put(data)// 继续加新数据
     }
   }
 
@@ -103,6 +104,7 @@ class BinlogTransactionBufferSinker extends Actor with ActorLogging{
         .map(x=> entries(getIndex(x)))
       .toList
     }
+    //todo send to sinkfunc
   }
 
   private def checkFreeSlotAt(sequence: Long): Boolean = {
