@@ -1,14 +1,11 @@
-package com.neighborhood.aka.laplce.estuary.mysql
+package com.neighborhood.aka.laplce.estuary.mysql.actors
 
 import java.util.concurrent.atomic.AtomicLong
-import javax.swing.event.DocumentEvent.EventType
 
 import akka.actor.{Actor, ActorLogging}
 import com.alibaba.otter.canal.protocol.CanalEntry
 import com.alibaba.otter.canal.protocol.CanalEntry.EntryType
-import com.alibaba.otter.canal.protocol.CanalEntry.EventType
 import com.neighborhood.aka.laplce.estuary.core.sink.SinkFunc
-import com.neighborhood.aka.laplce.estuary.mysql.actors.{BatcherMessage, SinkerMessage}
 
 import scala.annotation.tailrec
 
@@ -109,7 +106,7 @@ class BinlogTransactionBufferSinker(sinkFunc: SinkFunc) extends Actor with Actor
     //沉降
     val flag = sinkFunc.sink(entryList)
     if (flag) {
-        //写zk记录logPosition
+        //todo 写zk记录logPosition
     } else {
       //todo 失败处理
     }
