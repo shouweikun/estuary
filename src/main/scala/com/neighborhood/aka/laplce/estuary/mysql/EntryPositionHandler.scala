@@ -13,7 +13,7 @@ import org.apache.commons.lang.StringUtils
 /**
   * Created by john_liu on 2018/2/4.
   */
-class EntryPositionFinder(manager: ZooKeeperLogPositionManager, master: Option[EntryPosition] = None, standby: Option[EntryPosition] = None) {
+class EntryPositionHandler(manager: ZooKeeperLogPositionManager, master: Option[EntryPosition] = None, standby: Option[EntryPosition] = None) {
   val logPositionManager = manager
 
   def findStartPosition(connection: ErosaConnection)(flag:Boolean) :EntryPosition = {

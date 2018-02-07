@@ -7,7 +7,8 @@ import akka.actor.{Actor, ActorLogging}
 import com.alibaba.otter.canal.protocol.CanalEntry
 import com.alibaba.otter.canal.protocol.CanalEntry.EntryType
 import com.alibaba.otter.canal.protocol.CanalEntry.EventType
-import com.neighborhood.aka.laplce.estuary.mysql.actors.BatcherMessage
+import com.neighborhood.aka.laplce.estuary.core.sink.SinkFunc
+import com.neighborhood.aka.laplce.estuary.mysql.actors.{BatcherMessage, SinkerMessage}
 
 import scala.annotation.tailrec
 
@@ -15,19 +16,18 @@ import scala.annotation.tailrec
   * Created by john_liu on 2018/2/6.
   */
 //todo scala 风格的RingBuffer
-class BinlogTransactionBufferSinker extends Actor with ActorLogging{
+class BinlogTransactionBufferSinker(sinkFunc: SinkFunc) extends Actor with ActorLogging {
   private val INIT_SQEUENCE = -1
   private var bufferSize = 1024
   private var indexMask = 0
   private var entries: Array[CanalEntry.Entry] = Array.empty
   private val putSequence = new AtomicLong(INIT_SQEUENCE) // 代表当前put操作最后一次写操作发生的位置
   private val flushSequence = new AtomicLong(INIT_SQEUENCE) // 代表满足flush条件后最后一次数据flush的时间
-
   //offline
   override def receive: Receive = {
     case BatcherMessage(msg) => {
       msg match {
-        case "start" =>{
+        case "start" => {
           preBuffer
           context.become(online)
 
@@ -35,9 +35,11 @@ class BinlogTransactionBufferSinker extends Actor with ActorLogging{
       }
     }
   }
-  def online:Receive = {
+
+  def online: Receive = {
 
   }
+
   def preBuffer = {
     if (Integer.bitCount(bufferSize) != 1) throw new IllegalArgumentException("bufferSize must be a power of 2")
     indexMask = bufferSize - 1
@@ -91,7 +93,7 @@ class BinlogTransactionBufferSinker extends Actor with ActorLogging{
       putSequence.set(next)
     } else {
       flush() //buffer区满了，刷新一下
-      put(data)// 继续加新数据
+      put(data) // 继续加新数据
     }
   }
 
@@ -99,12 +101,18 @@ class BinlogTransactionBufferSinker extends Actor with ActorLogging{
     val start = flushSequence.get() + 1
     val end = putSequence.get()
 
-    if(start <= end) {
+    val entryList = if (start <= end) {
       (start to end)
-        .map(x=> entries(getIndex(x)))
-      .toList
+        .map(x => entries(getIndex(x)))
+        .toList
+    } else List.empty
+    //沉降
+    val flag = sinkFunc.sink(entryList)
+    if (flag) {
+        //写zk记录logPosition
+    } else {
+      //todo 失败处理
     }
-    //todo send to sinkfunc
   }
 
   private def checkFreeSlotAt(sequence: Long): Boolean = {

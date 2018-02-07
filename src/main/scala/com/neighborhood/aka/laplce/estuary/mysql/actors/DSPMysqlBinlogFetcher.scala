@@ -13,6 +13,7 @@ import com.alibaba.otter.canal.parse.driver.mysql.utils.PacketManager
 import com.alibaba.otter.canal.parse.exception.CanalParseException
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
 import com.alibaba.otter.canal.parse.inbound.mysql.dbsync.DirectLogFetcher
+import com.alibaba.otter.canal.protocol.CanalEntry
 import com.alibaba.otter.canal.protocol.position.EntryPosition
 import com.taobao.tddl.dbsync.binlog.event.FormatDescriptionLogEvent
 import com.taobao.tddl.dbsync.binlog.{LogContext, LogDecoder, LogEvent, LogPosition}
@@ -23,7 +24,7 @@ import scala.annotation.tailrec
 /**
   * Created by john_liu on 2018/2/5.
   */
-class DSPMysqlBinlogFetcher(conn: MysqlConnection = null, slaveId: Long, binlogEventBatcher: ActorRef) extends Actor {
+class DSPMysqlBinlogFetcher(conn: MysqlConnection = null, slaveId: Long, binlogParser: DSPBinlogParser,binlogEventBatcher: ActorRef) extends Actor {
   var entryPosition: Option[EntryPosition] = None
   var mysqlConnection: Option[MysqlConnection] = Option(conn)
   var binlogChecksum = 0
@@ -81,8 +82,9 @@ class DSPMysqlBinlogFetcher(conn: MysqlConnection = null, slaveId: Long, binlogE
     def loopFetch: Unit = {
       if (fetcher.fetch()) {
         val event = decoder.decode(fetcher, logContext)
-        if (Option(event).isDefined) {
-          binlogEventBatcher ! event
+        val entry = parseAndProfilingIfNecessary(event,false)
+        if (entry.isDefined) {
+          binlogEventBatcher ! entry
         } else {
           //todo 出现null值处理
         }
@@ -131,5 +133,12 @@ class DSPMysqlBinlogFetcher(conn: MysqlConnection = null, slaveId: Long, binlogE
     binlogDumpHeader.setPacketSequenceNumber(0x00.toByte)
     PacketManager.write(mysqlConnection.get.getConnector.getChannel, Array[ByteBuffer](ByteBuffer.wrap(binlogDumpHeader.toBytes), ByteBuffer.wrap(cmdBody)))
     mysqlConnection.get.getConnector.setDumping(true)
+  }
+  def parseAndProfilingIfNecessary(event:LogEvent,necessary:Boolean):Option[CanalEntry.Entry] = {
+
+    if(necessary){
+      //todo
+    }
+    binlogParser.parse(Option(event))
   }
 }
