@@ -6,8 +6,10 @@ package com.neighborhood.aka.laplce.estuary.core.lifecycle
 case object Status extends Enumeration {
   type Status = Value
   val OFFLINE = Value(0)
-  val ONLINE = Value(1)
+  val BUSY = Value(1)
   val SUSPEND = Value(2)
+  val FREE    = Value(3)
+  val ERROR   = Value(4)
 
 }
 

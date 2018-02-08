@@ -38,6 +38,10 @@ class Mysql2KafkaTaskInfoBean extends MysqlBean with KafkaBean with BaseExtractB
     */
   var isCounting :Boolean = false
   /**
+    * 是否计算每条数据的时间，默认不计时
+    */
+  var isProfiling :Boolean = false
+  /**
     * mysql字符集
     */
   var connectionCharset = Charset.forName("UTF-8")
@@ -51,8 +55,6 @@ class Mysql2KafkaTaskInfoBean extends MysqlBean with KafkaBean with BaseExtractB
     * 如果否的话，就是并行写
     */
   var isTransactional:Boolean = true
-  /**
-    * 数据同步形式
-    */
+
 
 }

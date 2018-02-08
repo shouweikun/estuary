@@ -8,13 +8,16 @@ import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
 import com.alibaba.otter.canal.parse.inbound.mysql.dbsync.TableMetaCache
 import com.alibaba.otter.canal.parse.index.ZooKeeperLogPositionManager
 import com.neighborhood.aka.laplce.estuary.bean.task.Mysql2KafkaTaskInfoBean
+import com.neighborhood.aka.laplce.estuary.core.lifecycle.Status
+import com.neighborhood.aka.laplce.estuary.core.lifecycle.Status.Status
+import com.neighborhood.aka.laplce.estuary.core.sink.KafkaSinkFunc
 import com.neighborhood.aka.laplce.estuary.core.task.{RecourceManager, TaskManager}
 import com.typesafe.config.Config
 
 /**
   * Created by john_liu on 2018/2/7.
   */
-class Mysql2KafkaTaskInfoManager(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskInfoBean) extends TaskManager with RecourceManager {
+class Mysql2KafkaTaskInfoManager(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskInfoBean) extends TaskManager with RecourceManager[MysqlConnection, KafkaSinkFunc] {
 
   /**
     * 同步任务控制器的ActorRef
@@ -35,7 +38,7 @@ class Mysql2KafkaTaskInfoManager(commonConfig: Config, taskInfoBean: Mysql2Kafka
   /**
     * canal的mysqlConnection
     */
-  val mysqlConnection = buildMysqlConnection
+  val mysqlConnection = buildSource
   /**
     * canal的metaConnection
     */
@@ -48,7 +51,44 @@ class Mysql2KafkaTaskInfoManager(commonConfig: Config, taskInfoBean: Mysql2Kafka
     * logPosition处理器
     */
   val logPositionFinder: LogPositionHandler = buildEntryPositionHandler
-  val binlogParser : MysqlBinlogParser = new MysqlBinlogParser
+
+  /**
+    * fetcher的状态
+    */
+  @volatile
+  var fetcherStatus :Status= Status.OFFLINE
+  /**
+    * batcher的状态
+    */
+  @volatile
+  var batcherStatus :Status= Status.OFFLINE
+  /**
+    * heartbeatListener的状态
+    */
+  @volatile
+  var heartBeatListenerStatus:Status = Status.OFFLINE
+  /**
+    * sinker的状态
+    */
+  @volatile
+  var sinkerStatus :Status= Status.OFFLINE
+  /**
+    * syncControllerStatus的状态
+    */
+  @volatile
+  var syncControllerStatus:Status = Status.OFFLINE
+
+  /**
+    * 实现@trait ResourceManager
+    * @return canal的mysqlConnection
+    */
+  override def buildSource: MysqlConnection = buildMysqlConnection
+  /**
+    * 实现@trait ResourceManager
+    * @return KafkaSinkFunc
+    */
+  override def buildSink: KafkaSinkFunc = ???
+
   /**
     * @return canal的mysqlConnection
     */

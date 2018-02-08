@@ -3,9 +3,9 @@ package com.neighborhood.aka.laplce.estuary.mysql.actors
 import java.io.IOException
 import java.nio.ByteBuffer
 import java.util
-import java.util.List
 
-import akka.actor.{Actor, ActorRef, Props}
+import akka.actor.SupervisorStrategy.{Escalate, Restart, Resume, Stop}
+import akka.actor.{Actor, ActorRef, OneForOneStrategy}
 import com.alibaba.otter.canal.parse.driver.mysql.packets.HeaderPacket
 import com.alibaba.otter.canal.parse.driver.mysql.packets.client.BinlogDumpCommandPacket
 import com.alibaba.otter.canal.parse.driver.mysql.packets.server.ResultSetPacket
@@ -15,9 +15,8 @@ import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
 import com.alibaba.otter.canal.parse.inbound.mysql.dbsync.DirectLogFetcher
 import com.alibaba.otter.canal.protocol.CanalEntry
 import com.alibaba.otter.canal.protocol.position.EntryPosition
-import com.neighborhood.aka.laplce.estuary.core.lifecycle.SourceDataFetcher
-import com.neighborhood.aka.laplce.estuary.core.task.TaskManager
-import com.neighborhood.aka.laplce.estuary.mysql.MysqlBinlogParser
+import com.neighborhood.aka.laplce.estuary.core.lifecycle.{SourceDataFetcher, Status}
+import com.neighborhood.aka.laplce.estuary.mysql.{Mysql2KafkaTaskInfoManager, MysqlBinlogParser}
 import com.taobao.tddl.dbsync.binlog.event.FormatDescriptionLogEvent
 import com.taobao.tddl.dbsync.binlog.{LogContext, LogDecoder, LogEvent, LogPosition}
 import org.apache.commons.lang.StringUtils
@@ -27,36 +26,42 @@ import scala.annotation.tailrec
 /**
   * Created by john_liu on 2018/2/5.
   */
-class MysqlBinlogFetcher(conn: MysqlConnection = null, slaveId: Long, binlogParser: MysqlBinlogParser, binlogEventBatcher: ActorRef) extends Actor with SourceDataFetcher {
-
-
+class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager, binlogParser: MysqlBinlogParser, binlogEventBatcher: ActorRef) extends Actor with SourceDataFetcher {
+  override var errorCountThreshold: Int = 3
+  override var errorCount: Int = 0
+  val slaveId = mysql2KafkaTaskInfoManager.slaveId
   var entryPosition: Option[EntryPosition] = None
-  var mysqlConnection: Option[MysqlConnection] = Option(conn)
+  var mysqlConnection: Option[MysqlConnection] = Option(mysql2KafkaTaskInfoManager.mysqlConnection)
   var binlogChecksum = 0
+  var necessary = mysql2KafkaTaskInfoManager.taskInfo.isProfiling
 
+  var fetcher: DirectLogFetcher = null
+  var logContext: LogContext = null
+  var decoder: LogDecoder = null
 
   //offline
   override def receive: Receive = {
     case ep: EntryPosition => {
       entryPosition = Option(ep)
-      if (entryPosition.isDefined) {
-        context.become(online)
-        self ! "start"
-      }
-    }
-    case conn: MysqlConnection => {
-      mysqlConnection = Option(conn)
     }
 
     case FetcherMessage(msg) => {
 
     }
     case SyncControllerMessage(msg) => {
-       msg match {
-         case  "stop" => {
+      msg match {
+        case "stop" => {
 
-       }
-       }
+        }
+        case "start" => {
+          if (entryPosition.isDefined) {
+            context.become(online)
+            self ! FetcherMessage("start")
+          } else {
+            //todo logstash
+          }
+        }
+      }
     }
   }
 
@@ -64,9 +69,19 @@ class MysqlBinlogFetcher(conn: MysqlConnection = null, slaveId: Long, binlogPars
     case FetcherMessage(msg) => {
       msg match {
         case "start" => {
+          //将状态置为BUSY
+          mysql2KafkaTaskInfoManager.fetcherStatus = Status.BUSY
           val startPosition = entryPosition.get
           if (StringUtils.isEmpty(startPosition.getJournalName) && Option(startPosition.getTimestamp).isEmpty) {} else {
             dump(startPosition.getJournalName, startPosition.getPosition)
+          }
+        }
+        case "fetch" => {
+          if (fetcher.fetch()) {
+            fetchOne
+            self ! FetcherMessage("fetch")
+          } else {
+            self ! FetcherMessage("afterFetch")
           }
         }
       }
@@ -76,32 +91,39 @@ class MysqlBinlogFetcher(conn: MysqlConnection = null, slaveId: Long, binlogPars
     }
   }
 
+  /**
+    * @param binlogFileName binlog文件名称
+    * @param binlogPosition binlogEntry位置
+    *
+    */
   def dump(binlogFileName: String, binlogPosition: Long) = {
     updateSettings
     val connector = mysqlConnection.get.getConnector
-    val fetcher = new DirectLogFetcher(connector.getReceiveBufferSize)
+    fetcher = new DirectLogFetcher(connector.getReceiveBufferSize)
     fetcher.start(connector.getChannel)
-    val decoder = new LogDecoder(LogEvent.UNKNOWN_EVENT, LogEvent.ENUM_END_EVENT)
-    val logContext = new LogContext
+    decoder = new LogDecoder(LogEvent.UNKNOWN_EVENT, LogEvent.ENUM_END_EVENT)
+    logContext = new LogContext
     logContext.setLogPosition(new LogPosition(binlogFileName))
     logContext.setFormatDescription(new FormatDescriptionLogEvent(4, binlogChecksum))
-    loopFetch
+  }
 
-    @tailrec
-    def loopFetch: Unit = {
-      if (fetcher.fetch()) {
-        val event = decoder.decode(fetcher, logContext)
-        val entry = parseAndProfilingIfNecessary(event, false)
-        if (entry.isDefined) {
-          binlogEventBatcher ! entry.get
-        } else {
-          //todo 出现null值处理
-        }
-      }
-      loopFetch
-
+  @tailrec
+  final def loopFetchAll: Unit = {
+    if (fetcher.fetch()) {
+      fetchOne
+      loopFetchAll
     }
+  }
 
+  def fetchOne = {
+    val event = decoder.decode(fetcher, logContext)
+    val entry = parseAndProfilingIfNecessary(event, false)
+    if (entry.isDefined) {
+      //todo logstash
+      binlogEventBatcher ! entry.get
+    } else {
+      //todo 出现null值处理
+    }
   }
 
   def updateSettings: Unit = {
@@ -151,4 +173,15 @@ class MysqlBinlogFetcher(conn: MysqlConnection = null, slaveId: Long, binlogPars
     }
     binlogParser.parse(Option(event))
   }
+
+  override def supervisorStrategy = {
+    OneForOneStrategy() {
+      case e:Exception =>
+      case DrunkenFoolException => Restart
+      case RestaurantFireError => Escalate
+      case TiredChefException => Stop
+      case _ => Escalate
+    }
+  }
+
 }
