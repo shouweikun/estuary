@@ -30,8 +30,10 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
   override var errorCountThreshold: Int = 3
   override var errorCount: Int = 0
   val slaveId = mysql2KafkaTaskInfoManager.slaveId
+  val mysqlConnection: Option[MysqlConnection] = Option(mysql2KafkaTaskInfoManager.mysqlConnection)
+  val logPositionHandler = mysql2KafkaTaskInfoManager.logPositionHandler
   var entryPosition: Option[EntryPosition] = None
-  var mysqlConnection: Option[MysqlConnection] = Option(mysql2KafkaTaskInfoManager.mysqlConnection)
+
   var binlogChecksum = 0
   var necessary = mysql2KafkaTaskInfoManager.taskInfo.isProfiling
 
@@ -41,9 +43,6 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
 
   //offline
   override def receive: Receive = {
-    case ep: EntryPosition => {
-      entryPosition = Option(ep)
-    }
 
     case FetcherMessage(msg) => {
 
@@ -54,6 +53,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
 
         }
         case "start" => {
+          entryPosition = Option(logPositionHandler.findEndPosition(mysqlConnection.get))
           if (entryPosition.isDefined) {
             context.become(online)
             self ! FetcherMessage("start")
@@ -107,6 +107,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
     logContext.setFormatDescription(new FormatDescriptionLogEvent(4, binlogChecksum))
   }
 
+  @deprecated("use `fetchOne`")
   @tailrec
   final def loopFetchAll: Unit = {
     if (fetcher.fetch()) {
@@ -176,9 +177,14 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
 
   override def supervisorStrategy = {
     OneForOneStrategy() {
-      case e:Exception => Restart
+      case e: Exception => Restart
       case _ => Escalate
     }
   }
-
+  def processError(e:Throwable) = {
+    errorCount += 1
+    if(isCrashed){
+        throw
+    }
+  }
 }

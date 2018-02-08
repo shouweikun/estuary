@@ -1,4 +1,4 @@
-package com.neighborhood.aka.laplce.estuary.akka
+package com.neighborhood.aka.laplce.estuary.core.akka
 
 import akka.actor.ActorSystem
 

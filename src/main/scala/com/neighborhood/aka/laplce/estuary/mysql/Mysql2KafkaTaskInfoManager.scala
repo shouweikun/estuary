@@ -50,7 +50,7 @@ class Mysql2KafkaTaskInfoManager(commonConfig: Config, taskInfoBean: Mysql2Kafka
   /**
     * logPosition处理器
     */
-  val logPositionFinder: LogPositionHandler = buildEntryPositionHandler
+  val logPositionHandler: LogPositionHandler = buildEntryPositionHandler
 
   /**
     * fetcher的状态

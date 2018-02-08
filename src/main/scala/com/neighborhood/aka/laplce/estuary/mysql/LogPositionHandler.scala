@@ -31,7 +31,7 @@ class LogPositionHandler(manager: ZooKeeperLogPositionManager, master: Option[En
 
   /**
     * 寻找逻辑
-    * 首先先到zookeeper里寻址，以taskMark作为唯一标识
+    * 首先先到zookeeper里寻址，以taskId作为唯一标识
     * 否则检查是是否有传入的entryPosition
     * 否则默认读取最后一个binlog
     *
