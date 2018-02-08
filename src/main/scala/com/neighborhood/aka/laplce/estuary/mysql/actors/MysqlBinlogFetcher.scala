@@ -176,10 +176,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
 
   override def supervisorStrategy = {
     OneForOneStrategy() {
-      case e:Exception =>
-      case DrunkenFoolException => Restart
-      case RestaurantFireError => Escalate
-      case TiredChefException => Stop
+      case e:Exception => Restart
       case _ => Escalate
     }
   }

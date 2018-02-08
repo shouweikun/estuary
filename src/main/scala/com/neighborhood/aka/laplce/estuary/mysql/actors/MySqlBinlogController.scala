@@ -102,6 +102,13 @@ class MySqlBinlogController[EVENT](rm: Mysql2KafkaTaskInfoManager) extends Abstr
         }
       }
     }
+    case FetcherMessage(msg) => {
+      msg match {
+        case "entryPosition" => {
+          //todo 最新的entryPosition
+        }
+      }
+    }
     case SyncControllerMessage(msg) => {
       msg match {
         case "predump" => {
@@ -144,8 +151,8 @@ class MySqlBinlogController[EVENT](rm: Mysql2KafkaTaskInfoManager) extends Abstr
 
   def retryBack: Receive = {
     case "restart" => {
-        context.become(receive)
-        self ! "start"
+      context.become(receive)
+      self ! "start"
     }
   }
 
@@ -156,8 +163,9 @@ class MySqlBinlogController[EVENT](rm: Mysql2KafkaTaskInfoManager) extends Abstr
   override def buildErosaConnection(): MysqlConnection = {
     resourceManager.mysqlConnection
   }
+
   /**
-    * 
+    *
     *
     */
   def retryCountdown: Boolean = {
@@ -191,8 +199,8 @@ class MySqlBinlogController[EVENT](rm: Mysql2KafkaTaskInfoManager) extends Abstr
 
 
   /**
-    ***************** Actor生命周期 *******************
-   */
+    * **************** Actor生命周期 *******************
+    */
 
   /**
     * 每次启动都会调用，在构造器之后调用
@@ -204,20 +212,20 @@ class MySqlBinlogController[EVENT](rm: Mysql2KafkaTaskInfoManager) extends Abstr
   override def preStart(): Unit = {
     //todo logstash
     //初始化HeartBeatsListener
-    context.actorOf(Props(classOf[MysqlConnectionListenerActor],resourceManager), "heartBeatsListener")
+    context.actorOf(Props(classOf[MysqlConnectionListener], resourceManager), "heartBeatsListener")
     //初始化binlogSinker
     //如果并行打开使用并行sinker
-   val binlogSinker = if(resourceManager.taskInfo.isTransactional){
+    val binlogSinker = if (resourceManager.taskInfo.isTransactional) {
 
-    }else{
-     //不是然使用transaction式
-      context.actorOf(Props(classOf[BinlogTransactionBufferSinker],resourceManager),"binlogSinker")
+    } else {
+      //不是然使用transaction式
+      context.actorOf(Props(classOf[BinlogTransactionBufferSinker], resourceManager), "binlogSinker")
     }
     //初始化binlogEventBatcher
-   val binlogEventBatcher = context.actorOf(Props(classOf[BinlogEventBatcher],resourceManager,binlogSinker)
-    ,"binlogEventBatcher")
+    val binlogEventBatcher = context.actorOf(Props(classOf[BinlogEventBatcher], resourceManager, binlogSinker)
+      , "binlogEventBatcher")
     //初始化binlogFetcher
-    context.actorOf(Props(classOf[DSPMysqlBinlogFetcher],resourceManager,binlogEventBatcher),"binlogFetcher")
+    context.actorOf(Props(classOf[MysqlBinlogFetcher], resourceManager, binlogEventBatcher), "binlogFetcher")
   }
 
   //正常关闭时会调用，关闭资源
