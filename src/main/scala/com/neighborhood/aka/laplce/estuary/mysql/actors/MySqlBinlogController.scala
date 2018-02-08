@@ -106,6 +106,7 @@ class MySqlBinlogController[EVENT](rm: Mysql2KafkaTaskInfoManager) extends Abstr
       msg match {
         case "entryPosition" => {
           //todo 最新的entryPosition
+
         }
       }
     }
