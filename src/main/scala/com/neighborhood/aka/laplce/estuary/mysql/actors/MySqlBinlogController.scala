@@ -7,6 +7,7 @@ import com.alibaba.otter.canal.filter.aviater.AviaterRegexFilter
 import com.alibaba.otter.canal.parse.CanalEventParser
 import com.alibaba.otter.canal.parse.inbound.ErosaConnection
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection.{BinlogFormat, BinlogImage}
+import com.alibaba.otter.canal.parse.inbound.mysql.dbsync.TableMetaCache
 import com.alibaba.otter.canal.parse.inbound.mysql.{AbstractMysqlEventParser, MysqlConnection}
 import com.alibaba.otter.canal.protocol.position.EntryPosition
 import com.neighborhood.aka.laplce.estuary.core.lifecycle.SyncController
@@ -25,43 +26,8 @@ class MySqlBinlogController[EVENT](rm: Mysql2KafkaTaskInfoManager) extends Abstr
   val resourceManager = rm
   //配置
   val config = context.system.settings.config
-  //binlog解析器
-  val binlogParser = buildParser()
   //canal的mysqlConnection
   val mysqlConnection: MysqlConnection = buildErosaConnection()
-  // 支持的binlogFormat,如果设置会执行强校验
-  lazy val supportBinlogFormats = Option(config
-    .getString("common.binlog.formats"))
-    .map {
-      formatsStr =>
-        formatsStr
-          .split(",")
-          .map {
-            formatStr =>
-              formatsStr match {
-                case "ROW" => BinlogFormat.ROW
-                case "STATEMENT" => BinlogFormat.STATEMENT
-                case "MIXED" => BinlogFormat.MIXED
-              }
-          }
-    }
-  //支持的binlogImage，如果设置会执行强校验
-  lazy val supportBinlogImages = Option(config
-    .getString(s"common.binlog.images")
-  )
-    .map {
-      binlogImagesStr =>
-        binlogImagesStr.split(",")
-          .map {
-            binlogImageStr =>
-              binlogImageStr match {
-                case "FULL" => BinlogImage.FULL
-                case "MINIMAL" => BinlogImage.MINIMAL
-                case "NOBLOB" => BinlogImage.NOBLOB
-              }
-          }
-    }
-  val logPositionFinder = resourceManager.logPositionFinder
   val dumpErrorCountThreshold = 3
   var dumpErrorCount = 0
   val retryBackoff = Option(config.getInt("common.retry.backoff")).getOrElse(30)
@@ -72,7 +38,6 @@ class MySqlBinlogController[EVENT](rm: Mysql2KafkaTaskInfoManager) extends Abstr
   override def receive: Receive = {
     case "start" => {
       context.become(online)
-      self ! SyncControllerMessage("predump")
 
     }
     case ListenerMessage(msg) => {
@@ -82,7 +47,7 @@ class MySqlBinlogController[EVENT](rm: Mysql2KafkaTaskInfoManager) extends Abstr
           sender() ! mysqlConnection
         }
         case "reconnect" => {
-          mysqlConnection.reconnect()
+          mysqlConnection.synchronized(mysqlConnection.reconnect())
         }
       }
     }
@@ -173,30 +138,9 @@ class MySqlBinlogController[EVENT](rm: Mysql2KafkaTaskInfoManager) extends Abstr
     dumpErrorCountThreshold >= 0 && dumpErrorCount > dumpErrorCountThreshold
   }
 
-  override def buildParser(): MysqlBinlogParser = {
-    val convert = resourceManager.binlogParser
-    if (eventFilter != null && eventFilter.isInstanceOf[AviaterRegexFilter]) convert.setNameFilter(eventFilter.asInstanceOf[AviaterRegexFilter])
 
-    if (eventBlackFilter != null && eventBlackFilter.isInstanceOf[AviaterRegexFilter]) convert.setNameBlackFilter(eventBlackFilter.asInstanceOf[AviaterRegexFilter])
 
-    convert.setCharset(connectionCharset)
-    convert.setFilterQueryDcl(filterQueryDcl)
-    convert.setFilterQueryDml(filterQueryDml)
-    convert.setFilterQueryDdl(filterQueryDdl)
-    convert.setFilterRows(filterRows)
-    convert.setFilterTableError(filterTableError)
-    return convert
-  }
 
-  /**
-    * Canal中，preDump中做了binlogFormat/binlogImage的校验
-    * 这里暂时忽略，可以再以后有必要的时候进行添加
-    *
-    */
-  override def preDump(connection: ErosaConnection): Unit = {
-    //设置tableMetaCache
-    binlogParser.setTableMetaCache(resourceManager.tableMetaCache)
-  }
 
 
   /**

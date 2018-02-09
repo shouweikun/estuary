@@ -42,14 +42,6 @@ class Mysql2KafkaTaskInfoBean extends MysqlBean with KafkaBean with BaseExtractB
     */
   var isProfiling :Boolean = false
   /**
-    * mysql字符集
-    */
-  var connectionCharset = Charset.forName("UTF-8")
-  /**
-    * 字符集number
-    */
-  var connectionCharsetNumber = 33.toByte
-  /**
     * 是否事务写
     * 默认是
     * 如果否的话，就是并行写

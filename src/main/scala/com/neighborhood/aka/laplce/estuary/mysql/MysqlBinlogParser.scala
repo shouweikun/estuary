@@ -15,7 +15,13 @@ import com.taobao.tddl.dbsync.binlog.LogEvent
     }
 
   }
+  def parseAndProfilingIfNecessary(event: LogEvent, necessary: Boolean): Option[CanalEntry.Entry] = {
 
+    if (necessary) {
+      //todo
+    }
+  parse(Option(event))
+  }
 }
 
 

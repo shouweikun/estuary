@@ -4,6 +4,7 @@ import java.net.InetSocketAddress
 import java.nio.charset.Charset
 
 import com.alibaba.otter.canal.common.zookeeper.ZkClientx
+import com.alibaba.otter.canal.filter.aviater.AviaterRegexFilter
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
 import com.alibaba.otter.canal.parse.inbound.mysql.dbsync.TableMetaCache
 import com.alibaba.otter.canal.parse.index.ZooKeeperLogPositionManager
@@ -22,7 +23,7 @@ class Mysql2KafkaTaskInfoManager(commonConfig: Config, taskInfoBean: Mysql2Kafka
   /**
     * 同步任务控制器的ActorRef
     */
-  val syncController :AnyRef = null
+  val syncController: AnyRef = null
   /**
     * 配置文件中的配置
     */
@@ -40,13 +41,9 @@ class Mysql2KafkaTaskInfoManager(commonConfig: Config, taskInfoBean: Mysql2Kafka
     */
   val mysqlConnection = buildSource
   /**
-    * canal的metaConnection
+    * MysqlBinlogParser
     */
-  val metaConnection = mysqlConnection.fork()
-  /**
-    * canal的TableMetaCache
-    */
-  val tableMetaCache: TableMetaCache = new TableMetaCache(metaConnection)
+  val binlogParser :MysqlBinlogParser = buildParser
   /**
     * logPosition处理器
     */
@@ -56,35 +53,38 @@ class Mysql2KafkaTaskInfoManager(commonConfig: Config, taskInfoBean: Mysql2Kafka
     * fetcher的状态
     */
   @volatile
-  var fetcherStatus :Status= Status.OFFLINE
+  var fetcherStatus: Status = Status.OFFLINE
   /**
     * batcher的状态
     */
   @volatile
-  var batcherStatus :Status= Status.OFFLINE
+  var batcherStatus: Status = Status.OFFLINE
   /**
     * heartbeatListener的状态
     */
   @volatile
-  var heartBeatListenerStatus:Status = Status.OFFLINE
+  var heartBeatListenerStatus: Status = Status.OFFLINE
   /**
     * sinker的状态
     */
   @volatile
-  var sinkerStatus :Status= Status.OFFLINE
+  var sinkerStatus: Status = Status.OFFLINE
   /**
     * syncControllerStatus的状态
     */
   @volatile
-  var syncControllerStatus:Status = Status.OFFLINE
+  var syncControllerStatus: Status = Status.OFFLINE
 
   /**
     * 实现@trait ResourceManager
+    *
     * @return canal的mysqlConnection
     */
   override def buildSource: MysqlConnection = buildMysqlConnection
+
   /**
     * 实现@trait ResourceManager
+    *
     * @return KafkaSinkFunc
     */
   override def buildSink: KafkaSinkFunc = ???
@@ -111,6 +111,25 @@ class Mysql2KafkaTaskInfoManager(commonConfig: Config, taskInfoBean: Mysql2Kafka
     conn.getConnector.setReceiveBufferSize(receiveBufferSize)
     conn
   }
+  /**
+    * @return 构建binlogParser
+    */
+  def buildParser: MysqlBinlogParser = {
+    val convert = new MysqlBinlogParser
+    val eventFilter = new AviaterRegexFilter(taskInfo.filterPattern)
+    val eventBlackFilter = new AviaterRegexFilter(taskInfo.filterBlackPattern)
+    if (eventFilter != null && eventFilter.isInstanceOf[AviaterRegexFilter]) convert.setNameFilter(eventFilter.asInstanceOf[AviaterRegexFilter])
+    if (eventBlackFilter != null && eventBlackFilter.isInstanceOf[AviaterRegexFilter]) convert.setNameBlackFilter(eventBlackFilter.asInstanceOf[AviaterRegexFilter])
+
+    convert.setCharset(taskInfo.connectionCharset)
+    convert.setFilterQueryDcl(taskInfo.filterQueryDcl)
+    convert.setFilterQueryDml(taskInfo.filterQueryDml)
+    convert.setFilterQueryDdl(taskInfo.filterQueryDdl)
+    convert.setFilterRows(taskInfo.filterRows)
+    convert.setFilterTableError(taskInfo.filterTableError)
+
+    convert
+  }
 
   /**
     * @return logPosition处理器
@@ -120,7 +139,7 @@ class Mysql2KafkaTaskInfoManager(commonConfig: Config, taskInfoBean: Mysql2Kafka
     val timeout = config.getInt("common.zookeeper.timeout")
     val zkLogPositionManager = new ZooKeeperLogPositionManager
     zkLogPositionManager.setZkClientx(new ZkClientx(servers, timeout))
-    new LogPositionHandler(zkLogPositionManager)
+    new LogPositionHandler(binlogParser,zkLogPositionManager)
 
   }
 

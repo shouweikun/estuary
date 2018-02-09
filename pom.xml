@@ -53,6 +53,12 @@
             <artifactId>akka-stream_2.11</artifactId>
             <version>${akka.http.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-testkit_2.11</artifactId>
+            <version>2.5.9</version>
+            <scope>test</scope>
+        </dependency>
         <!--end akka-->
         <dependency>
             <groupId>com.alibaba.otter</groupId>
