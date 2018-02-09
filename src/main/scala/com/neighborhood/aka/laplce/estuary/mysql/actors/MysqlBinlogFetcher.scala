@@ -4,6 +4,7 @@ import java.io.IOException
 import java.nio.ByteBuffer
 import java.util
 
+import scala.concurrent.duration._
 import akka.actor.SupervisorStrategy.{Escalate, Restart, Resume, Stop}
 import akka.actor.{Actor, ActorRef, OneForOneStrategy}
 import com.alibaba.otter.canal.parse.driver.mysql.packets.HeaderPacket
@@ -16,7 +17,7 @@ import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
 import com.alibaba.otter.canal.parse.inbound.mysql.dbsync.{DirectLogFetcher, TableMetaCache}
 import com.alibaba.otter.canal.protocol.CanalEntry
 import com.alibaba.otter.canal.protocol.position.EntryPosition
-import com.neighborhood.aka.laplce.estuary.core.lifecycle.{SourceDataFetcher, Status}
+import com.neighborhood.aka.laplce.estuary.core.lifecycle._
 import com.neighborhood.aka.laplce.estuary.mysql.{Mysql2KafkaTaskInfoManager, MysqlBinlogParser}
 import com.taobao.tddl.dbsync.binlog.event.FormatDescriptionLogEvent
 import com.taobao.tddl.dbsync.binlog.{LogContext, LogDecoder, LogEvent, LogPosition}
@@ -71,20 +72,29 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
   override def receive: Receive = {
 
     case FetcherMessage(msg) => {
-
+      msg match {
+        case "restart" => {
+          switch2Restarting
+          self ! SyncControllerMessage("start")
+        }
+      }
     }
     case SyncControllerMessage(msg) => {
       msg match {
         case "stop" => {
-           context.become(receive)
-          mysql2KafkaTaskInfoManager.fetcherStatus = Status.OFFLINE
+          context.become(receive)
+          switch2Offline
         }
         case "start" => {
           try {
             entryPosition = Option(logPositionHandler.findStartPosition(mysqlConnection.get)(false))
             if (entryPosition.isDefined) {
+              //寻找完后必须reconnect一下
+              mysqlConnection.get.synchronized {
+                mysqlConnection.get.reconnect
+              }
               context.become(online)
-              self ! ("start")
+              self ! FetcherMessage("start")
             } else {
               throw new Exception("entryPosition is null")
             }
@@ -122,7 +132,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
               fetchOne
               self ! FetcherMessage("fetch")
             } else {
-              //   mysql2KafkaTaskInfoManager.fetcherStatus = Status.FREE
+              switch2Free
             }
           } catch {
             case e: TableIdNotFoundException => {
@@ -167,7 +177,6 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
 
   /**
     * 从连接中取数据
-    *
     */
   def fetchOne = {
     val event = decoder.decode(fetcher, logContext)
@@ -243,7 +252,10 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
     binlogParser.setTableMetaCache(tableMetaCache)
   }
 
-  def processError(e: Throwable, message: WorkerMessage) = {
+  /**
+    * 错误处理
+    */
+  override def processError(e: Throwable, message: WorkerMessage): Unit = {
     //todo 记录log
     errorCount += 1
     if (isCrashed) {
@@ -260,25 +272,34 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
   private def switch2Offline = {
     mysql2KafkaTaskInfoManager.fetcherStatus = Status.OFFLINE
   }
+
   private def switch2Busy = {
     mysql2KafkaTaskInfoManager.fetcherStatus = Status.BUSY
   }
+
   private def switch2Error = {
     mysql2KafkaTaskInfoManager.fetcherStatus = Status.ERROR
   }
+
   private def switch2Free = {
     mysql2KafkaTaskInfoManager.fetcherStatus = Status.FREE
   }
+
+  private def switch2Restarting = {
+    mysql2KafkaTaskInfoManager.fetcherStatus = Status.RESTARTING
+  }
+
   /**
     * ********************* Actor生命周期 *******************
     */
   override def preStart(): Unit = {
     //状态置为offline
-    // mysql2KafkaTaskInfoManager.fetcherStatus = Status.OFFLINE
+    switch2Offline
+    context.system.scheduler.scheduleOnce(3 minutes)(self ! FetcherMessage("restart"))
+
   }
 
   override def postRestart(reason: Throwable): Unit = {
-    context.parent ! FetcherMessage("restart")
     super.postRestart(reason)
   }
 

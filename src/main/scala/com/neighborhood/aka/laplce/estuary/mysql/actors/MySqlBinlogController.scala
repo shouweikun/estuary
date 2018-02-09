@@ -3,19 +3,12 @@ package com.neighborhood.aka.laplce.estuary.mysql.actors
 import java.io.IOException
 
 import akka.actor.{Actor, Props}
-import com.alibaba.otter.canal.filter.aviater.AviaterRegexFilter
 import com.alibaba.otter.canal.parse.CanalEventParser
-import com.alibaba.otter.canal.parse.inbound.ErosaConnection
-import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection.{BinlogFormat, BinlogImage}
-import com.alibaba.otter.canal.parse.inbound.mysql.dbsync.TableMetaCache
 import com.alibaba.otter.canal.parse.inbound.mysql.{AbstractMysqlEventParser, MysqlConnection}
 import com.alibaba.otter.canal.protocol.position.EntryPosition
-import com.neighborhood.aka.laplce.estuary.core.lifecycle.SyncController
-import com.neighborhood.aka.laplce.estuary.mysql.{Mysql2KafkaTaskInfoManager, MysqlBinlogParser}
+import com.neighborhood.aka.laplce.estuary.core.lifecycle.{ListenerMessage, SyncController, SyncControllerMessage}
+import com.neighborhood.aka.laplce.estuary.mysql.Mysql2KafkaTaskInfoManager
 import org.apache.commons.lang.StringUtils
-
-import scala.concurrent.duration._
-import scala.util.{Failure, Success, Try}
 
 /**
   * Created by john_liu on 2018/2/1.
@@ -67,52 +60,9 @@ class MySqlBinlogController[EVENT](rm: Mysql2KafkaTaskInfoManager) extends Abstr
         }
       }
     }
-    case FetcherMessage(msg) => {
-      msg match {
-        case "entryPosition" => {
-          //todo 最新的entryPosition
 
-        }
-      }
-    }
     case SyncControllerMessage(msg) => {
-      msg match {
-        case "predump" => {
-          preDump(mysqlConnection)
-          mysqlConnection.connect()
-          self ! SyncControllerMessage("findLog")
 
-
-        }
-        case "findLog" => {
-          //寻找log
-
-          Try(entryPosition = logPositionFinder.findStartPosition(mysqlConnection)(retryCountdown)) match {
-            case Success(x) => {
-              //重新连接，因为在找position过程中可能有状态，需要断开后重建
-              //由于mysqlConnection同时也被listener持有，所以synchronized
-              //这个设计很蠢-_-!
-              mysqlConnection.synchronized {
-                mysqlConnection.reconnect
-              }
-              self ! SyncControllerMessage("dump")
-            }
-            case Failure(e) => {
-              processDumpError(e)
-              if (retryCountdown) {
-                self ! SyncControllerMessage("findLog")
-              }
-              context.become(retryBack)
-              context.system.scheduler.scheduleOnce(retryBackoff minutes)(self ! "restart")
-            }
-          }
-
-        }
-        case "dump" => {
-
-        }
-      }
-    }
   }
 
   def retryBack: Receive = {

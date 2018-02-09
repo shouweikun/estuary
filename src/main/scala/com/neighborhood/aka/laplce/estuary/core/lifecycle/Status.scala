@@ -10,6 +10,7 @@ case object Status extends Enumeration {
   val SUSPEND = Value(2)
   val FREE    = Value(3)
   val ERROR   = Value(4)
+  val RESTARTING = Value(5)
 
 }
 
