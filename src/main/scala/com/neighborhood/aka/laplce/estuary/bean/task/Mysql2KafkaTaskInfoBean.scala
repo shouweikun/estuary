@@ -1,6 +1,6 @@
 package com.neighborhood.aka.laplce.estuary.bean.task
 
-import java.nio.charset.Charset
+import java.util.concurrent.atomic.AtomicLong
 
 import com.neighborhood.aka.laplce.estuary.bean.datasink.KafkaBean
 import com.neighborhood.aka.laplce.estuary.bean.identity.BaseExtractBean
@@ -47,6 +47,8 @@ class Mysql2KafkaTaskInfoBean extends MysqlBean with KafkaBean with BaseExtractB
     * 如果否的话，就是并行写
     */
   var isTransactional:Boolean = true
-
-
+  /**
+    * entry打包的阈值
+    */
+  var batchThreshold : AtomicLong = new AtomicLong(50)
 }

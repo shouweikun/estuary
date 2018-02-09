@@ -31,7 +31,11 @@ import scala.annotation.tailrec
   * @todo 将fetcher和actor解耦
   */
 
-class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager, binlogParser: MysqlBinlogParser, binlogEventBatcher: ActorRef) extends Actor with SourceDataFetcher {
+class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager, binlogEventBatcher: ActorRef) extends Actor with SourceDataFetcher {
+  /**
+    * binlogParser 解析binlog
+    */
+  val binlogParser: MysqlBinlogParser = mysql2KafkaTaskInfoManager.binlogParser
   /**
     * 重试机制
     */
@@ -117,6 +121,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
         }
         case "predump" => {
           preDump(mysqlConnection.get)
+          mysqlConnection.get.connect()
           val startPosition = entryPosition.get
           try {
             if (StringUtils.isEmpty(startPosition.getJournalName) && Option(startPosition.getTimestamp).isEmpty) {} else {

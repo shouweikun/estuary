@@ -2,7 +2,7 @@ package com.neighborhood.aka.laplce.estuary.mysql.actors
 
 import akka.actor.{Actor, SupervisorStrategy}
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
-import com.neighborhood.aka.laplce.estuary.core.lifecycle.HeartBeatListener
+import com.neighborhood.aka.laplce.estuary.core.lifecycle.{HeartBeatListener, ListenerMessage, SyncControllerMessage}
 
 import scala.concurrent.duration._
 import scala.util.Try
@@ -41,7 +41,7 @@ class MysqlConnectionListener(conn:MysqlConnection) extends Actor with HeartBeat
             //变为online状态
             context.become(onlineState)
             //开始之后每`queryTimeOut`毫秒一次
-            context.system.scheduler.schedule(0 milliseconds, queryTimeOut milliseconds, self, ListenerMessage("listen"))
+            context.system.scheduler.schedule(queryTimeOut milliseconds, queryTimeOut milliseconds, self, ListenerMessage("listen"))
           }
         }
         case "stop" => {
