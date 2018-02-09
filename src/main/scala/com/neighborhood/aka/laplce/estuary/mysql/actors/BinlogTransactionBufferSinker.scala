@@ -5,6 +5,7 @@ import java.util.concurrent.atomic.AtomicLong
 import akka.actor.{Actor, ActorLogging}
 import com.alibaba.otter.canal.protocol.CanalEntry
 import com.alibaba.otter.canal.protocol.CanalEntry.EntryType
+import com.neighborhood.aka.laplce.estuary.core.lifecycle.BatcherMessage
 import com.neighborhood.aka.laplce.estuary.core.sink.SinkFunc
 
 import scala.annotation.tailrec
@@ -34,7 +35,9 @@ class BinlogTransactionBufferSinker(sinkFunc: SinkFunc) extends Actor with Actor
   }
 
   def online: Receive = {
+    case  _ =>{
 
+  }
   }
 
   def preBuffer = {

@@ -5,7 +5,11 @@ import scala.concurrent.Future
   * Created by john_liu on 2018/2/7.
   */
 class KafkaSinkFunc extends SinkFunc{
-  override def sink[String](source: String): Boolean = ???
+  override def sink[A](source: A): Boolean = {
+    ???
+  }
 
-  override def asyncSink[String](source: String): Future[Boolean] = ???
+  override def asyncSink[A](source: A): Future[Boolean] = {
+    ???
+  }
 }

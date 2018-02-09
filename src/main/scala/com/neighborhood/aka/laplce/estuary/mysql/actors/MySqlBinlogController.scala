@@ -3,16 +3,16 @@ package com.neighborhood.aka.laplce.estuary.mysql.actors
 import akka.actor.{Actor, Props}
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
 import com.neighborhood.aka.laplce.estuary.core.lifecycle
-import com.neighborhood.aka.laplce.estuary.core.lifecycle.{ListenerMessage, SyncController, SyncControllerMessage}
+import com.neighborhood.aka.laplce.estuary.core.lifecycle.{ListenerMessage, Status, SyncController, SyncControllerMessage}
 import com.neighborhood.aka.laplce.estuary.mysql.Mysql2KafkaTaskInfoManager
 
 /**
   * Created by john_liu on 2018/2/1.
   */
 
-class MySqlBinlogController[EVENT](rm: Mysql2KafkaTaskInfoManager) extends SyncController with Actor {
+class MySqlBinlogController[EVENT](mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager) extends SyncController with Actor {
   //资源管理器，一次同步任务所有的resource都由resourceManager负责
-  val resourceManager = rm
+  val resourceManager = mysql2KafkaTaskInfoManager
   //配置
   val config = context.system.settings.config
   //canal的mysqlConnection
@@ -49,7 +49,7 @@ class MySqlBinlogController[EVENT](rm: Mysql2KafkaTaskInfoManager) extends SyncC
           sender() ! SyncControllerMessage("start")
         }
         case "reconnect" => {
-          mysqlConnection.reconnect()
+          mysqlConnection.synchronized(mysqlConnection.reconnect())
         }
       }
     }
@@ -59,22 +59,25 @@ class MySqlBinlogController[EVENT](rm: Mysql2KafkaTaskInfoManager) extends SyncC
     }
   }
    def startAllWorkers = {
+       //启动sinker
        context
        .child("binlogSinker")
        .map{
          ref => ref ! SyncControllerMessage("start")
        }
+       //启动batcher
        context
        .child("binlogBatcher")
        .map{
          ref => ref ! SyncControllerMessage("start")
        }
+       //启动fetcher
        context
          .child("binlogFetcher")
          .map{
            ref => ref ! SyncControllerMessage("start")
          }
-
+     //启动listener
        context
        .child("heartBeatsListener")
        .map{
@@ -87,7 +90,28 @@ class MySqlBinlogController[EVENT](rm: Mysql2KafkaTaskInfoManager) extends SyncC
   override def processError(e: Throwable, message: lifecycle.WorkerMessage): Unit = {
     //do nothing
   }
+  /**
+    * ********************* 状态变化 *******************
+    */
+  private def switch2Offline = {
+    mysql2KafkaTaskInfoManager.syncControllerStatus = Status.OFFLINE
+  }
 
+  private def switch2Busy = {
+    mysql2KafkaTaskInfoManager.syncControllerStatus  = Status.BUSY
+  }
+
+  private def switch2Error = {
+    mysql2KafkaTaskInfoManager.syncControllerStatus  = Status.ERROR
+  }
+
+  private def switch2Free = {
+    mysql2KafkaTaskInfoManager.syncControllerStatus  = Status.FREE
+  }
+
+  private def switch2Restarting = {
+    mysql2KafkaTaskInfoManager.syncControllerStatus  = Status.RESTARTING
+  }
   /**
     * **************** Actor生命周期 *******************
     */
