@@ -2,7 +2,9 @@ package com.neighborhood.aka.laplce.estuary.mysql.actors
 
 import akka.actor.{Actor, SupervisorStrategy}
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
+import com.neighborhood.aka.laplce.estuary.bean.task.Mysql2KafkaTaskInfoBean
 import com.neighborhood.aka.laplce.estuary.core.lifecycle.{HeartBeatListener, ListenerMessage, SyncControllerMessage}
+import com.neighborhood.aka.laplce.estuary.mysql.Mysql2KafkaTaskInfoManager
 
 import scala.concurrent.duration._
 import scala.util.Try
@@ -10,10 +12,10 @@ import scala.util.Try
 /**
   * Created by john_liu on 2018/2/1.
   */
-class MysqlConnectionListener(conn:MysqlConnection) extends Actor with HeartBeatListener{
+class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager) extends Actor with HeartBeatListener{
 
   //数据库连接
-  var connection: Option[MysqlConnection] = Option(conn)
+  val connection: Option[MysqlConnection] = Option(mysql2KafkaTaskInfoManager.mysqlConnection)
   //配置
   val config = context.system.settings.config
   //监听心跳用sql
@@ -27,9 +29,7 @@ class MysqlConnectionListener(conn:MysqlConnection) extends Actor with HeartBeat
 
   //等待初始化 offline状态
   override def receive: Receive = {
-    case conn: MysqlConnection => {
-      connection = Option(conn)
-    }
+
     case SyncControllerMessage(msg) => {
       msg match {
         case "start" => {
@@ -40,13 +40,10 @@ class MysqlConnectionListener(conn:MysqlConnection) extends Actor with HeartBeat
           }else{
             //变为online状态
             context.become(onlineState)
-            //开始之后每`queryTimeOut`毫秒一次
-            context.system.scheduler.schedule(queryTimeOut milliseconds, queryTimeOut milliseconds, self, ListenerMessage("listen"))
+
           }
         }
         case "stop" => {
-          //connection清空
-          connection = None
         }
         case "state" => context.parent ! ListenerMessage("state:offline")
       }
@@ -54,8 +51,7 @@ class MysqlConnectionListener(conn:MysqlConnection) extends Actor with HeartBeat
     case ListenerMessage(msg) => {
       //todo logstash
       case "stop" => {
-        //connection清空
-        connection = None
+
       }
 
 
@@ -70,8 +66,6 @@ class MysqlConnectionListener(conn:MysqlConnection) extends Actor with HeartBeat
           listenHeartBeats
         }
         case "stop" => {
-          //connection清空
-          connection = None
           //变为offline状态
           context.become(receive)
         }
@@ -80,8 +74,6 @@ class MysqlConnectionListener(conn:MysqlConnection) extends Actor with HeartBeat
     case SyncControllerMessage(msg: String) => {
       msg match {
         case "stop" => {
-          //connection清空
-          connection = None
           //变为offline状态
           context.become(receive)
         }
@@ -114,7 +106,8 @@ class MysqlConnectionListener(conn:MysqlConnection) extends Actor with HeartBeat
   }
 
   override def preStart(): Unit = {
-
+    //开始之后每`queryTimeOut`毫秒一次
+    context.system.scheduler.schedule(queryTimeOut milliseconds, queryTimeOut milliseconds, self, ListenerMessage("listen"))
   }
 
   override def postStop(): Unit = super.postStop()
