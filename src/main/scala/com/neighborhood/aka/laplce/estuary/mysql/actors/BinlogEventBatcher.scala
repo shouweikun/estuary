@@ -3,17 +3,19 @@ package com.neighborhood.aka.laplce.estuary.mysql.actors
 import java.util.concurrent.atomic.AtomicLong
 
 import akka.actor.SupervisorStrategy.{Escalate, Restart}
-import akka.actor.{Actor, ActorRef, OneForOneStrategy}
+import akka.actor.{Actor, ActorRef, OneForOneStrategy, Props}
 import com.alibaba.otter.canal.protocol.CanalEntry
 import com.neighborhood.aka.laplce.estuary.core.lifecycle
 import com.neighborhood.aka.laplce.estuary.core.lifecycle._
 import com.neighborhood.aka.laplce.estuary.mysql.Mysql2KafkaTaskInfoManager
+
 import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
   * Created by john_liu on 2018/2/6.
   */
-class BinlogEventBatcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager, binlogEventSinker: ActorRef) extends Actor with SourceDataBatcher {
+class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager) extends Actor with SourceDataBatcher {
   override var errorCountThreshold: Int = 3
   override var errorCount: Int = 0
   val mode = mysql2KafkaTaskInfoManager.taskInfo.isTransactional
@@ -133,6 +135,9 @@ class BinlogEventBatcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
       case _ => Escalate
     }
   }
+}
+object BinlogEventBatcher {
+  def prop(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager): Props = Props(new BinlogEventBatcher(binlogEventSinker, mysql2KafkaTaskInfoManager))
 }
 
 

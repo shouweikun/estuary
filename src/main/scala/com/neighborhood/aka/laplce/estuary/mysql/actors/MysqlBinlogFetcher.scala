@@ -21,8 +21,10 @@ import com.neighborhood.aka.laplce.estuary.core.lifecycle._
 import com.neighborhood.aka.laplce.estuary.mysql.{Mysql2KafkaTaskInfoManager, MysqlBinlogParser}
 import com.taobao.tddl.dbsync.binlog.event.FormatDescriptionLogEvent
 import com.taobao.tddl.dbsync.binlog.{LogContext, LogDecoder, LogEvent, LogPosition}
+import org.I0Itec.zkclient.exception.ZkTimeoutException
 import org.apache.commons.lang.StringUtils
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.annotation.tailrec
 
 /**
@@ -35,7 +37,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
   /**
     * binlogParser 解析binlog
     */
-  val binlogParser: MysqlBinlogParser = mysql2KafkaTaskInfoManager.binlogParser
+  lazy val binlogParser: MysqlBinlogParser = mysql2KafkaTaskInfoManager.binlogParser
   /**
     * 重试机制
     */
@@ -81,7 +83,11 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
           switch2Restarting
           self ! SyncControllerMessage("start")
         }
+        case str:String => {
+          println(s"fetcher offline  unhandled message:$str")
+        }
       }
+
     }
     case SyncControllerMessage(msg) => {
       msg match {
@@ -123,10 +129,13 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
           preDump(mysqlConnection.get)
           mysqlConnection.get.connect()
           val startPosition = entryPosition.get
+          throw new Exception("故意的")
           try {
             if (StringUtils.isEmpty(startPosition.getJournalName) && Option(startPosition.getTimestamp).isEmpty) {} else {
               dump(startPosition.getJournalName, startPosition.getPosition)
+
             }
+            self ! FetcherMessage("fetch")
           } catch {
             case e: Exception => processError(e, FetcherMessage("start"))
           }
@@ -146,6 +155,13 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
             }
             case e: Exception => processError(e, FetcherMessage("fetch"))
           }
+        }
+        case "restart" => {
+          context.become(receive)
+          self ! FetcherMessage("restart")
+        }
+        case str: String => {
+          println(s"fetcher online unhandled command:$str")
         }
       }
     }
@@ -265,6 +281,8 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
     errorCount += 1
     if (isCrashed) {
       switch2Error
+      errorCount = 0
+      println(message.msg)
       throw new Exception("fetching data failure for 3 times")
     } else {
       self ! message
@@ -300,7 +318,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
   override def preStart(): Unit = {
     //状态置为offline
     switch2Offline
-    context.system.scheduler.scheduleOnce(3 minutes)(self ! FetcherMessage("restart"))
+    context.system.scheduler.scheduleOnce(1 minutes)(self ! FetcherMessage("restart"))
 
   }
 
@@ -308,10 +326,22 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
     super.postRestart(reason)
   }
 
+
+  override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
+
+    context.become(receive)
+    super.preRestart(reason, message)
+  }
+
   override def supervisorStrategy = {
     OneForOneStrategy() {
+      case e: ZkTimeoutException => {
+        Restart
+        //todo log
+      }
       case e: Exception => Restart
-      case _ => Escalate
+      case error:Error => Restart
+      case _ => Restart
     }
   }
 

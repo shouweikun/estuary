@@ -66,40 +66,5 @@ trait MysqlBean extends DataSourceBase {
     * 过滤黑名单字样
     */
   var eventBlackFilterPattern = ""
-  /**
-    * 支持的binlogFormat
-    */
-  lazy val supportBinlogFormats = Option(config
-    .getString("common.binlog.formats"))
-    .map {
-      formatsStr =>
-        formatsStr
-          .split(",")
-          .map {
-            formatStr =>
-              formatsStr match {
-                case "ROW" => BinlogFormat.ROW
-                case "STATEMENT" => BinlogFormat.STATEMENT
-                case "MIXED" => BinlogFormat.MIXED
-              }
-          }
-    }
-  /**
-    * 支持的binlogImage
-    */
-  lazy val supportBinlogImages = Option(config
-    .getString(s"common.binlog.images")
-  )
-    .map {
-      binlogImagesStr =>
-        binlogImagesStr.split(",")
-          .map {
-            binlogImageStr =>
-              binlogImageStr match {
-                case "FULL" => BinlogImage.FULL
-                case "MINIMAL" => BinlogImage.MINIMAL
-                case "NOBLOB" => BinlogImage.NOBLOB
-              }
-          }
-    }
+
 }

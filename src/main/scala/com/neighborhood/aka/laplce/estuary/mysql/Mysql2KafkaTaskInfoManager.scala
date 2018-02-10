@@ -6,6 +6,7 @@ import java.nio.charset.Charset
 import com.alibaba.otter.canal.common.zookeeper.ZkClientx
 import com.alibaba.otter.canal.filter.aviater.AviaterRegexFilter
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
+import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection.{BinlogFormat, BinlogImage}
 import com.alibaba.otter.canal.parse.inbound.mysql.dbsync.TableMetaCache
 import com.alibaba.otter.canal.parse.index.ZooKeeperLogPositionManager
 import com.neighborhood.aka.laplce.estuary.bean.task.Mysql2KafkaTaskInfoBean
@@ -33,6 +34,42 @@ class Mysql2KafkaTaskInfoManager(commonConfig: Config, taskInfoBean: Mysql2Kafka
     */
   val taskInfo = taskInfoBean
   /**
+    * 支持的binlogFormat
+    */
+  lazy val supportBinlogFormats = Option(config
+    .getString("common.binlog.formats"))
+    .map {
+      formatsStr =>
+        formatsStr
+          .split(",")
+          .map {
+            formatStr =>
+              formatsStr match {
+                case "ROW" => BinlogFormat.ROW
+                case "STATEMENT" => BinlogFormat.STATEMENT
+                case "MIXED" => BinlogFormat.MIXED
+              }
+          }
+    }
+  /**
+    * 支持的binlogImage
+    */
+  lazy val supportBinlogImages = Option(config
+    .getString(s"common.binlog.images")
+  )
+    .map {
+      binlogImagesStr =>
+        binlogImagesStr.split(",")
+          .map {
+            binlogImageStr =>
+              binlogImageStr match {
+                case "FULL" => BinlogImage.FULL
+                case "MINIMAL" => BinlogImage.MINIMAL
+                case "NOBLOB" => BinlogImage.NOBLOB
+              }
+          }
+    }
+  /**
     * 利用canal模拟的mysql从库的slaveId
     */
   val slaveId = taskInfoBean.slaveId
@@ -43,11 +80,11 @@ class Mysql2KafkaTaskInfoManager(commonConfig: Config, taskInfoBean: Mysql2Kafka
   /**
     * MysqlBinlogParser
     */
-  val binlogParser :MysqlBinlogParser = buildParser
+  lazy val binlogParser :MysqlBinlogParser = buildParser
   /**
     * logPosition处理器
     */
-  val logPositionHandler: LogPositionHandler = buildEntryPositionHandler
+  lazy val logPositionHandler: LogPositionHandler = buildEntryPositionHandler
 
   /**
     * fetcher的状态

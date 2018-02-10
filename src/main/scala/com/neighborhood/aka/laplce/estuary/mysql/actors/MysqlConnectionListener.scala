@@ -6,13 +6,14 @@ import com.neighborhood.aka.laplce.estuary.bean.task.Mysql2KafkaTaskInfoBean
 import com.neighborhood.aka.laplce.estuary.core.lifecycle.{HeartBeatListener, ListenerMessage, SyncControllerMessage}
 import com.neighborhood.aka.laplce.estuary.mysql.Mysql2KafkaTaskInfoManager
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.util.Try
 
 /**
   * Created by john_liu on 2018/2/1.
   */
-class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager) extends Actor with HeartBeatListener{
+class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager) extends Actor with HeartBeatListener {
 
   //数据库连接
   val connection: Option[MysqlConnection] = Option(mysql2KafkaTaskInfoManager.mysqlConnection)
@@ -34,14 +35,10 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
       msg match {
         case "start" => {
           //todo logstash
-          //必须保证Connection不为空
-          if(connection == None){
-            context.parent ! "connection"
-          }else{
+
             //变为online状态
             context.become(onlineState)
 
-          }
         }
         case "stop" => {
         }
@@ -50,8 +47,10 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
     }
     case ListenerMessage(msg) => {
       //todo logstash
-      case "stop" => {
-
+      msg match {
+        case x => {
+          println(x)
+        }
       }
 
 
@@ -63,6 +62,11 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
     case ListenerMessage(msg) => {
       msg match {
         case "listen" => {
+          //测试
+          if(System.currentTimeMillis()%2 ==0){
+            throw new Exception("偶数异常")
+          }
+          println("is listening to the heartbeats")
           listenHeartBeats
         }
         case "stop" => {
@@ -83,7 +87,7 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
     }
   }
 
-  def listenHeartBeats :Unit= {
+  def listenHeartBeats: Unit = {
     //todo connection None情况
     connection.map {
       conn =>
@@ -94,7 +98,8 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
           if (retryTimes <= 0) {
             self ! ListenerMessage("stop")
             context.parent ! ListenerMessage("reconnect")
-            retryTimes = config.getInt("common.query.retrytime")
+            context.parent ! ListenerMessage("restart")
+            retryTimes = config.getInt("common.process.retrytime")
           }
         } else {
           val after = System.currentTimeMillis()
@@ -115,6 +120,7 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
     //todo logstash
     super.preRestart(reason, message)
+    context.parent ! ListenerMessage("restart")
   }
 
   override def postRestart(reason: Throwable): Unit = super.postRestart(reason)

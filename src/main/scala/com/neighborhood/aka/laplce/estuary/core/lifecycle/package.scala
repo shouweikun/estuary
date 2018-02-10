@@ -4,7 +4,9 @@ package com.neighborhood.aka.laplce.estuary.core
   * Created by john_liu on 2018/2/9.
   */
 package object lifecycle {
-  trait WorkerMessage
+  trait WorkerMessage{
+    val msg:String
+  }
   case class SyncControllerMessage(msg:String) extends WorkerMessage
   case class ListenerMessage(msg:String)extends WorkerMessage
   case class SinkerMessage(msg:String)extends WorkerMessage

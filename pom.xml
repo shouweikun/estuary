@@ -102,6 +102,11 @@
             <!--<version>${cats.version}</version>-->
         <!--</dependency>-->
         <!--&lt;!&ndash;end cats&ndash;&gt;-->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-core</artifactId>
+            <version>4.3.13.RELEASE</version>
+        </dependency>
         <!--start scalatest-->
         <dependency>
             <groupId>org.scalatest</groupId>
