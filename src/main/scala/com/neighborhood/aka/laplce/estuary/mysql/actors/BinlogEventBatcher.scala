@@ -44,6 +44,15 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
         }
       }
     }
+    case entry: CanalEntry.Entry => {
+      //todo log
+
+
+    }
+    case x => {
+      //todo log
+      println(s"BinlogBatcher unhandled Message : $x")
+    }
   }
 
   /**
@@ -67,7 +76,7 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
     }
   }
   /**
-    * @param entry Canalentry
+    * @param entry canalEntry
     * 打包如果包内数量超过阈值刷新并发送给sinker
     */
   def batchAndFlush(entry: CanalEntry.Entry): Unit = {
@@ -121,7 +130,8 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
   override def preStart(): Unit = {
     //状态置为offline
     switch2Offline
-    context.system.scheduler.scheduleOnce(3 minutes)(self ! FetcherMessage("restart"))
+
+    context.system.scheduler.scheduleOnce(1 minutes)(self ! FetcherMessage("restart"))
 
   }
 

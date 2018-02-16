@@ -4,18 +4,15 @@ import java.io.IOException
 import java.nio.ByteBuffer
 import java.util
 
-import scala.concurrent.duration._
-import akka.actor.SupervisorStrategy.{Escalate, Restart, Resume, Stop}
-import akka.actor.{Actor, ActorRef, OneForOneStrategy}
+import akka.actor.SupervisorStrategy.Restart
+import akka.actor.{Actor, ActorRef, OneForOneStrategy, Props}
 import com.alibaba.otter.canal.parse.driver.mysql.packets.HeaderPacket
 import com.alibaba.otter.canal.parse.driver.mysql.packets.client.BinlogDumpCommandPacket
 import com.alibaba.otter.canal.parse.driver.mysql.packets.server.ResultSetPacket
 import com.alibaba.otter.canal.parse.driver.mysql.utils.PacketManager
 import com.alibaba.otter.canal.parse.exception.{CanalParseException, TableIdNotFoundException}
-import com.alibaba.otter.canal.parse.inbound.ErosaConnection
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
 import com.alibaba.otter.canal.parse.inbound.mysql.dbsync.{DirectLogFetcher, TableMetaCache}
-import com.alibaba.otter.canal.protocol.CanalEntry
 import com.alibaba.otter.canal.protocol.position.EntryPosition
 import com.neighborhood.aka.laplce.estuary.core.lifecycle._
 import com.neighborhood.aka.laplce.estuary.mysql.{Mysql2KafkaTaskInfoManager, MysqlBinlogParser}
@@ -24,8 +21,9 @@ import com.taobao.tddl.dbsync.binlog.{LogContext, LogDecoder, LogEvent, LogPosit
 import org.I0Itec.zkclient.exception.ZkTimeoutException
 import org.apache.commons.lang.StringUtils
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.annotation.tailrec
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
 
 /**
   * Created by john_liu on 2018/2/5.
@@ -97,7 +95,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
         }
         case "start" => {
           try {
-            entryPosition = Option(logPositionHandler.findStartPosition(mysqlConnection.get)(false))
+            entryPosition = Option(logPositionHandler.findStartPosition(mysqlConnection.get)(errorCount > 0))
             if (entryPosition.isDefined) {
               //寻找完后必须reconnect一下
               mysqlConnection.get.synchronized {
@@ -150,7 +148,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
             }
           } catch {
             case e: TableIdNotFoundException => {
-              entryPosition = Option(logPositionHandler.findStartPositionWithinTransaction(mysqlConnection.get)(false))
+              entryPosition = Option(logPositionHandler.findStartPositionWithinTransaction(mysqlConnection.get)(errorCount > 0))
               self ! FetcherMessage("start")
             }
             case e: Exception => processError(e, FetcherMessage("fetch"))
@@ -346,4 +344,9 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
   }
 
 
+}
+object MysqlBinlogFetcher {
+  def props(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,binlogEventBatcher: ActorRef) :Props= {
+    Props(new MysqlBinlogFetcher(mysql2KafkaTaskInfoManager,binlogEventBatcher))
+  }
 }

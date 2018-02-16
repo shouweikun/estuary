@@ -210,3 +210,8 @@ class MySqlBinlogController(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManag
     }
   }
 }
+object MySqlBinlogController {
+  def props(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager):Props = {
+    Props(new MySqlBinlogController(mysql2KafkaTaskInfoManager))
+  }
+}

@@ -10,7 +10,8 @@ trait BaseExtractBean extends BaseBean{
   /**
     * 同步任务的唯一id, 这个id表示同步任务的唯一标识
     */
-  @Indexed(unique = true, sparse = false) var syncTaskId = null
+  @Indexed(unique = true, sparse = false)
+  var syncTaskId :String= System.currentTimeMillis.toString
   /**
     * 描述
     */

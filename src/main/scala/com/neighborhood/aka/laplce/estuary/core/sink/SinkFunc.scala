@@ -5,8 +5,8 @@ import scala.concurrent.Future
 /**
   * Created by john_liu on 2018/2/7.
   */
-trait SinkFunc {
-  def sink[Source](source: Source): Boolean
+trait SinkFunc[Source] {
+  def sink(source: Source): Boolean
 
-  def asyncSink[Source](source: Source):Future[Boolean]
+  def asyncSink(source: Source):Future[Boolean]
 }

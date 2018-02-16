@@ -1,6 +1,6 @@
 package com.neighborhood.aka.laplce.estuary.mysql.actors
 
-import akka.actor.{Actor, SupervisorStrategy}
+import akka.actor.{Actor, Props, SupervisorStrategy}
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
 import com.neighborhood.aka.laplce.estuary.bean.task.Mysql2KafkaTaskInfoBean
 import com.neighborhood.aka.laplce.estuary.core.lifecycle.{HeartBeatListener, ListenerMessage, SyncControllerMessage}
@@ -8,6 +8,7 @@ import com.neighborhood.aka.laplce.estuary.mysql.Mysql2KafkaTaskInfoManager
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
+import scala.sys.Prop
 import scala.util.Try
 
 /**
@@ -36,8 +37,8 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
         case "start" => {
           //todo logstash
 
-            //变为online状态
-            context.become(onlineState)
+          //变为online状态
+          context.become(onlineState)
 
         }
         case "stop" => {
@@ -62,10 +63,10 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
     case ListenerMessage(msg) => {
       msg match {
         case "listen" => {
-          //测试
-          if(System.currentTimeMillis()%2 ==0){
-            throw new Exception("偶数异常")
-          }
+          //          //测试
+          //          if(System.currentTimeMillis()%2 ==0){
+          //            throw new Exception("偶数异常")
+          //          }
           println("is listening to the heartbeats")
           listenHeartBeats
         }
@@ -109,7 +110,12 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
     }
 
   }
-
+  /**
+    * ********************* 状态变化 *******************
+    */
+  /**
+    * **************** Actor生命周期 *******************
+    */
   override def preStart(): Unit = {
     //开始之后每`queryTimeOut`毫秒一次
     context.system.scheduler.schedule(queryTimeOut milliseconds, queryTimeOut milliseconds, self, ListenerMessage("listen"))
@@ -124,5 +130,11 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
   }
 
   override def postRestart(reason: Throwable): Unit = super.postRestart(reason)
+}
+
+object MysqlConnectionListener {
+  def props(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager): Props = {
+    Props(new MysqlConnectionListener(mysql2KafkaTaskInfoManager))
+  }
 }
 

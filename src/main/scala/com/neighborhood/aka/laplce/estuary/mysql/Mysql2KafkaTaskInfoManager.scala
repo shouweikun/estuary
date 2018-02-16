@@ -124,7 +124,9 @@ class Mysql2KafkaTaskInfoManager(commonConfig: Config, taskInfoBean: Mysql2Kafka
     *
     * @return KafkaSinkFunc
     */
-  override def buildSink: KafkaSinkFunc = ???
+  override def buildSink: KafkaSinkFunc[String,String] = {
+    new KafkaSinkFunc[String,String](this.taskInfo)
+  }
 
   /**
     * @return canal的mysqlConnection
@@ -152,7 +154,7 @@ class Mysql2KafkaTaskInfoManager(commonConfig: Config, taskInfoBean: Mysql2Kafka
     * @return 构建binlogParser
     */
   def buildParser: MysqlBinlogParser = {
-    val convert = new MysqlBinlogParser
+    val convert = new MysqlBinlogParser(taskInfo.isProfiling)
     val eventFilter = new AviaterRegexFilter(taskInfo.filterPattern)
     val eventBlackFilter = new AviaterRegexFilter(taskInfo.filterBlackPattern)
     if (eventFilter != null && eventFilter.isInstanceOf[AviaterRegexFilter]) convert.setNameFilter(eventFilter.asInstanceOf[AviaterRegexFilter])
@@ -176,7 +178,7 @@ class Mysql2KafkaTaskInfoManager(commonConfig: Config, taskInfoBean: Mysql2Kafka
     val timeout = config.getInt("common.zookeeper.timeout")
     val zkLogPositionManager = new ZooKeeperLogPositionManager
     zkLogPositionManager.setZkClientx(new ZkClientx(servers, timeout))
-    new LogPositionHandler(binlogParser,zkLogPositionManager)
+    new LogPositionHandler(binlogParser,zkLogPositionManager,slaveId = this.slaveId,destination = this.taskInfo.syncTaskId,address = new InetSocketAddress(taskInfo.master.address,taskInfo.master.port))
 
   }
 

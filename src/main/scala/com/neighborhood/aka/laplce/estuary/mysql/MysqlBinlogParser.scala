@@ -6,7 +6,7 @@ import com.taobao.tddl.dbsync.binlog.LogEvent
 /**
   * Created by john_liu on 2018/2/2.
   */
- class MysqlBinlogParser extends LogEventConvert{
+ class MysqlBinlogParser(necessary:Boolean) extends LogEventConvert{
 
   def parse(event:Option[LogEvent]):Option[CanalEntry.Entry] = {
     event match {
@@ -15,7 +15,7 @@ import com.taobao.tddl.dbsync.binlog.LogEvent
     }
 
   }
-  def parseAndProfilingIfNecessary(event: LogEvent, necessary: Boolean): Option[CanalEntry.Entry] = {
+  def parseAndProfilingIfNecessary(event: LogEvent, necessary: Boolean= this.necessary): Option[CanalEntry.Entry] = {
 
     if (necessary) {
       //todo
