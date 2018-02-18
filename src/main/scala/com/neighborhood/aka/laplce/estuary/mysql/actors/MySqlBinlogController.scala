@@ -7,7 +7,8 @@ import com.neighborhood.aka.laplce.estuary.core.lifecycle
 import com.neighborhood.aka.laplce.estuary.core.lifecycle.{ListenerMessage, Status, SyncController, SyncControllerMessage}
 import com.neighborhood.aka.laplce.estuary.mysql.Mysql2KafkaTaskInfoManager
 import org.I0Itec.zkclient.exception.ZkTimeoutException
-
+import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
 /**
   * Created by john_liu on 2018/2/1.
   */
@@ -31,7 +32,7 @@ class MySqlBinlogController(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManag
     //初始化binlogSinker
     //如果并行打开使用并行sinker
     val binlogSinker = if (resourceManager.taskInfo.isTransactional) {
-      context.actorOf(ConcurrentBinlogSinker.prop(resourceManager), "binlogSinker")
+      context.actorOf(ConcurrentBinlogSinker.prop(resourceManager).withDispatcher("akka.sink-dispatcher"), "binlogSinker")
     } else {
       //不是然使用transaction式
       context.actorOf(Props(classOf[BinlogTransactionBufferSinker], resourceManager), "binlogSinker")
@@ -112,7 +113,11 @@ class MySqlBinlogController(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManag
     context
       .child("heartBeatsListener")
       .map {
-        ref => ref ! SyncControllerMessage("start")
+        ref =>
+          ref ! SyncControllerMessage("start")
+          val queryTimeOut = config.getInt("common.query.timeout")
+          //开始之后每`queryTimeOut`毫秒一次
+          context.system.scheduler.schedule(queryTimeOut milliseconds, queryTimeOut milliseconds, ref, ListenerMessage("listen"))
       }
   }
 
@@ -198,6 +203,7 @@ class MySqlBinlogController(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManag
     //可以恢复之前的状态，默认会调用
     super.postRestart(reason)
   }
+
   override def supervisorStrategy = {
     OneForOneStrategy() {
       case e: ZkTimeoutException => {
@@ -205,13 +211,14 @@ class MySqlBinlogController(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManag
         //todo log
       }
       case e: Exception => Restart
-      case error:Error => Restart
+      case error: Error => Restart
       case _ => Restart
     }
   }
 }
+
 object MySqlBinlogController {
-  def props(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager):Props = {
+  def props(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager): Props = {
     Props(new MySqlBinlogController(mysql2KafkaTaskInfoManager))
   }
 }

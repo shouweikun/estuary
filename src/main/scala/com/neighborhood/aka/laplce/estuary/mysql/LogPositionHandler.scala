@@ -13,6 +13,8 @@ import com.alibaba.otter.canal.protocol.position.{EntryPosition, LogIdentity, Lo
 import com.taobao.tddl.dbsync.binlog.LogEvent
 import org.apache.commons.lang.StringUtils
 
+import scala.annotation.tailrec
+
 /**
   * Created by john_liu on 2018/2/4.
   */
@@ -250,7 +252,7 @@ class LogPositionHandler(binlogParser: MysqlBinlogParser, manager: ZooKeeperLogP
     val startPosition = findStartPosition(mysqlConnection)(flag)
     val maxBinlogFileName = endPosition.getJournalName
     val minBinlogFileName = startPosition.getJournalName
-
+    @tailrec
     def loopSearch(currentSearchBinlogFile: String = maxBinlogFileName): EntryPosition = {
       val entryPosition = findAsPerTimestampInSpecificLogFile(mysqlConnection, startTimeStamp, endPosition, currentSearchBinlogFile)
       (Option(entryPosition)) match {

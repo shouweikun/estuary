@@ -345,7 +345,6 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
     }
   }
 
-
 }
 object MysqlBinlogFetcher {
   def props(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,binlogEventBatcher: ActorRef) :Props= {

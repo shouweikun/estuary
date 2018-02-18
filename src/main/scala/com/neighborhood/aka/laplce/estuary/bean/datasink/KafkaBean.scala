@@ -11,12 +11,12 @@ import org.apache.kafka.clients.producer.{KafkaProducer, Producer, ProducerConfi
 trait KafkaBean extends DataSinkBean {
   override var dataSinkType: DataSinkType = DataSinkType.KAFKA
 
-  var brokerList: String = ""
-  var serializerClass: String = ""
-  var partitionerClass: String = ""
-  var requiredAcks: String = ""
+  var brokerList: String = "10.10.71.76:9092,10.10.71.14:9092,10.10.72.234:9092"
+  var serializerClass: String = "kafka.serializer.StringEncoder"
+  var partitionerClass: String = "com.kafka.myparitioner.CidPartitioner"
+  var requiredAcks: String = "1"
 
-  var topic:String = ""
+  var topic:String = "test"
   /**
     * 发送数据的超时阈值 单位秒
     */

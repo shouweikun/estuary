@@ -1,14 +1,12 @@
 package com.neighborhood.aka.laplce.estuary.mysql.actors
 
-import akka.actor.{Actor, Props, SupervisorStrategy}
+import akka.actor.SupervisorStrategy.Restart
+import akka.actor.{Actor, OneForOneStrategy, Props}
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
-import com.neighborhood.aka.laplce.estuary.bean.task.Mysql2KafkaTaskInfoBean
+import com.neighborhood.aka.laplce.estuary.core.lifecycle
 import com.neighborhood.aka.laplce.estuary.core.lifecycle.{HeartBeatListener, ListenerMessage, Status, SyncControllerMessage}
 import com.neighborhood.aka.laplce.estuary.mysql.Mysql2KafkaTaskInfoManager
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
-import scala.sys.Prop
 import scala.util.Try
 
 /**
@@ -16,18 +14,23 @@ import scala.util.Try
   */
 class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager) extends Actor with HeartBeatListener {
 
-  //数据库连接
+
+  /**
+    * 数据库连接
+    */
   val connection: Option[MysqlConnection] = Option(mysql2KafkaTaskInfoManager.mysqlConnection)
-  //配置
+  /**
+    * 配置
+    */
   val config = context.system.settings.config
-  //监听心跳用sql
+  /**
+    * 监听心跳用sql
+    */
   val delectingSql = config.getString("common.delect.sql")
-  //慢查询阈值
-  val queryTimeOut = config.getInt("common.query.timeout")
-  //重试次数
+  /**
+    * 重试次数
+    */
   var retryTimes = config.getInt("common.process.retrytime")
-  // 状态位
-  //var state      =
 
   //等待初始化 offline状态
   override def receive: Receive = {
@@ -44,6 +47,7 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
           //doNothing
         }
         case str => {
+          //todo logStash
           println(s"listener offline  unhandled message:$str")
         }
       }
@@ -59,15 +63,17 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
 
     }
   }
+
   //onlineState
   def onlineState: Receive = {
     case ListenerMessage(msg) => {
       msg match {
         case "listen" => {
-          //          //测试
-          //          if(System.currentTimeMillis()%2 ==0){
-          //            throw new Exception("偶数异常")
-          //          }
+//          //测试
+//          if (System.currentTimeMillis() % 2 == 0) {
+//            throw new Exception("偶数异常")
+//          }
+          //todo log
           println("is listening to the heartbeats")
           listenHeartBeats
         }
@@ -141,16 +147,12 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
     */
   override def preStart(): Unit = {
     switch2Offline
-    //开始之后每`queryTimeOut`毫秒一次
-    context.system.scheduler.schedule(queryTimeOut milliseconds, queryTimeOut milliseconds, self, ListenerMessage("listen"))
   }
-
-  override def postStop(): Unit = super.postStop()
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
     //todo logstash
     context.become(receive)
-    switch2Offline
+    switch2Error
     super.preRestart(reason, message)
   }
 
@@ -159,6 +161,27 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
     context.parent ! ListenerMessage("restart")
     super.postRestart(reason)
   }
+
+  override def supervisorStrategy = {
+    OneForOneStrategy() {
+      case e: Exception => Restart
+      case error: Error => Restart
+      case _ => Restart
+    }
+  }
+
+
+  /** ********************* 未被使用 ************************/
+  override var errorCountThreshold: Int = _
+  override var errorCount: Int = _
+
+  override def processError(e: Throwable, message: lifecycle.WorkerMessage): Unit = {
+    //do Nothing
+  }
+
+  /** ********************* 未被使用 ************************/
+
+
 }
 
 object MysqlConnectionListener {

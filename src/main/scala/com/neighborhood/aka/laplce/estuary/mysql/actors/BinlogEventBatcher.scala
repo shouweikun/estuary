@@ -80,13 +80,12 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
     * 打包如果包内数量超过阈值刷新并发送给sinker
     */
   def batchAndFlush(entry: CanalEntry.Entry): Unit = {
-    entryBatch = entryBatch.::(entry)
+    entryBatch = entryBatch.+:(entry)
     if (entryBatch.size >= batchThreshold.get()) {
       flush
     }
   }
   /**
-    *
     * 刷新list里的值并发送给sinker
     */
   def flush = {

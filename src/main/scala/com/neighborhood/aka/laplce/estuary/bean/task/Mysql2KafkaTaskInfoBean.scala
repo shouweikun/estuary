@@ -23,7 +23,7 @@ class Mysql2KafkaTaskInfoBean extends MysqlBean with KafkaBean with BaseExtractB
   /**
     * binlog文件名称
     */
-   var journalName:String = null
+   var journalName:String = _
   /**
     * 在binlog中的偏移量信息
     */
