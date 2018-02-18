@@ -14,7 +14,7 @@ import scala.annotation.tailrec
   * Created by john_liu on 2018/2/6.
   */
 //todo scala 风格的RingBuffer
-class BinlogTransactionBufferSinker(sinkFunc: SinkFunc) extends Actor with ActorLogging {
+class BinlogTransactionBufferSinker(sinkFunc: SinkFunc[String]) extends Actor with ActorLogging {
   private val INIT_SQEUENCE = -1
   private var bufferSize = 1024
   private var indexMask = 0
@@ -107,7 +107,7 @@ class BinlogTransactionBufferSinker(sinkFunc: SinkFunc) extends Actor with Actor
         .toList
     } else List.empty
     //沉降
-    val flag = sinkFunc.sink(entryList)
+    val flag = sinkFunc.sink(entryList.toString())
     if (flag) {
         //todo 写zk记录logPosition
     } else {

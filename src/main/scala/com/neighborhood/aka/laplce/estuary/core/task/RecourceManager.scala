@@ -5,8 +5,8 @@ import com.neighborhood.aka.laplce.estuary.core.sink.SinkFunc
 /**
   * Created by john_liu on 2018/2/7.
   */
-trait RecourceManager[Source,Sink<:SinkFunc] {
+trait RecourceManager[sink,source,Sink<:SinkFunc[sink]] {
 
-  def buildSource:Source
+  def buildSource:source
   def buildSink:Sink
 }

@@ -181,7 +181,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
     fetcher.start(connector.getChannel)
     decoder = new LogDecoder(LogEvent.UNKNOWN_EVENT, LogEvent.ENUM_END_EVENT)
     logContext = new LogContext
-    logContext.setLogPosition(new LogPosition(binlogFileName))
+    logContext.setLogPosition(new LogPosition(binlogFileName,binlogPosition))
     logContext.setFormatDescription(new FormatDescriptionLogEvent(4, binlogChecksum))
   }
 
@@ -201,7 +201,8 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
     val event = decoder.decode(fetcher, logContext)
     val entry = binlogParser.parseAndProfilingIfNecessary(event, false)
     if (entry.isDefined) {
-      //todo logstash
+      //todo logStash
+      //todo logPosition如何获取
       binlogEventBatcher ! entry.get
     } else {
       throw new Exception("the fetched data is null")
@@ -328,6 +329,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
 
     context.become(receive)
+    switch2Offline
     super.preRestart(reason, message)
   }
 

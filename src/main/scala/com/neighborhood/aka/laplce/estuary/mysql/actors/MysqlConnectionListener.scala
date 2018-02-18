@@ -3,7 +3,7 @@ package com.neighborhood.aka.laplce.estuary.mysql.actors
 import akka.actor.{Actor, Props, SupervisorStrategy}
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
 import com.neighborhood.aka.laplce.estuary.bean.task.Mysql2KafkaTaskInfoBean
-import com.neighborhood.aka.laplce.estuary.core.lifecycle.{HeartBeatListener, ListenerMessage, SyncControllerMessage}
+import com.neighborhood.aka.laplce.estuary.core.lifecycle.{HeartBeatListener, ListenerMessage, Status, SyncControllerMessage}
 import com.neighborhood.aka.laplce.estuary.mysql.Mysql2KafkaTaskInfoManager
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -36,28 +36,29 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
       msg match {
         case "start" => {
           //todo logstash
-
           //变为online状态
           context.become(onlineState)
-
+          switch2Busy
         }
         case "stop" => {
+          //doNothing
         }
-        case "state" => context.parent ! ListenerMessage("state:offline")
+        case str => {
+          println(s"listener offline  unhandled message:$str")
+        }
       }
     }
     case ListenerMessage(msg) => {
       //todo logstash
       msg match {
-        case x => {
-          println(x)
+        case str => {
+          println(s"listener offline  unhandled message:$str")
         }
       }
 
 
     }
   }
-
   //onlineState
   def onlineState: Receive = {
     case ListenerMessage(msg) => {
@@ -73,6 +74,7 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
         case "stop" => {
           //变为offline状态
           context.become(receive)
+          switch2Offline
         }
       }
     }
@@ -81,9 +83,8 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
         case "stop" => {
           //变为offline状态
           context.become(receive)
+          switch2Offline
         }
-        case "state" => context.parent ! ListenerMessage("state:online")
-
       }
     }
   }
@@ -110,13 +111,36 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
     }
 
   }
+
   /**
     * ********************* 状态变化 *******************
     */
+  private def switch2Offline = {
+    mysql2KafkaTaskInfoManager.heartBeatListenerStatus = Status.OFFLINE
+  }
+
+  private def switch2Busy = {
+    mysql2KafkaTaskInfoManager.heartBeatListenerStatus = Status.BUSY
+  }
+
+  private def switch2Error = {
+    mysql2KafkaTaskInfoManager.heartBeatListenerStatus = Status.ERROR
+  }
+
+  private def switch2Free = {
+    mysql2KafkaTaskInfoManager.heartBeatListenerStatus = Status.FREE
+  }
+
+  private def switch2Restarting = {
+    mysql2KafkaTaskInfoManager.heartBeatListenerStatus = Status.RESTARTING
+  }
+
+
   /**
     * **************** Actor生命周期 *******************
     */
   override def preStart(): Unit = {
+    switch2Offline
     //开始之后每`queryTimeOut`毫秒一次
     context.system.scheduler.schedule(queryTimeOut milliseconds, queryTimeOut milliseconds, self, ListenerMessage("listen"))
   }
@@ -125,11 +149,16 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
     //todo logstash
+    context.become(receive)
+    switch2Offline
     super.preRestart(reason, message)
-    context.parent ! ListenerMessage("restart")
   }
 
-  override def postRestart(reason: Throwable): Unit = super.postRestart(reason)
+  override def postRestart(reason: Throwable): Unit = {
+    switch2Restarting
+    context.parent ! ListenerMessage("restart")
+    super.postRestart(reason)
+  }
 }
 
 object MysqlConnectionListener {

@@ -1,20 +1,20 @@
 package com.neighborhood.aka.laplce.estuary.core.sink
 
 import java.util.Properties
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.{Executors, TimeUnit}
 
 import com.neighborhood.aka.laplce.estuary.bean.datasink.KafkaBean
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 /**
   * Created by john_liu on 2018/2/7.
   */
 class KafkaSinkFunc[String, V](kafkaBean: KafkaBean) extends SinkFunc[V] {
-
-  val kafkaProducer = KafkaSinkFunc.buildKafkaProducer[String, V](kafkaBean)
+  implicit val ec = KafkaSinkFunc.ec
+  lazy val kafkaProducer = KafkaSinkFunc.buildKafkaProducer[String, V](kafkaBean)
   val topic = kafkaBean.topic
   val timeLimit = kafkaBean.sendTimeout
 
@@ -44,16 +44,20 @@ class KafkaSinkFunc[String, V](kafkaBean: KafkaBean) extends SinkFunc[V] {
 }
 
 object KafkaSinkFunc {
+
+  val ec = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(10))
+
   def buildKafkaProducer[K, V](kafkaBean: KafkaBean): KafkaProducer[K, V] = {
     val brokerList = kafkaBean.brokerList
     val serializerClass = kafkaBean.serializerClass
     val partitionerClass = kafkaBean.serializerClass
     val requiredAcks = kafkaBean.requiredAcks
     val props = new Properties()
-    props.setProperty("metadata.broker.list", brokerList)
-    props.setProperty("serializer.class", serializerClass)
+    props.setProperty("bootstrap.servers", brokerList)
+    props.setProperty("key.serializer", serializerClass)
     props.setProperty("partitioner.class", partitionerClass)
     props.setProperty("request.required.acks", requiredAcks)
     new KafkaProducer[K, V](props)
   }
+
 }

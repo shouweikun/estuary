@@ -19,7 +19,7 @@ import com.typesafe.config.Config
 /**
   * Created by john_liu on 2018/2/7.
   */
-class Mysql2KafkaTaskInfoManager(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskInfoBean) extends TaskManager with RecourceManager[MysqlConnection, KafkaSinkFunc] {
+class Mysql2KafkaTaskInfoManager(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskInfoBean) extends TaskManager with RecourceManager[String,MysqlConnection, KafkaSinkFunc[String,String]] {
 
   /**
     * 同步任务控制器的ActorRef
@@ -77,6 +77,10 @@ class Mysql2KafkaTaskInfoManager(commonConfig: Config, taskInfoBean: Mysql2Kafka
     * canal的mysqlConnection
     */
   val mysqlConnection = buildSource
+  /**
+    * kafka客户端
+    */
+  val kafkaSink = buildSink
   /**
     * MysqlBinlogParser
     */
