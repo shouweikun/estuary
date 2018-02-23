@@ -125,9 +125,8 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
         }
         case "predump" => {
           preDump(mysqlConnection.get)
-          mysqlConnection.get.connect()
           val startPosition = entryPosition.get
-          throw new Exception("故意的")
+    //       throw new Exception("故意的")
           try {
             if (StringUtils.isEmpty(startPosition.getJournalName) && Option(startPosition.getTimestamp).isEmpty) {} else {
               dump(startPosition.getJournalName, startPosition.getPosition)
@@ -176,6 +175,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
   def dump(binlogFileName: String, binlogPosition: Long) = {
     updateSettings(mysqlConnection.get)
     loadBinlogChecksum(mysqlConnection.get)
+    sendBinlogDump(binlogFileName,binlogPosition)(mysqlConnection.get)
     val connector = mysqlConnection.get.getConnector
     fetcher = new DirectLogFetcher(connector.getReceiveBufferSize)
     fetcher.start(connector.getChannel)
@@ -282,6 +282,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
       switch2Error
       errorCount = 0
       println(message.msg)
+      println(e)
       throw new Exception("fetching data failure for 3 times")
     } else {
       self ! message

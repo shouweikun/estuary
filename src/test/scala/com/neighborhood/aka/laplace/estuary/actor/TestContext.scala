@@ -2,6 +2,8 @@ package com.neighborhood.aka.laplace.estuary.actor
 
 import java.io.File
 
+import com.alibaba.otter.canal.parse.inbound.mysql.MysqlEventParser
+import com.alibaba.otter.canal.protocol.position.EntryPosition
 import com.neighborhood.aka.laplce.estuary.bean.credential.MysqlCredentialBean
 import com.neighborhood.aka.laplce.estuary.bean.task.Mysql2KafkaTaskInfoBean
 import com.neighborhood.aka.laplce.estuary.mysql.Mysql2KafkaTaskInfoManager
@@ -11,6 +13,10 @@ import com.typesafe.config.ConfigFactory
   * Created by john_liu on 2018/2/18.
   */
 object TestContext {
+  /**
+    * Config
+    */
+  val dummyMysqlEventParser = buildDummyMysqlEventParser
   /**
     * Config
     */
@@ -44,7 +50,15 @@ object TestContext {
   mysql2KafkaTaskInfoBean.requiredAcks = requiredAcks
   mysql2KafkaTaskInfoBean.topic = topic
   /**
+    * StartPosition
+    */
+  val startPosition = new EntryPosition("mysql-bin.000043",10L)
+  /**
     * Mysql2KafkaManager
     */
   val mysql2KafkaTaskInfoManager = new Mysql2KafkaTaskInfoManager(config,mysql2KafkaTaskInfoBean)
+  mysql2KafkaTaskInfoManager.startPosition = startPosition
+
+
+  def buildDummyMysqlEventParser: Class[_] = Class.forName("com.alibaba.otter.canal.parse.inbound.mysql.MysqlEventParser")
 }

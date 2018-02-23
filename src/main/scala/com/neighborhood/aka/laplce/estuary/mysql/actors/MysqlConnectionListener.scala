@@ -100,8 +100,10 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
     connection.map {
       conn =>
         val before = System.currentTimeMillis
+        println("before listening try")
         if (!Try(conn
           .query(delectingSql)).isSuccess) {
+
           retryTimes = retryTimes - 1
           if (retryTimes <= 0) {
             self ! ListenerMessage("stop")
@@ -110,8 +112,10 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
             retryTimes = config.getInt("common.process.retrytime")
           }
         } else {
+
           val after = System.currentTimeMillis()
           val duration = after - before
+          println(s"after listening try:$duration")
           //todo 记录时间
         }
     }

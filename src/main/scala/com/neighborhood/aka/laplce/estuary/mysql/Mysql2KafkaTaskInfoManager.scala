@@ -9,6 +9,7 @@ import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection.{BinlogFormat, BinlogImage}
 import com.alibaba.otter.canal.parse.inbound.mysql.dbsync.TableMetaCache
 import com.alibaba.otter.canal.parse.index.ZooKeeperLogPositionManager
+import com.alibaba.otter.canal.protocol.position.EntryPosition
 import com.neighborhood.aka.laplce.estuary.bean.task.Mysql2KafkaTaskInfoBean
 import com.neighborhood.aka.laplce.estuary.core.lifecycle.Status
 import com.neighborhood.aka.laplce.estuary.core.lifecycle.Status.Status
@@ -73,6 +74,10 @@ class Mysql2KafkaTaskInfoManager(commonConfig: Config, taskInfoBean: Mysql2Kafka
     * 利用canal模拟的mysql从库的slaveId
     */
   val slaveId = taskInfoBean.slaveId
+  /**
+    * 同步任务开始entry
+    */
+  var startPosition :EntryPosition = _
   /**
     * canal的mysqlConnection
     */
@@ -182,7 +187,7 @@ class Mysql2KafkaTaskInfoManager(commonConfig: Config, taskInfoBean: Mysql2Kafka
     val timeout = config.getInt("common.zookeeper.timeout")
     val zkLogPositionManager = new ZooKeeperLogPositionManager
     zkLogPositionManager.setZkClientx(new ZkClientx(servers, timeout))
-    new LogPositionHandler(binlogParser,zkLogPositionManager,slaveId = this.slaveId,destination = this.taskInfo.syncTaskId,address = new InetSocketAddress(taskInfo.master.address,taskInfo.master.port))
+    new LogPositionHandler(binlogParser,zkLogPositionManager,slaveId = this.slaveId,destination = this.taskInfo.syncTaskId,address = new InetSocketAddress(taskInfo.master.address,taskInfo.master.port),master = Option(startPosition))
 
   }
 

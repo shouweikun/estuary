@@ -5,7 +5,7 @@ import akka.actor.{Actor, OneForOneStrategy, Props}
 import com.alibaba.otter.canal.protocol.CanalEntry
 import com.alibaba.otter.canal.protocol.position.{EntryPosition, LogPosition}
 import com.neighborhood.aka.laplce.estuary.core.lifecycle
-import com.neighborhood.aka.laplce.estuary.core.lifecycle.{SourceDataSinker, SyncControllerMessage}
+import com.neighborhood.aka.laplce.estuary.core.lifecycle.{SinkerMessage, SourceDataSinker, Status, SyncControllerMessage}
 import com.neighborhood.aka.laplce.estuary.mysql.Mysql2KafkaTaskInfoManager
 import org.I0Itec.zkclient.exception.ZkTimeoutException
 
@@ -22,7 +22,9 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
     case SyncControllerMessage(msg) => {
       msg match {
         case "start" => {
+          //online模式
           context.become(online)
+          switch2Busy
         }
       }
     }
@@ -35,16 +37,10 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
       //todo 探讨异步写入
       kafkaSinker.sink(list.toString)
       //todo 异常处理
-      val postion = new LogPosition
-      val binlogFileName = list.head.getHeader.getLogfileName
-      val offset = list.head.getHeader.getLogfileOffset
-      val entryPostion = new EntryPosition(binlogFileName,offset)
-      postion.setPostion(entryPostion)
-      //todo 不确定是不是需要set Identity
+      val lastEntry = list.head
+      val postion = logPositionHandler.buildLastPosition(lastEntry)
       //写入zookeeper
       logPositionHandler.persistLogPosition(mysql2KafkaTaskInfoManager.taskInfo.syncTaskId, postion)
-
-
     }
   }
 
@@ -54,14 +50,54 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
   /**
     * 错误处理
     */
-  override def processError(e: Throwable, message: lifecycle.WorkerMessage): Unit = ???
+  override def processError(e: Throwable, message: lifecycle.WorkerMessage): Unit = {
+    //do nothing
+  }
 
   /**
     * ********************* 状态变化 *******************
     */
+
+  private def switch2Offline = {
+    mysql2KafkaTaskInfoManager.sinkerStatus = Status.OFFLINE
+  }
+
+  private def switch2Busy = {
+    mysql2KafkaTaskInfoManager.sinkerStatus = Status.BUSY
+  }
+
+  private def switch2Error = {
+    mysql2KafkaTaskInfoManager.sinkerStatus = Status.ERROR
+  }
+
+  private def switch2Free = {
+    mysql2KafkaTaskInfoManager.sinkerStatus = Status.FREE
+  }
+
+  private def switch2Restarting = {
+    mysql2KafkaTaskInfoManager.sinkerStatus = Status.RESTARTING
+  }
+
+
   /**
     * **************** Actor生命周期 *******************
     */
+  override def preStart(): Unit = {
+    switch2Offline
+
+  }
+
+
+  override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
+    context.become(receive)
+  }
+
+  override def postRestart(reason: Throwable): Unit = {
+    switch2Restarting
+    context.parent ! SinkerMessage("restart")
+    super.postRestart(reason)
+  }
+
   override def supervisorStrategy = {
     OneForOneStrategy() {
       case e: ZkTimeoutException => {
@@ -69,9 +105,10 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
         //todo log
       }
       case e: Exception => {
+        switch2Error
         Restart
       }
-      case error:Error => Restart
+      case error: Error => Restart
       case _ => Restart
     }
   }

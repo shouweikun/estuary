@@ -4,11 +4,13 @@ import akka.actor.SupervisorStrategy.Restart
 import akka.actor.{Actor, OneForOneStrategy, Props}
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
 import com.neighborhood.aka.laplce.estuary.core.lifecycle
-import com.neighborhood.aka.laplce.estuary.core.lifecycle.{ListenerMessage, Status, SyncController, SyncControllerMessage}
+import com.neighborhood.aka.laplce.estuary.core.lifecycle._
 import com.neighborhood.aka.laplce.estuary.mysql.Mysql2KafkaTaskInfoManager
 import org.I0Itec.zkclient.exception.ZkTimeoutException
+
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
+
 /**
   * Created by john_liu on 2018/2/1.
   */
@@ -84,13 +86,20 @@ class MySqlBinlogController(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManag
         }
       }
     }
-
+    case SinkerMessage(msg) => {
+      msg match {
+        case "restart" => {
+          sender ! SyncControllerMessage("start")
+        }
+      }
+    }
     case SyncControllerMessage(msg) => {
 
     }
   }
 
   def startAllWorkers = {
+    mysqlConnection.connect
     //启动sinker
     context
       .child("binlogSinker")
