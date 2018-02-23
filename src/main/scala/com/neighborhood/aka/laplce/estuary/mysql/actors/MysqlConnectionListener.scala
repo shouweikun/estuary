@@ -101,8 +101,8 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
       conn =>
         val before = System.currentTimeMillis
         println("before listening try")
-        if (!Try(conn
-          .query(delectingSql)).isSuccess) {
+        if (!Try(conn.synchronized(conn
+          .query(delectingSql))).isSuccess) {
 
           retryTimes = retryTimes - 1
           if (retryTimes <= 0) {

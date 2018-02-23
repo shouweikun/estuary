@@ -31,7 +31,7 @@ object TestContext {
   val mysqlUsrname = "admin"
   val mysqlPassword = "ukaOg4022VPb0E4vyQoT"
   val mysqlDefaultDatabase = ""
-  val mysqlBean = new MysqlCredentialBean(mysqlAddress,mysqlPort,mysqlUsrname,mysqlPassword,mysqlDefaultDatabase)
+  val mysqlBean = new MysqlCredentialBean(mysqlAddress, mysqlPort, mysqlUsrname, mysqlPassword, mysqlDefaultDatabase)
   /**
     * Kafka基本信息
     */
@@ -39,7 +39,7 @@ object TestContext {
   val serializerClass: String = "kafka.serializer.StringEncoder"
   val partitionerClass: String = "com.kafka.myparitioner.CidPartitioner"
   val requiredAcks: String = "1"
-  val topic:String = "test"
+  val topic: String = "test"
   /**
     * Mysql2KafkaBean
     */
@@ -52,11 +52,11 @@ object TestContext {
   /**
     * StartPosition
     */
-  val startPosition = new EntryPosition("mysql-bin.000043",10L)
+  val startPosition = new EntryPosition("mysql-bin.000013", 4L)
   /**
     * Mysql2KafkaManager
     */
-  val mysql2KafkaTaskInfoManager = new Mysql2KafkaTaskInfoManager(config,mysql2KafkaTaskInfoBean)
+  val mysql2KafkaTaskInfoManager = new Mysql2KafkaTaskInfoManager(config, mysql2KafkaTaskInfoBean)
   mysql2KafkaTaskInfoManager.startPosition = startPosition
 
 

@@ -123,7 +123,7 @@ class MySqlBinlogController(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManag
       .child("heartBeatsListener")
       .map {
         ref =>
-          ref ! SyncControllerMessage("start")
+         // ref ! SyncControllerMessage("start")
           val queryTimeOut = config.getInt("common.query.timeout")
           //开始之后每`queryTimeOut`毫秒一次
           context.system.scheduler.schedule(queryTimeOut milliseconds, queryTimeOut milliseconds, ref, ListenerMessage("listen"))
