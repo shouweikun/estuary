@@ -1,11 +1,14 @@
 package com.neighborhood.aka.laplace.estuary.actor
 
 import java.io.File
+import java.util
 
+import com.alibaba.fastjson.{JSON, JSONObject}
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlEventParser
 import com.alibaba.otter.canal.protocol.position.EntryPosition
 import com.neighborhood.aka.laplce.estuary.bean.credential.MysqlCredentialBean
 import com.neighborhood.aka.laplce.estuary.bean.task.Mysql2KafkaTaskInfoBean
+import com.neighborhood.aka.laplce.estuary.core.utils.JsonUtil
 import com.neighborhood.aka.laplce.estuary.mysql.Mysql2KafkaTaskInfoManager
 import com.typesafe.config.ConfigFactory
 
@@ -35,18 +38,15 @@ object TestContext {
   /**
     * Kafka基本信息
     */
-  val brokerList: String = "10.10.71.76:9092,10.10.71.14:9092,10.10.72.234:9092"
-  val serializerClass: String = "kafka.serializer.StringEncoder"
-  val partitionerClass: String = "com.kafka.myparitioner.CidPartitioner"
-  val requiredAcks: String = "1"
+  val kafkaConfigJson = JsonUtil.Json2JavaMap("{\n      \"bootstrap.servers\": \"10.10.71.76:9092;10.10.71.14:9092;10.10.72.234:9092\",\n      \"max.block.ms\": 3000,\n      \"max.request.size\": 10485760,\n      \"request.timeout.ms\": 8000,\n      \"acks\": \"1\",\n      \"linger.ms\": 0,\n      \"retries\": 10\n    }")
   val topic: String = "test"
   /**
     * Mysql2KafkaBean
     */
   val mysql2KafkaTaskInfoBean = new Mysql2KafkaTaskInfoBean
   mysql2KafkaTaskInfoBean.master = mysqlBean
-  mysql2KafkaTaskInfoBean.requiredAcks = requiredAcks
   mysql2KafkaTaskInfoBean.topic = topic
+  mysql2KafkaTaskInfoBean.configMapFromJson = kafkaConfigJson
   /**
     * StartPosition
     */

@@ -15,7 +15,7 @@ trait KafkaBean extends DataSinkBean {
     * configJson
     * @example
     *"mqParams": {
-      "bootstrap.servers": "kafka集群地址:端口",
+      "bootstrap.servers": "10.10.71.76:9092;10.10.71.14:9092;10.10.72.234:9092",
       "max.block.ms": 3000,
       "max.request.size": 10485760,
       "request.timeout.ms": 8000,
@@ -24,15 +24,11 @@ trait KafkaBean extends DataSinkBean {
       "retries": 10
     }
     */
-  var configMapFromJson:util.HashMap[String,String] = _
+  var configMapFromJson:util.Map[String,String] = _
   /**
     * 分区类
     */
   var partitionerClass: String = "com.kafka.myparitioner.CidPartitioner"
-  /**
-    * 分区类
-    */
-  var requiredAcks: String = "1"
   /**
     * topic
     */

@@ -45,6 +45,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
     case x => {
       //todo log
       println(s"sinker online unhandled message $x")
+
     }
   }
 

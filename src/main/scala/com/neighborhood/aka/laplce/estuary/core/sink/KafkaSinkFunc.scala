@@ -12,7 +12,7 @@ import scala.util.{Failure, Success, Try}
 /**
   * Created by john_liu on 2018/2/7.
   */
-class KafkaSinkFunc[String, V](kafkaBean: KafkaBean) extends SinkFunc[V] {
+class KafkaSinkFunc[K, V](kafkaBean: KafkaBean) extends SinkFunc[V] {
   /**
     * 异步写入时的ExecutionContext
     * 值得注意的是，该ExecutionContext是Kafka公用的
@@ -21,7 +21,7 @@ class KafkaSinkFunc[String, V](kafkaBean: KafkaBean) extends SinkFunc[V] {
   /**
     * Kafka生产者
     */
-  lazy val kafkaProducer = KafkaSinkFunc.buildKafkaProducer[String, V](kafkaBean)
+  lazy val kafkaProducer = KafkaSinkFunc.buildKafkaProducer[K, V](kafkaBean)
   /**
     * 待写入的topic
     */
@@ -65,8 +65,8 @@ class KafkaSinkFunc[String, V](kafkaBean: KafkaBean) extends SinkFunc[V] {
     * @return ProducerRecord[String,V]
     *         我们默认topic的类型是String，已写死
     */
-  def buildRecord(source: V): ProducerRecord[String, V] = {
-    new ProducerRecord[String, V](topic, source)
+  def buildRecord(source: V): ProducerRecord[K, V] = {
+    new ProducerRecord[K, V](topic, source)
   }
 }
 
