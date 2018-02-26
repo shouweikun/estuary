@@ -52,7 +52,7 @@ object TestContext {
   /**
     * StartPosition
     */
-  val startPosition = new EntryPosition("mysql-bin.000013", 4L)
+  val startPosition = new EntryPosition("mysql-bin.000040", 4L)
   /**
     * Mysql2KafkaManager
     */

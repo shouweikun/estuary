@@ -37,13 +37,14 @@ class KafkaSinkFunc[String, V](kafkaBean: KafkaBean) extends SinkFunc[V] {
     */
   override def sink(source: V): Boolean = {
     val record = buildRecord(source)
-    Try(kafkaProducer.send(record).get(timeLimit, TimeUnit.SECONDS)) match {
+    Try(kafkaProducer.send(record).get()) match {
       case Success(x) => {
         //todo log
         true
       }
       case Failure(e) => {
         //todo log
+        e
         false
       }
     }
@@ -78,15 +79,8 @@ object KafkaSinkFunc {
     *  根据kafkaBean的参数设置，初始化一个producer
     */
   def buildKafkaProducer[K, V](kafkaBean: KafkaBean): KafkaProducer[K, V] = {
-    val brokerList = kafkaBean.brokerList
-    val serializerClass = kafkaBean.serializerClass
-    val partitionerClass = kafkaBean.serializerClass
-    val requiredAcks = kafkaBean.requiredAcks
     val props = new Properties()
-    props.setProperty("bootstrap.servers", brokerList)
-    props.setProperty("key.serializer", serializerClass)
-    props.setProperty("partitioner.class", partitionerClass)
-    props.setProperty("request.required.acks", requiredAcks)
+    props.putAll(KafkaBean.buildConfig(kafkaBean))
     new KafkaProducer[K, V](props)
   }
 

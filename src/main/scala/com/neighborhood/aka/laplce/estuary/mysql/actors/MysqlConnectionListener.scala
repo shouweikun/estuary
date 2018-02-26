@@ -6,6 +6,7 @@ import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
 import com.neighborhood.aka.laplce.estuary.core.lifecycle
 import com.neighborhood.aka.laplce.estuary.core.lifecycle.{HeartBeatListener, ListenerMessage, Status, SyncControllerMessage}
 import com.neighborhood.aka.laplce.estuary.mysql.Mysql2KafkaTaskInfoManager
+import com.typesafe.config.Config
 
 import scala.util.Try
 
@@ -22,15 +23,15 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
   /**
     * 配置
     */
-  val config = context.system.settings.config
+  val config: Config = context.system.settings.config
   /**
     * 监听心跳用sql
     */
-  val delectingSql = config.getString("common.delect.sql")
+  val delectingSql: String = config.getString("common.delect.sql")
   /**
     * 重试次数
     */
-  var retryTimes = config.getInt("common.process.retrytime")
+  var retryTimes: Int = config.getInt("common.process.retrytime")
 
   //等待初始化 offline状态
   override def receive: Receive = {
@@ -97,12 +98,12 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
 
   def listenHeartBeats: Unit = {
     //todo connection None情况
-    connection.map {
+    connection.foreach {
       conn =>
         val before = System.currentTimeMillis
         println("before listening try")
-        if (!Try(conn.synchronized(conn
-          .query(delectingSql))).isSuccess) {
+        if (!Try(conn
+          .query(delectingSql)).isSuccess) {
 
           retryTimes = retryTimes - 1
           if (retryTimes <= 0) {
@@ -169,7 +170,7 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
   override def supervisorStrategy = {
     OneForOneStrategy() {
       case e: Exception => Restart
-      case error: Error => Restart
+      case _: Error => Restart
       case _ => Restart
     }
   }

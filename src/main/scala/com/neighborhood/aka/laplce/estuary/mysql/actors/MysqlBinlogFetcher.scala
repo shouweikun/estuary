@@ -47,8 +47,9 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
   val slaveId = mysql2KafkaTaskInfoManager.slaveId
   /**
     * mysql链接
+    * 必须是fork 出来的
     */
-  val mysqlConnection: Option[MysqlConnection] = Option(mysql2KafkaTaskInfoManager.mysqlConnection)
+  val mysqlConnection: Option[MysqlConnection] = Option(mysql2KafkaTaskInfoManager.mysqlConnection.fork())
   /**
     * 寻址处理器
     */
@@ -203,8 +204,8 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
     if (entry.isDefined) {
       //todo logStash
       //todo logPosition如何获取
-      println(entry.get.getHeader.getExecuteTime)
-    //  binlogEventBatcher ! entry.get
+      println(entry.get.getHeader.getLogfileOffset)
+       binlogEventBatcher ! entry.get
     } else {
       //todo log
      // println(s"得到个 $entry")

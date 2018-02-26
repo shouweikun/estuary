@@ -43,10 +43,10 @@ class Mysql2KafkaTaskInfoBean extends MysqlBean with KafkaBean with BaseExtractB
   var isProfiling :Boolean = false
   /**
     * 是否事务写
-    * 默认是
+    * 默认否
     * 如果否的话，就是并行写
     */
-  var isTransactional:Boolean = true
+  var isTransactional:Boolean = false
   /**
     * entry打包的阈值
     */

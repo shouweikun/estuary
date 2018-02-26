@@ -34,10 +34,10 @@ class MySqlBinlogController(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManag
     //初始化binlogSinker
     //如果并行打开使用并行sinker
     val binlogSinker = if (resourceManager.taskInfo.isTransactional) {
-      context.actorOf(ConcurrentBinlogSinker.prop(resourceManager).withDispatcher("akka.sink-dispatcher"), "binlogSinker")
-    } else {
-      //不是然使用transaction式
+      //使用transaction式
       context.actorOf(Props(classOf[BinlogTransactionBufferSinker], resourceManager), "binlogSinker")
+    } else {
+      context.actorOf(ConcurrentBinlogSinker.prop(resourceManager).withDispatcher("akka.sink-dispatcher"), "binlogSinker")
     }
     //初始化binlogEventBatcher
     val binlogEventBatcher = context.actorOf(BinlogEventBatcher.prop(binlogSinker, resourceManager), "binlogBatcher")
@@ -123,7 +123,7 @@ class MySqlBinlogController(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManag
       .child("heartBeatsListener")
       .map {
         ref =>
-         // ref ! SyncControllerMessage("start")
+          ref ! SyncControllerMessage("start")
           val queryTimeOut = config.getInt("common.query.timeout")
           //开始之后每`queryTimeOut`毫秒一次
           context.system.scheduler.schedule(queryTimeOut milliseconds, queryTimeOut milliseconds, ref, ListenerMessage("listen"))
