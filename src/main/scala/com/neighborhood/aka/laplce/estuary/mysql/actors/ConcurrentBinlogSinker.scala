@@ -42,6 +42,10 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
       //写入zookeeper
       logPositionHandler.persistLogPosition(mysql2KafkaTaskInfoManager.taskInfo.syncTaskId, postion)
     }
+    case x => {
+      //todo log
+      println(s"sinker online unhandled message $x")
+    }
   }
 
   override var errorCountThreshold: Int = 3

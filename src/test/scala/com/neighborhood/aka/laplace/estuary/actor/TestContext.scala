@@ -45,8 +45,6 @@ object TestContext {
     */
   val mysql2KafkaTaskInfoBean = new Mysql2KafkaTaskInfoBean
   mysql2KafkaTaskInfoBean.master = mysqlBean
-  mysql2KafkaTaskInfoBean.brokerList = brokerList
-  mysql2KafkaTaskInfoBean.serializerClass = serializerClass
   mysql2KafkaTaskInfoBean.requiredAcks = requiredAcks
   mysql2KafkaTaskInfoBean.topic = topic
   /**

@@ -32,10 +32,7 @@ import scala.concurrent.duration._
   */
 
 class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager, binlogEventBatcher: ActorRef) extends Actor with SourceDataFetcher {
-  /**
-    * binlogParser 解析binlog
-    */
-  lazy val binlogParser: MysqlBinlogParser = mysql2KafkaTaskInfoManager.binlogParser
+
   /**
     * 重试机制
     */

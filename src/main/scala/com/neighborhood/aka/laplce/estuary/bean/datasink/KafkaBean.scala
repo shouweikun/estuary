@@ -13,6 +13,16 @@ trait KafkaBean extends DataSinkBean {
   override var dataSinkType: DataSinkType = DataSinkType.KAFKA
   /**
     * configJson
+    * @example
+    *"mqParams": {
+      "bootstrap.servers": "kafka集群地址:端口",
+      "max.block.ms": 3000,
+      "max.request.size": 10485760,
+      "request.timeout.ms": 8000,
+      "acks": "1",
+      "linger.ms": 0,
+      "retries": 10
+    }
     */
   var configMapFromJson:util.HashMap[String,String] = _
   /**
