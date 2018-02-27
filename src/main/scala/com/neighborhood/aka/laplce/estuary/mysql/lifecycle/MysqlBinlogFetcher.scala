@@ -1,4 +1,4 @@
-package com.neighborhood.aka.laplce.estuary.mysql.actors
+package com.neighborhood.aka.laplce.estuary.mysql.lifecycle
 
 import java.io.IOException
 import java.nio.ByteBuffer
@@ -129,7 +129,9 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
           val startPosition = entryPosition.get
     //       throw new Exception("故意的")
           try {
-            if (StringUtils.isEmpty(startPosition.getJournalName) && Option(startPosition.getTimestamp).isEmpty) {} else {
+            if (StringUtils.isEmpty(startPosition.getJournalName) && Option(startPosition.getTimestamp).isEmpty) {
+              //todo log
+            } else {
               dump(startPosition.getJournalName, startPosition.getPosition)
 
             }

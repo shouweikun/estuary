@@ -4,7 +4,7 @@ import akka.actor.{ActorRef, Props}
 import com.neighborhood.aka.laplce.estuary.bean.task.Mysql2KafkaTaskInfoBean
 import com.neighborhood.aka.laplce.estuary.core.akka.theActorSystem
 import com.neighborhood.aka.laplce.estuary.mysql.Mysql2KafkaTaskInfoManager
-import com.neighborhood.aka.laplce.estuary.mysql.actors.MySqlBinlogController
+import com.neighborhood.aka.laplce.estuary.mysql.lifecycle.MySqlBinlogController
 import com.typesafe.config.Config
 
 /**

@@ -12,4 +12,5 @@ package object lifecycle {
   case class SinkerMessage(msg:String)extends WorkerMessage
   case class FetcherMessage(msg:String)extends WorkerMessage
   case class BatcherMessage(msg:String)extends WorkerMessage
+  case class RecorderMessage(msg:String)extends WorkerMessage
 }

@@ -1,4 +1,4 @@
-package com.neighborhood.aka.laplce.estuary.mysql.actors
+package com.neighborhood.aka.laplce.estuary.mysql.lifecycle
 
 import java.util.concurrent.atomic.AtomicLong
 

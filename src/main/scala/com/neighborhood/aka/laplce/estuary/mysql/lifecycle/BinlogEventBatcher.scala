@@ -1,4 +1,4 @@
-package com.neighborhood.aka.laplce.estuary.mysql.actors
+package com.neighborhood.aka.laplce.estuary.mysql.lifecycle
 
 import java.util.concurrent.atomic.AtomicLong
 
@@ -17,14 +17,23 @@ import scala.concurrent.ExecutionContext.Implicits.global
   * Created by john_liu on 2018/2/6.
   */
 class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager) extends Actor with SourceDataBatcher {
-  override var errorCountThreshold: Int = 3
-  override var errorCount: Int = 0
+
+
   /**
     * binlogParser 解析binlog
     */
   lazy val binlogParser: MysqlBinlogParser = mysql2KafkaTaskInfoManager.binlogParser
+  /**
+    * 执行模式
+    */
   val mode = mysql2KafkaTaskInfoManager.taskInfo.isTransactional
+  /**
+    * 打包的entry
+    */
   var entryBatch: List[CanalEntry.Entry] = List.empty
+  /**
+    * 打包的阈值
+    */
   var batchThreshold: AtomicLong = mysql2KafkaTaskInfoManager.taskInfo.batchThreshold
 
   //offline
@@ -121,7 +130,8 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
   override def processError(e: Throwable, message: lifecycle.WorkerMessage): Unit = {
     //batcher 出错不用处理，让他直接崩溃
   }
-
+  override var errorCountThreshold: Int = 3
+  override var errorCount: Int = 0
   /**
     * ********************* 状态变化 *******************
     */
