@@ -63,7 +63,6 @@ class KafkaSinkFunc[K, V](kafkaBean: KafkaBean) extends SinkFunc[V] {
   /**
     * @param source 待写入的数据
     * @return ProducerRecord[String,V]
-    *         我们默认topic的类型是String，已写死
     */
   def buildRecord(source: V): ProducerRecord[K, V] = {
     new ProducerRecord[K, V](topic, source)
@@ -72,11 +71,11 @@ class KafkaSinkFunc[K, V](kafkaBean: KafkaBean) extends SinkFunc[V] {
 
 object KafkaSinkFunc {
 
-  val ec = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(10))
+  val ec = ExecutionContext.fromExecutor(Executors.newWorkStealingPool(3))
   /**
     * @param kafkaBean
     * @return KafkaProducer
-    *  根据kafkaBean的参数设置，初始化一个producer
+    * 根据kafkaBean的参数设置,初始化一个producer
     */
   def buildKafkaProducer[K, V](kafkaBean: KafkaBean): KafkaProducer[K, V] = {
     val props = new Properties()

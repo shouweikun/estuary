@@ -1,18 +1,18 @@
 package com.neighborhood.aka.laplce.estuary.mysql.lifecycle
 
 import akka.actor.SupervisorStrategy.Restart
-import akka.actor.{Actor, OneForOneStrategy, Props}
+import akka.actor.{Actor, ActorRef, OneForOneStrategy, Props}
 import com.alibaba.otter.canal.protocol.CanalEntry
 import com.alibaba.otter.canal.protocol.position.{EntryPosition, LogPosition}
 import com.neighborhood.aka.laplce.estuary.core.lifecycle
 import com.neighborhood.aka.laplce.estuary.core.lifecycle.{SinkerMessage, SourceDataSinker, Status, SyncControllerMessage}
-import com.neighborhood.aka.laplce.estuary.mysql.Mysql2KafkaTaskInfoManager
+import com.neighborhood.aka.laplce.estuary.mysql.{CanalEntryJsonHelper, Mysql2KafkaTaskInfoManager}
 import org.I0Itec.zkclient.exception.ZkTimeoutException
 
 /**
   * Created by john_liu on 2018/2/9.
   */
-class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager) extends Actor with SourceDataSinker {
+class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,binlogPositionRecorder:ActorRef) extends Actor with SourceDataSinker {
 
   val kafkaSinker = mysql2KafkaTaskInfoManager.kafkaSink
   val logPositionHandler = mysql2KafkaTaskInfoManager.logPositionHandler
@@ -35,12 +35,15 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
       //todo log
       //todo 将entryList变成json
       //todo 探讨异步写入
-      kafkaSinker.sink(list.toString)
-      //todo 异常处理
-      val lastEntry = list.head
-      val postion = logPositionHandler.buildLastPosition(lastEntry)
-      //写入zookeeper
-      logPositionHandler.persistLogPosition(mysql2KafkaTaskInfoManager.taskInfo.syncTaskId, postion)
+     val sinkFutureList =  list
+        .map {
+          x =>
+            (x, kafkaSinker
+              .sink("ssss")
+             // CanalEntryJsonHelper.entryToJson(x)
+            )
+        }
+
     }
     case x => {
       //todo log
@@ -120,7 +123,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
 }
 
 object ConcurrentBinlogSinker {
-  def prop(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager): Props = {
-    Props(new ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager))
+  def prop(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,binlogPositionRecorder: ActorRef): Props = {
+    Props(new ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager,binlogPositionRecorder))
   }
 }
