@@ -31,13 +31,15 @@ class MySqlBinlogController(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManag
     //todo logstash
     //初始化HeartBeatsListener
     context.actorOf(Props(classOf[MysqlConnectionListener], resourceManager).withDispatcher("akka.pinned-dispatcher"), "heartBeatsListener")
+    //初始化binlogPositionRecorder
+    val recorder = context.actorOf(MysqlBinlogPositionRecorder.props(mysql2KafkaTaskInfoManager), "binlogPositionRecorder")
     //初始化binlogSinker
     //如果并行打开使用并行sinker
     val binlogSinker = if (resourceManager.taskInfo.isTransactional) {
       //使用transaction式
       context.actorOf(Props(classOf[BinlogTransactionBufferSinker], resourceManager), "binlogSinker")
     } else {
-      context.actorOf(ConcurrentBinlogSinker.prop(resourceManager), "binlogSinker")
+      context.actorOf(ConcurrentBinlogSinker.prop(resourceManager, recorder), "binlogSinker")
     }
     //初始化binlogEventBatcher
     val binlogEventBatcher = context.actorOf(BinlogEventBatcher.prop(binlogSinker, resourceManager), "binlogBatcher")
@@ -100,6 +102,13 @@ class MySqlBinlogController(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManag
 
   def startAllWorkers = {
     mysqlConnection.connect
+    //启动recorder
+    context
+      .child("binlogPositionRecorder")
+      .map {
+        ref =>
+        // ref ! SyncControllerMessage("start")
+      }
     //启动sinker
     context
       .child("binlogSinker")

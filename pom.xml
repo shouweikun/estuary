@@ -24,6 +24,18 @@
     </properties>
     <dependencies>
         <dependency>
+            <groupId>org.typelevel</groupId>
+            <artifactId>cats-core_2.11</artifactId>
+            <version>1.0.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.googlecode.protobuf-java-format</groupId>
+            <artifactId>protobuf-java-format</artifactId>
+            <version>1.4</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.mongodb.morphia</groupId>
             <artifactId>morphia</artifactId>
             <version>1.3.2</version>
@@ -103,9 +115,9 @@
         <!-- end scala-->
         <!--&lt;!&ndash;start cats&ndash;&gt;-->
         <!--<dependency>-->
-            <!--<groupId>org.typelevel</groupId>-->
-            <!--<artifactId>cats-core_2.11</artifactId>-->
-            <!--<version>${cats.version}</version>-->
+        <!--<groupId>org.typelevel</groupId>-->
+        <!--<artifactId>cats-core_2.11</artifactId>-->
+        <!--<version>${cats.version}</version>-->
         <!--</dependency>-->
         <!--&lt;!&ndash;end cats&ndash;&gt;-->
         <dependency>
