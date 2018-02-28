@@ -1,4 +1,4 @@
-package com.neighborhood.aka.laplce.estuary.mysql.actors
+package com.neighborhood.aka.laplce.estuary.mysql.lifecycle
 
 import java.io.IOException
 import java.nio.ByteBuffer
@@ -203,7 +203,6 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
     val entry = binlogParser.parseAndProfilingIfNecessary(event, false)
     if (entry.isDefined) {
       //todo logStash
-      //todo logPosition如何获取
       println(entry.get.getHeader.getLogfileOffset)
        binlogEventBatcher ! entry.get
     } else {

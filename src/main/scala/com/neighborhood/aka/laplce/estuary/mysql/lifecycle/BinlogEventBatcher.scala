@@ -1,4 +1,4 @@
-package com.neighborhood.aka.laplce.estuary.mysql.actors
+package com.neighborhood.aka.laplce.estuary.mysql.lifecycle
 
 import java.util.concurrent.atomic.AtomicLong
 
@@ -60,9 +60,11 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
     * online
     */
   def online: Receive = {
+    case entry: CanalEntry.Entry => {
+      batchAndFlush(entry)()
+    }
     case event: LogEvent => {
       tranformAndHandle(event)()
-
     }
     case SyncControllerMessage(msg) => {
       msg match {
@@ -70,51 +72,63 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
       }
     }
   }
+
   /**
     * @param entry canalEntry
-    * 打包如果包内数量超过阈值刷新并发送给sinker
+    *              打包如果包内数量超过阈值刷新并发送给sinker
     */
-  def batchAndFlush(entry: CanalEntry.Entry): Unit = {
-    entryBatch = entryBatch.+:(entry)
-    if (entryBatch.size >= batchThreshold.get()) {
-      flush
+  def batchAndFlush(entry: CanalEntry.Entry)(mode: Boolean = this.mode): Unit = {
+    if (mode) {
+      binlogEventSinker ! entry
+    } else {
+      entryBatch = entryBatch.+:(entry)
+      if (entryBatch.size >= batchThreshold.get()) {
+        flush
+      }
     }
   }
+
   /**
     * 刷新list里的值并发送给sinker
     */
   def flush = {
-    binlogEventSinker ! entryBatch
-    entryBatch = List.empty
+    if (!entryBatch.isEmpty) {
+      binlogEventSinker ! entryBatch
+      entryBatch = List.empty
+    }
   }
+
   /**
     * entry 解码
     */
-  private def transferEvent(event:LogEvent):Option[CanalEntry.Entry]= {
-     binlogParser.parseAndProfilingIfNecessary(event, false)
+  private def transferEvent(event: LogEvent): Option[CanalEntry.Entry] = {
+    binlogParser.parseAndProfilingIfNecessary(event, false)
   }
+
   /**
     * entry 解码并处理
     */
-  def tranformAndHandle(event:LogEvent)(mode:Boolean = this.mode) = {
+  def tranformAndHandle(event: LogEvent)(mode: Boolean = this.mode) = {
     val entry = transferEvent(event)
-    (entry.isDefined ,mode) match {
-        //transactional模式
-      case (true,true) => {
+    (entry.isDefined, mode) match {
+      //transactional模式
+      case (true, true) => {
         //todo log
-       binlogEventSinker ! entry.get
+        binlogEventSinker ! entry.get
       }
       //concurrent模式
-      case (true,false) => {
+      case (true, false) => {
         //todo log
         println(s"${entry.get.getHeader.getExecuteTime}")
-        batchAndFlush(entry.get)
+        batchAndFlush(entry.get)()
       }
-      case (false,_) => {
+      case (false, _) => {
         //todo log
+        println(System.currentTimeMillis())
       }
     }
   }
+
   /**
     * 错误处理
     */
@@ -162,11 +176,11 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
 
   override def supervisorStrategy = {
     OneForOneStrategy() {
-      case e: Exception => Restart
       case _ => Escalate
     }
   }
 }
+
 object BinlogEventBatcher {
   def prop(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager): Props = Props(new BinlogEventBatcher(binlogEventSinker, mysql2KafkaTaskInfoManager))
 }

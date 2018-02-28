@@ -1,4 +1,4 @@
-package com.neighborhood.aka.laplce.estuary.mysql.actors
+package com.neighborhood.aka.laplce.estuary.mysql.lifecycle
 
 import akka.actor.SupervisorStrategy.Restart
 import akka.actor.{Actor, OneForOneStrategy, Props}
@@ -30,19 +30,19 @@ class MySqlBinlogController(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManag
   def initWorkers = {
     //todo logstash
     //初始化HeartBeatsListener
-    context.actorOf(Props(classOf[MysqlConnectionListener], resourceManager), "heartBeatsListener")
+    context.actorOf(Props(classOf[MysqlConnectionListener], resourceManager).withDispatcher("akka.pinned-dispatcher"), "heartBeatsListener")
     //初始化binlogSinker
     //如果并行打开使用并行sinker
     val binlogSinker = if (resourceManager.taskInfo.isTransactional) {
       //使用transaction式
       context.actorOf(Props(classOf[BinlogTransactionBufferSinker], resourceManager), "binlogSinker")
     } else {
-      context.actorOf(ConcurrentBinlogSinker.prop(resourceManager).withDispatcher("akka.sink-dispatcher"), "binlogSinker")
+      context.actorOf(ConcurrentBinlogSinker.prop(resourceManager), "binlogSinker")
     }
     //初始化binlogEventBatcher
     val binlogEventBatcher = context.actorOf(BinlogEventBatcher.prop(binlogSinker, resourceManager), "binlogBatcher")
     //初始化binlogFetcher
-    context.actorOf(Props(classOf[MysqlBinlogFetcher], resourceManager, binlogEventBatcher), "binlogFetcher")
+    context.actorOf(Props(classOf[MysqlBinlogFetcher], resourceManager, binlogEventBatcher).withDispatcher("akka.pinned-dispatcher"), "binlogFetcher")
   }
 
   //offline 状态
