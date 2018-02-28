@@ -1,6 +1,6 @@
 package com.neighborhood.aka.laplce.estuary.mysql.lifecycle
 
-import akka.actor.SupervisorStrategy.Restart
+import akka.actor.SupervisorStrategy.{Escalate, Restart}
 import akka.actor.{Actor, OneForOneStrategy, Props}
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
 import com.neighborhood.aka.laplce.estuary.core.lifecycle
@@ -170,8 +170,8 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
 
   override def supervisorStrategy = {
     OneForOneStrategy() {
-      case e: Exception => Restart
-      case _: Error => Restart
+      case e: Exception => Escalate
+      case _: Error => Escalate
       case _ => Restart
     }
   }
