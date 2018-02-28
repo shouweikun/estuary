@@ -25,7 +25,7 @@ class MySqlBinlogController(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManag
   override var errorCountThreshold: Int = 3
   override var errorCount: Int = 0
 
-  initWorkers
+
 
   def initWorkers = {
     //todo logstash
@@ -192,7 +192,7 @@ class MySqlBinlogController(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManag
   override def preStart(): Unit
 
   = {
-
+    initWorkers
   }
 
   //正常关闭时会调用，关闭资源
@@ -209,6 +209,7 @@ class MySqlBinlogController(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManag
     //todo logstash
     //默认的话是会调用postStop，preRestart可以保存当前状态
     context.become(receive)
+    //todo logstashg
     self ! SyncControllerMessage("restart")
     super.preRestart(reason, message)
   }
@@ -219,6 +220,7 @@ class MySqlBinlogController(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManag
     //todo logstash
     //可以恢复之前的状态，默认会调用
     super.postRestart(reason)
+    context.system.scheduler.scheduleOnce(1 minute,self,"start")
   }
 
   override def supervisorStrategy = {
