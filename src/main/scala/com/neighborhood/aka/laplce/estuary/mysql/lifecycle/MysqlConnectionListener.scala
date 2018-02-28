@@ -42,6 +42,7 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
           //todo logstash
           //变为online状态
           context.become(onlineState)
+          connection.get.connect()
           switch2Busy
         }
         case "stop" => {

@@ -126,6 +126,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
         }
         case "predump" => {
           preDump(mysqlConnection.get)
+          mysqlConnection.get.connect
           val startPosition = entryPosition.get
     //       throw new Exception("故意的")
           try {
@@ -142,9 +143,13 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
         }
         case "fetch" => {
           try {
-            if (fetcher.fetch()) {
+            val flag = fetcher.fetch()
+//            println(flag)
+//            println("before fetch")
+            if (flag) {
               fetchOne
               self ! FetcherMessage("fetch")
+//              println("after fetch")
             } else {
               switch2Free
             }
@@ -287,7 +292,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
       switch2Error
       errorCount = 0
       println(message.msg)
-      println(e)
+      e.printStackTrace()
       throw new Exception("fetching data failure for 3 times")
     } else {
       self ! message

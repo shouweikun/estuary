@@ -43,6 +43,9 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
 //             // CanalEntryJsonHelper.entryToJson(x)
 //            )
 //        }
+       list
+         .map(CanalEntryJsonHelper.entryToJson(_))
+         .foreach(println(_))
 
     }
     case x => {

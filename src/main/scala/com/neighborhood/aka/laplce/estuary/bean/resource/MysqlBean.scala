@@ -29,10 +29,10 @@ trait MysqlBean extends DataSourceBase {
   /**
     * 过滤条件.
     */
-  var filterPattern = null
+  var filterPattern :String= null
 
 
-  var filterBlackPattern = null
+  var filterBlackPattern :String= null
   /**
     * 默认的channel sotimeout, 对应MysqlConnector soTimeout
     */

@@ -16,11 +16,12 @@ import com.neighborhood.aka.laplce.estuary.core.lifecycle.Status.Status
 import com.neighborhood.aka.laplce.estuary.core.sink.KafkaSinkFunc
 import com.neighborhood.aka.laplce.estuary.core.task.{RecourceManager, TaskManager}
 import com.typesafe.config.Config
+import org.apache.commons.lang.StringUtils
 
 /**
   * Created by john_liu on 2018/2/7.
   */
-class Mysql2KafkaTaskInfoManager(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskInfoBean) extends TaskManager with RecourceManager[String,MysqlConnection, KafkaSinkFunc[String,String]] {
+class Mysql2KafkaTaskInfoManager(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskInfoBean) extends TaskManager with RecourceManager[String, MysqlConnection, KafkaSinkFunc[String, String]] {
 
   /**
     * 同步任务控制器的ActorRef
@@ -77,7 +78,7 @@ class Mysql2KafkaTaskInfoManager(commonConfig: Config, taskInfoBean: Mysql2Kafka
   /**
     * 同步任务开始entry
     */
-  var startPosition :EntryPosition = _
+  var startPosition: EntryPosition = _
   /**
     * canal的mysqlConnection
     */
@@ -89,7 +90,7 @@ class Mysql2KafkaTaskInfoManager(commonConfig: Config, taskInfoBean: Mysql2Kafka
   /**
     * MysqlBinlogParser
     */
-  lazy val binlogParser :MysqlBinlogParser = buildParser
+  lazy val binlogParser: MysqlBinlogParser = buildParser
   /**
     * logPosition处理器
     */
@@ -133,8 +134,8 @@ class Mysql2KafkaTaskInfoManager(commonConfig: Config, taskInfoBean: Mysql2Kafka
     *
     * @return KafkaSinkFunc
     */
-  override def buildSink: KafkaSinkFunc[String,String] = {
-    new KafkaSinkFunc[String,String](this.taskInfo)
+  override def buildSink: KafkaSinkFunc[String, String] = {
+    new KafkaSinkFunc[String, String](this.taskInfo)
   }
 
   /**
@@ -159,13 +160,14 @@ class Mysql2KafkaTaskInfoManager(commonConfig: Config, taskInfoBean: Mysql2Kafka
     conn.getConnector.setReceiveBufferSize(receiveBufferSize)
     conn
   }
+
   /**
     * @return 构建binlogParser
     */
   def buildParser: MysqlBinlogParser = {
     val convert = new MysqlBinlogParser(taskInfo.isProfiling)
-    val eventFilter = new AviaterRegexFilter(taskInfo.filterPattern)
-    val eventBlackFilter = new AviaterRegexFilter(taskInfo.filterBlackPattern)
+    val eventFilter = if (!StringUtils.isEmpty(taskInfo.filterPattern)) new AviaterRegexFilter(taskInfo.filterPattern) else null
+    val eventBlackFilter =if (!StringUtils.isEmpty(taskInfo.filterBlackPattern)) new AviaterRegexFilter(taskInfo.filterBlackPattern) else null
     if (eventFilter != null && eventFilter.isInstanceOf[AviaterRegexFilter]) convert.setNameFilter(eventFilter.asInstanceOf[AviaterRegexFilter])
     if (eventBlackFilter != null && eventBlackFilter.isInstanceOf[AviaterRegexFilter]) convert.setNameBlackFilter(eventBlackFilter.asInstanceOf[AviaterRegexFilter])
 
@@ -187,7 +189,7 @@ class Mysql2KafkaTaskInfoManager(commonConfig: Config, taskInfoBean: Mysql2Kafka
     val timeout = config.getInt("common.zookeeper.timeout")
     val zkLogPositionManager = new ZooKeeperLogPositionManager
     zkLogPositionManager.setZkClientx(new ZkClientx(servers, timeout))
-    new LogPositionHandler(binlogParser,zkLogPositionManager,slaveId = this.slaveId,destination = this.taskInfo.syncTaskId,address = new InetSocketAddress(taskInfo.master.address,taskInfo.master.port),master = Option(startPosition))
+    new LogPositionHandler(binlogParser, zkLogPositionManager, slaveId = this.slaveId, destination = this.taskInfo.syncTaskId, address = new InetSocketAddress(taskInfo.master.address, taskInfo.master.port), master = Option(startPosition))
 
   }
 
