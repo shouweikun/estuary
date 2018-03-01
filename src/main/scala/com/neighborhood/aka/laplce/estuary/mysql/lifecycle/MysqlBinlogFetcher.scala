@@ -208,7 +208,15 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
     */
   def fetchOne = {
     val event = decoder.decode(fetcher, logContext)
-    val entry = binlogParser.parseAndProfilingIfNecessary(event, false)
+    val entry = try{
+      binlogParser.parseAndProfilingIfNecessary(event, false)
+    } catch {
+      case e: CanalParseException =>{
+        //todo log
+        println(e)
+        None
+      }
+    }
     if (filterEntry(entry)) {
       //todo logStash
       println(entry.get.getHeader.getLogfileOffset)
@@ -285,7 +293,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
 
   /**
     * @param entryOption 得到的entry
-    * 对entry在类型级别上进行过滤
+    *                    对entry在类型级别上进行过滤
     */
   def filterEntry(entryOption: Option[CanalEntry.Entry]): Boolean = {
     if (!entryOption.isDefined) {
