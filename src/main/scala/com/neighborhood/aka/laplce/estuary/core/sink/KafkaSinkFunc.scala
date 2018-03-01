@@ -50,15 +50,15 @@ class KafkaSinkFunc[K, V](kafkaBean: KafkaBean) extends SinkFunc[V] {
     }
   }
 
-  /**
-    * @param source 待写入的数据
-    * @return Future[Boolean] 是否写入成功
-    */
-  override def asyncSink(source: V): Future[Boolean] = {
-    Future {
-      sink(source)
-    }
-  }
+//  /**
+//    * @param source 待写入的数据
+//    * @return Future[Boolean] 是否写入成功
+//    */
+//   def asyncSink(source: V): Future[Boolean] = {
+//    Future {
+//      sink(source)
+//    }
+//  }
 
   /**
     * @param source 待写入的数据
