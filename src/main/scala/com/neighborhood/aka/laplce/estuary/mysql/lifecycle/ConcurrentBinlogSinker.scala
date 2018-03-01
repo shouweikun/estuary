@@ -53,9 +53,9 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
       //todo log
       //todo 探讨异步写入
 
-//      list.map {
-//        handleSinkTask(_)
-//      }
+      list.map {
+              handleSinkTask(_)
+            }
       //todo 写入zookeeper
 
     }
@@ -91,8 +91,8 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
       case CanalEntry.EventType.DELETE => "DELETE"
       case _ => "insertOrUpdate"
     }
-    tranformDMLtoJson(entry, tempJsonKey, eventType)
-      .map {
+    tranformDMLtoJson(entry, tempJsonKey, eventType).
+      map {
         kafkaMassage =>
           println(kafkaMassage.getJsonValue)
           kafkaSinker.ayncSink(kafkaMassage.getBaseDataJsonKey.asInstanceOf[BinlogKey], kafkaMassage.getJsonValue)
