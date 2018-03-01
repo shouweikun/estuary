@@ -52,12 +52,14 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
     case list: List[CanalEntry.Entry] => {
       //todo log
       //todo 探讨异步写入
-
+      val before = System.currentTimeMillis()
       list.map {
-              handleSinkTask(_)
-            }
+        handleSinkTask(_)
+      }
       //todo 写入zookeeper
-
+      val after = System.currentTimeMillis()
+      val a = after - before
+      println(s"${a}_______${list.size}")
     }
     case x => {
       //todo log
@@ -91,12 +93,19 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
       case CanalEntry.EventType.DELETE => "DELETE"
       case _ => "insertOrUpdate"
     }
+    val before = System.currentTimeMillis()
     tranformDMLtoJson(entry, tempJsonKey, eventType).
       map {
         kafkaMassage =>
-          println(kafkaMassage.getJsonValue)
-          kafkaSinker.ayncSink(kafkaMassage.getBaseDataJsonKey.asInstanceOf[BinlogKey], kafkaMassage.getJsonValue)
+        //    println(kafkaMassage.getJsonValue)
+        // kafkaSinker.ayncSink(kafkaMassage.getBaseDataJsonKey.asInstanceOf[BinlogKey], kafkaMassage.getJsonValue)
       }
+    val after = System.currentTimeMillis()
+    val a = after - before
+    //    println("ddddddd" +
+    //      "dfasdgwdgwsdbsbbbbddddddddddddddddddddddddddddd" +
+    //      "ddddddddddd" +
+    //      "\n"+"\n"+"\n"+a)
     kafkaSinker.flush
 
   }
@@ -182,7 +191,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
   }
 
   private def getColumnToJSON(column: CanalEntry.Column) = {
-    val columnMap = new util.HashMap[String,AnyRef]
+    val columnMap = new util.HashMap[String, AnyRef]
     columnMap.put("index", column.getIndex.toString)
     columnMap.put("sqlType", column.getSqlType.toString)
     columnMap.put("name", column.getName)
