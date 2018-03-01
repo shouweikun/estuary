@@ -13,6 +13,7 @@ import com.alibaba.otter.canal.parse.driver.mysql.utils.PacketManager
 import com.alibaba.otter.canal.parse.exception.{CanalParseException, TableIdNotFoundException}
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
 import com.alibaba.otter.canal.parse.inbound.mysql.dbsync.{DirectLogFetcher, TableMetaCache}
+import com.alibaba.otter.canal.protocol.CanalEntry
 import com.alibaba.otter.canal.protocol.position.EntryPosition
 import com.neighborhood.aka.laplce.estuary.core.lifecycle._
 import com.neighborhood.aka.laplce.estuary.mysql.{Mysql2KafkaTaskInfoManager, MysqlBinlogParser}
@@ -82,7 +83,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
           switch2Restarting
           self ! SyncControllerMessage("start")
         }
-        case str:String => {
+        case str: String => {
           println(s"fetcher offline  unhandled message:$str")
         }
       }
@@ -128,7 +129,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
           preDump(mysqlConnection.get)
           mysqlConnection.get.connect
           val startPosition = entryPosition.get
-    //       throw new Exception("故意的")
+          //       throw new Exception("故意的")
           try {
             if (StringUtils.isEmpty(startPosition.getJournalName) && Option(startPosition.getTimestamp).isEmpty) {
               //todo log
@@ -144,12 +145,12 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
         case "fetch" => {
           try {
             val flag = fetcher.fetch()
-//            println(flag)
-//            println("before fetch")
+            //            println(flag)
+            //            println("before fetch")
             if (flag) {
               fetchOne
               self ! FetcherMessage("fetch")
-//              println("after fetch")
+              //              println("after fetch")
             } else {
               switch2Free
             }
@@ -183,13 +184,13 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
   def dump(binlogFileName: String, binlogPosition: Long) = {
     updateSettings(mysqlConnection.get)
     loadBinlogChecksum(mysqlConnection.get)
-    sendBinlogDump(binlogFileName,binlogPosition)(mysqlConnection.get)
+    sendBinlogDump(binlogFileName, binlogPosition)(mysqlConnection.get)
     val connector = mysqlConnection.get.getConnector
     fetcher = new DirectLogFetcher(connector.getReceiveBufferSize)
     fetcher.start(connector.getChannel)
     decoder = new LogDecoder(LogEvent.UNKNOWN_EVENT, LogEvent.ENUM_END_EVENT)
     logContext = new LogContext
-    logContext.setLogPosition(new LogPosition(binlogFileName,binlogPosition))
+    logContext.setLogPosition(new LogPosition(binlogFileName, binlogPosition))
     logContext.setFormatDescription(new FormatDescriptionLogEvent(4, binlogChecksum))
   }
 
@@ -208,13 +209,13 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
   def fetchOne = {
     val event = decoder.decode(fetcher, logContext)
     val entry = binlogParser.parseAndProfilingIfNecessary(event, false)
-    if (entry.isDefined) {
+    if (filterEntry(entry)) {
       //todo logStash
       println(entry.get.getHeader.getLogfileOffset)
-       binlogEventBatcher ! entry.get
+      binlogEventBatcher ! entry.get
     } else {
       //todo log
-     // println(s"得到个 $entry")
+      // println(s"得到个 $entry")
       //throw new Exception("the fetched data is null")
     }
   }
@@ -280,6 +281,21 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
     metaConnection.connect()
     val tableMetaCache: TableMetaCache = new TableMetaCache(metaConnection)
     binlogParser.setTableMetaCache(tableMetaCache)
+  }
+
+  /**
+    * @param entryOption 得到的entry
+    * 对entry在类型级别上进行过滤
+    */
+  def filterEntry(entryOption: Option[CanalEntry.Entry]): Boolean = {
+    if (!entryOption.isDefined) {
+      return false
+    }
+    val entry = entryOption.get
+    //todo 对entry过滤做明确设定
+    if ((entry.getEntryType == CanalEntry.EntryType.ROWDATA) || (entry.getEntryType == CanalEntry.EntryType.TRANSACTIONEND)) true else {
+      false
+    }
   }
 
   /**
@@ -351,14 +367,15 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
         //todo log
       }
       case e: Exception => Restart
-      case error:Error => Restart
+      case error: Error => Restart
       case _ => Restart
     }
   }
 
 }
+
 object MysqlBinlogFetcher {
-  def props(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,binlogEventBatcher: ActorRef) :Props= {
-    Props(new MysqlBinlogFetcher(mysql2KafkaTaskInfoManager,binlogEventBatcher))
+  def props(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager, binlogEventBatcher: ActorRef): Props = {
+    Props(new MysqlBinlogFetcher(mysql2KafkaTaskInfoManager, binlogEventBatcher))
   }
 }

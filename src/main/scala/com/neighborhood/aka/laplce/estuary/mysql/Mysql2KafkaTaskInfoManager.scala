@@ -10,6 +10,7 @@ import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection.{BinlogFormat
 import com.alibaba.otter.canal.parse.inbound.mysql.dbsync.TableMetaCache
 import com.alibaba.otter.canal.parse.index.ZooKeeperLogPositionManager
 import com.alibaba.otter.canal.protocol.position.EntryPosition
+import com.neighborhood.aka.laplce.estuary.bean.key.BinlogKey
 import com.neighborhood.aka.laplce.estuary.bean.task.Mysql2KafkaTaskInfoBean
 import com.neighborhood.aka.laplce.estuary.core.lifecycle.Status
 import com.neighborhood.aka.laplce.estuary.core.lifecycle.Status.Status
@@ -21,7 +22,7 @@ import org.apache.commons.lang.StringUtils
 /**
   * Created by john_liu on 2018/2/7.
   */
-class Mysql2KafkaTaskInfoManager(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskInfoBean) extends TaskManager with RecourceManager[String, MysqlConnection, KafkaSinkFunc[String, String]] {
+class Mysql2KafkaTaskInfoManager(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskInfoBean) extends TaskManager with RecourceManager[String, MysqlConnection, KafkaSinkFunc[BinlogKey, String]] {
 
   /**
     * 同步任务控制器的ActorRef
@@ -134,8 +135,8 @@ class Mysql2KafkaTaskInfoManager(commonConfig: Config, taskInfoBean: Mysql2Kafka
     *
     * @return KafkaSinkFunc
     */
-  override def buildSink: KafkaSinkFunc[String, String] = {
-    new KafkaSinkFunc[String, String](this.taskInfo)
+  override def buildSink: KafkaSinkFunc[BinlogKey, String] = {
+    new KafkaSinkFunc[BinlogKey, String](this.taskInfo)
   }
 
   /**

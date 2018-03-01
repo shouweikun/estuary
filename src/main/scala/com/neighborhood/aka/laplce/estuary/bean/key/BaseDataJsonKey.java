@@ -1,6 +1,5 @@
-package com.neighborhood.aka.laplce.estuary.bean.data;
-
-import org.codehaus.jackson.annotate.JsonIgnoreProperties;
+package com.neighborhood.aka.laplce.estuary.bean.key;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
  * Created by z on 17-3-31.

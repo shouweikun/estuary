@@ -4,7 +4,9 @@ import java.util
 import java.util.Properties
 
 import com.neighborhood.aka.laplce.estuary.bean.datasink.DataSinkType.DataSinkType
+import com.neighborhood.aka.laplce.estuary.bean.key.{JsonKeyPartitioner, JsonKeySerializer}
 import org.apache.kafka.clients.producer.{KafkaProducer, Producer, ProducerConfig}
+import org.apache.kafka.common.serialization.StringSerializer
 
 /**
   * Created by john_liu on 2018/2/7.
@@ -28,7 +30,7 @@ trait KafkaBean extends DataSinkBean {
   /**
     * 分区类
     */
-  var partitionerClass: String = "com.kafka.myparitioner.CidPartitioner"
+  var partitionerClass: String = classOf[JsonKeyPartitioner].getName
   /**
     * topic
     */
@@ -56,11 +58,11 @@ trait KafkaBean extends DataSinkBean {
   /**
     * key Serializer类
     */
-  var keySerializer: String = _
+  var keySerializer: String = classOf[JsonKeySerializer].getName
   /**
     * value Serializer类
     */
-  var valueSerializer: String = _
+  var valueSerializer: String = classOf[StringSerializer].getName
   /**
     * 压缩格式
     */

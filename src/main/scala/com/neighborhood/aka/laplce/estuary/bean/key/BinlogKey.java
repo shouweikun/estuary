@@ -1,6 +1,8 @@
-package com.neighborhood.aka.laplce.estuary.bean.data;
+package com.neighborhood.aka.laplce.estuary.bean.key;
 
-import org.codehaus.jackson.annotate.JsonIgnoreProperties;
+
+import com.alibaba.otter.canal.protocol.CanalEntry;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
  * Created by z on 17-3-31.
@@ -110,5 +112,25 @@ public class BinlogKey extends BaseDataJsonKey {
                 ", kafkaOffset=" + kafkaOffset +
                 ", eventType='" + eventType + '\'' +
             '}';
+    }
+
+    public static BinlogKey buildBinlogKey(CanalEntry.Header header) {
+        BinlogKey key = new BinlogKey();
+        key.dbName = header.getSchemaName();
+        key.tableName = header.getTableName();
+
+        key.sourceType = "binlog";
+        key.msgUuid = header.getLogfileName() + header.getLogfileOffset();
+
+        key.setServerId( header.getServerId());
+        key.setMysqlPosition(header.getLogfileOffset());
+        key.setMysqlJournalName(header.getLogfileName());
+        key.setMysqlTimestamp( header.getExecuteTime());
+
+        key.eventType = header.getEventType().name();
+
+        key.setDbEffectTime(key.getMysqlTimestamp());
+
+        return key;
     }
 }
