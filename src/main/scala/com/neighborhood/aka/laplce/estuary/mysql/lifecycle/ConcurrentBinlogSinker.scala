@@ -23,7 +23,9 @@ import scala.util.{Failure, Success, Try}
   * Created by john_liu on 2018/2/9.
   */
 class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager, binlogPositionRecorder: ActorRef) extends Actor with SourceDataSinker {
-
+  /**
+    * 拼接json用
+    */
   private val START_JSON = "{"
   private val END_JSON = "}"
   private val START_ARRAY = "["
@@ -31,8 +33,13 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
   private val KEY_VALUE_SPLIT = ":"
   private val ELEMENT_SPLIT = ","
   private val STRING_CONTAINER = "\""
-
+  /**
+    * kafkaSinker
+    */
   val kafkaSinker = mysql2KafkaTaskInfoManager.kafkaSink
+  /**
+    * logPosition处理
+    */
   val logPositionHandler = mysql2KafkaTaskInfoManager.logPositionHandler
 
   //offline
@@ -68,6 +75,9 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
     }
   }
 
+  /**
+    *
+    */
   def handleSinkTask(entry: CanalEntry.Entry) = {
     val header = entry.getHeader
     //todo log
@@ -110,6 +120,12 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
 
   }
 
+  /**
+    * @param entry       entry
+    * @param temp        binlogKey
+    * @param eventString 事件类型
+    *                    将DML类型的CanalEntry 转换成Json
+    */
   def tranformDMLtoJson(entry: CanalEntry.Entry, temp: BinlogKey, eventString: String): Array[KafkaMessage] = {
     Try(CanalEntry.RowChange.parseFrom(entry.getStoreValue)) match {
       case Success(rowChange) => {
@@ -164,6 +180,10 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
 
   }
 
+  /**
+    * @param header CanalEntryHeader
+    *               将entryHeader转换成Json
+    */
   protected def getEntryHeaderJson(header: CanalEntry.Header): StringBuilder = {
     val sb = new StringBuilder(512)
     sb.append(START_JSON)
@@ -182,6 +202,12 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
     sb
   }
 
+  /**
+    * @param sb    正在构建的Json
+    * @param key   key值
+    * @param isEnd 是否是结尾
+    *              增加key值
+    */
   private def addKeyValue(sb: StringBuilder, key: String, value: Any, isEnd: Boolean) = {
     sb.append(STRING_CONTAINER).append(key).append(STRING_CONTAINER).append(KEY_VALUE_SPLIT)
     if (value.isInstanceOf[String]) sb.append(STRING_CONTAINER).append(value.asInstanceOf[String].replaceAll("\"", "\\\\\"").replaceAll("[\r\n]+", "")).append(STRING_CONTAINER)
@@ -190,6 +216,10 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
     if (!isEnd) sb.append(ELEMENT_SPLIT)
   }
 
+  /**
+    * @param column CanalEntry.Column
+    * 将column转化成Json
+    */
   private def getColumnToJSON(column: CanalEntry.Column) = {
     val columnMap = new util.HashMap[String, AnyRef]
     columnMap.put("index", column.getIndex.toString)
