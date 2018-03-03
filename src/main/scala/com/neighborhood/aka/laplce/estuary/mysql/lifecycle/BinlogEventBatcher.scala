@@ -1,24 +1,42 @@
 package com.neighborhood.aka.laplce.estuary.mysql.lifecycle
 
+import java.util
 import java.util.concurrent.atomic.AtomicLong
 
 import akka.actor.SupervisorStrategy.{Escalate, Restart}
 import akka.actor.{Actor, ActorRef, OneForOneStrategy, Props}
 import com.alibaba.otter.canal.protocol.CanalEntry
+import com.alibaba.otter.canal.protocol.CanalEntry.Column
+import com.neighborhood.aka.laplce.estuary.bean.key.BinlogKey
+import com.neighborhood.aka.laplce.estuary.bean.support.KafkaMessage
 import com.neighborhood.aka.laplce.estuary.core.lifecycle
 import com.neighborhood.aka.laplce.estuary.core.lifecycle._
-import com.neighborhood.aka.laplce.estuary.mysql.{Mysql2KafkaTaskInfoManager, MysqlBinlogParser}
+import com.neighborhood.aka.laplce.estuary.core.utils.JsonUtil
+import com.neighborhood.aka.laplce.estuary.mysql.{CanalEntryJsonHelper, Mysql2KafkaTaskInfoManager, MysqlBinlogParser}
 import com.taobao.tddl.dbsync.binlog.LogEvent
 
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+import scala.util.{Failure, Success, Try}
+import akka.pattern._
+import com.alibaba.fastjson.JSONObject
 
 /**
   * Created by john_liu on 2018/2/6.
   */
 class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager) extends Actor with SourceDataBatcher {
 
-
+  /**
+    * 拼接json用
+    */
+  private val START_JSON = "{"
+  private val END_JSON = "}"
+  private val START_ARRAY = "["
+  private val END_ARRAY = "]"
+  private val KEY_VALUE_SPLIT = ":"
+  private val ELEMENT_SPLIT = ","
+  private val STRING_CONTAINER = "\""
   /**
     * binlogParser 解析binlog
     */
@@ -28,13 +46,21 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
     */
   val mode = mysql2KafkaTaskInfoManager.taskInfo.isTransactional
   /**
+    * 打包的阈值
+    */
+  val batchThreshold: AtomicLong = mysql2KafkaTaskInfoManager.taskInfo.batchThreshold
+  /**
     * 打包的entry
     */
   var entryBatch: List[CanalEntry.Entry] = List.empty
   /**
-    * 打包的阈值
+    * 待保存的BinlogOffset
     */
-  var batchThreshold: AtomicLong = mysql2KafkaTaskInfoManager.taskInfo.batchThreshold
+  var savedOffset: Long = _
+  /**
+    * 待保存的Binlog文件名称
+    */
+  var savedJournalName: String = _
 
   //offline
   override def receive: Receive = {
@@ -102,7 +128,42 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
     */
   def flush = {
     if (!entryBatch.isEmpty) {
-      binlogEventSinker ! entryBatch
+      val batch = entryBatch
+      val entryJsonList = Future {
+        //todo 将entry转换成json
+        batch.map {
+          entry =>
+            val entryType = entry.getEntryType
+            val header = entry.getHeader
+            val eventType = header.getEventType
+            val tempJsonKey = BinlogKey.buildBinlogKey(header)
+            //todo 添加tempJsonKey的具体信息
+            entryType match {
+              case CanalEntry.EntryType.TRANSACTIONEND => {
+                //将offset记录下来
+                savedJournalName = header.getLogfileName
+                savedOffset = header.getLogfileOffset
+                BinlogPositionInfo(header.getLogfileName, header.getLogfileOffset)
+              }
+              case CanalEntry.EntryType.ROWDATA => {
+                eventType match {
+                  case CanalEntry.EventType.DELETE => tranformDMLtoJson(entry, tempJsonKey, "DELETE")
+                  case CanalEntry.EventType.INSERT => tranformDMLtoJson(entry, tempJsonKey, "INSERT")
+                  case CanalEntry.EventType.UPDATE => tranformDMLtoJson(entry, tempJsonKey, "UPDATE")
+                  case CanalEntry.EventType.ALTER =>
+                    new KafkaMessage(tempJsonKey, CanalEntryJsonHelper.entryToJson(entry))
+                  case CanalEntry.EventType.CREATE =>
+                    CanalEntryJsonHelper.entryToJson(entry)
+                  case _ => {
+                    //todo log
+                  }
+                }
+              }
+            }
+        }
+      }
+      //将解析好的entryJsonList发送给Sinker
+      entryJsonList pipeTo binlogEventSinker
       entryBatch = List.empty
     }
   }
@@ -139,13 +200,133 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
   }
 
   /**
+    * @param entry       entry
+    * @param temp        binlogKey
+    * @param eventString 事件类型
+    *                    将DML类型的CanalEntry 转换成Json
+    */
+  def tranformDMLtoJson(entry: CanalEntry.Entry, temp: BinlogKey, eventString: String): Array[KafkaMessage] = {
+    Try(CanalEntry.RowChange.parseFrom(entry.getStoreValue)) match {
+      case Success(rowChange) => {
+        (0 until rowChange.getRowDatasCount)
+          .map {
+            index =>
+              val rowData = rowChange.getRowDatas(index)
+              val count = if (eventString.equals("DELETE")) rowData.getBeforeColumnsCount else rowData.getAfterColumnsCount
+              val jsonKeyColumnBuilder: Column.Builder
+              = CanalEntry.Column.newBuilder
+              jsonKeyColumnBuilder.setSqlType(12) //string 类型.
+              jsonKeyColumnBuilder.setName("syncJsonKey")
+              val jsonKey = temp.clone().asInstanceOf[BinlogKey]
+              //            todo
+              //  jsonKey.syncTaskSequence = addAndGetSyncTaskSequence
+              val kafkaMessage = new KafkaMessage
+              kafkaMessage.setBaseDataJsonKey(jsonKey)
+              jsonKeyColumnBuilder.setIndex(count)
+              jsonKeyColumnBuilder.setValue(JsonUtil.serialize(jsonKey))
+              /**
+                * 构造rowChange对应部分的json
+                */
+              def rowChangeStr = {
+                if (eventString.equals("DELETE")) s"${STRING_CONTAINER}beforeColumns$STRING_CONTAINER$KEY_VALUE_SPLIT${
+                  (0 until count)
+                    .map {
+                      columnIndex =>
+                        s"${getColumnToJSON(rowData.getBeforeColumns(columnIndex))}$ELEMENT_SPLIT"
+                    }
+                    .mkString
+                }" else {
+                  s"${STRING_CONTAINER}afterColumns$STRING_CONTAINER$KEY_VALUE_SPLIT${
+                    (0 until count)
+                      .map {
+                        columnIndex =>
+                          s"${getColumnToJSON(rowData.getAfterColumns(columnIndex))}$ELEMENT_SPLIT"
+                      }
+                      .mkString
+                  }"
+
+                } + s"${getColumnToJSON(jsonKeyColumnBuilder.build}$END_ARRAY$END_JSON"
+              }
+
+              val finalDataString = s"${START_JSON}${STRING_CONTAINER}header${STRING_CONTAINER}${KEY_VALUE_SPLIT}${getEntryHeaderJson(entry.getHeader)}${ELEMENT_SPLIT}${STRING_CONTAINER}rowChange${STRING_CONTAINER}${KEY_VALUE_SPLIT}${START_JSON}${STRING_CONTAINER}rowDatas${STRING_CONTAINER}${KEY_VALUE_SPLIT}${START_ARRAY}${rowChangeStr}${END_ARRAY}${END_JSON}${END_JSON}"
+              kafkaMessage.setJsonValue(finalDataString)
+              kafkaMessage
+          }.toArray
+      }
+      case Failure(e) => {
+        //todo log
+        throw new RuntimeException("Error when parse rowchange:" + entry, e)
+      }
+    }
+
+  }
+
+  /**
+    * @param column CanalEntry.Column
+    *               将column转化成Json
+    */
+  private def getColumnToJSON(column: CanalEntry.Column) = {
+    val columnMap = new util.HashMap[String, AnyRef]
+    columnMap.put("index", column.getIndex.toString)
+    columnMap.put("sqlType", column.getSqlType.toString)
+    columnMap.put("name", column.getName)
+    columnMap.put("isKey", column.getIsKey.toString)
+    columnMap.put("updated", column.getUpdated.toString)
+    columnMap.put("isNull", column.getIsNull.toString)
+    val value = column.getValue
+    columnMap.put("value", value)
+    if (column.getIsNull) columnMap.put("value", null)
+    columnMap.put("mysqlType", column.getMysqlType)
+    val columnJSON = new JSONObject(columnMap)
+    columnJSON.toJSONString
+  }
+
+  /**
+    * @param header CanalEntryHeader
+    *               将entryHeader转换成Json
+    */
+  protected def getEntryHeaderJson(header: CanalEntry.Header): StringBuilder = {
+    val sb = new StringBuilder(512)
+    sb.append(START_JSON)
+    addKeyValue(sb, "version", header.getVersion, false)
+    addKeyValue(sb, "logfileName", header.getLogfileName, false)
+    addKeyValue(sb, "logfileOffset", header.getLogfileOffset, false)
+    addKeyValue(sb, "serverId", header.getServerId, false)
+    addKeyValue(sb, "serverenCode", header.getServerenCode, false)
+    addKeyValue(sb, "executeTime", header.getExecuteTime, false)
+    addKeyValue(sb, "sourceType", header.getSourceType, false)
+    addKeyValue(sb, "schemaName", header.getSchemaName, false)
+    addKeyValue(sb, "tableName", header.getTableName, false)
+    addKeyValue(sb, "eventLength", header.getEventLength, false)
+    addKeyValue(sb, "eventType", header.getEventType, true)
+    sb.append(END_JSON)
+    sb
+  }
+
+  /**
+    * @param sb    正在构建的Json
+    * @param key   key值
+    * @param isEnd 是否是结尾
+    *              增加key值
+    */
+  private def addKeyValue(sb: StringBuilder, key: String, value: Any, isEnd: Boolean) = {
+    sb.append(STRING_CONTAINER).append(key).append(STRING_CONTAINER).append(KEY_VALUE_SPLIT)
+    if (value.isInstanceOf[String]) sb.append(STRING_CONTAINER).append(value.asInstanceOf[String].replaceAll("\"", "\\\\\"").replaceAll("[\r\n]+", "")).append(STRING_CONTAINER)
+    else if (value.isInstanceOf[Enum[_]]) sb.append(STRING_CONTAINER).append(value).append(STRING_CONTAINER)
+    else sb.append(value)
+    if (!isEnd) sb.append(ELEMENT_SPLIT)
+  }
+
+  /**
     * 错误处理
     */
   override def processError(e: Throwable, message: lifecycle.WorkerMessage): Unit = {
     //batcher 出错不用处理，让他直接崩溃
   }
+
   override var errorCountThreshold: Int = 3
   override var errorCount: Int = 0
+
   /**
     * ********************* 状态变化 *******************
     */

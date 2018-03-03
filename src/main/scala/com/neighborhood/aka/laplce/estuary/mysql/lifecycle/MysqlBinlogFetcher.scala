@@ -207,7 +207,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
     * 从连接中取数据
     */
   def fetchOne = {
-    val before=System.currentTimeMillis()
+   // val before=System.currentTimeMillis()
     val event = decoder.decode(fetcher, logContext)
     val entry = try{
       binlogParser.parseAndProfilingIfNecessary(event, false)
