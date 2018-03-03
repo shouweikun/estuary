@@ -125,6 +125,7 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
 
   /**
     * 刷新list里的值并发送给sinker
+    * @todo 如果json 的开销小，不使用future，其实这个future是不安全的
     */
   def flush = {
     if (!entryBatch.isEmpty) {
@@ -133,11 +134,12 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
         //todo 将entry转换成json
         batch.map {
           entry =>
-            val entryType = entry.getEntryType
+            val entryType = entry.getEntryType //entry类型
             val header = entry.getHeader
-            val eventType = header.getEventType
+            val eventType = header.getEventType //事件类型
             val tempJsonKey = BinlogKey.buildBinlogKey(header)
             //todo 添加tempJsonKey的具体信息
+            //根据entry的类型来执行不同的操作
             entryType match {
               case CanalEntry.EntryType.TRANSACTIONEND => {
                 //将offset记录下来
@@ -147,9 +149,11 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
               }
               case CanalEntry.EntryType.ROWDATA => {
                 eventType match {
+                    //DML操作都执行tranformDMLtoJson这个方法
                   case CanalEntry.EventType.DELETE => tranformDMLtoJson(entry, tempJsonKey, "DELETE")
                   case CanalEntry.EventType.INSERT => tranformDMLtoJson(entry, tempJsonKey, "INSERT")
                   case CanalEntry.EventType.UPDATE => tranformDMLtoJson(entry, tempJsonKey, "UPDATE")
+                  //DDL操作直接将entry变为json
                   case CanalEntry.EventType.ALTER =>
                     new KafkaMessage(tempJsonKey, CanalEntryJsonHelper.entryToJson(entry))
                   case CanalEntry.EventType.CREATE =>
@@ -164,6 +168,7 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
       }
       //将解析好的entryJsonList发送给Sinker
       entryJsonList pipeTo binlogEventSinker
+      //清空list
       entryBatch = List.empty
     }
   }

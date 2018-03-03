@@ -57,18 +57,21 @@ class KafkaSinkFunc[K <: BaseDataJsonKey, V](kafkaBean: KafkaBean) extends SinkF
     * @param value 待写入的数据
     * @return Future[RecordMetadata 是否写入成功
     */
-  def ayncSink(key: K, value: V): Future[RecordMetadata] = {
+  def ayncSink(key: K, value: V)(topic:String)(callback: Callback): Future[RecordMetadata] = {
     val record = buildRecord(key, value)
-    kafkaProducer.send(record, new Callback {
-      override def onCompletion(metadata: RecordMetadata, exception: Exception): Unit = {
-        if (exception != null) throw new RuntimeException("Error when send :" + key + ", metadata:" + metadata, exception)
-      }
-    })
+    kafkaProducer.send(record, callback)
   }
 
   def flush: Unit = {
     kafkaProducer.flush()
   }
+
+  def findTopic(key:String = ""):String = {
+    //todo
+    this.topic
+  }
+
+
 
   //  /**
   //    * @param source 待写入的数据
