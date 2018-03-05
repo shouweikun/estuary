@@ -168,7 +168,7 @@ class Mysql2KafkaTaskInfoManager(commonConfig: Config, taskInfoBean: Mysql2Kafka
   def buildParser: MysqlBinlogParser = {
     val convert = new MysqlBinlogParser(taskInfo.isProfiling)
     val eventFilter = if (!StringUtils.isEmpty(taskInfo.filterPattern)) new AviaterRegexFilter(taskInfo.filterPattern) else null
-    val eventBlackFilter =if (!StringUtils.isEmpty(taskInfo.filterBlackPattern)) new AviaterRegexFilter(taskInfo.filterBlackPattern) else null
+    val eventBlackFilter = if (!StringUtils.isEmpty(taskInfo.filterBlackPattern)) new AviaterRegexFilter(taskInfo.filterBlackPattern) else null
     if (eventFilter != null && eventFilter.isInstanceOf[AviaterRegexFilter]) convert.setNameFilter(eventFilter.asInstanceOf[AviaterRegexFilter])
     if (eventBlackFilter != null && eventBlackFilter.isInstanceOf[AviaterRegexFilter]) convert.setNameBlackFilter(eventBlackFilter.asInstanceOf[AviaterRegexFilter])
 
@@ -195,4 +195,13 @@ class Mysql2KafkaTaskInfoManager(commonConfig: Config, taskInfoBean: Mysql2Kafka
   }
 
   override def taskType: String = s"${taskInfo.dataSourceType}-${taskInfo.dataSyncType}-{${taskInfo.dataSinkType}}"
+}
+
+object Mysql2KafkaTaskInfoManager {
+  /**
+    * 任务管理器的构造的工厂方法
+    */
+  def buildManager(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskInfoBean):Mysql2KafkaTaskInfoManager ={
+    new Mysql2KafkaTaskInfoManager(commonConfig, taskInfoBean)
+  }
 }

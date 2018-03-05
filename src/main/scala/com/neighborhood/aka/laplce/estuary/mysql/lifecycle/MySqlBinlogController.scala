@@ -3,9 +3,11 @@ package com.neighborhood.aka.laplce.estuary.mysql.lifecycle
 import akka.actor.SupervisorStrategy.Restart
 import akka.actor.{Actor, OneForOneStrategy, Props}
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
+import com.neighborhood.aka.laplce.estuary.bean.task.Mysql2KafkaTaskInfoBean
 import com.neighborhood.aka.laplce.estuary.core.lifecycle
 import com.neighborhood.aka.laplce.estuary.core.lifecycle._
 import com.neighborhood.aka.laplce.estuary.mysql.Mysql2KafkaTaskInfoManager
+import com.typesafe.config.Config
 import org.I0Itec.zkclient.exception.ZkTimeoutException
 
 import scala.concurrent.duration._
@@ -15,9 +17,10 @@ import scala.concurrent.ExecutionContext.Implicits.global
   * Created by john_liu on 2018/2/1.
   */
 
-class MySqlBinlogController(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager) extends SyncController with Actor {
+class MySqlBinlogController(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncController with Actor {
   //资源管理器，一次同步任务所有的resource都由resourceManager负责
-  val resourceManager = mysql2KafkaTaskInfoManager
+  val resourceManager = Mysql2KafkaTaskInfoManager.buildManager(commonConfig,taskInfoBean)
+  val mysql2KafkaTaskInfoManager = resourceManager
   //配置
   val config = context.system.settings.config
   //canal的mysqlConnection
@@ -25,27 +28,12 @@ class MySqlBinlogController(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManag
   override var errorCountThreshold: Int = 3
   override var errorCount: Int = 0
 
-
-
-  def initWorkers = {
-    //todo logstash
-    //初始化HeartBeatsListener
-    context.actorOf(Props(classOf[MysqlConnectionListener], resourceManager).withDispatcher("akka.pinned-dispatcher"), "heartBeatsListener")
-//    //初始化binlogPositionRecorder
-//    val recorder = context.actorOf(MysqlBinlogPositionRecorder.props(mysql2KafkaTaskInfoManager), "binlogPositionRecorder")
-    //初始化binlogSinker
-    //如果并行打开使用并行sinker
-    val binlogSinker = if (resourceManager.taskInfo.isTransactional) {
-      //使用transaction式
-      context.actorOf(Props(classOf[BinlogTransactionBufferSinker], resourceManager), "binlogSinker")
-    } else {
-      context.actorOf(ConcurrentBinlogSinker.prop(resourceManager, null), "binlogSinker")
-    }
-    //初始化binlogEventBatcher
-    val binlogEventBatcher = context.actorOf(BinlogEventBatcher.prop(binlogSinker, resourceManager), "binlogBatcher")
-    //初始化binlogFetcher
-    context.actorOf(Props(classOf[MysqlBinlogFetcher], resourceManager, binlogEventBatcher).withDispatcher("akka.pinned-dispatcher"), "binlogFetcher")
-  }
+  /**
+    * 1.初始化HeartBeatsListener
+    * 2.初始化binlogSinker
+    * 3.初始化binlogEventBatcher
+    * 4.初始化binlogFetcher
+    */
 
   //offline 状态
   override def receive: Receive = {
@@ -53,20 +41,27 @@ class MySqlBinlogController(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManag
       context.become(online)
       startAllWorkers
     }
+    case "restart" => {
+      context.become(online)
+      restartAllWorkers
+    }
     case ListenerMessage(msg) => {
       msg match {
         case "restart" => {
           sender ! SyncControllerMessage("start")
         }
-        case "reconnect" => {
-          mysqlConnection.synchronized(mysqlConnection.reconnect())
-        }
+        //        case "reconnect" => {
+        //          mysqlConnection.synchronized(mysqlConnection.reconnect())
+        //        }
       }
     }
 
     case SyncControllerMessage(msg) => {
       msg match {
-        case "restart" => self ! "start"
+        case "restart" => self ! "restart"
+        case _ => {
+
+        }
       }
     }
   }
@@ -75,39 +70,35 @@ class MySqlBinlogController(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManag
 
     case ListenerMessage(msg) => {
       msg match {
-        case "restart" => {
-          sender ! SyncControllerMessage("start")
-        }
-        case "reconnect" => {
-          try {
-            mysqlConnection.synchronized(mysqlConnection.reconnect())
-          } catch {
-            case e: Exception => processError(e, ListenerMessage("reconnect"))
-          }
-
+        //        case "restart" => {
+        //          sender ! SyncControllerMessage("start")
+        //        }
+        //        case "reconnect" => {
+        //          try {
+        //            mysqlConnection.synchronized(mysqlConnection.reconnect())
+        //          } catch {
+        //            case e: Exception => processError(e, ListenerMessage("reconnect"))
+        //          }
+        //
+        //        }
+        case x => {
+          println(s"syncController online unhandled message:$x")
         }
       }
     }
     case SinkerMessage(msg) => {
-      msg match {
-        case "restart" => {
-          sender ! SyncControllerMessage("start")
-        }
-      }
+      //      msg match {
+      //        case "restart" => {
+      //          sender ! SyncControllerMessage("start")
+      //        }
+      //      }
     }
     case SyncControllerMessage(msg) => {
 
     }
   }
 
-  def startAllWorkers = {
-    //启动recorder
-    context
-      .child("binlogPositionRecorder")
-      .map {
-        ref =>
-        // ref ! SyncControllerMessage("start")
-      }
+  def restartAllWorkers = {
     //启动sinker
     context
       .child("binlogSinker")
@@ -118,13 +109,49 @@ class MySqlBinlogController(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManag
     context
       .child("binlogBatcher")
       .map {
-        ref => ref ! SyncControllerMessage("start")
+        ref => context.system.scheduler.scheduleOnce(1 second, ref, SyncControllerMessage("start"))
       }
     //启动fetcher
     context
       .child("binlogFetcher")
       .map {
+        ref => context.system.scheduler.scheduleOnce(2 second, ref, SyncControllerMessage("start"))
+      }
+    //启动listener
+    context
+      .child("heartBeatsListener")
+      .map {
+        ref =>
+          ref ! SyncControllerMessage("start")
+          val queryTimeOut = config.getInt("common.query.timeout")
+      }
+  }
+
+  def startAllWorkers = {
+    //启动recorder
+    //    context
+    //      .child("binlogPositionRecorder")
+    //      .map {
+    //        ref =>
+    //        // ref ! SyncControllerMessage("start")
+    //      }
+    //启动sinker
+    context
+      .child("binlogSinker")
+      .map {
         ref => ref ! SyncControllerMessage("start")
+      }
+    //启动batcher
+    context
+      .child("binlogBatcher")
+      .map {
+        ref => context.system.scheduler.scheduleOnce(1 second, ref, SyncControllerMessage("start"))
+      }
+    //启动fetcher
+    context
+      .child("binlogFetcher")
+      .map {
+        ref => context.system.scheduler.scheduleOnce(2 second, ref, SyncControllerMessage("start"))
       }
     //启动listener
     context
@@ -138,6 +165,26 @@ class MySqlBinlogController(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManag
       }
   }
 
+  def initWorkers = {
+    //todo logstash
+    //初始化HeartBeatsListener
+    context.actorOf(Props(classOf[MysqlConnectionListener], resourceManager).withDispatcher("akka.pinned-dispatcher"), "heartBeatsListener")
+    //    //初始化binlogPositionRecorder
+    //    val recorder = context.actorOf(MysqlBinlogPositionRecorder.props(mysql2KafkaTaskInfoManager), "binlogPositionRecorder")
+    //初始化binlogSinker
+    //如果并行打开使用并行sinker
+    val binlogSinker = if (resourceManager.taskInfo.isTransactional) {
+      //使用transaction式
+      context.actorOf(Props(classOf[BinlogTransactionBufferSinker], resourceManager), "binlogSinker")
+    } else {
+      context.actorOf(ConcurrentBinlogSinker.prop(resourceManager), "binlogSinker")
+    }
+    //初始化binlogEventBatcher
+    val binlogEventBatcher = context.actorOf(BinlogEventBatcher.prop(binlogSinker, resourceManager), "binlogBatcher")
+    //初始化binlogFetcher
+    context.actorOf(Props(classOf[MysqlBinlogFetcher], resourceManager, binlogEventBatcher).withDispatcher("akka.pinned-dispatcher"), "binlogFetcher")
+  }
+
   /**
     * 错误处理
     */
@@ -148,7 +195,7 @@ class MySqlBinlogController(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManag
     if (isCrashed) {
       switch2Error
       errorCount = 0
-      throw new Exception("fetching data failure for 3 times")
+      throw new Exception("syncController error for 3 times")
     } else {
       message
       self ! message
@@ -190,7 +237,6 @@ class MySqlBinlogController(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManag
     * 4.初始化binlogFetcher
     */
   override def preStart(): Unit
-
   = {
     initWorkers
   }
@@ -200,7 +246,7 @@ class MySqlBinlogController(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManag
 
   = {
     //todo logstash
-    mysqlConnection.disconnect()
+    //    mysqlConnection.disconnect()
   }
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit
@@ -210,7 +256,6 @@ class MySqlBinlogController(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManag
     //默认的话是会调用postStop，preRestart可以保存当前状态
     context.become(receive)
     //todo logstash
-    self ! SyncControllerMessage("restart")
     super.preRestart(reason, message)
   }
 
@@ -220,7 +265,7 @@ class MySqlBinlogController(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManag
     //todo logstash
     //可以恢复之前的状态，默认会调用
     super.postRestart(reason)
-    context.system.scheduler.scheduleOnce(1 minute,self,"start")
+    context.system.scheduler.scheduleOnce(1 minute, self, SyncControllerMessage("restart"))
   }
 
   override def supervisorStrategy = {
@@ -237,7 +282,7 @@ class MySqlBinlogController(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManag
 }
 
 object MySqlBinlogController {
-  def props(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager): Props = {
-    Props(new MySqlBinlogController(mysql2KafkaTaskInfoManager))
+  def props(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskInfoBean): Props = {
+    Props(new MySqlBinlogController(commonConfig,taskInfoBean))
   }
 }

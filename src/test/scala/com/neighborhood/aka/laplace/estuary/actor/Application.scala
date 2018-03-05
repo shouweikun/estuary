@@ -21,19 +21,15 @@ object Application extends theActorSystem {
 //    taskInfoBean.master = mysqlBean
 //    val config = ConfigFactory.load(ConfigFactory.parseFile(conf))
 
-    val mysql2KafkaTaskInfoManager = TestContext.mysql2KafkaTaskInfoManager
-    val controller =  init(mysql2KafkaTaskInfoManager)
+
+    val controller =  init
     controller ! "start"
   }
 
 
-  def buildManager(config: Config, mysql2KafkaTaskInfoBean: Mysql2KafkaTaskInfoBean): Mysql2KafkaTaskInfoManager = {
-    new Mysql2KafkaTaskInfoManager(config, mysql2KafkaTaskInfoBean)
-  }
-
-  def init(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager) :ActorRef= {
+  def init:ActorRef= {
     val actorSystem = this.system
-    actorSystem.actorOf(Props(classOf[MySqlBinlogController], mysql2KafkaTaskInfoManager))
+    actorSystem.actorOf(Props(classOf[MySqlBinlogController],TestContext.config,TestContext.mysql2KafkaTaskInfoBean))
 
   }
 

@@ -46,6 +46,7 @@ class KafkaSinkFunc[K <: BaseDataJsonKey, V](kafkaBean: KafkaBean) extends SinkF
       case Failure(e) => {
         //todo log
         e
+        kafkaProducer.close()
         false
       }
     }

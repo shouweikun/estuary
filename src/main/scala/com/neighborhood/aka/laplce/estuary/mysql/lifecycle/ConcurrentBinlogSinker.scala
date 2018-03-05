@@ -14,7 +14,7 @@ import org.springframework.util.StringUtils
 /**
   * Created by john_liu on 2018/2/9.
   */
-class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager, binlogPositionRecorder: ActorRef) extends Actor with SourceDataSinker {
+class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager) extends Actor with SourceDataSinker {
   /**
     * 拼接json用
     */
@@ -73,11 +73,11 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
       /**
         * 待保存的BinlogOffset
         */
-      var savedOffset: Long = _
+      var savedOffset: Long = 0L
       /**
         * 待保存的Binlog文件名称
         */
-      var savedJournalName: String = _
+      var savedJournalName: String = ""
       list
         .map {
           x =>
@@ -208,9 +208,11 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
 }
 
 object ConcurrentBinlogSinker {
-  def prop(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager, binlogPositionRecorder: ActorRef): Props = {
-    Props(new ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager, binlogPositionRecorder))
-  }
+  //  def prop(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager, binlogPositionRecorder: ActorRef): Props = {
+  //    Props(new ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager, binlogPositionRecorder))
 
+  def prop(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager): Props = {
+    Props(new ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager))
+  }
 
 }
