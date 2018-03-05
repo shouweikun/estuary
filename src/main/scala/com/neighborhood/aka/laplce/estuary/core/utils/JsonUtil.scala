@@ -17,7 +17,7 @@ object JsonUtil {
     */
   val CLASSPATH_SCHEMA = "classpath:"
   /**
-    * 针对文件系统的.
+    * 针对文件系统的
     */
   val FILE_SCHEMA = "file:///"
 

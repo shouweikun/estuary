@@ -64,6 +64,10 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
           context.become(online)
           switch2Busy
         }
+        case x => {
+          //todo log
+          println(s"sinker offline unhandled message:$x")
+        }
       }
     }
   }
@@ -101,6 +105,8 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
       this.lastSavedOffset = savedOffset
 
     }
+    // 定时记录logPosition
+    case SyncControllerMessage("record") => logPositionHandler.persistLogPosition(destination,lastSavedJournalName,lastSavedOffset)
     case x => {
       //todo log
       println(s"sinker online unhandled message $x")

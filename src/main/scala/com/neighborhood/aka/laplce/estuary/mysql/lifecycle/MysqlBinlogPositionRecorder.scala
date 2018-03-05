@@ -12,7 +12,9 @@ import scala.concurrent.Future
 
 /**
   * Created by john_liu on 2018/2/27.
+  *
   */
+@deprecated
 class MysqlBinlogPositionRecorder(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager) extends Actor with PositionRecorder {
 
   type SinkFutureList = List[(CanalEntry.Entry, Future[Boolean])]
@@ -151,6 +153,6 @@ class MysqlBinlogPositionRecorder(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInf
 
 object MysqlBinlogPositionRecorder {
   def props(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager):Props = {
-    Props(new MySqlBinlogController(mysql2KafkaTaskInfoManager))
+    Props(new MysqlBinlogPositionRecorder(mysql2KafkaTaskInfoManager))
   }
 }

@@ -19,7 +19,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 class MySqlBinlogController(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncController with Actor {
   //资源管理器，一次同步任务所有的resource都由resourceManager负责
-  val resourceManager = Mysql2KafkaTaskInfoManager.buildManager(commonConfig,taskInfoBean)
+  val resourceManager = Mysql2KafkaTaskInfoManager.buildManager(commonConfig, taskInfoBean)
   val mysql2KafkaTaskInfoManager = resourceManager
   //配置
   val config = context.system.settings.config
@@ -98,12 +98,19 @@ class MySqlBinlogController(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskI
     }
   }
 
+  /**
+    * 重启时调用
+    * 与StartAllWorkers的区别是
+    * StartAllWorkers的区别是 重启不需要scheduler的定时方法
+    */
   def restartAllWorkers = {
     //启动sinker
     context
       .child("binlogSinker")
       .map {
-        ref => ref ! SyncControllerMessage("start")
+        ref =>
+          ref ! SyncControllerMessage("start")
+          context.system.scheduler.schedule(5 minutes,5 minutes,ref,SyncControllerMessage("record"))
       }
     //启动batcher
     context
@@ -168,7 +175,7 @@ class MySqlBinlogController(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskI
   def initWorkers = {
     //todo logstash
     //初始化HeartBeatsListener
-    context.actorOf(Props(classOf[MysqlConnectionListener], resourceManager).withDispatcher("akka.pinned-dispatcher"), "heartBeatsListener")
+    context.actorOf(MysqlConnectionListener.props(mysql2KafkaTaskInfoManager).withDispatcher("akka.pinned-dispatcher"), "heartBeatsListener")
     //    //初始化binlogPositionRecorder
     //    val recorder = context.actorOf(MysqlBinlogPositionRecorder.props(mysql2KafkaTaskInfoManager), "binlogPositionRecorder")
     //初始化binlogSinker
@@ -283,6 +290,6 @@ class MySqlBinlogController(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskI
 
 object MySqlBinlogController {
   def props(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskInfoBean): Props = {
-    Props(new MySqlBinlogController(commonConfig,taskInfoBean))
+    Props(new MySqlBinlogController(commonConfig, taskInfoBean))
   }
 }
