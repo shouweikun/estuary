@@ -1,15 +1,15 @@
 package com.neighborhood.aka.laplce.estuary.mysql.lifecycle
 
-import akka.actor.SupervisorStrategy.Restart
+import akka.actor.SupervisorStrategy.Escalate
 import akka.actor.{Actor, ActorRef, OneForOneStrategy, Props}
 import com.neighborhood.aka.laplce.estuary.bean.key.BinlogKey
 import com.neighborhood.aka.laplce.estuary.bean.support.KafkaMessage
 import com.neighborhood.aka.laplce.estuary.core.lifecycle
 import com.neighborhood.aka.laplce.estuary.core.lifecycle.{SinkerMessage, SourceDataSinker, Status, SyncControllerMessage}
 import com.neighborhood.aka.laplce.estuary.mysql.Mysql2KafkaTaskInfoManager
-import com.sun.scenario.effect.Offset
 import org.I0Itec.zkclient.exception.ZkTimeoutException
 import org.apache.kafka.clients.producer.{Callback, RecordMetadata}
+import org.springframework.util.StringUtils
 
 /**
   * Created by john_liu on 2018/2/9.
@@ -34,13 +34,26 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
     */
   val logPositionHandler = mysql2KafkaTaskInfoManager.logPositionHandler
   /**
+    * 同步标识作为写入zk 的标识
+    */
+  val destination = mysql2KafkaTaskInfoManager.taskInfo.syncTaskId
+  /**
+    * 本次同步任务开始的logPosition
+    * 从zk中获取
+    */
+  val startPosition = Option(logPositionHandler.logPositionManager.getLatestIndexBy(destination))
+  /**
     * 待保存的BinlogOffset
     */
-  var lastSavedOffset: Long = _
+  var lastSavedOffset: Long = if (startPosition.isDefined) {
+    startPosition.get.getPostion.getPosition
+  } else 4L
   /**
     * 待保存的Binlog文件名称
     */
-  var lastSavedJournalName: String = _
+  var lastSavedJournalName: String = if (startPosition.isDefined) {
+    startPosition.get.getPostion.getJournalName
+  } else ""
 
   //offline
   override def receive: Receive = {
@@ -79,6 +92,14 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
             }
         }
 
+      //这次任务完成后
+
+      //kafka flush 数据
+      kafkaSinker.flush
+      //保存这次任务的binlog
+      this.lastSavedJournalName = savedJournalName
+      this.lastSavedOffset = savedOffset
+
     }
     case x => {
       //todo log
@@ -99,9 +120,17 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
       val theJournalName = lastSavedJournalName
 
       override def onCompletion(metadata: RecordMetadata, exception: Exception): Unit = {
-
-        //todo 记录position
-        if (exception != null) throw new RuntimeException("Error when send :" + key + ", metadata:" + metadata, exception)
+        if (exception != null) {
+          //记录position
+          if (!StringUtils.isEmpty(theJournalName)) {
+            logPositionHandler.persistLogPosition(destination, theJournalName, theOffset)
+          }
+          //todo log
+          //扔出异常，让程序感知
+          throw new RuntimeException("Error when send :" + key + ", metadata:" + metadata, exception)
+        } else {
+          //todo log
+        }
       }
     }
     kafkaSinker.ayncSink(kafkaMessage.getBaseDataJsonKey.asInstanceOf[BinlogKey], kafkaMessage.getJsonValue)(topic)(callback)
@@ -165,15 +194,15 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
   override def supervisorStrategy = {
     OneForOneStrategy() {
       case e: ZkTimeoutException => {
-        Restart
+        Escalate
         //todo log
       }
       case e: Exception => {
         switch2Error
-        Restart
+        Escalate
       }
-      case error: Error => Restart
-      case _ => Restart
+      case error: Error => Escalate
+      case _ => Escalate
     }
   }
 }

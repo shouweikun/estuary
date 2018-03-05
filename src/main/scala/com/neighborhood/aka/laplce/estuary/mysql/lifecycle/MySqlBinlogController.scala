@@ -209,7 +209,7 @@ class MySqlBinlogController(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManag
     //todo logstash
     //默认的话是会调用postStop，preRestart可以保存当前状态
     context.become(receive)
-    //todo logstashg
+    //todo logstash
     self ! SyncControllerMessage("restart")
     super.preRestart(reason, message)
   }

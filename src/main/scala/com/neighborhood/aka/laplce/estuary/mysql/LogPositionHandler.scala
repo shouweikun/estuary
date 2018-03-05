@@ -31,6 +31,17 @@ class LogPositionHandler(binlogParser: MysqlBinlogParser, manager: ZooKeeperLogP
   }
 
   /**
+    * @param destination 其实就是taskid 作为zk记录的标识
+    * @param journalName binlog文件的JournalName
+    * @param offest      binlog的offset
+    *                    记录 log 到 zk 中
+    */
+  def persistLogPosition(destination: String, journalName: String, offest: Long): Unit = {
+    val logPosition = buildLastPosition(journalName, offest)
+    manager.persistLogPosition(destination, logPosition)
+  }
+
+  /**
     * @param flag       是否dump失败过
     * @param connection mysqlConnection
     *                   获取开始的position
@@ -245,6 +256,24 @@ class LogPositionHandler(binlogParser: MysqlBinlogParser, manager: ZooKeeperLogP
     logPosition
   }
 
+  /**
+    * @param journalName binlog文件名
+    * @param offset      文件偏移量
+    * @param address     mysql地址
+    *                    从entry 构建成 LogPosition
+    */
+
+  def buildLastPosition(journalName: String, offset: Long, address: InetSocketAddress = this.address) = {
+    val logPosition = new LogPosition
+    val position = new EntryPosition
+    position.setJournalName(journalName)
+    position.setPosition(offset)
+    logPosition.setPostion(position)
+    val identity = new LogIdentity(address, -1L)
+    logPosition.setIdentity(identity)
+    logPosition
+  }
+
   def findByStartTimeStamp(mysqlConnection: MysqlConnection, startTimeStamp: Long)(flag: Boolean): EntryPosition = {
     val endPosition = findEndPosition(mysqlConnection)
     val startPosition = findStartPosition(mysqlConnection)(flag)
@@ -290,6 +319,7 @@ class LogPositionHandler(binlogParser: MysqlBinlogParser, manager: ZooKeeperLogP
     * 注：canal原生的方法，这里仅进行最小程度的scala风格修改，其余均保留原来的样式
     * 根据给定的时间戳，在指定的binlog中找到最接近于该时间戳(必须是小于时间戳)的一个事务起始位置。
     * 针对最后一个binlog会给定endPosition，避免无尽的查询
+    *
     * @todo test
     */
   private[estuary] def findAsPerTimestampInSpecificLogFile(mysqlConnection: MysqlConnection, startTimestamp: Long, endPosition: EntryPosition, searchBinlogFile: String): EntryPosition = {
@@ -344,8 +374,9 @@ class LogPositionHandler(binlogParser: MysqlBinlogParser, manager: ZooKeeperLogP
     else null
   }
 }
+
 object LogPositionHandler {
-  val BINLOG_START_OFFEST     = 4L
+  val BINLOG_START_OFFEST = 4L
 }
 
 
