@@ -4,7 +4,7 @@ import java.util
 import java.util.concurrent.atomic.AtomicLong
 
 import akka.actor.SupervisorStrategy.{Escalate, Restart}
-import akka.actor.{Actor, ActorRef, OneForOneStrategy, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, OneForOneStrategy, Props}
 import com.alibaba.otter.canal.protocol.CanalEntry
 import com.alibaba.otter.canal.protocol.CanalEntry.Column
 import com.neighborhood.aka.laplce.estuary.bean.key.BinlogKey
@@ -25,7 +25,7 @@ import com.alibaba.fastjson.JSONObject
 /**
   * Created by john_liu on 2018/2/6.
   */
-class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager) extends Actor with SourceDataBatcher {
+class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager) extends Actor with SourceDataBatcher with ActorLogging {
 
   /**
     * 拼接json用
@@ -125,19 +125,19 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
 
   /**
     * 刷新list里的值并发送给sinker
+    *
     * @todo 如果json 的开销小，不使用future，其实这个future是不安全的
     */
   def flush = {
     if (!entryBatch.isEmpty) {
       val batch = entryBatch
       val entryJsonList = Future {
-        //todo 将entry转换成json
         batch.map {
           entry =>
             val entryType = entry.getEntryType //entry类型
-            val header = entry.getHeader
+          val header = entry.getHeader
             val eventType = header.getEventType //事件类型
-            val tempJsonKey = BinlogKey.buildBinlogKey(header)
+          val tempJsonKey = BinlogKey.buildBinlogKey(header)
             //todo 添加tempJsonKey的具体信息
             //根据entry的类型来执行不同的操作
             entryType match {
@@ -149,17 +149,17 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
               }
               case CanalEntry.EntryType.ROWDATA => {
                 eventType match {
-                    //DML操作都执行tranformDMLtoJson这个方法
+                  //DML操作都执行tranformDMLtoJson这个方法
                   case CanalEntry.EventType.DELETE => tranformDMLtoJson(entry, tempJsonKey, "DELETE")
                   case CanalEntry.EventType.INSERT => tranformDMLtoJson(entry, tempJsonKey, "INSERT")
                   case CanalEntry.EventType.UPDATE => tranformDMLtoJson(entry, tempJsonKey, "UPDATE")
                   //DDL操作直接将entry变为json
                   case CanalEntry.EventType.ALTER =>
-                    new KafkaMessage(tempJsonKey, CanalEntryJsonHelper.entryToJson(entry))
-                  case CanalEntry.EventType.CREATE =>
-                    CanalEntryJsonHelper.entryToJson(entry)
-                  case _ => {
-                    //todo log
+                    new KafkaMessage(tempJsonKey, CanalEntryJsonHelper.entryToJson(entry), header.getLogfileName, header.getLogfileOffset)
+                  case CanalEntry.EventType.CREATE => new KafkaMessage(tempJsonKey, CanalEntryJsonHelper.entryToJson(entry), header.getLogfileName, header.getLogfileOffset)
+
+                  case x => {
+                    log.warning(s"unsupported EntryType:$x")
                   }
                 }
               }
@@ -183,23 +183,22 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
   /**
     * entry 解码并处理
     */
+  @deprecated
   def tranformAndHandle(event: LogEvent)(mode: Boolean = this.mode) = {
     val entry = transferEvent(event)
     (entry.isDefined, mode) match {
       //transactional模式
       case (true, true) => {
-        //todo log
+        log.info(s"${entry.get.getHeader.getLogfileName}-${entry.get.getHeader.getLogfileOffset} send to sinker with transactional mode")
         binlogEventSinker ! entry.get
       }
       //concurrent模式
       case (true, false) => {
-        //todo log
-        println(s"${entry.get.getHeader.getExecuteTime}")
+        log.info(s"${entry.get.getHeader.getLogfileName}-${entry.get.getHeader.getLogfileOffset} send to sinker with concurrent mode")
         batchAndFlush(entry.get)()
       }
       case (false, _) => {
-        //todo log
-        println(System.currentTimeMillis())
+        log.warning(s"${event} cannot be resolved")
       }
     }
   }
@@ -229,6 +228,7 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
               kafkaMessage.setBaseDataJsonKey(jsonKey)
               jsonKeyColumnBuilder.setIndex(count)
               jsonKeyColumnBuilder.setValue(JsonUtil.serialize(jsonKey))
+
               /**
                 * 构造rowChange对应部分的json
                 */
@@ -259,7 +259,7 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
           }.toArray
       }
       case Failure(e) => {
-        //todo log
+        log.error("Error when parse rowchange:" + entry, e)
         throw new RuntimeException("Error when parse rowchange:" + entry, e)
       }
     }
@@ -361,8 +361,7 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
   override def preStart(): Unit = {
     //状态置为offline
     switch2Offline
-
-    context.system.scheduler.scheduleOnce(1 minutes)(self ! FetcherMessage("restart"))
+    log.info("batcher initialized")
 
   }
 

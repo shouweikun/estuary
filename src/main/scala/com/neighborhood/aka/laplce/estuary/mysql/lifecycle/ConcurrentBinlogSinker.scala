@@ -1,7 +1,7 @@
 package com.neighborhood.aka.laplce.estuary.mysql.lifecycle
 
 import akka.actor.SupervisorStrategy.Escalate
-import akka.actor.{Actor, ActorRef, OneForOneStrategy, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, OneForOneStrategy, Props}
 import com.neighborhood.aka.laplce.estuary.bean.key.BinlogKey
 import com.neighborhood.aka.laplce.estuary.bean.support.KafkaMessage
 import com.neighborhood.aka.laplce.estuary.core.lifecycle
@@ -14,7 +14,7 @@ import org.springframework.util.StringUtils
 /**
   * Created by john_liu on 2018/2/9.
   */
-class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager) extends Actor with SourceDataSinker {
+class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager) extends Actor with SourceDataSinker with ActorLogging{
   /**
     * 拼接json用
     */
@@ -61,12 +61,12 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
       msg match {
         case "start" => {
           //online模式
+          log.info("sinker swtich to online")
           context.become(online)
           switch2Busy
         }
         case x => {
-          //todo log
-          println(s"sinker offline unhandled message:$x")
+         log.warning(s"sinker offline unhandled message:$x")
         }
       }
     }
@@ -97,13 +97,14 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
         }
 
       //这次任务完成后
-
+      //todo 探讨flush是否需要Future
       //kafka flush 数据
       kafkaSinker.flush
       //保存这次任务的binlog
+
       this.lastSavedJournalName = savedJournalName
       this.lastSavedOffset = savedOffset
-
+      log.info(s"JournalName update to $savedJournalName,offset update to $savedOffset")
     }
     // 定时记录logPosition
     case SyncControllerMessage("record") => logPositionHandler.persistLogPosition(destination,lastSavedJournalName,lastSavedOffset)
@@ -131,11 +132,11 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
           if (!StringUtils.isEmpty(theJournalName)) {
             logPositionHandler.persistLogPosition(destination, theJournalName, theOffset)
           }
-          //todo log
+         log.error("Error when send :" + key + ", metadata:" + metadata, exception)
           //扔出异常，让程序感知
           throw new RuntimeException("Error when send :" + key + ", metadata:" + metadata, exception)
         } else {
-          //todo log
+          log.info("send success:" + key + ", metadata:" + metadata)
         }
       }
     }
