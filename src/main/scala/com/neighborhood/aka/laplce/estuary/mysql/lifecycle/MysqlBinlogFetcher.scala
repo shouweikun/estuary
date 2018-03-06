@@ -5,7 +5,7 @@ import java.nio.ByteBuffer
 import java.util
 
 import akka.actor.SupervisorStrategy.Restart
-import akka.actor.{Actor, ActorRef, OneForOneStrategy, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, OneForOneStrategy, Props}
 import com.alibaba.otter.canal.parse.driver.mysql.packets.HeaderPacket
 import com.alibaba.otter.canal.parse.driver.mysql.packets.client.BinlogDumpCommandPacket
 import com.alibaba.otter.canal.parse.driver.mysql.packets.server.ResultSetPacket
@@ -32,7 +32,7 @@ import scala.concurrent.duration._
   * @todo 将fetcher和actor解耦
   */
 
-class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager, binlogEventBatcher: ActorRef) extends Actor with SourceDataFetcher {
+class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager, binlogEventBatcher: ActorRef) extends Actor with SourceDataFetcher with ActorLogging {
   /**
     * binlogParser 解析binlog
     */
@@ -80,11 +80,12 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
     case FetcherMessage(msg) => {
       msg match {
         case "restart" => {
+          log.info("fetcher restarting")
           switch2Restarting
           self ! SyncControllerMessage("start")
         }
         case str: String => {
-          println(s"fetcher offline  unhandled message:$str")
+          log.warning(s"fetcher offline  unhandled message:$str")
         }
       }
 
@@ -98,14 +99,18 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
         case "start" => {
           try {
             entryPosition = Option(logPositionHandler.findStartPosition(mysqlConnection.get)(errorCount > 0))
+
             if (entryPosition.isDefined) {
               //寻找完后必须reconnect一下
               mysqlConnection.get.synchronized {
                 mysqlConnection.get.reconnect
               }
+              log.info(s"fetcher find start position,binlogFileName:${entryPosition.get.getJournalName},${entryPosition.get.getPosition}")
               context.become(online)
+              log.info(s"fetcher switch to online")
               self ! FetcherMessage("start")
             } else {
+              log.error("fetcher find entryPosition is null")
               throw new Exception("entryPosition is null")
             }
           }
@@ -126,14 +131,16 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
           self ! FetcherMessage("predump")
         }
         case "predump" => {
+          log.debug("fetcher predump")
           preDump(mysqlConnection.get)
           mysqlConnection.get.connect
           val startPosition = entryPosition.get
-          //       throw new Exception("故意的")
           try {
             if (StringUtils.isEmpty(startPosition.getJournalName) && Option(startPosition.getTimestamp).isEmpty) {
-              //todo log
+              log.error("unsupported operation: dump by timestamp is not supported yet")
+              throw new UnsupportedOperationException("unsupported operation: dump by timestamp is not supported yet")
             } else {
+              log.info("start dump binlog")
               dump(startPosition.getJournalName, startPosition.getPosition)
 
             }
@@ -207,23 +214,23 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
     * 从连接中取数据
     */
   def fetchOne = {
-   // val before=System.currentTimeMillis()
+    // val before=System.currentTimeMillis()
     val event = decoder.decode(fetcher, logContext)
-    val entry = try{
+    val entry = try {
       binlogParser.parseAndProfilingIfNecessary(event, false)
     } catch {
-      case e: CanalParseException =>{
+      case e: CanalParseException => {
         //todo log
         println(e)
         None
       }
     }
     if (filterEntry(entry)) {
-      val after=System.currentTimeMillis()
-//      println(after-before)
+      val after = System.currentTimeMillis()
+      //      println(after-before)
       Thread.sleep(2)
       //todo logStash
-     // println(entry.get.getHeader.getLogfileOffset)
+      // println(entry.get.getHeader.getLogfileOffset)
       binlogEventBatcher ! entry.get
     } else {
       //todo log

@@ -270,7 +270,7 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
     * @param column CanalEntry.Column
     *               将column转化成Json
     */
-  private def getColumnToJSON(column: CanalEntry.Column) = {
+  protected def getColumnToJSON(column: CanalEntry.Column) = {
     val columnMap = new util.HashMap[String, AnyRef]
     columnMap.put("index", column.getIndex.toString)
     columnMap.put("sqlType", column.getSqlType.toString)
@@ -314,7 +314,7 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
     * @param isEnd 是否是结尾
     *              增加key值
     */
-  private def addKeyValue(sb: StringBuilder, key: String, value: Any, isEnd: Boolean) = {
+  protected def addKeyValue(sb: StringBuilder, key: String, value: Any, isEnd: Boolean) = {
     sb.append(STRING_CONTAINER).append(key).append(STRING_CONTAINER).append(KEY_VALUE_SPLIT)
     if (value.isInstanceOf[String]) sb.append(STRING_CONTAINER).append(value.asInstanceOf[String].replaceAll("\"", "\\\\\"").replaceAll("[\r\n]+", "")).append(STRING_CONTAINER)
     else if (value.isInstanceOf[Enum[_]]) sb.append(STRING_CONTAINER).append(value).append(STRING_CONTAINER)

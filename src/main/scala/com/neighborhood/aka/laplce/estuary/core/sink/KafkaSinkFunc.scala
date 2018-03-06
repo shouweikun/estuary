@@ -6,6 +6,7 @@ import java.util.concurrent.{Callable, Future}
 import com.neighborhood.aka.laplce.estuary.bean.key.BaseDataJsonKey
 import com.neighborhood.aka.laplce.estuary.bean.datasink.KafkaBean
 import org.apache.kafka.clients.producer.{Callback, KafkaProducer, ProducerRecord, RecordMetadata}
+import org.slf4j.LoggerFactory
 
 import scala.util.{Failure, Success, Try}
 

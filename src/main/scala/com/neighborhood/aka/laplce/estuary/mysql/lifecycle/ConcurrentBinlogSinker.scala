@@ -109,8 +109,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
     // 定时记录logPosition
     case SyncControllerMessage("record") => logPositionHandler.persistLogPosition(destination,lastSavedJournalName,lastSavedOffset)
     case x => {
-      //todo log
-      println(s"sinker online unhandled message $x")
+      log.warning(s"sinker online unhandled message $x")
 
     }
   }

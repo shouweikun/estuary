@@ -1,7 +1,7 @@
 package com.neighborhood.aka.laplce.estuary.mysql.lifecycle
 
 import akka.actor.SupervisorStrategy.{Escalate, Restart}
-import akka.actor.{Actor, OneForOneStrategy, Props}
+import akka.actor.{Actor, ActorLogging, OneForOneStrategy, Props}
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
 import com.neighborhood.aka.laplce.estuary.core.lifecycle
 import com.neighborhood.aka.laplce.estuary.core.lifecycle.{HeartBeatListener, ListenerMessage, Status, SyncControllerMessage}
@@ -13,7 +13,7 @@ import scala.util.Try
 /**
   * Created by john_liu on 2018/2/1.
   */
-class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager) extends Actor with HeartBeatListener {
+class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager) extends Actor with HeartBeatListener with ActorLogging {
 
 
   /**
@@ -39,8 +39,9 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
     case SyncControllerMessage(msg) => {
       msg match {
         case "start" => {
-          //todo logstash
+
           //变为online状态
+          log.info("heartBeatListener swtich to online")
           context.become(onlineState)
           connection.get.connect()
           switch2Busy
@@ -49,16 +50,14 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
           //doNothing
         }
         case str => {
-          //todo logStash
-          println(s"listener offline  unhandled message:$str")
+         log.info(s"listener offline  unhandled message:$str")
         }
       }
     }
     case ListenerMessage(msg) => {
-      //todo logstash
       msg match {
         case str => {
-          println(s"listener offline  unhandled message:$str")
+          log.info(s"listener offline  unhandled message:$str")
         }
       }
 
@@ -71,13 +70,9 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
     case ListenerMessage(msg) => {
       msg match {
         case "listen" => {
-//          //测试
-//          if (System.currentTimeMillis() % 2 == 0) {
-//            throw new Exception("偶数异常")
-//          }
-          //todo log
-          println("is listening to the heartbeats")
+          log.info(s"is listening to the heartbeats")
           listenHeartBeats
+
         }
         case "stop" => {
           //变为offline状态
@@ -102,7 +97,6 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
     connection.foreach {
       conn =>
         val before = System.currentTimeMillis
-        println("before listening try")
         if (!Try(conn
           .query(delectingSql)).isSuccess) {
 
@@ -117,8 +111,7 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
 
           val after = System.currentTimeMillis()
           val duration = after - before
-          println(s"after listening try:$duration")
-          //todo 记录时间
+          println(s"this listening test cost :$duration")
         }
     }
 

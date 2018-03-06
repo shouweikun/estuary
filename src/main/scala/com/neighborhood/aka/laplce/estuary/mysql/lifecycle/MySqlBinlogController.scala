@@ -25,6 +25,17 @@ class MySqlBinlogController(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskI
   val config = context.system.settings.config
   //canal的mysqlConnection
   val mysqlConnection: MysqlConnection = resourceManager.mysqlConnection
+
+  var fetchCount: Long = 0L
+  var fetchAvergeTime: Double = 0
+
+  var batchCount: Long = 0L
+  var batchAvergeTime: Double = 0
+
+  var sinkCount: Long = 0L
+  var sinkAvergeTime: Double = 0
+
+
   override var errorCountThreshold: Int = 3
   override var errorCount: Int = 0
 

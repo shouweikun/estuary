@@ -7,4 +7,5 @@ import akka.actor.ActorSystem
   */
 trait theActorSystem {
  val system = ActorSystem("Estuary")
+
 }
