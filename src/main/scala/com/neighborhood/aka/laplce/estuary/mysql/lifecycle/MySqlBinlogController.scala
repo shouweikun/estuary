@@ -1,7 +1,7 @@
 package com.neighborhood.aka.laplce.estuary.mysql.lifecycle
 
 import akka.actor.SupervisorStrategy.Restart
-import akka.actor.{Actor, OneForOneStrategy, Props}
+import akka.actor.{Actor, ActorLogging, OneForOneStrategy, Props}
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
 import com.neighborhood.aka.laplce.estuary.bean.task.Mysql2KafkaTaskInfoBean
 import com.neighborhood.aka.laplce.estuary.core.lifecycle
@@ -17,7 +17,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
   * Created by john_liu on 2018/2/1.
   */
 
-class MySqlBinlogController(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncController with Actor {
+class MySqlBinlogController(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncController with Actor with ActorLogging {
   //资源管理器，一次同步任务所有的resource都由resourceManager负责
   val resourceManager = Mysql2KafkaTaskInfoManager.buildManager(commonConfig, taskInfoBean)
   val mysql2KafkaTaskInfoManager = resourceManager
@@ -49,12 +49,15 @@ class MySqlBinlogController(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskI
   //offline 状态
   override def receive: Receive = {
     case "start" => {
+
       context.become(online)
       startAllWorkers
+      log.info("controller switched to online,start all workers")
     }
     case "restart" => {
       context.become(online)
       restartAllWorkers
+      log.info("controller switched to online,restart all workers")
     }
     case ListenerMessage(msg) => {
       msg match {
@@ -93,7 +96,7 @@ class MySqlBinlogController(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskI
         //
         //        }
         case x => {
-          println(s"syncController online unhandled message:$x")
+          log.warning(s"syncController online unhandled message:$x")
         }
       }
     }
@@ -121,7 +124,7 @@ class MySqlBinlogController(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskI
       .map {
         ref =>
           ref ! SyncControllerMessage("start")
-          context.system.scheduler.schedule(5 minutes,5 minutes,ref,SyncControllerMessage("record"))
+          context.system.scheduler.schedule(5 minutes, 5 minutes, ref, SyncControllerMessage("record"))
       }
     //启动batcher
     context
@@ -184,21 +187,27 @@ class MySqlBinlogController(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskI
   }
 
   def initWorkers = {
-    //todo logstash
+
     //初始化HeartBeatsListener
+    log.info("initialize listener")
     context.actorOf(MysqlConnectionListener.props(mysql2KafkaTaskInfoManager).withDispatcher("akka.pinned-dispatcher"), "heartBeatsListener")
     //    //初始化binlogPositionRecorder
     //    val recorder = context.actorOf(MysqlBinlogPositionRecorder.props(mysql2KafkaTaskInfoManager), "binlogPositionRecorder")
     //初始化binlogSinker
     //如果并行打开使用并行sinker
+
     val binlogSinker = if (resourceManager.taskInfo.isTransactional) {
+      log.info("initialize sinker with mode transactional ")
       //使用transaction式
       context.actorOf(Props(classOf[BinlogTransactionBufferSinker], resourceManager), "binlogSinker")
     } else {
+      log.info("initialize sinker with mode concurrent ")
       context.actorOf(ConcurrentBinlogSinker.prop(resourceManager), "binlogSinker")
     }
+    log.info("initialize batcher")
     //初始化binlogEventBatcher
     val binlogEventBatcher = context.actorOf(BinlogEventBatcher.prop(binlogSinker, resourceManager), "binlogBatcher")
+    log.info("initialize fetcher")
     //初始化binlogFetcher
     context.actorOf(Props(classOf[MysqlBinlogFetcher], resourceManager, binlogEventBatcher).withDispatcher("akka.pinned-dispatcher"), "binlogFetcher")
   }
@@ -256,6 +265,7 @@ class MySqlBinlogController(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskI
     */
   override def preStart(): Unit
   = {
+    log.info("start init all workers")
     initWorkers
   }
 
@@ -270,19 +280,19 @@ class MySqlBinlogController(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskI
   override def preRestart(reason: Throwable, message: Option[Any]): Unit
 
   = {
-    //todo logstash
+    log.info("syncController processing preRestart")
     //默认的话是会调用postStop，preRestart可以保存当前状态
     context.become(receive)
-    //todo logstash
     super.preRestart(reason, message)
   }
 
   override def postRestart(reason: Throwable): Unit
 
   = {
-    //todo logstash
+    log.info("syncController processing postRestart")
     //可以恢复之前的状态，默认会调用
     super.postRestart(reason)
+    log.info("syncController will restart in 1 minute")
     context.system.scheduler.scheduleOnce(1 minute, self, SyncControllerMessage("restart"))
   }
 
