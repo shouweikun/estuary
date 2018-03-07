@@ -79,7 +79,7 @@ class Mysql2KafkaTaskInfoManager(commonConfig: Config, taskInfoBean: Mysql2Kafka
   /**
     * 同步任务开始entry
     */
-  var startPosition: EntryPosition = _
+  var startPosition: EntryPosition = new EntryPosition("mysql-bin.000013", 4L)
   /**
     * canal的mysqlConnection
     */

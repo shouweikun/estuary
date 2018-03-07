@@ -50,6 +50,7 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
           //doNothing
         }
         case str => {
+          if(str == "listen")self ! SyncControllerMessage("start")
          log.warning(s"listener offline  unhandled message:$str")
         }
       }
@@ -57,6 +58,7 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
     case ListenerMessage(msg) => {
       msg match {
         case str => {
+
           log.warning(s"listener offline  unhandled message:$str")
         }
       }

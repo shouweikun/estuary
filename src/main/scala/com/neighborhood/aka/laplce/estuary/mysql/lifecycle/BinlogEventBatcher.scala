@@ -159,6 +159,7 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
                   case CanalEntry.EventType.CREATE => new KafkaMessage(tempJsonKey, CanalEntryJsonHelper.entryToJson(entry), header.getLogfileName, header.getLogfileOffset)
 
                   case x => {
+
                     log.warning(s"unsupported EntryType:$x")
                   }
                 }

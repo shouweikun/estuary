@@ -98,6 +98,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
         }
         case "start" => {
           try {
+            mysqlConnection.map(_.connect())
             entryPosition = Option(logPositionHandler.findStartPosition(mysqlConnection.get)(errorCount > 0))
 
             if (entryPosition.isDefined) {
