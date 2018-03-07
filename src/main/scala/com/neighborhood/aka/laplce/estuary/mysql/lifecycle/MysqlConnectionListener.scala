@@ -50,14 +50,14 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
           //doNothing
         }
         case str => {
-         log.info(s"listener offline  unhandled message:$str")
+         log.warning(s"listener offline  unhandled message:$str")
         }
       }
     }
     case ListenerMessage(msg) => {
       msg match {
         case str => {
-          log.info(s"listener offline  unhandled message:$str")
+          log.warning(s"listener offline  unhandled message:$str")
         }
       }
 
@@ -111,7 +111,7 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
 
           val after = System.currentTimeMillis()
           val duration = after - before
-          println(s"this listening test cost :$duration")
+          log.info(s"this listening test cost :$duration")
         }
     }
 

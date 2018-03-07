@@ -10,14 +10,14 @@ import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
   */
 class MysqlBinlogFetcherTest extends TestKit(ActorSystem("MySpec")) with ImplicitSender
   with WordSpecLike with Matchers with BeforeAndAfterAll {
-  val taskManager = TestContext.mysql2KafkaTaskInfoManager
-  val questReceiver = TestProbe().ref
-  val actor = TestActorRef.apply(MysqlBinlogFetcher.props(taskManager, questReceiver))
-  actor.underlying
-
-  override def afterAll {
-    TestKit.shutdownActorSystem(system)
-  }
+//  val taskManager = TestContext.mysql2KafkaTaskInfoManager
+//  val questReceiver = TestProbe().ref
+//  val actor = TestActorRef.apply(MysqlBinlogFetcher.props(taskManager, questReceiver))
+//  actor.underlying
+//
+//  override def afterAll {
+//    TestKit.shutdownActorSystem(system)
+//  }
 
   "An MysqlBinlogFetcher Actor" must {
 

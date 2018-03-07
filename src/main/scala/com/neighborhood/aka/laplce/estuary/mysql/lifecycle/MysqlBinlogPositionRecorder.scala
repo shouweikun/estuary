@@ -68,7 +68,7 @@ class MysqlBinlogPositionRecorder(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInf
               .get
         }
       if (flag) {
-        val entry = logPositionHandler.buildLastPosition(list.head._1)
+        val entry = logPositionHandler.buildLastPositionByEntry(list.head._1)
         logPositionHandler.persistLogPosition(destination, entry)
       } else {
         throw new Exception("kafka 写入失败")

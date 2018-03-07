@@ -185,12 +185,12 @@ class LogPositionHandler(binlogParser: MysqlBinlogParser, manager: ZooKeeperLogP
         if (entry.isEmpty) return true
         // 直接查询第一条业务数据，确认是否为事务Begin/End
         if ((CanalEntry.EntryType.TRANSACTIONBEGIN eq entry.get.getEntryType) || (CanalEntry.EntryType.TRANSACTIONEND eq entry.get.getEntryType)) {
-          lastPosition = buildLastPosition(entry.get, address)
+          lastPosition = buildLastPositionByEntry(entry.get, address)
           false
         }
         else {
           reDump.set(true)
-          lastPosition = buildLastPosition(entry.get, address)
+          lastPosition = buildLastPositionByEntry(entry.get, address)
           false
         }
       } catch {
@@ -215,7 +215,7 @@ class LogPositionHandler(binlogParser: MysqlBinlogParser, manager: ZooKeeperLogP
             // 记录一下transaction begin position
             if ((entry.get.getEntryType eq CanalEntry.EntryType.TRANSACTIONBEGIN) && entry.get.getHeader.getLogfileOffset < entryPosition.getPosition) preTransactionStartPosition.set(entry.get.getHeader.getLogfileOffset)
             if (entry.get.getHeader.getLogfileOffset >= entryPosition.getPosition) return false // 退出
-            lastPosition = buildLastPosition(entry.get, address)
+            lastPosition = buildLastPositionByEntry(entry.get, address)
             true
           } catch {
             case e: Exception =>
@@ -243,7 +243,7 @@ class LogPositionHandler(binlogParser: MysqlBinlogParser, manager: ZooKeeperLogP
     * @todo 梳理逻辑
     */
 
-  def buildLastPosition(entry: CanalEntry.Entry, address: InetSocketAddress = this.address) = {
+  def buildLastPositionByEntry(entry: CanalEntry.Entry, address: InetSocketAddress = this.address) = {
     val logPosition = new LogPosition
     val position = new EntryPosition
     position.setJournalName(entry.getHeader.getLogfileName)
@@ -358,7 +358,7 @@ class LogPositionHandler(binlogParser: MysqlBinlogParser, manager: ZooKeeperLogP
               //              logger.debug("set {} to be pending start position before finding another proper one...", entryPosition)
               logPosition.setPostion(entryPosition)
             }
-            lastPosition = buildLastPosition(entry.get)
+            lastPosition = buildLastPositionByEntry(entry.get)
           } catch {
             case e: Throwable =>
               throw new Exception("exception when find binlog by timestamp", e)

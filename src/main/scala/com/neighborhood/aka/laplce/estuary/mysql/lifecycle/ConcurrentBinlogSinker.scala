@@ -200,8 +200,8 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
   override def supervisorStrategy = {
     OneForOneStrategy() {
       case e: ZkTimeoutException => {
+        log.error("can not connect to zookeeper server")
         Escalate
-        //todo log
       }
       case e: Exception => {
         switch2Error

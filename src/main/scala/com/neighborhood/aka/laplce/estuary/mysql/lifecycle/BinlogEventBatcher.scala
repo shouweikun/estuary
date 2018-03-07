@@ -250,7 +250,7 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
                       .mkString
                   }"
 
-                } + s"${getColumnToJSON(jsonKeyColumnBuilder.build}$END_ARRAY$END_JSON"
+                } + s"${getColumnToJSON(jsonKeyColumnBuilder.build)}$END_ARRAY$END_JSON"
               }
 
               val finalDataString = s"${START_JSON}${STRING_CONTAINER}header${STRING_CONTAINER}${KEY_VALUE_SPLIT}${getEntryHeaderJson(entry.getHeader)}${ELEMENT_SPLIT}${STRING_CONTAINER}rowChange${STRING_CONTAINER}${KEY_VALUE_SPLIT}${START_JSON}${STRING_CONTAINER}rowDatas${STRING_CONTAINER}${KEY_VALUE_SPLIT}${START_ARRAY}${rowChangeStr}${END_ARRAY}${END_JSON}${END_JSON}"

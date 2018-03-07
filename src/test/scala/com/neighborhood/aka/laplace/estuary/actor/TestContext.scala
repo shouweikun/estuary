@@ -53,4 +53,8 @@ object TestContext {
   val startPosition = new EntryPosition("mysql-bin.000013", 4L)
 
   def buildDummyMysqlEventParser: Class[_] = Class.forName("com.alibaba.otter.canal.parse.inbound.mysql.MysqlEventParser")
+
+  def buildMysql2KafkaTaskManager = {
+
+  }
 }
