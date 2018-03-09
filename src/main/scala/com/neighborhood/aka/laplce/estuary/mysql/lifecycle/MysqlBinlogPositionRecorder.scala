@@ -24,10 +24,24 @@ class MysqlBinlogPositionRecorder(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInf
 
 
   override def receive: Receive = {
+    case SyncControllerMessage(x) => {
+      x match {
+        case "start" => {
+
+        }
+      }
+    }
+    case RecorderMessage(x) => {
+      x match {
+        case  "record" => {
+
+        }
+      }
+    }
     case SinkerMessage(x) => {
       x match {
         case "error" => {
-          throw new RuntimeException("sinker has something wrong")
+         // throw new RuntimeException("sinker has something wrong")
         }
         case _ =>{}
       }

@@ -1,7 +1,7 @@
 package com.neighborhood.aka.laplce.estuary.mysql.lifecycle
 
 import akka.actor.SupervisorStrategy.Restart
-import akka.actor.{Actor, ActorInitializationException, ActorLogging, OneForOneStrategy, Props}
+import akka.actor.{Actor, ActorInitializationException, ActorLogging, AllForOneStrategy, OneForOneStrategy, Props}
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
 import com.neighborhood.aka.laplce.estuary.bean.task.Mysql2KafkaTaskInfoBean
 import com.neighborhood.aka.laplce.estuary.core.lifecycle
@@ -49,7 +49,7 @@ class MySqlBinlogController(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskI
   //offline 状态
   override def receive: Receive = {
     case "start" => {
-
+//      throw new Exception
       context.become(online)
       startAllWorkers
       log.info("controller switched to online,start all workers")
@@ -101,11 +101,12 @@ class MySqlBinlogController(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskI
       }
     }
     case SinkerMessage(msg) => {
-      //      msg match {
-      //        case "restart" => {
-      //          sender ! SyncControllerMessage("start")
-      //        }
-      //      }
+            msg match {
+              case "error" => {
+               throw new RuntimeException("sinker has something wrong")
+              }
+              case _ => {}
+            }
     }
     case SyncControllerMessage(msg) => {
 
@@ -258,6 +259,7 @@ class MySqlBinlogController(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskI
 
   /**
     * 每次启动都会调用，在构造器之后调用
+    * 0.初始化positionRecorder
     * 1.初始化HeartBeatsListener
     * 2.初始化binlogSinker
     * 3.初始化binlogEventBatcher
@@ -297,7 +299,7 @@ class MySqlBinlogController(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskI
   }
 
   override def supervisorStrategy = {
-    OneForOneStrategy() {
+    AllForOneStrategy() {
       case e: ActorInitializationException => Restart
       case e: ZkTimeoutException => {
         Restart
