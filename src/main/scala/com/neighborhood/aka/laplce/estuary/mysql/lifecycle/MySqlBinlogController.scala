@@ -1,7 +1,7 @@
 package com.neighborhood.aka.laplce.estuary.mysql.lifecycle
 
 import akka.actor.SupervisorStrategy.Restart
-import akka.actor.{Actor, ActorLogging, OneForOneStrategy, Props}
+import akka.actor.{Actor, ActorInitializationException, ActorLogging, OneForOneStrategy, Props}
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
 import com.neighborhood.aka.laplce.estuary.bean.task.Mysql2KafkaTaskInfoBean
 import com.neighborhood.aka.laplce.estuary.core.lifecycle
@@ -298,6 +298,7 @@ class MySqlBinlogController(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskI
 
   override def supervisorStrategy = {
     OneForOneStrategy() {
+      case e:ActorInitializationException =>Restart
       case e: ZkTimeoutException => {
         Restart
         //todo log

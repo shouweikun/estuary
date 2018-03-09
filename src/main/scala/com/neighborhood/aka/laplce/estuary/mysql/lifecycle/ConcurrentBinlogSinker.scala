@@ -14,7 +14,7 @@ import org.springframework.util.StringUtils
 /**
   * Created by john_liu on 2018/2/9.
   */
-class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager) extends Actor with SourceDataSinker with ActorLogging{
+class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager) extends Actor with SourceDataSinker with ActorLogging {
   /**
     * 拼接json用
     */
@@ -66,7 +66,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
           switch2Busy
         }
         case x => {
-         log.warning(s"sinker offline unhandled message:$x")
+          log.warning(s"sinker offline unhandled message:$x")
         }
       }
     }
@@ -86,9 +86,9 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
         .map {
           x =>
             x match {
-              case message: KafkaMessage => {
-                handleSinkTask(message)
-              }
+              case message: KafkaMessage => handleSinkTask(message)
+              case messages: Array[KafkaMessage] => messages.map(handleSinkTask(_))
+
               case BinlogPositionInfo(journalName, offset) => {
                 savedJournalName = journalName
                 savedOffset = offset
@@ -102,13 +102,15 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
       //kafka flush 数据
       kafkaSinker.flush
       //保存这次任务的binlog
-
-      this.lastSavedJournalName = savedJournalName
-      this.lastSavedOffset = savedOffset
-      log.info(s"JournalName update to $savedJournalName,offset update to $savedOffset")
+      //判断的原因是如果本次写入没有事务offset就不记录
+      if (!StringUtils.isEmpty(savedJournalName)) {
+        this.lastSavedJournalName = savedJournalName
+        this.lastSavedOffset = savedOffset
+        log.info(s"JournalName update to $savedJournalName,offset update to $savedOffset")
+      }
     }
     // 定时记录logPosition
-    case SyncControllerMessage("record") => logPositionHandler.persistLogPosition(destination,lastSavedJournalName,lastSavedOffset)
+    case SyncControllerMessage("record") => logPositionHandler.persistLogPosition(destination, lastSavedJournalName, lastSavedOffset)
     case x => {
       log.warning(s"sinker online unhandled message $x")
 
@@ -132,16 +134,14 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
           if (!StringUtils.isEmpty(theJournalName)) {
             logPositionHandler.persistLogPosition(destination, theJournalName, theOffset)
           }
-         log.error("Error when send :" + key + ", metadata:" + metadata, exception)
+          log.error("Error when send :" + key + ", metadata:" + metadata, exception)
           //扔出异常，让程序感知
           throw new RuntimeException("Error when send :" + key + ", metadata:" + metadata, exception)
-        } else {
-          log.info("send success:" + key + ", metadata:" + metadata)
         }
       }
     }
-    log.info(kafkaMessage.getJsonValue.substring(0,5))
-   // kafkaSinker.ayncSink(kafkaMessage.getBaseDataJsonKey.asInstanceOf[BinlogKey], kafkaMessage.getJsonValue)(topic)(callback)
+    //log.info(kafkaMessage.getJsonValue.substring(0, 5))
+        kafkaSinker.ayncSink(kafkaMessage.getBaseDataJsonKey.asInstanceOf[BinlogKey], kafkaMessage.getJsonValue)(topic)(callback)
   }
 
 

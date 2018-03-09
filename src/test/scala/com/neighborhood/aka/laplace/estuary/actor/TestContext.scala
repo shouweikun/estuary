@@ -38,7 +38,7 @@ object TestContext {
   /**
     * Kafka基本信息
     */
-  val kafkaConfigJson = JsonUtil.Json2JavaMap("{\n      \"bootstrap.servers\": \"10.10.71.76:9092;10.10.71.14:9092;10.10.72.234:9092\",\n      \"max.block.ms\": 3000,\n      \"max.request.size\": 10485760,\n      \"request.timeout.ms\": 30000,\n      \"acks\": \"1\",\n      \"linger.ms\": 0,\n      \"retries\": 10\n    }")
+  val kafkaConfigJson = JsonUtil.Json2JavaMap("{\n      \"bootstrap.servers\": \"10.10.248.207:6667;10.10.237.78:6667;10.10.219.186:6667\",\n      \"max.block.ms\": 3000,\n      \"max.request.size\": 10485760,\n      \"request.timeout.ms\": 30000,\n      \"acks\": \"1\",\n      \"linger.ms\": 0,\n      \"retries\": 10\n    }")
   val topic: String = "test"
   /**
     * Mysql2KafkaBean

@@ -131,8 +131,10 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
   def flush = {
     if (!entryBatch.isEmpty) {
       val batch = entryBatch
-      val entryJsonList = Future {
-        batch.map {
+      val entryJsonList =
+        batch.
+         // par.
+          map {
           entry =>
             val entryType = entry.getEntryType //entry类型
           val header = entry.getHeader
@@ -157,18 +159,18 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
                   case CanalEntry.EventType.ALTER =>
                     new KafkaMessage(tempJsonKey, CanalEntryJsonHelper.entryToJson(entry), header.getLogfileName, header.getLogfileOffset)
                   case CanalEntry.EventType.CREATE => new KafkaMessage(tempJsonKey, CanalEntryJsonHelper.entryToJson(entry), header.getLogfileName, header.getLogfileOffset)
-
                   case x => {
 
                     log.warning(s"unsupported EntryType:$x")
                   }
-                }
+
               }
             }
         }
       }
+          .toList
       //将解析好的entryJsonList发送给Sinker
-      entryJsonList pipeTo binlogEventSinker
+       binlogEventSinker ! entryJsonList
       //清空list
       entryBatch = List.empty
     }

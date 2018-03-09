@@ -29,7 +29,7 @@ object Application extends theActorSystem {
 
   def init:ActorRef= {
     val actorSystem = this.system
-    actorSystem.actorOf(Props(classOf[MySqlBinlogController],TestContext.config,TestContext.mysql2KafkaTaskInfoBean))
+    actorSystem.actorOf(Props(classOf[MySqlBinlogController],TestContext.config,TestContext.mysql2KafkaTaskInfoBean),TestContext.mysql2KafkaTaskInfoBean.syncTaskId)
 
   }
 

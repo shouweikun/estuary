@@ -215,14 +215,13 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
     * 从连接中取数据
     */
   def fetchOne = {
-    // val before=System.currentTimeMillis()
+    val before=System.currentTimeMillis()
     val event = decoder.decode(fetcher, logContext)
     val entry = try {
       binlogParser.parseAndProfilingIfNecessary(event, false)
     } catch {
       case e: CanalParseException => {
-        //todo log
-        println(e)
+        log.warning(s"table has been removed")
         None
       }
     }
@@ -230,12 +229,9 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
       val after = System.currentTimeMillis()
       //      println(after-before)
       Thread.sleep(2)
-      //todo logStash
-      // println(entry.get.getHeader.getLogfileOffset)
+      log.debug(s"fetch entry: ${entry.get.getHeader.getLogfileName},${entry.get.getHeader.getLogfileOffset},${after-before}")
       binlogEventBatcher ! entry.get
     } else {
-      //todo log
-      // println(s"得到个 $entry")
       //throw new Exception("the fetched data is null")
     }
   }
