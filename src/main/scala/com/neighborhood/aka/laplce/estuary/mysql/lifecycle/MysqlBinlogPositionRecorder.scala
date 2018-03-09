@@ -1,6 +1,6 @@
 package com.neighborhood.aka.laplce.estuary.mysql.lifecycle
 
-import akka.actor.SupervisorStrategy.Restart
+import akka.actor.SupervisorStrategy.{Escalate, Restart}
 import akka.actor.{Actor, AllForOneStrategy, OneForOneStrategy, Props}
 import com.alibaba.otter.canal.protocol.CanalEntry
 import com.neighborhood.aka.laplce.estuary.core.lifecycle
@@ -22,60 +22,21 @@ class MysqlBinlogPositionRecorder(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInf
   val logPositionHandler = mysql2KafkaTaskInfoManager.logPositionHandler
   val destination = mysql2KafkaTaskInfoManager.taskInfo.syncTaskId
 
+
   override def receive: Receive = {
-    case SyncControllerMessage(msg: String) => {
-      msg match {
-        case "start" => {
-          //todo log
-          context.become(online)
+    case SinkerMessage(x) => {
+      x match {
+        case "error" => {
+          throw new RuntimeException("sinker has something wrong")
         }
+        case _ =>{}
       }
     }
-    case _ => {
-      println("recorder unhandled message")
+    case BinlogPositionInfo(journalName, offset) => {
+      logPositionHandler.persistLogPosition(destination,journalName,offset)
     }
+
   }
-
-  //online
-  def online: Receive = {
-    case SyncControllerMessage(msg: String) => {
-      msg match {
-        case "record" => {
-          //todo
-        }
-      }
-    }
-    case RecorderMessage(msg: String) => {
-      msg
-    }
-    case SinkerMessage(msg: String) => {
-      msg match {
-        case x => {
-
-        }
-
-      }
-    }
-    case list: SinkFutureList => {
-      //todo 这块设计的不好
-      val flag = list
-        .forall {
-          sinkFuture =>
-            sinkFuture
-              ._2
-              .value
-              .get
-              .get
-        }
-      if (flag) {
-        val entry = logPositionHandler.buildLastPositionByEntry(list.head._1)
-        logPositionHandler.persistLogPosition(destination, entry)
-      } else {
-        throw new Exception("kafka 写入失败")
-      }
-    }
-  }
-
 
   /**
     * 错位次数阈值
@@ -136,17 +97,16 @@ class MysqlBinlogPositionRecorder(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInf
   }
 
   override def supervisorStrategy = {
-    AllForOneStrategy() {
+    OneForOneStrategy() {
       case e: ZkTimeoutException => {
-        Restart
+        Escalate
         //todo log
       }
       case e: Exception => {
-        switch2Error
-        Restart
+        Escalate
       }
-      case error: Error => Restart
-      case _ => Restart
+      case error: Error => Escalate
+      case _ => Escalate
     }
   }
 }

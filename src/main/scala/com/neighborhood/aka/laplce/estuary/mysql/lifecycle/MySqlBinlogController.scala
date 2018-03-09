@@ -186,23 +186,23 @@ class MySqlBinlogController(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskI
       }
   }
 
-  def initWorkers = {
-
+  def initWorkers: Unit = {
     //初始化HeartBeatsListener
     log.info("initialize listener")
     context.actorOf(MysqlConnectionListener.props(mysql2KafkaTaskInfoManager).withDispatcher("akka.pinned-dispatcher"), "heartBeatsListener")
-    //    //初始化binlogPositionRecorder
-    //    val recorder = context.actorOf(MysqlBinlogPositionRecorder.props(mysql2KafkaTaskInfoManager), "binlogPositionRecorder")
+    //初始化binlogPositionRecorder
+    log.info("initialize Recorder")
+    val recorder = context.actorOf(MysqlBinlogPositionRecorder.props(mysql2KafkaTaskInfoManager), "binlogPositionRecorder")
     //初始化binlogSinker
     //如果并行打开使用并行sinker
-
+    log.info("initialize sinker")
     val binlogSinker = if (resourceManager.taskInfo.isTransactional) {
       log.info("initialize sinker with mode transactional ")
       //使用transaction式
       context.actorOf(Props(classOf[BinlogTransactionBufferSinker], resourceManager), "binlogSinker")
     } else {
       log.info("initialize sinker with mode concurrent ")
-      context.actorOf(ConcurrentBinlogSinker.prop(resourceManager), "binlogSinker")
+      context.actorOf(ConcurrentBinlogSinker.prop(resourceManager, recorder), "binlogSinker")
     }
     log.info("initialize batcher")
     //初始化binlogEventBatcher
@@ -298,7 +298,7 @@ class MySqlBinlogController(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskI
 
   override def supervisorStrategy = {
     OneForOneStrategy() {
-      case e:ActorInitializationException =>Restart
+      case e: ActorInitializationException => Restart
       case e: ZkTimeoutException => {
         Restart
         //todo log

@@ -16,7 +16,7 @@ import org.springframework.util.StringUtils
 /**
   * Created by john_liu on 2018/2/9.
   */
-class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager) extends Actor with SourceDataSinker with ActorLogging {
+class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,positionRecorder:ActorRef) extends Actor with SourceDataSinker with ActorLogging {
 
   implicit val sinkTaskPool = new collection.parallel.ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(mysql2KafkaTaskInfoManager.taskInfo.batchThreshold.get().toInt))
   /**
@@ -148,13 +148,13 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
       override def onCompletion(metadata: RecordMetadata, exception: Exception): Unit = {
         if (exception != null) {
 
-          log.error("Error when send :" + key + ", metadata:" + metadata + exception + "lastSavedPoint" + s"thisJournalName = $lastSavedJournalName" + s"thisOffset = $lastSavedOffset")
+          log.error("Error when send :" + key + ", metadata:" + metadata + exception + "lastSavedPoint" + s"thisJournalName = $thisJournalName" + s"thisOffset = $thisOffset")
           if (isAbnormal.compareAndSet(false, true)) {
 
-            //todo sent logPostion
-            // todo log
+            positionRecorder ! BinlogPositionInfo(thisJournalName,thisOffset)
+            positionRecorder ! SinkerMessage("error")
+            log.info("send to recorder lastSavedPoint" + s"thisJournalName = $thisJournalName" + s"thisOffset = $thisOffset")
             //todo 做的不好 ，应该修改一下messge模型
-
 
           }
 
@@ -247,8 +247,8 @@ object ConcurrentBinlogSinker {
   //  def prop(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager, binlogPositionRecorder: ActorRef): Props = {
   //    Props(new ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager, binlogPositionRecorder))
 
-  def prop(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager): Props = {
-    Props(new ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager))
+  def prop(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,positionRecorder:ActorRef): Props = {
+    Props(new ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager,positionRecorder))
   }
 
 }
