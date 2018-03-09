@@ -50,5 +50,5 @@ class Mysql2KafkaTaskInfoBean extends MysqlBean with KafkaBean with BaseExtractB
   /**
     * entry打包的阈值
     */
-  var batchThreshold : AtomicLong = new AtomicLong(10)
+  var batchThreshold : AtomicLong = new AtomicLong(50)
 }

@@ -1,5 +1,7 @@
 package com.neighborhood.aka.laplce.estuary.mysql.lifecycle
 
+import java.util.concurrent.atomic.AtomicBoolean
+
 import akka.actor.SupervisorStrategy.Escalate
 import akka.actor.{Actor, ActorLogging, ActorRef, OneForOneStrategy, Props}
 import com.neighborhood.aka.laplce.estuary.bean.key.BinlogKey
@@ -15,6 +17,8 @@ import org.springframework.util.StringUtils
   * Created by john_liu on 2018/2/9.
   */
 class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager) extends Actor with SourceDataSinker with ActorLogging {
+
+  implicit val sinkTaskPool = new collection.parallel.ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(mysql2KafkaTaskInfoManager.taskInfo.batchThreshold.get().toInt))
   /**
     * 拼接json用
     */
@@ -43,6 +47,10 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
     */
   val startPosition = Option(logPositionHandler.logPositionManager.getLatestIndexBy(destination))
   /**
+    * 是否发生异常
+    */
+  val isAbnormal = new AtomicBoolean(false)
+  /**
     * 待保存的BinlogOffset
     */
   var lastSavedOffset: Long = if (startPosition.isDefined) {
@@ -54,6 +62,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
   var lastSavedJournalName: String = if (startPosition.isDefined) {
     startPosition.get.getPostion.getJournalName
   } else ""
+
 
   //offline
   override def receive: Receive = {
@@ -82,7 +91,10 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
         * 待保存的Binlog文件名称
         */
       var savedJournalName: String = ""
-      list
+      val before = System.currentTimeMillis()
+      val task = list.par
+      task.tasksupport = sinkTaskPool
+      task
         .map {
           x =>
             x match {
@@ -97,17 +109,19 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
             }
         }
 
+      val after = System.currentTimeMillis()
       //这次任务完成后
-      //todo 探讨flush是否需要Future
-      //kafka flush 数据
-      kafkaSinker.flush
+      log.info(s"send处理用了${after - before}")
       //保存这次任务的binlog
       //判断的原因是如果本次写入没有事务offset就不记录
       if (!StringUtils.isEmpty(savedJournalName)) {
         this.lastSavedJournalName = savedJournalName
         this.lastSavedOffset = savedOffset
-        log.info(s"JournalName update to $savedJournalName,offset update to $savedOffset")
       }
+
+
+      //   log.info(s"JournalName update to $savedJournalName,offset update to $savedOffset")
+
     }
     // 定时记录logPosition
     case SyncControllerMessage("record") => logPositionHandler.persistLogPosition(destination, lastSavedJournalName, lastSavedOffset)
@@ -120,28 +134,42 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
   /**
     *
     */
-  def handleSinkTask(kafkaMessage: KafkaMessage, journalName: String = this.lastSavedJournalName, offset: Long = this.lastSavedOffset) = {
+  def handleSinkTask(kafkaMessage: KafkaMessage, journalName: String = this.lastSavedJournalName, offset: Long = this.lastSavedOffset): Unit = {
+    val before = System.currentTimeMillis()
     val key = s"${kafkaMessage.getBaseDataJsonKey.asInstanceOf[BinlogKey].getDbName}.${kafkaMessage.getBaseDataJsonKey.asInstanceOf[BinlogKey].getTableName}"
     val topic = kafkaSinker.findTopic(key)
+    /**
+      * 写数据时的异常
+      */
     val callback = new Callback {
-
-      val theOffset = lastSavedOffset
-      val theJournalName = lastSavedJournalName
+      val thisJournalName = lastSavedJournalName
+      val thisOffset = lastSavedOffset
 
       override def onCompletion(metadata: RecordMetadata, exception: Exception): Unit = {
         if (exception != null) {
-          //记录position
-          if (!StringUtils.isEmpty(theJournalName)) {
-            logPositionHandler.persistLogPosition(destination, theJournalName, theOffset)
+
+          log.error("Error when send :" + key + ", metadata:" + metadata + exception + "lastSavedPoint" + s"thisJournalName = $lastSavedJournalName" + s"thisOffset = $lastSavedOffset")
+          if (isAbnormal.compareAndSet(false, true)) {
+
+            //todo sent logPostion
+            // todo log
+            //todo 做的不好 ，应该修改一下messge模型
+
+
           }
-          log.error("Error when send :" + key + ", metadata:" + metadata, exception)
-          //扔出异常，让程序感知
-          throw new RuntimeException("Error when send :" + key + ", metadata:" + metadata, exception)
+
+          //          throw new RuntimeException(s"Error when send data to kafka the journalName:$thisJournalName,offset:$thisOffset")
+
         }
       }
     }
-    //log.info(kafkaMessage.getJsonValue.substring(0, 5))
-        kafkaSinker.ayncSink(kafkaMessage.getBaseDataJsonKey.asInstanceOf[BinlogKey], kafkaMessage.getJsonValue)(topic)(callback)
+
+    // log.info(kafkaMessage.getJsonValue.substring(0, 5))
+    kafkaSinker.ayncSink(kafkaMessage.getBaseDataJsonKey.asInstanceOf[BinlogKey], kafkaMessage.getJsonValue)(topic)(callback)
+    val after = System.currentTimeMillis()
+
+    // log.info(s"sink cost time :${after-before}")
+
   }
 
 
