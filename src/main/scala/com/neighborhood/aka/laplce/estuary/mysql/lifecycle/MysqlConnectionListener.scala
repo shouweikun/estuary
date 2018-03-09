@@ -163,6 +163,9 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
     super.postRestart(reason)
   }
 
+  override def postStop(): Unit = {
+    connection.get.disconnect()
+  }
   override def supervisorStrategy = {
     OneForOneStrategy() {
       case e: Exception => Escalate

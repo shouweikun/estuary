@@ -177,7 +177,7 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
         .pipeTo(binlogEventSinker)
 
       //将解析好的entryJsonList发送给Sinker
-     // binlogEventSinker ! entryJsonList
+      // binlogEventSinker ! entryJsonList
 
       //清空list
       entryBatch = List.empty
@@ -375,6 +375,11 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
     log.info("batcher initialized")
 
   }
+
+  override def postStop(): Unit = {
+    transTaskPool.shutdown()
+  }
+
 
   override def postRestart(reason: Throwable): Unit = {
     super.postRestart(reason)
