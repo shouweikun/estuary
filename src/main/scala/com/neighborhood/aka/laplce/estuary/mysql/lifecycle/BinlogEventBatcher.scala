@@ -5,7 +5,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicLong
 
 import akka.actor.SupervisorStrategy.{Escalate, Restart}
-import akka.actor.{Actor, ActorLogging, ActorRef, OneForOneStrategy, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, AllForOneStrategy, OneForOneStrategy, Props}
 import com.alibaba.otter.canal.protocol.CanalEntry
 import com.alibaba.otter.canal.protocol.CanalEntry.Column
 import com.neighborhood.aka.laplce.estuary.bean.key.BinlogKey
@@ -180,6 +180,7 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
       // binlogEventSinker ! entryJsonList
 
       //清空list
+//      throw new Exception
       entryBatch = List.empty
     }
   }
@@ -221,6 +222,7 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
     *                    将DML类型的CanalEntry 转换成Json
     */
   def tranformDMLtoJson(entry: CanalEntry.Entry, temp: BinlogKey, eventString: String): Array[KafkaMessage] = {
+
     Try(CanalEntry.RowChange.parseFrom(entry.getStoreValue)) match {
       case Success(rowChange) => {
         (0 until rowChange.getRowDatasCount)
@@ -386,7 +388,7 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
   }
 
   override def supervisorStrategy = {
-    OneForOneStrategy() {
+    AllForOneStrategy() {
       case _ => Escalate
     }
   }

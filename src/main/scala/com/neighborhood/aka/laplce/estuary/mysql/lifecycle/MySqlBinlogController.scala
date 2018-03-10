@@ -1,6 +1,6 @@
 package com.neighborhood.aka.laplce.estuary.mysql.lifecycle
 
-import akka.actor.SupervisorStrategy.Restart
+import akka.actor.SupervisorStrategy.{Escalate, Restart}
 import akka.actor.{Actor, ActorInitializationException, ActorLogging, AllForOneStrategy, OneForOneStrategy, Props}
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
 import com.neighborhood.aka.laplce.estuary.bean.task.Mysql2KafkaTaskInfoBean
@@ -49,7 +49,7 @@ class MySqlBinlogController(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskI
   //offline 状态
   override def receive: Receive = {
     case "start" => {
-//      throw new Exception
+      //      throw new Exception
       context.become(online)
       startAllWorkers
       log.info("controller switched to online,start all workers")
@@ -101,12 +101,12 @@ class MySqlBinlogController(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskI
       }
     }
     case SinkerMessage(msg) => {
-            msg match {
-              case "error" => {
-               throw new RuntimeException("sinker has something wrong")
-              }
-              case _ => {}
-            }
+      msg match {
+        case "error" => {
+          throw new RuntimeException("sinker has something wrong")
+        }
+        case _ => {}
+      }
     }
     case SyncControllerMessage(msg) => {
 
@@ -284,6 +284,7 @@ class MySqlBinlogController(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskI
   = {
     log.info("syncController processing preRestart")
     //默认的话是会调用postStop，preRestart可以保存当前状态
+
     context.become(receive)
     super.preRestart(reason, message)
   }
@@ -292,28 +293,29 @@ class MySqlBinlogController(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskI
 
   = {
     log.info("syncController processing postRestart")
-    //可以恢复之前的状态，默认会调用
-    super.postRestart(reason)
     log.info("syncController will restart in 1 minute")
     context.system.scheduler.scheduleOnce(1 minute, self, SyncControllerMessage("restart"))
+    //可以恢复之前的状态，默认会调用
+    super.postRestart(reason)
+
   }
 
   override def supervisorStrategy = {
     AllForOneStrategy() {
-      case e: ActorInitializationException => Restart
-      case e: ZkTimeoutException => {
-        Restart
-        //todo log
-      }
-      case e: Exception => Restart
-      case error: Error => Restart
-      case _ => Restart
+      case _ => Escalate
+    }}
+
+    @deprecated
+    def controllerRestartStrategy = {
+      log.info("syncController will restart in 1 minute")
+      context.system.scheduler.scheduleOnce(1 minute, self, SyncControllerMessage("restart"))
+      Restart
     }
   }
-}
 
-object MySqlBinlogController {
-  def props(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskInfoBean): Props = {
-    Props(new MySqlBinlogController(commonConfig, taskInfoBean))
+  object MySqlBinlogController {
+    def props(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskInfoBean): Props = {
+      Props(new MySqlBinlogController(commonConfig, taskInfoBean))
+    }
   }
-}
+

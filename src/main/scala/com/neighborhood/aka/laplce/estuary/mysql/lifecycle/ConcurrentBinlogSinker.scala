@@ -217,7 +217,10 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
   }
 
   override def postStop(): Unit = {
+
+    kafkaSinker.kafkaProducer.close()
     sinkTaskPool.environment.shutdown()
+    logPositionHandler.logPositionManager
   }
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
