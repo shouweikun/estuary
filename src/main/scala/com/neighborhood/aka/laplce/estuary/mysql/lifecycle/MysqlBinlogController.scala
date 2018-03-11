@@ -1,17 +1,16 @@
 package com.neighborhood.aka.laplce.estuary.mysql.lifecycle
 
 import akka.actor.SupervisorStrategy.{Escalate, Restart}
-import akka.actor.{Actor, ActorInitializationException, ActorLogging, AllForOneStrategy, OneForOneStrategy, Props}
+import akka.actor.{Actor, ActorLogging, AllForOneStrategy, Props}
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
 import com.neighborhood.aka.laplce.estuary.bean.task.Mysql2KafkaTaskInfoBean
 import com.neighborhood.aka.laplce.estuary.core.lifecycle
 import com.neighborhood.aka.laplce.estuary.core.lifecycle._
 import com.neighborhood.aka.laplce.estuary.mysql.Mysql2KafkaTaskInfoManager
-import com.typesafe.config.Config
-import org.I0Itec.zkclient.exception.ZkTimeoutException
 
-import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+import scala.util.parsing.json.JSONObject
 
 /**
   * Created by john_liu on 2018/2/1.
@@ -110,6 +109,17 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
       }
     }
     case SyncControllerMessage(msg) => {
+
+    }
+    case "status" => {
+      val syncControllerStatus = mysql2KafkaTaskInfoManager.status
+      val fetcherStatus = mysql2KafkaTaskInfoManager.fetcherStatus
+      val sinkerStatus = mysql2KafkaTaskInfoManager.sinkerStatus
+      val batcherStatus = mysql2KafkaTaskInfoManager.batcherStatus
+      val listenerStatus = mysql2KafkaTaskInfoManager.heartBeatListenerStatus
+      val map = Map("syncControllerStatus" -> syncControllerStatus, "fetcherStatus" -> fetcherStatus, "sinkerStatus" -> sinkerStatus, "batcherStatus" -> batcherStatus, "listenerStatus" -> listenerStatus)
+       JSONObject
+        .apply(map)
 
     }
   }

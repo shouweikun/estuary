@@ -4,8 +4,8 @@ import com.neighborhood.aka.laplce.estuary.bean.credential.MysqlCredentialBean
 import com.neighborhood.aka.laplce.estuary.bean.task.Mysql2KafkaTaskInfoBean
 import com.neighborhood.aka.laplce.estuary.web.bean.Mysql2kafkaTaskRequestBean
 import com.neighborhood.aka.laplce.estuary.web.service.Mysql2KafkaService
-import io.swagger.annotations.{Api, ApiOperation}
-import org.springframework.web.bind.annotation.{RequestBody, RequestMapping, RequestMethod, RestController}
+import io.swagger.annotations.ApiOperation
+import org.springframework.web.bind.annotation._
 
 /**
   * Created by john_liu on 2018/3/10.
@@ -15,34 +15,41 @@ import org.springframework.web.bind.annotation.{RequestBody, RequestMapping, Req
 class Mysql2KafkaTaskController {
 
 
-//    @GetMapping(Array(""))
-//    def getAllSparkJobEntity() = {
-//      val all = sparkEntityDao.findAll().toList.map(_.toView())
-//      JsonHelper.to(all)
-//    }
-@ApiOperation(value = "1", httpMethod = "POST", notes = "1 ")
-@RequestMapping(value = Array("/new/"), method = Array(RequestMethod.POST))
+  //    @GetMapping(Array(""))
+  //    def getAllSparkJobEntity() = {
+  //      val all = sparkEntityDao.findAll().toList.map(_.toView())
+  //      JsonHelper.to(all)
+  //    }
+  @ApiOperation(value = "开始一个新的mysql2kafka任务", httpMethod = "POST", notes = "")
+  @RequestMapping(value = Array("/new/"), method = Array(RequestMethod.POST))
   def createNewTask(@RequestBody requestBody: Mysql2kafkaTaskRequestBean) = {
-      //todo 检验任务合法性
-     Mysql2KafkaService.startOneTask(buildTaskInfo(requestBody))
-    }
+    //todo 检验任务合法性
+    Mysql2KafkaService.startOneTask(buildTaskInfo(requestBody))
+  }
 
-  def buildTaskInfo(requestBody: Mysql2kafkaTaskRequestBean):Mysql2KafkaTaskInfoBean = {
+  @ApiOperation(value = "查看任务状态", httpMethod = "GET", notes = "")
+  @RequestMapping(value = Array("/check"), method = Array(RequestMethod.GET))
+  def checkTaskStatus(@RequestParam("id") id: String): String = {
+    Mysql2KafkaService.checkTaskStatus(id)
+  }
+
+
+  def buildTaskInfo(requestBody: Mysql2kafkaTaskRequestBean): Mysql2KafkaTaskInfoBean = {
     val taskInfo = new Mysql2KafkaTaskInfoBean
     //监听用
     taskInfo.listenRetrytime = requestBody.getListenRetrytime
-    taskInfo.listenTimeout  = requestBody.getListenTimeout
+    taskInfo.listenTimeout = requestBody.getListenTimeout
     //zookeeper用
     taskInfo.zookeeperTimeout = requestBody.getZookeeperTimeout
     taskInfo.zookeeperServers = requestBody.getZookeeperServers
     //kafka用
-    taskInfo.kafkaRetries =requestBody.getKafkaRetries
+    taskInfo.kafkaRetries = requestBody.getKafkaRetries
     taskInfo.lingerMs = requestBody.getLingerMs
     taskInfo.bootstrapServers = requestBody.getBootstrapServers
     taskInfo.ack = requestBody.getAck
-    taskInfo.topic =requestBody.getTopic
+    taskInfo.topic = requestBody.getTopic
     //mysql用
-    taskInfo.master = new MysqlCredentialBean(requestBody.getMysqladdress,requestBody.getMysqlPort,requestBody.getMysqlUsername,requestBody.getMysqlPassword,requestBody.getMysqlDefaultDatabase)
+    taskInfo.master = new MysqlCredentialBean(requestBody.getMysqladdress, requestBody.getMysqlPort, requestBody.getMysqlUsername, requestBody.getMysqlPassword, requestBody.getMysqlDefaultDatabase)
     //过滤用
     taskInfo.filterBlackPattern = requestBody.getFilterBlackPattern
     taskInfo.filterPattern = requestBody.getFilterPattern
@@ -50,7 +57,7 @@ class Mysql2KafkaTaskController {
     taskInfo.filterQueryDml = requestBody.isFilterQueryDml
     taskInfo.filterQueryDdl = requestBody.isFilterQueryDdl
     taskInfo.eventBlackFilterPattern = requestBody.getEventBlackFilterPattern
-    taskInfo.eventFilterPattern =requestBody.getEventFilterPattern
+    taskInfo.eventFilterPattern = requestBody.getEventFilterPattern
     //开始的position
     taskInfo.journalName = requestBody.getJournalName
     taskInfo.position = requestBody.getPosition

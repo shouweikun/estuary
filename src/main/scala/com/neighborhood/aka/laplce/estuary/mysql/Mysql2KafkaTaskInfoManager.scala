@@ -2,6 +2,7 @@ package com.neighborhood.aka.laplce.estuary.mysql
 
 import java.net.InetSocketAddress
 import java.nio.charset.Charset
+import java.util.concurrent.atomic.AtomicReference
 
 import com.alibaba.otter.canal.common.zookeeper.ZkClientx
 import com.alibaba.otter.canal.filter.aviater.AviaterRegexFilter
@@ -105,6 +106,8 @@ class Mysql2KafkaTaskInfoManager(taskInfoBean: Mysql2KafkaTaskInfoBean) extends 
     */
   @volatile
   var heartBeatListenerStatus: Status = Status.OFFLINE
+  val a = new AtomicReference[Status]()
+
   /**
     * sinker的状态
     */
