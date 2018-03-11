@@ -16,7 +16,7 @@ import org.springframework.util.StringUtils
 /**
   * Created by john_liu on 2018/2/9.
   */
-class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager, positionRecorder: ActorRef) extends Actor with SourceDataSinker with ActorLogging {
+class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager) extends Actor with SourceDataSinker with ActorLogging {
 
   implicit val sinkTaskPool = new collection.parallel.ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(mysql2KafkaTaskInfoManager.taskInfo.batchThreshold.get().toInt))
   /**
@@ -151,7 +151,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
           log.error("Error when send :" + key + ", metadata:" + metadata + exception + "lastSavedPoint" + s" thisJournalName = $thisJournalName" + s" thisOffset = $thisOffset")
           if (isAbnormal.compareAndSet(false, true)) {
 
-            positionRecorder ! BinlogPositionInfo(thisJournalName, thisOffset)
+            logPositionHandler.persistLogPosition(destination, thisJournalName, thisOffset)
             context.parent ! SinkerMessage("error")
             log.info("send to recorder lastSavedPoint" + s"thisJournalName = $thisJournalName" + s"thisOffset = $thisOffset")
             //todo 做的不好 ，应该修改一下messge模型
@@ -220,18 +220,19 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
   }
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
+    switch2Restarting
     context.become(receive)
   }
 
   override def postRestart(reason: Throwable): Unit = {
-    switch2Restarting
-    context.parent ! SinkerMessage("restart")
+
     super.postRestart(reason)
   }
 
   override def supervisorStrategy = {
     OneForOneStrategy() {
       case e: ZkTimeoutException => {
+        switch2Error
         log.error("can not connect to zookeeper server")
         Escalate
       }
@@ -239,8 +240,14 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
         switch2Error
         Escalate
       }
-      case error: Error => Escalate
-      case _ => Escalate
+      case error: Error => {
+        switch2Error
+        Escalate
+      }
+      case _ => {
+        switch2Error
+        Escalate
+      }
     }
   }
 }
@@ -249,8 +256,8 @@ object ConcurrentBinlogSinker {
   //  def prop(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager, binlogPositionRecorder: ActorRef): Props = {
   //    Props(new ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager, binlogPositionRecorder))
 
-  def prop(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager, positionRecorder: ActorRef): Props = {
-    Props(new ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager, positionRecorder))
+  def prop(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager): Props = {
+    Props(new ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager))
   }
 
 }

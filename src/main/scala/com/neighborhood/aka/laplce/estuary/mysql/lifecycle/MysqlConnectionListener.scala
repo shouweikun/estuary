@@ -51,8 +51,8 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
           //doNothing
         }
         case str => {
-          if(str == "listen")self ! SyncControllerMessage("start")
-         log.warning(s"listener offline  unhandled message:$str")
+          if (str == "listen") self ! SyncControllerMessage("start")
+          log.warning(s"listener offline  unhandled message:$str")
         }
       }
     }
@@ -150,7 +150,7 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
     //todo logstash
     context.become(receive)
-    switch2Error
+    switch2Restarting
     super.preRestart(reason, message)
   }
 
@@ -163,11 +163,17 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
   override def postStop(): Unit = {
     connection.get.disconnect()
   }
+
   override def supervisorStrategy = {
     OneForOneStrategy() {
-      case e: Exception => Escalate
-      case _: Error => Escalate
-      case _ => Restart
+      case e: Exception => {
+        switch2Error
+        Escalate
+      }
+      case _: Error => {
+        switch2Error
+        Escalate
+      }
     }
   }
 

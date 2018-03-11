@@ -180,7 +180,7 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
       // binlogEventSinker ! entryJsonList
 
       //清空list
-//      throw new Exception
+      //      throw new Exception
       entryBatch = List.empty
     }
   }
@@ -370,7 +370,7 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
   override def preStart(): Unit = {
     //状态置为offline
     switch2Offline
-    log.info("batcher initialized")
+
 
   }
 
@@ -378,14 +378,23 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
     transTaskPool.shutdown()
   }
 
+  override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
+    log.info("batcher process preRestart")
+    switch2Restarting
+    super.preRestart(reason, message)
+  }
 
   override def postRestart(reason: Throwable): Unit = {
+    log.info("batcher process postRestart")
     super.postRestart(reason)
   }
 
   override def supervisorStrategy = {
     AllForOneStrategy() {
-      case _ => Escalate
+      case _ => {
+        switch2Error
+        Escalate
+      }
     }
   }
 }

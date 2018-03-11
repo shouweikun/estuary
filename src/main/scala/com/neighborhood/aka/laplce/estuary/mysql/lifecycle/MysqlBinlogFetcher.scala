@@ -81,7 +81,6 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
       msg match {
         case "restart" => {
           log.info("fetcher restarting")
-          switch2Restarting
           self ! SyncControllerMessage("start")
         }
         case str: String => {
@@ -357,12 +356,12 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
   override def preStart(): Unit = {
     //状态置为offline
     switch2Offline
-    context.system.scheduler.scheduleOnce(1 minutes)(self ! FetcherMessage("restart"))
-
   }
 
   override def postRestart(reason: Throwable): Unit = {
     super.postRestart(reason)
+    log.info("fetcher will restart in 1 min")
+    context.system.scheduler.scheduleOnce(1 minutes)(self ! FetcherMessage("restart"))
   }
 
   override def postStop(): Unit = {
@@ -372,19 +371,29 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
 
     context.become(receive)
-    switch2Offline
+    switch2Restarting
     super.preRestart(reason, message)
   }
 
   override def supervisorStrategy = {
     OneForOneStrategy() {
       case e: ZkTimeoutException => {
+        switch2Error
         Restart
         //todo log
       }
-      case e: Exception => Restart
-      case error: Error => Restart
-      case _ => Restart
+      case e: Exception => {
+        switch2Error
+        Restart
+      }
+      case error: Error => {
+        switch2Error
+        Restart
+      }
+      case _ => {
+        switch2Error
+        Restart
+      }
     }
   }
 

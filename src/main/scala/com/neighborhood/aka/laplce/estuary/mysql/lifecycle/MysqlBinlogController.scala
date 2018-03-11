@@ -19,7 +19,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncController with Actor with ActorLogging {
   //资源管理器，一次同步任务所有的resource都由resourceManager负责
-  val resourceManager = Mysql2KafkaTaskInfoManager.buildManager( taskInfoBean)
+  val resourceManager = Mysql2KafkaTaskInfoManager.buildManager(taskInfoBean)
   val mysql2KafkaTaskInfoManager = resourceManager
   //配置
   val config = context.system.settings.config
@@ -51,6 +51,7 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
     case "start" => {
       //      throw new Exception
       context.become(online)
+      switch2Online
       startAllWorkers
       log.info("controller switched to online,start all workers")
     }
@@ -192,8 +193,8 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
     log.info("initialize listener")
     context.actorOf(MysqlConnectionListener.props(mysql2KafkaTaskInfoManager).withDispatcher("akka.pinned-dispatcher"), "heartBeatsListener")
     //初始化binlogPositionRecorder
-    log.info("initialize Recorder")
-    val recorder = context.actorOf(MysqlBinlogPositionRecorder.props(mysql2KafkaTaskInfoManager), "binlogPositionRecorder")
+    //    log.info("initialize Recorder")
+    //    val recorder = context.actorOf(MysqlBinlogPositionRecorder.props(mysql2KafkaTaskInfoManager), "binlogPositionRecorder")
     //初始化binlogSinker
     //如果并行打开使用并行sinker
     log.info("initialize sinker")
@@ -203,7 +204,7 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
       context.actorOf(Props(classOf[BinlogTransactionBufferSinker], resourceManager), "binlogSinker")
     } else {
       log.info("initialize sinker with mode concurrent ")
-      context.actorOf(ConcurrentBinlogSinker.prop(resourceManager, recorder), "binlogSinker")
+      context.actorOf(ConcurrentBinlogSinker.prop(resourceManager), "binlogSinker")
     }
     log.info("initialize batcher")
     //初始化binlogEventBatcher
@@ -216,6 +217,7 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
   /**
     * 错误处理
     */
+  @deprecated
   override def processError(e: Throwable, message: lifecycle.WorkerMessage): Unit = {
 
     //todo 记录log
@@ -244,7 +246,6 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
   private def switch2Error = {
     mysql2KafkaTaskInfoManager.syncControllerStatus = Status.ERROR
   }
-
 
 
   private def switch2Restarting = {
@@ -281,8 +282,8 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
 
   = {
     log.info("syncController processing preRestart")
-    //默认的话是会调用postStop，preRestart可以保存当前状态
-
+    //默认的话是会调用postStop，preRestart可以保存当前状态s
+    switch2Restarting
     context.become(receive)
     super.preRestart(reason, message)
   }
@@ -292,6 +293,7 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
   = {
     log.info("syncController processing postRestart")
     log.info("syncController will restart in 1 minute")
+    switch2Offline
     context.system.scheduler.scheduleOnce(1 minute, self, SyncControllerMessage("restart"))
     //可以恢复之前的状态，默认会调用
     super.postRestart(reason)
@@ -300,20 +302,24 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
 
   override def supervisorStrategy = {
     AllForOneStrategy() {
-      case _ => Escalate
-    }}
-
-    @deprecated
-    def controllerRestartStrategy = {
-      log.info("syncController will restart in 1 minute")
-      context.system.scheduler.scheduleOnce(1 minute, self, SyncControllerMessage("restart"))
-      Restart
+      case _ => {
+        switch2Error
+        Escalate
+      }
     }
   }
 
-  object MysqlBinlogController {
-    def props(taskInfoBean: Mysql2KafkaTaskInfoBean): Props = {
-      Props(new MysqlBinlogController(taskInfoBean))
-    }
+  @deprecated
+  def controllerRestartStrategy = {
+    log.info("syncController will restart in 1 minute")
+    context.system.scheduler.scheduleOnce(1 minute, self, SyncControllerMessage("restart"))
+    Restart
   }
+}
+
+object MysqlBinlogController {
+  def props(taskInfoBean: Mysql2KafkaTaskInfoBean): Props = {
+    Props(new MysqlBinlogController(taskInfoBean))
+  }
+}
 
