@@ -20,10 +20,10 @@ trait KafkaBean extends DataSinkBean {
   /**
     * 最大阻塞时间
     */
-  var maxBlockMs: String = ""
+  var maxBlockMs: String = "2000"
   var ack: String = "1"
   var lingerMs: String = "0"
-  var retries: String = "10"
+  var kafkaRetries: String = "3"
   /**
     * 分区类
     */
@@ -68,7 +68,7 @@ object KafkaBean {
     val config: util.HashMap[String, String] = new util.HashMap[String, String]()
     config.put("ack", kafkaBean.ack)
     config.put("lingerMs", kafkaBean.lingerMs)
-    config.put("retries", kafkaBean.retries)
+    config.put("retries", kafkaBean.kafkaRetries)
     config.put("bootstrap.servers", kafkaBean.bootstrapServers)
     config.put("max.block.ms", kafkaBean.maxBlockMs)
     config.put("max.request.size", kafkaBean.maxRequestSize)

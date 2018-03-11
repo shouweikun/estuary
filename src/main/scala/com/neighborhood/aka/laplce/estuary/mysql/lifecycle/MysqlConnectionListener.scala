@@ -21,17 +21,18 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
     */
   val connection: Option[MysqlConnection] = Option(mysql2KafkaTaskInfoManager.mysqlConnection)
   /**
-    * 配置
-    */
-  val config: Config = context.system.settings.config
-  /**
     * 监听心跳用sql
     */
-  val delectingSql: String = config.getString("common.delect.sql")
+  val delectingSql: String = mysql2KafkaTaskInfoManager.taskInfo.detectingSql
+  /**
+    * 重试次数标准值
+    */
+  var retryTimeThreshold = mysql2KafkaTaskInfoManager.taskInfo.listenRetrytime
   /**
     * 重试次数
     */
-  var retryTimes: Int = config.getInt("common.process.retrytime")
+  var retryTimes: Int = retryTimeThreshold
+
 
   //等待初始化 offline状态
   override def receive: Receive = {
@@ -107,7 +108,7 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
             self ! ListenerMessage("stop")
             context.parent ! ListenerMessage("reconnect")
             context.parent ! ListenerMessage("restart")
-            retryTimes = config.getInt("common.process.retrytime")
+            retryTimes = this.retryTimeThreshold
           }
         } else {
 

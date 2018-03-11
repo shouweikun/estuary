@@ -22,16 +22,12 @@ import org.apache.commons.lang.StringUtils
 /**
   * Created by john_liu on 2018/2/7.
   */
-class Mysql2KafkaTaskInfoManager(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskInfoBean) extends TaskManager with RecourceManager[String, MysqlConnection, KafkaSinkFunc[BinlogKey, String]] {
+class Mysql2KafkaTaskInfoManager(taskInfoBean: Mysql2KafkaTaskInfoBean) extends TaskManager with RecourceManager[String, MysqlConnection, KafkaSinkFunc[BinlogKey, String]] {
 
   /**
     * 同步任务控制器的ActorRef
     */
   val syncController: AnyRef = null
-  /**
-    * 配置文件中的配置
-    */
-  val config = commonConfig
   /**
     * 传入的任务配置bean
     */
@@ -39,8 +35,7 @@ class Mysql2KafkaTaskInfoManager(commonConfig: Config, taskInfoBean: Mysql2Kafka
   /**
     * 支持的binlogFormat
     */
-  lazy val supportBinlogFormats = Option(config
-    .getString("common.binlog.formats"))
+  lazy val supportBinlogFormats = Option(taskInfo.binlogFormat)
     .map {
       formatsStr =>
         formatsStr
@@ -57,9 +52,7 @@ class Mysql2KafkaTaskInfoManager(commonConfig: Config, taskInfoBean: Mysql2Kafka
   /**
     * 支持的binlogImage
     */
-  lazy val supportBinlogImages = Option(config
-    .getString(s"common.binlog.images")
-  )
+  lazy val supportBinlogImages = Option(taskInfo.binlogImages)
     .map {
       binlogImagesStr =>
         binlogImagesStr.split(",")
@@ -79,7 +72,7 @@ class Mysql2KafkaTaskInfoManager(commonConfig: Config, taskInfoBean: Mysql2Kafka
   /**
     * 同步任务开始entry
     */
-  var startPosition: EntryPosition = new EntryPosition("mysql-bin.000013", 4L)
+  var startPosition: EntryPosition = if(StringUtils.isEmpty(this.taskInfo.journalName))new EntryPosition("mysql-bin.000013", 4L) else new EntryPosition(this.taskInfo.journalName,this.taskInfo.position)
   /**
     * canal的mysqlConnection
     */
@@ -150,7 +143,7 @@ class Mysql2KafkaTaskInfoManager(commonConfig: Config, taskInfoBean: Mysql2Kafka
     val receiveBufferSize = taskInfo.receiveBufferSize
     val sendBufferSize = taskInfo.sendBufferSize
     val masterCredentialInfo = taskInfo.master
-     val address = new InetSocketAddress(masterCredentialInfo.address, masterCredentialInfo.port)
+    val address = new InetSocketAddress(masterCredentialInfo.address, masterCredentialInfo.port)
     val username = masterCredentialInfo.username
     val password = masterCredentialInfo.password
     val database = masterCredentialInfo.defaultDatabase
@@ -186,8 +179,8 @@ class Mysql2KafkaTaskInfoManager(commonConfig: Config, taskInfoBean: Mysql2Kafka
     * @return logPosition处理器
     */
   def buildEntryPositionHandler: LogPositionHandler = {
-    val servers = config.getString("common.zookeeper.servers")
-    val timeout = config.getInt("common.zookeeper.timeout")
+    val servers = taskInfo.zookeeperServers
+    val timeout = taskInfo.zookeeperTimeout
     val zkLogPositionManager = new ZooKeeperLogPositionManager
     zkLogPositionManager.setZkClientx(new ZkClientx(servers, timeout))
     new LogPositionHandler(binlogParser, zkLogPositionManager, slaveId = this.slaveId, destination = this.taskInfo.syncTaskId, address = new InetSocketAddress(taskInfo.master.address, taskInfo.master.port), master = Option(startPosition))
@@ -201,7 +194,7 @@ object Mysql2KafkaTaskInfoManager {
   /**
     * 任务管理器的构造的工厂方法
     */
-  def buildManager(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskInfoBean):Mysql2KafkaTaskInfoManager ={
-    new Mysql2KafkaTaskInfoManager(commonConfig, taskInfoBean)
+  def buildManager(taskInfoBean: Mysql2KafkaTaskInfoBean): Mysql2KafkaTaskInfoManager = {
+    new Mysql2KafkaTaskInfoManager(taskInfoBean)
   }
 }

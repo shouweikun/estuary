@@ -1,6 +1,5 @@
 package com.neighborhood.aka.laplce.estuary.web.bean;
 
-import com.neighborhood.aka.laplce.estuary.bean.credential.MysqlCredentialBean;
 import com.neighborhood.aka.laplce.estuary.bean.identity.DataSyncType;
 
 import java.nio.charset.Charset;
@@ -10,7 +9,6 @@ import java.nio.charset.Charset;
  * Created by john_liu on 2018/3/11.
  */
 public class Mysql2kafkaTaskRequestBean {
-    private DataSyncType dataSyncType;
     private String journalName;
     private long Position;
     private long timeStamp;
@@ -23,8 +21,6 @@ public class Mysql2kafkaTaskRequestBean {
     private String defaultConnectionTimeoutInSeconds;
     private int receiveBufferSize = 16 * 1024 * 1024;
     private int sendBufferSize = 16 * 1024;
-    private Charset connectionCharset = Charset.forName("UTF-8");
-    private byte connectionCharsetNumber = (byte) 33;
     private boolean filterQueryDcl = false;
     private boolean filterQueryDml = false;
     private boolean filterQueryDdl = false;
@@ -36,21 +32,56 @@ public class Mysql2kafkaTaskRequestBean {
     private String maxBlockMs = "";
     private String ack = "";
     private String lingerMs = "";
-    private String retries = "";
+    private String kafkaRetries = "";
     private String topic = "";
     private String Mysqladdress;
     private int mysqlPort;
     private String mysqlUsername;
     private String mysqlPassword;
     private String mysqlDefaultDatabase;
+    private int listenTimeout = 5000;
+    private int listenRetrytime = 3;
+    // 支持的binlogImage
+    // binlog.images = ""
+    //支持的binlogFormat
+    // binlog.format = ""
+    //zookeeper地址,可以设置多个，用";"分隔
+    private String zookeeperServers = "10.10.248.207:2181;10.10.237.78:2181";
+    // zookeeper 链接超时设置,单位毫秒
+    private int zookeeperTimeout = 10000;
 
-    public DataSyncType getDataSyncType() {
-        return dataSyncType;
+    public int getListenTimeout() {
+        return listenTimeout;
     }
 
-    public void setDataSyncType(DataSyncType dataSyncType) {
-        this.dataSyncType = dataSyncType;
+    public void setListenTimeout(int listenTimeout) {
+        this.listenTimeout = listenTimeout;
     }
+
+    public int getListenRetrytime() {
+        return listenRetrytime;
+    }
+
+    public void setListenRetrytime(int listenRetrytime) {
+        this.listenRetrytime = listenRetrytime;
+    }
+
+    public String getZookeeperServers() {
+        return zookeeperServers;
+    }
+
+    public void setZookeeperServers(String zookeeperServers) {
+        this.zookeeperServers = zookeeperServers;
+    }
+
+    public int getZookeeperTimeout() {
+        return zookeeperTimeout;
+    }
+
+    public void setZookeeperTimeout(int zookeeperTimeout) {
+        this.zookeeperTimeout = zookeeperTimeout;
+    }
+
 
     public String getJournalName() {
         return journalName;
@@ -146,22 +177,6 @@ public class Mysql2kafkaTaskRequestBean {
 
     public void setSendBufferSize(int sendBufferSize) {
         this.sendBufferSize = sendBufferSize;
-    }
-
-    public Charset getConnectionCharset() {
-        return connectionCharset;
-    }
-
-    public void setConnectionCharset(Charset connectionCharset) {
-        this.connectionCharset = connectionCharset;
-    }
-
-    public byte getConnectionCharsetNumber() {
-        return connectionCharsetNumber;
-    }
-
-    public void setConnectionCharsetNumber(byte connectionCharsetNumber) {
-        this.connectionCharsetNumber = connectionCharsetNumber;
     }
 
     public boolean isFilterQueryDcl() {
@@ -292,12 +307,12 @@ public class Mysql2kafkaTaskRequestBean {
         this.lingerMs = lingerMs;
     }
 
-    public String getRetries() {
-        return retries;
+    public String getKafkaRetries() {
+        return kafkaRetries;
     }
 
-    public void setRetries(String retries) {
-        this.retries = retries;
+    public void setKafkaRetries(String kafkaRetries) {
+        this.kafkaRetries = kafkaRetries;
     }
 
     public String getTopic() {

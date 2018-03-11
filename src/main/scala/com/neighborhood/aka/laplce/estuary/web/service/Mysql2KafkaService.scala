@@ -12,11 +12,10 @@ import com.typesafe.config.ConfigFactory
   */
 object Mysql2KafkaService {
 
-  var configPath: String = "/Users/john_liu/IdeaProjects/estuary/src/main/resources/application.conf"
-  val config = ConfigFactory.load(ConfigFactory.parseFile(new File(configPath)))
+
 
   def startOneTask(mysql2KafkaTaskInfoBean: Mysql2KafkaTaskInfoBean) = {
-     val prop = MysqlBinlogController.props(config,mysql2KafkaTaskInfoBean)
+     val prop = MysqlBinlogController.props(mysql2KafkaTaskInfoBean)
      ActorRefHolder.syncDaemon ! (prop,Option(mysql2KafkaTaskInfoBean.syncTaskId))
    //todo 持久化任务
 

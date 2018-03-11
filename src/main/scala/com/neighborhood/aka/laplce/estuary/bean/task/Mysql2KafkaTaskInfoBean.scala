@@ -10,7 +10,7 @@ import com.neighborhood.aka.laplce.estuary.bean.resource.MysqlBean
 /**
   * Created by john_liu on 2018/2/7.
   */
-class Mysql2KafkaTaskInfoBean extends MysqlBean with KafkaBean with BaseExtractBean{
+class Mysql2KafkaTaskInfoBean extends MysqlBean with KafkaBean with BaseExtractBean {
 
 
   /**
@@ -18,37 +18,50 @@ class Mysql2KafkaTaskInfoBean extends MysqlBean with KafkaBean with BaseExtractB
     */
   override var dataSyncType: DataSyncType = _
   //从库id
-  var slaveId :Long = System.currentTimeMillis()
+  var slaveId: Long = System.currentTimeMillis()
   //binlog
   /**
     * binlog文件名称
     */
-   var journalName:String = _
+  var journalName: String = _
   /**
     * 在binlog中的偏移量信息
     */
-   var position = 0L
+  var position = 0L
   /**
     * binlog中的时间标记
     */
-   var timestamp = 0L
+  var timestamp = 0L
 
   /**
     * 是否计数，默认不计数
     */
-  var isCounting :Boolean = false
+  var isCounting: Boolean = false
   /**
     * 是否计算每条数据的时间，默认不计时
     */
-  var isProfiling :Boolean = false
+  var isProfiling: Boolean = false
   /**
     * 是否事务写
     * 默认否
     * 如果否的话，就是并行写
     */
-  var isTransactional:Boolean = false
+  var isTransactional: Boolean = false
   /**
     * entry打包的阈值
     */
-  var batchThreshold : AtomicLong = new AtomicLong(50)
+  var batchThreshold: AtomicLong = new AtomicLong(50)
+  /**
+    * 监听心跳
+    */
+  var listenTimeout = 5000
+  var listenRetrytime = 3
+  // 支持的binlogImage
+  var binlogImages = ""
+  //支持的binlogFormat
+  var binlogFormat = ""
+  //zookeeper地址,可以设置多个，用";"分隔
+  var zookeeperServers = "10.10.248.207:2181;10.10.237.78:2181"
+  // zookeeper 链接超时设置,单位毫秒
+  var zookeeperTimeout = 10000
 }

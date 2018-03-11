@@ -17,9 +17,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
   * Created by john_liu on 2018/2/1.
   */
 
-class MysqlBinlogController(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncController with Actor with ActorLogging {
+class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncController with Actor with ActorLogging {
   //资源管理器，一次同步任务所有的resource都由resourceManager负责
-  val resourceManager = Mysql2KafkaTaskInfoManager.buildManager(commonConfig, taskInfoBean)
+  val resourceManager = Mysql2KafkaTaskInfoManager.buildManager( taskInfoBean)
   val mysql2KafkaTaskInfoManager = resourceManager
   //配置
   val config = context.system.settings.config
@@ -181,7 +181,7 @@ class MysqlBinlogController(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskI
       .map {
         ref =>
           ref ! SyncControllerMessage("start")
-          val queryTimeOut = config.getInt("common.query.timeout")
+          val queryTimeOut = taskInfoBean.listenTimeout
           //开始之后每`queryTimeOut`毫秒一次
           context.system.scheduler.schedule(queryTimeOut milliseconds, queryTimeOut milliseconds, ref, ListenerMessage("listen"))
       }
@@ -314,8 +314,8 @@ class MysqlBinlogController(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskI
   }
 
   object MysqlBinlogController {
-    def props(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskInfoBean): Props = {
-      Props(new MysqlBinlogController(commonConfig, taskInfoBean))
+    def props(taskInfoBean: Mysql2KafkaTaskInfoBean): Props = {
+      Props(new MysqlBinlogController(taskInfoBean))
     }
   }
 
