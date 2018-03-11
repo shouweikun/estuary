@@ -150,7 +150,7 @@ class Mysql2KafkaTaskInfoManager(commonConfig: Config, taskInfoBean: Mysql2Kafka
     val receiveBufferSize = taskInfo.receiveBufferSize
     val sendBufferSize = taskInfo.sendBufferSize
     val masterCredentialInfo = taskInfo.master
-    val address = new InetSocketAddress(masterCredentialInfo.address, masterCredentialInfo.port)
+     val address = new InetSocketAddress(masterCredentialInfo.address, masterCredentialInfo.port)
     val username = masterCredentialInfo.username
     val password = masterCredentialInfo.password
     val database = masterCredentialInfo.defaultDatabase

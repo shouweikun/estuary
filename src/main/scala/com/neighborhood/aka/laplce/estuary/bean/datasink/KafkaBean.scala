@@ -14,19 +14,16 @@ import org.apache.kafka.common.serialization.StringSerializer
 trait KafkaBean extends DataSinkBean {
   override var dataSinkType: DataSinkType = DataSinkType.KAFKA
   /**
-    * configJson
-    * @example
-    *"mqParams": {
-      "bootstrap.servers": "10.10.71.76:9092;10.10.71.14:9092;10.10.72.234:9092",
-      "max.block.ms": 3000,
-      "max.request.size": 10485760,
-      "request.timeout.ms": 8000,
-      "acks": "1",
-      "linger.ms": 0,
-      "retries": 10
-    }
+    * broker地址
     */
-  var configMapFromJson:util.Map[String,String] = _
+  var bootstrapServers: String = ""
+  /**
+    * 最大阻塞时间
+    */
+  var maxBlockMs: String = ""
+  var ack: String = "1"
+  var lingerMs: String = "0"
+  var retries: String = "10"
   /**
     * 分区类
     */
@@ -36,13 +33,9 @@ trait KafkaBean extends DataSinkBean {
     */
   var topic: String = "test"
   /**
-    * 发送数据的超时阈值 单位秒
-    */
-  var sendTimeout: Long = 3
-  /**
     * 最大接收数据
     */
-  var maxResquestSize = "20971520"
+  var maxRequestSize = "20971520"
   /**
     * 最大获取数据
     */
@@ -69,18 +62,23 @@ trait KafkaBean extends DataSinkBean {
   var compressionType: String = "snappy"
 
 }
+
 object KafkaBean {
   def buildConfig(kafkaBean: KafkaBean): util.HashMap[String, String] = {
     val config: util.HashMap[String, String] = new util.HashMap[String, String]()
-    config.put("max.request.size", kafkaBean.maxResquestSize)
+    config.put("ack", kafkaBean.ack)
+    config.put("lingerMs", kafkaBean.lingerMs)
+    config.put("retries", kafkaBean.retries)
+    config.put("bootstrap.servers", kafkaBean.bootstrapServers)
+    config.put("max.block.ms", kafkaBean.maxBlockMs)
+    config.put("max.request.size", kafkaBean.maxRequestSize)
     config.put("fetch.max.bytes", kafkaBean.fetchMaxByte)
     config.put("request.timeout.ms", kafkaBean.requestTimeoutMs)
-    config.put("message.send.max.retries",kafkaBean. messageSendMaxRetries)
-    config.put("key.serializer",kafkaBean.keySerializer)
-    config.put("value.serializer",kafkaBean.valueSerializer)
-    config.put("partitioner.class",kafkaBean.partitionerClass)
-    config.put("compression.type",kafkaBean.compressionType)
-    config.putAll(kafkaBean.configMapFromJson)
+    config.put("message.send.max.retries", kafkaBean.messageSendMaxRetries)
+    config.put("key.serializer", kafkaBean.keySerializer)
+    config.put("value.serializer", kafkaBean.valueSerializer)
+    config.put("partitioner.class", kafkaBean.partitionerClass)
+    config.put("compression.type", kafkaBean.compressionType)
     config
   }
 }

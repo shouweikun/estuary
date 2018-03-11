@@ -17,7 +17,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
   * Created by john_liu on 2018/2/1.
   */
 
-class MySqlBinlogController(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncController with Actor with ActorLogging {
+class MysqlBinlogController(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncController with Actor with ActorLogging {
   //资源管理器，一次同步任务所有的resource都由resourceManager负责
   val resourceManager = Mysql2KafkaTaskInfoManager.buildManager(commonConfig, taskInfoBean)
   val mysql2KafkaTaskInfoManager = resourceManager
@@ -313,9 +313,9 @@ class MySqlBinlogController(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskI
     }
   }
 
-  object MySqlBinlogController {
+  object MysqlBinlogController {
     def props(commonConfig: Config, taskInfoBean: Mysql2KafkaTaskInfoBean): Props = {
-      Props(new MySqlBinlogController(commonConfig, taskInfoBean))
+      Props(new MysqlBinlogController(commonConfig, taskInfoBean))
     }
   }
 

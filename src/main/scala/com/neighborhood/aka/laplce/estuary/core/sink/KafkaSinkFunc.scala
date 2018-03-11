@@ -26,10 +26,7 @@ class KafkaSinkFunc[K <: BaseDataJsonKey, V](kafkaBean: KafkaBean) extends SinkF
     * 待写入的topic
     */
   val topic = kafkaBean.topic
-  /**
-    * 写入数据超时设置
-    */
-  val timeLimit = kafkaBean.sendTimeout
+
 
   /**
     * @param key   分区key

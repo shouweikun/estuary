@@ -46,7 +46,7 @@ object TestContext {
   val mysql2KafkaTaskInfoBean = new Mysql2KafkaTaskInfoBean
   mysql2KafkaTaskInfoBean.master = mysqlBean
   mysql2KafkaTaskInfoBean.topic = topic
-  mysql2KafkaTaskInfoBean.configMapFromJson = kafkaConfigJson
+
   /**
     * StartPosition
     */
