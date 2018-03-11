@@ -16,7 +16,7 @@ import org.springframework.util.StringUtils
 /**
   * Created by john_liu on 2018/2/9.
   */
-class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,positionRecorder:ActorRef) extends Actor with SourceDataSinker with ActorLogging {
+class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager, positionRecorder: ActorRef) extends Actor with SourceDataSinker with ActorLogging {
 
   implicit val sinkTaskPool = new collection.parallel.ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(mysql2KafkaTaskInfoManager.taskInfo.batchThreshold.get().toInt))
   /**
@@ -72,7 +72,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
           //online模式
           log.info("sinker swtich to online")
           context.become(online)
-          switch2Busy
+          switch2Online
         }
         case x => {
           log.warning(s"sinker offline unhandled message:$x")
@@ -151,7 +151,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
           log.error("Error when send :" + key + ", metadata:" + metadata + exception + "lastSavedPoint" + s" thisJournalName = $thisJournalName" + s" thisOffset = $thisOffset")
           if (isAbnormal.compareAndSet(false, true)) {
 
-            positionRecorder ! BinlogPositionInfo(thisJournalName,thisOffset)
+            positionRecorder ! BinlogPositionInfo(thisJournalName, thisOffset)
             context.parent ! SinkerMessage("error")
             log.info("send to recorder lastSavedPoint" + s"thisJournalName = $thisJournalName" + s"thisOffset = $thisOffset")
             //todo 做的不好 ，应该修改一下messge模型
@@ -191,16 +191,12 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
     mysql2KafkaTaskInfoManager.sinkerStatus = Status.OFFLINE
   }
 
-  private def switch2Busy = {
-    mysql2KafkaTaskInfoManager.sinkerStatus = Status.BUSY
-  }
-
   private def switch2Error = {
     mysql2KafkaTaskInfoManager.sinkerStatus = Status.ERROR
   }
 
-  private def switch2Free = {
-    mysql2KafkaTaskInfoManager.sinkerStatus = Status.FREE
+  private def switch2Online = {
+    mysql2KafkaTaskInfoManager.sinkerStatus = Status.ONLINE
   }
 
   private def switch2Restarting = {
@@ -253,8 +249,8 @@ object ConcurrentBinlogSinker {
   //  def prop(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager, binlogPositionRecorder: ActorRef): Props = {
   //    Props(new ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager, binlogPositionRecorder))
 
-  def prop(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,positionRecorder:ActorRef): Props = {
-    Props(new ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager,positionRecorder))
+  def prop(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager, positionRecorder: ActorRef): Props = {
+    Props(new ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager, positionRecorder))
   }
 
 }

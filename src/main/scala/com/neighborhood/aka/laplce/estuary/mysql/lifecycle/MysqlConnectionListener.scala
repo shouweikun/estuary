@@ -45,7 +45,7 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
           log.info("heartBeatListener swtich to online")
           context.become(onlineState)
           connection.get.connect()
-          switch2Busy
+          switch2Online
         }
         case "stop" => {
           //doNothing
@@ -127,16 +127,12 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
     mysql2KafkaTaskInfoManager.heartBeatListenerStatus = Status.OFFLINE
   }
 
-  private def switch2Busy = {
-    mysql2KafkaTaskInfoManager.heartBeatListenerStatus = Status.BUSY
+  private def switch2Online = {
+    mysql2KafkaTaskInfoManager.heartBeatListenerStatus = Status.ONLINE
   }
 
   private def switch2Error = {
     mysql2KafkaTaskInfoManager.heartBeatListenerStatus = Status.ERROR
-  }
-
-  private def switch2Free = {
-    mysql2KafkaTaskInfoManager.heartBeatListenerStatus = Status.FREE
   }
 
   private def switch2Restarting = {

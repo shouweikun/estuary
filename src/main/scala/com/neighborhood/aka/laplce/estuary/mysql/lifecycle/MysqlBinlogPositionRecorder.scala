@@ -75,16 +75,12 @@ class MysqlBinlogPositionRecorder(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInf
     mysql2KafkaTaskInfoManager.sinkerStatus = Status.OFFLINE
   }
 
-  private def switch2Busy = {
-    mysql2KafkaTaskInfoManager.sinkerStatus = Status.BUSY
-  }
-
   private def switch2Error = {
     mysql2KafkaTaskInfoManager.sinkerStatus = Status.ERROR
   }
 
-  private def switch2Free = {
-    mysql2KafkaTaskInfoManager.sinkerStatus = Status.FREE
+  private def switch2Online = {
+    mysql2KafkaTaskInfoManager.sinkerStatus = Status.ONLINE
   }
 
   private def switch2Restarting = {

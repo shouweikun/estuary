@@ -237,17 +237,15 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
     mysql2KafkaTaskInfoManager.syncControllerStatus = Status.OFFLINE
   }
 
-  private def switch2Busy = {
-    mysql2KafkaTaskInfoManager.syncControllerStatus = Status.BUSY
+  private def switch2Online = {
+    mysql2KafkaTaskInfoManager.syncControllerStatus = Status.ONLINE
   }
 
   private def switch2Error = {
     mysql2KafkaTaskInfoManager.syncControllerStatus = Status.ERROR
   }
 
-  private def switch2Free = {
-    mysql2KafkaTaskInfoManager.syncControllerStatus = Status.FREE
-  }
+
 
   private def switch2Restarting = {
     mysql2KafkaTaskInfoManager.syncControllerStatus = Status.RESTARTING

@@ -128,7 +128,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
     case FetcherMessage(msg) => {
       msg match {
         case "start" => {
-          switch2Busy
+          switch2Online
           self ! FetcherMessage("predump")
         }
         case "predump" => {
@@ -160,7 +160,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
               self ! FetcherMessage("fetch")
               //              println("after fetch")
             } else {
-              switch2Free
+
             }
           } catch {
             case e: TableIdNotFoundException => {
@@ -338,16 +338,13 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
     mysql2KafkaTaskInfoManager.fetcherStatus = Status.OFFLINE
   }
 
-  private def switch2Busy = {
-    mysql2KafkaTaskInfoManager.fetcherStatus = Status.BUSY
-  }
 
   private def switch2Error = {
     mysql2KafkaTaskInfoManager.fetcherStatus = Status.ERROR
   }
 
-  private def switch2Free = {
-    mysql2KafkaTaskInfoManager.fetcherStatus = Status.FREE
+  private def switch2Online = {
+    mysql2KafkaTaskInfoManager.fetcherStatus = Status.ONLINE
   }
 
   private def switch2Restarting = {

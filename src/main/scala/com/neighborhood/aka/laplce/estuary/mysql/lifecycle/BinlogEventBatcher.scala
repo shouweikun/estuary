@@ -71,7 +71,7 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
       msg match {
         case "start" => {
           context.become(online)
-          switch2Busy
+          switch2Online
         }
       }
     }
@@ -352,16 +352,12 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
     mysql2KafkaTaskInfoManager.batcherStatus = Status.OFFLINE
   }
 
-  private def switch2Busy = {
-    mysql2KafkaTaskInfoManager.batcherStatus = Status.BUSY
-  }
-
   private def switch2Error = {
     mysql2KafkaTaskInfoManager.batcherStatus = Status.ERROR
   }
 
-  private def switch2Free = {
-    mysql2KafkaTaskInfoManager.batcherStatus = Status.FREE
+  private def switch2Online = {
+    mysql2KafkaTaskInfoManager.batcherStatus = Status.ONLINE
   }
 
   private def switch2Restarting = {
