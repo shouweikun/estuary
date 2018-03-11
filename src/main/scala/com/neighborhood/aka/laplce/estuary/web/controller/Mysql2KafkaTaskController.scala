@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.{RequestBody, RequestMapping, Req
   * Created by john_liu on 2018/3/10.
   */
 @RestController
-@RequestMapping(Array("/api/v1/estuary"))
+@RequestMapping(Array("/api/v1/estuary/mysql2kafka"))
 class Mysql2KafkaTaskController {
 
 
@@ -21,7 +21,7 @@ class Mysql2KafkaTaskController {
 //      JsonHelper.to(all)
 //    }
 @ApiOperation(value = "1", httpMethod = "POST", notes = "1 ")
-@RequestMapping(value = Array("/newTask/"), method = Array(RequestMethod.POST))
+@RequestMapping(value = Array("/new/"), method = Array(RequestMethod.POST))
   def createNewTask(@RequestBody requestBody: Mysql2kafkaTaskRequestBean) = {
       //todo 检验任务合法性
      Mysql2KafkaService.startOneTask(buildTaskInfo(requestBody))

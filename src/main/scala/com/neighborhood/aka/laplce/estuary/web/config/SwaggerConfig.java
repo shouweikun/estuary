@@ -28,10 +28,9 @@ public class SwaggerConfig {
 
     private ApiInfo apiInfo() {
         return new ApiInfoBuilder()
-                .title("CIFDAP data interface")
-                .description("CIF DAP数据接口")
+                .title("Estuary")
+                .description("数海数据流式同步系统")
                 .license("Apache License Version 2.0")
-                .licenseUrl("https://github.com/IBM-Bluemix/news-aggregator/blob/master/LICENSE")
                 .version("2.0")
                 .build();
     }

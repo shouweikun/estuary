@@ -197,5 +197,5 @@ object Mysql2KafkaTaskInfoManager {
   def buildManager(taskInfoBean: Mysql2KafkaTaskInfoBean): Mysql2KafkaTaskInfoManager = {
     new Mysql2KafkaTaskInfoManager(taskInfoBean)
   }
-  lazy val zkClientx =
+  lazy val zkClientx = null
 }
