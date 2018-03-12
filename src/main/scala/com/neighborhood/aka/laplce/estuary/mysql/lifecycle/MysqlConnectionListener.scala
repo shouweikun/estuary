@@ -105,10 +105,7 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
 
           retryTimes = retryTimes - 1
           if (retryTimes <= 0) {
-            self ! ListenerMessage("stop")
-            context.parent ! ListenerMessage("reconnect")
-            context.parent ! ListenerMessage("restart")
-            retryTimes = this.retryTimeThreshold
+           throw new RuntimeException("listener connot listen!")
           }
         } else {
 
