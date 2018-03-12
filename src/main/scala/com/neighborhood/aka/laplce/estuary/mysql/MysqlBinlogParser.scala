@@ -11,6 +11,7 @@ import com.taobao.tddl.dbsync.binlog.LogEvent
   */
 class MysqlBinlogParser(necessary: Boolean) extends LogEventConvert {
 
+  lazy val count = new AtomicLong(0)
 
   def parse(event: Option[LogEvent]): Option[CanalEntry.Entry] = {
     event match {
@@ -23,7 +24,7 @@ class MysqlBinlogParser(necessary: Boolean) extends LogEventConvert {
   def parseAndProfilingIfNecessary(event: LogEvent, necessary: Boolean = this.necessary): Option[CanalEntry.Entry] = {
 
     if (necessary) {
-      //todo log
+      
     }
     parse(Option(event))
   }

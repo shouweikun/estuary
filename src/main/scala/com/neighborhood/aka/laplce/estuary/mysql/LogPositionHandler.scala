@@ -80,7 +80,7 @@ class LogPositionHandler(binlogParser: MysqlBinlogParser, manager: ZooKeeperLogP
     //用taskMark来作为zookeeper中的destination
     val logPosition = Option(logPositionManager.getLatestIndexBy(destination))
     val entryPosition = logPosition match {
-      case Some(logPosition) => {
+      case Some(thePosition)if(StringUtils.isNotEmpty(thePosition.getPostion.getJournalName))=> {
         //如果定位失败
         if (flag) { // binlog定位位点失败,可能有两个原因:
           // 1. binlog位点被删除
@@ -90,14 +90,14 @@ class LogPositionHandler(binlogParser: MysqlBinlogParser, manager: ZooKeeperLogP
           //todo logstash
         }
         // 其余情况
-        logPosition.getPostion
+        thePosition.getPostion
         //        }
         //        else {
         //         我们没有主备切换，所以此处没有代码
         //          todo 针对切换的情况，考虑回退时间
         //        }
       }
-      case None => {
+      case _ => {
         //todo 主备切换
         //canal 在这里做了一个主备切换检查，我们先忽略,默认拿master的
         val position = master match {
@@ -114,7 +114,7 @@ class LogPositionHandler(binlogParser: MysqlBinlogParser, manager: ZooKeeperLogP
                 findEndPosition(mysqlConnection)
               }
             } else {
-              if (Option(thePosition.getPosition).isDefined && thePosition.getPosition > 0L) {
+              if (Option(thePosition.getPosition).isDefined && thePosition.getPosition >= 0L) {
                 //todo log
                 thePosition
               } else {

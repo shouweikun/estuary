@@ -111,7 +111,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
 
       val after = System.currentTimeMillis()
       //这次任务完成后
-      log.info(s"send处理用了${after - before}")
+     // log.info(s"send处理用了${after - before}")
       //保存这次任务的binlog
       //判断的原因是如果本次写入没有事务offset就不记录
       if (!StringUtils.isEmpty(savedJournalName)) {
@@ -216,7 +216,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
 
     kafkaSinker.kafkaProducer.close()
     sinkTaskPool.environment.shutdown()
-    logPositionHandler.logPositionManager
+    //logPositionHandler.logPositionManage
   }
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {

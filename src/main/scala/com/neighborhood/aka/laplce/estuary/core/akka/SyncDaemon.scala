@@ -1,7 +1,7 @@
 package com.neighborhood.aka.laplce.estuary.core.akka
 
-import akka.actor.SupervisorStrategy.{Escalate, Restart}
-import akka.actor.{Actor, ActorLogging, ActorRef, AllForOneStrategy, OneForOneStrategy, Props}
+import akka.actor.SupervisorStrategy.{Escalate, Restart, Resume}
+import akka.actor.{Actor, ActorLogging, ActorRef, AllForOneStrategy, InvalidActorNameException, OneForOneStrategy, Props}
 import com.neighborhood.aka.laplce.estuary.web.akka.ActorRefHolder
 
 /**
@@ -12,26 +12,37 @@ class SyncDaemon extends Actor with ActorLogging {
 
   override def receive: Receive = {
     case (prop: Props, name: Option[String]) => {
-      val theActor = startNewTask(prop, name)
+      val actorAndReason = startNewTask(prop, name)
+      log.info(s"${actorAndReason._2}")
       //保存这个任务的ActorRef
-      if (ActorRefHolder.addNewTaskActorRef(name.get, theActor) == true)
+      if (ActorRefHolder.addNewTaskActorRef(name.get, actorAndReason._1))
         log.info(s"actorRef:${name.get} 添加成功") else log.warning(s"actorRef:${name.get} 添加失败")
-      theActor ! "start"
+      actorAndReason._1 ! "start"
     }
     case x => log.warning(s"SyncDeamon unhandled message $x")
   }
 
   override def supervisorStrategy = {
     OneForOneStrategy() {
+      case e: InvalidActorNameException => Resume
       case _ => Restart
     }
   }
 
-  def startNewTask(prop: Props, name: Option[String]): ActorRef = {
-    if (name.isDefined) {
-      context.actorOf(prop, name.get)
-    } else context.actorOf(prop)
+  def startNewTask(prop: Props, name: Option[String]): (ActorRef, String) = {
 
+    name match {
+      case Some(x) => {
+        if (context.child(x).isDefined) {
+          (context.child(x).get, s"该任务id:${name.get}已经存在")
+        } else {
+          (context.actorOf(prop, x), s"任务id:${name.get}启动成功")
+        }
+      }
+      case None => (null, "不可以空缺任务id!")
+    }
   }
+
+
 }
 

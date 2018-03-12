@@ -138,41 +138,46 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
     if (!entryBatch.isEmpty) {
       val batch = entryBatch
       val entryJsonList = Future {
-        batch.
-          map {
-            entry =>
-              val entryType = entry.getEntryType //entry类型
-            val header = entry.getHeader
-              val eventType = header.getEventType //事件类型
-            val tempJsonKey = BinlogKey.buildBinlogKey(header)
-              //todo 添加tempJsonKey的具体信息
-              //根据entry的类型来执行不同的操作
-              entryType match {
-                case CanalEntry.EntryType.TRANSACTIONEND => {
-                  //将offset记录下来
-                  savedJournalName = header.getLogfileName
-                  savedOffset = header.getLogfileOffset
-                  BinlogPositionInfo(header.getLogfileName, header.getLogfileOffset)
-                }
-                case CanalEntry.EntryType.ROWDATA => {
-                  eventType match {
-                    //DML操作都执行tranformDMLtoJson这个方法
-                    case CanalEntry.EventType.DELETE => tranformDMLtoJson(entry, tempJsonKey, "DELETE")
-                    case CanalEntry.EventType.INSERT => tranformDMLtoJson(entry, tempJsonKey, "INSERT")
-                    case CanalEntry.EventType.UPDATE => tranformDMLtoJson(entry, tempJsonKey, "UPDATE")
-                    //DDL操作直接将entry变为json
-                    case CanalEntry.EventType.ALTER =>
-                      new KafkaMessage(tempJsonKey, CanalEntryJsonHelper.entryToJson(entry), header.getLogfileName, header.getLogfileOffset)
-                    case CanalEntry.EventType.CREATE => new KafkaMessage(tempJsonKey, CanalEntryJsonHelper.entryToJson(entry), header.getLogfileName, header.getLogfileOffset)
-                    case x => {
+        val before = System.currentTimeMillis()
+        val re =
+          batch.
+            map {
+              entry =>
+                val entryType = entry.getEntryType //entry类型
+              val header = entry.getHeader
+                val eventType = header.getEventType //事件类型
+              val tempJsonKey = BinlogKey.buildBinlogKey(header)
+                //todo 添加tempJsonKey的具体信息
+                //根据entry的类型来执行不同的操作
+                entryType match {
+                  case CanalEntry.EntryType.TRANSACTIONEND => {
+                    //将offset记录下来
+                    savedJournalName = header.getLogfileName
+                    savedOffset = header.getLogfileOffset
+                    BinlogPositionInfo(header.getLogfileName, header.getLogfileOffset)
+                  }
+                  case CanalEntry.EntryType.ROWDATA => {
+                    eventType match {
+                      //DML操作都执行tranformDMLtoJson这个方法
+                      case CanalEntry.EventType.DELETE => tranformDMLtoJson(entry, tempJsonKey, "DELETE")
+                      case CanalEntry.EventType.INSERT => tranformDMLtoJson(entry, tempJsonKey, "INSERT")
+                      case CanalEntry.EventType.UPDATE => tranformDMLtoJson(entry, tempJsonKey, "UPDATE")
+                      //DDL操作直接将entry变为json
+                      case CanalEntry.EventType.ALTER =>
+                        new KafkaMessage(tempJsonKey, CanalEntryJsonHelper.entryToJson(entry), header.getLogfileName, header.getLogfileOffset)
+                      case CanalEntry.EventType.CREATE => new KafkaMessage(tempJsonKey, CanalEntryJsonHelper.entryToJson(entry), header.getLogfileName, header.getLogfileOffset)
+                      case x => {
 
-                      log.warning(s"unsupported EntryType:$x")
+                        log.warning(s"unsupported EntryType:$x")
+                      }
+
                     }
-
                   }
                 }
-              }
-          }
+            }
+        val after = System.currentTimeMillis()
+        log.info(s"batcher json化 用了${after - before}")
+        re
       }
         .pipeTo(binlogEventSinker)
 

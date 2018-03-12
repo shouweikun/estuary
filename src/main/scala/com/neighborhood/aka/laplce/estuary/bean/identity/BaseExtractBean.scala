@@ -11,7 +11,7 @@ trait BaseExtractBean extends BaseBean{
     * 同步任务的唯一id, 这个id表示同步任务的唯一标识
     */
   @Indexed(unique = true, sparse = false)
-  var syncTaskId :String= "test1"
+  var syncTaskId :String= "test2"
   /**
     * 描述
     */

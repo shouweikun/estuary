@@ -12,9 +12,14 @@ object ActorRefHolder extends theActorSystem {
   //todo 初始化守护Actor
   //todo 保留重要ActorRef
   val syncDaemon = system.actorOf(Props(classOf[SyncDaemon]), "syncDaemon")
-  val actorRefMap: mutable.HashMap[String, ActorRef] = new mutable.HashMap[String, ActorRef]
+  var actorRefMap:Map[String, ActorRef] = Map.empty
 
   def addNewTaskActorRef(key:String,value:ActorRef): Boolean = {
-     actorRefMap.put(key,value).isEmpty
+     if(actorRefMap.get(key).isEmpty){
+       actorRefMap = actorRefMap.+(key->value)
+       true
+     }else{
+       false
+     }
   }
 }

@@ -20,8 +20,6 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
   //资源管理器，一次同步任务所有的resource都由resourceManager负责
   val resourceManager = Mysql2KafkaTaskInfoManager.buildManager(taskInfoBean)
   val mysql2KafkaTaskInfoManager = resourceManager
-  //配置
-  val config = context.system.settings.config
   //canal的mysqlConnection
   val mysqlConnection: MysqlConnection = resourceManager.mysqlConnection
 
@@ -118,9 +116,7 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
       val batcherStatus = mysql2KafkaTaskInfoManager.batcherStatus
       val listenerStatus = mysql2KafkaTaskInfoManager.heartBeatListenerStatus
       val map = Map("syncControllerStatus" -> syncControllerStatus, "fetcherStatus" -> fetcherStatus, "sinkerStatus" -> sinkerStatus, "batcherStatus" -> batcherStatus, "listenerStatus" -> listenerStatus)
-       JSONObject
-        .apply(map)
-
+      sender() ! JSONObject.apply(map)
     }
   }
 
@@ -156,7 +152,6 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
       .map {
         ref =>
           ref ! SyncControllerMessage("start")
-          val queryTimeOut = config.getInt("common.query.timeout")
       }
   }
 
@@ -285,6 +280,7 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
 
   = {
     //todo logstash
+
     //    mysqlConnection.disconnect()
   }
 
