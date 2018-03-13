@@ -251,15 +251,15 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
                 * 构造rowChange对应部分的json
                 */
               def rowChangeStr = {
-                if (eventString.equals("DELETE")) s"${STRING_CONTAINER}beforeColumns$STRING_CONTAINER$KEY_VALUE_SPLIT${
+                if (eventString.equals("DELETE")) s"${STRING_CONTAINER}beforeColumns$STRING_CONTAINER$KEY_VALUE_SPLIT$START_ARRAY${
                   (0 until count)
                     .map {
                       columnIndex =>
                         s"${getColumnToJSON(rowData.getBeforeColumns(columnIndex))}$ELEMENT_SPLIT"
                     }
                     .mkString
-                }" else {
-                  s"${STRING_CONTAINER}afterColumns$STRING_CONTAINER$KEY_VALUE_SPLIT${
+                }$END_ARRAY" else {
+                  s"${STRING_CONTAINER}afterColumns$STRING_CONTAINER$KEY_VALUE_SPLIT$START_ARRAY${
                     (0 until count)
                       .map {
                         columnIndex =>
@@ -268,10 +268,10 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
                       .mkString
                   }"
 
-                } + s"${getColumnToJSON(jsonKeyColumnBuilder.build)}$END_ARRAY$END_JSON"
+                } + s"${getColumnToJSON(jsonKeyColumnBuilder.build)}$END_ARRAY"
               }
 
-              val finalDataString = s"${START_JSON}${STRING_CONTAINER}header${STRING_CONTAINER}${KEY_VALUE_SPLIT}${getEntryHeaderJson(entry.getHeader)}${ELEMENT_SPLIT}${STRING_CONTAINER}rowChange${STRING_CONTAINER}${KEY_VALUE_SPLIT}${START_JSON}${STRING_CONTAINER}rowDatas${STRING_CONTAINER}${KEY_VALUE_SPLIT}${START_ARRAY}${rowChangeStr}${END_ARRAY}${END_JSON}${END_JSON}"
+              val finalDataString = s"${START_JSON}${STRING_CONTAINER}header${STRING_CONTAINER}${KEY_VALUE_SPLIT}${getEntryHeaderJson(entry.getHeader)}${ELEMENT_SPLIT}${STRING_CONTAINER}rowChange${STRING_CONTAINER}${KEY_VALUE_SPLIT}${START_JSON}${STRING_CONTAINER}rowDatas${STRING_CONTAINER}${KEY_VALUE_SPLIT}${START_JSON}${rowChangeStr}${END_JSON}${END_JSON}${END_JSON}"
               kafkaMessage.setJsonValue(finalDataString)
               kafkaMessage
           }.toArray
