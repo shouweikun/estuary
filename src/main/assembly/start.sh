@@ -30,7 +30,7 @@ else
 fi
 
 echo -e "Starting the $SERVER_NAME ...\c"
-nohup java $JAVA_OPTS $JAVA_MEM_OPTS $JAVA_DEBUG_OPTS $JAVA_JMX_OPTS -classpath $CONF_DIR:$LIB_JARS @main-class@ > /dev/null 2>&1 &
+nohup java $JAVA_OPTS $JAVA_MEM_OPTS $JAVA_DEBUG_OPTS $JAVA_JMX_OPTS -classpath $CONF_DIR:$LIB_JARS com.neighborhood.aka.laplce.estuary.web.App > $STDOUT_FILE 2>&1 &
 
 echo "OK!"
 PIDS=`ps -f | grep java | grep "$DEPLOY_DIR" | awk '{print $2}'`
@@ -40,3 +40,4 @@ n-class@ > /dev/null 2>&1 &
 echo "OK!"
 PIDS=`ps -f | grep java | grep "$DEPLOY_DIR" | awk '{print $2}'`
 echo "PID: $PIDS"
+echo "STDOUT: $STDOUT_FILE"
