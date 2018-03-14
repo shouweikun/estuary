@@ -3,6 +3,7 @@ package com.neighborhood.aka.laplce.estuary.web.service
 import java.util.concurrent.ConcurrentHashMap
 
 import com.neighborhood.aka.laplce.estuary.bean.task.Mysql2KafkaTaskInfoBean
+import com.neighborhood.aka.laplce.estuary.mysql.Mysql2KafkaTaskInfoManager
 import com.neighborhood.aka.laplce.estuary.mysql.lifecycle.MysqlBinlogController
 import com.neighborhood.aka.laplce.estuary.web.akka.ActorRefHolder
 import org.codehaus.jackson.map.ObjectMapper
@@ -13,7 +14,6 @@ import org.codehaus.jackson.map.ObjectMapper
 object Mysql2KafkaService {
 
 
-
   def startOneTask(mysql2KafkaTaskInfoBean: Mysql2KafkaTaskInfoBean): String = {
     val prop = MysqlBinlogController.props(mysql2KafkaTaskInfoBean)
     ActorRefHolder.syncDaemon ! (prop, Option(mysql2KafkaTaskInfoBean.syncTaskId))
@@ -22,7 +22,7 @@ object Mysql2KafkaService {
   }
 
   def checkTaskStatus(syncTaskId: String): String = {
-    Option(taskStatusMap.get(syncTaskId))
+    Option(Mysql2KafkaTaskInfoManager.taskStatusMap.get(syncTaskId))
     match {
       case Some(x) => {
         val mapper = new ObjectMapper()
