@@ -77,6 +77,10 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
   var fetcher: DirectLogFetcher = null
   var logContext: LogContext = null
   var decoder: LogDecoder = null
+  /**
+    * 元数据链接
+    */
+  var mysqlMetaConnection: Option[MysqlConnection] = None
 
   //offline
   override def receive: Receive = {
@@ -136,7 +140,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
         }
         case "predump" => {
           log.debug("fetcher predump")
-          preDump(mysqlConnection.get)
+          mysqlMetaConnection = Option(preDump(mysqlConnection.get))
           mysqlConnection.get.connect
           val startPosition = entryPosition.get
           try {
@@ -296,12 +300,13 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
     * 这里暂时忽略，可以再以后有必要的时候进行添加
     *
     */
-  def preDump(mysqlConnection: MysqlConnection): Unit = {
+  def preDump(mysqlConnection: MysqlConnection): MysqlConnection = {
     //设置tableMetaCache
     val metaConnection = mysqlConnection.fork()
     metaConnection.connect()
     val tableMetaCache: TableMetaCache = new TableMetaCache(metaConnection)
     binlogParser.setTableMetaCache(tableMetaCache)
+    metaConnection
   }
 
   /**
@@ -360,18 +365,20 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
     * ********************* Actor生命周期 *******************
     */
   override def preStart(): Unit = {
+    if (mysqlMetaConnection.isDefined && mysqlConnection.get.isConnected) mysqlConnection.get.disconnect()
     //状态置为offline
     switch2Offline
   }
 
   override def postRestart(reason: Throwable): Unit = {
     super.postRestart(reason)
+
     log.info("fetcher will restart in 1 min")
-    context.system.scheduler.scheduleOnce(1 minutes)(self ! FetcherMessage("restart"))
   }
 
   override def postStop(): Unit = {
     mysqlConnection.get.disconnect()
+    if (mysqlMetaConnection.isDefined) mysqlMetaConnection.get.disconnect()
   }
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {

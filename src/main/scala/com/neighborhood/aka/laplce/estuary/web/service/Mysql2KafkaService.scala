@@ -1,12 +1,11 @@
 package com.neighborhood.aka.laplce.estuary.web.service
 
-import java.util.concurrent.ConcurrentHashMap
-
 import com.neighborhood.aka.laplce.estuary.bean.task.Mysql2KafkaTaskInfoBean
 import com.neighborhood.aka.laplce.estuary.mysql.Mysql2KafkaTaskInfoManager
 import com.neighborhood.aka.laplce.estuary.mysql.lifecycle.MysqlBinlogController
 import com.neighborhood.aka.laplce.estuary.web.akka.ActorRefHolder
-import org.codehaus.jackson.map.ObjectMapper
+
+import scala.util.parsing.json.JSON
 
 /**
   * Created by john_liu on 2018/3/10.
@@ -25,8 +24,7 @@ object Mysql2KafkaService {
     Option(Mysql2KafkaTaskInfoManager.taskStatusMap.get(syncTaskId))
     match {
       case Some(x) => {
-        val mapper = new ObjectMapper()
-        s"{$syncTaskId:${mapper.writeValueAsString(x)}}"
+        s"{$syncTaskId:${x.map(kv => s"{${kv._1}:${kv._2}").mkString(",")}}"
       }
       case None => s"$syncTaskId:None}"
     }
