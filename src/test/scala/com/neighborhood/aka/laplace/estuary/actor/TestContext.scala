@@ -1,15 +1,11 @@
 package com.neighborhood.aka.laplace.estuary.actor
 
 import java.io.File
-import java.util
 
-import com.alibaba.fastjson.{JSON, JSONObject}
-import com.alibaba.otter.canal.parse.inbound.mysql.MysqlEventParser
 import com.alibaba.otter.canal.protocol.position.EntryPosition
-import com.neighborhood.aka.laplce.estuary.bean.credential.MysqlCredentialBean
-import com.neighborhood.aka.laplce.estuary.bean.task.Mysql2KafkaTaskInfoBean
-import com.neighborhood.aka.laplce.estuary.core.utils.JsonUtil
-import com.neighborhood.aka.laplce.estuary.mysql.Mysql2KafkaTaskInfoManager
+import com.neighborhood.aka.laplace.estuary.bean.credential.MysqlCredentialBean
+import com.neighborhood.aka.laplace.estuary.bean.task.Mysql2KafkaTaskInfoBean
+import com.neighborhood.aka.laplace.estuary.core.utils.JsonUtil
 import com.typesafe.config.ConfigFactory
 
 /**

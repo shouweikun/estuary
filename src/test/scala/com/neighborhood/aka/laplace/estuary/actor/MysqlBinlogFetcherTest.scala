@@ -2,7 +2,7 @@ package com.neighborhood.aka.laplace.estuary.actor
 
 import akka.actor.{ActorSystem, Props}
 import akka.testkit.{ImplicitSender, TestActorRef, TestActors, TestKit, TestProbe}
-import com.neighborhood.aka.laplce.estuary.mysql.lifecycle.MysqlBinlogFetcher
+import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.MysqlBinlogFetcher
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
 /**
