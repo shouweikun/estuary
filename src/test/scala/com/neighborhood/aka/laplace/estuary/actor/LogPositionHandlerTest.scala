@@ -3,7 +3,7 @@ package com.neighborhood.aka.laplace.estuary.actor
 import com.alibaba.otter.canal.parse.inbound.ErosaConnection
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlEventParser
 import com.alibaba.otter.canal.protocol.position.EntryPosition
-import com.neighborhood.aka.laplce.estuary.mysql.LogPositionHandler
+import com.neighborhood.aka.laplace.estuary.mysql.LogPositionHandler
 import org.scalatest._
 
 /**
