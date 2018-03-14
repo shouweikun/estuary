@@ -27,7 +27,7 @@ trait worker {
   /**
     * 状态变化
     */
-  def changeStatus(status: Status,changFunc: Status => Unit, onChangeFunc: () => Unit):Unit = {
+  def changeStatus(status: Status,changFunc: Status => Unit, onChangeFunc: => Unit):Unit = {
     changFunc(status)
     onChangeFunc
   }

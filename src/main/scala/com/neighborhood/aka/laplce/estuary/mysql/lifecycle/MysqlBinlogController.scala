@@ -5,6 +5,7 @@ import akka.actor.{Actor, ActorLogging, AllForOneStrategy, Props}
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
 import com.neighborhood.aka.laplce.estuary.bean.task.Mysql2KafkaTaskInfoBean
 import com.neighborhood.aka.laplce.estuary.core.lifecycle
+import com.neighborhood.aka.laplce.estuary.core.lifecycle.Status.Status
 import com.neighborhood.aka.laplce.estuary.core.lifecycle._
 import com.neighborhood.aka.laplce.estuary.mysql.Mysql2KafkaTaskInfoManager
 
@@ -48,12 +49,13 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
     case "start" => {
       //      throw new Exception
       context.become(online)
-      switch2Online
+      controllerChangeStatus(Status.ONLINE)
       startAllWorkers
       log.info("controller switched to online,start all workers")
     }
     case "restart" => {
       context.become(online)
+      controllerChangeStatus(Status.ONLINE)
       restartAllWorkers
       log.info("controller switched to online,restart all workers")
     }
@@ -221,7 +223,7 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
     //todo 记录log
     errorCount += 1
     if (isCrashed) {
-      switch2Error
+      controllerChangeStatus(Status.ERROR)
       errorCount = 0
       throw new Exception("syncController error for 3 times")
     } else {
@@ -233,22 +235,9 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
   /**
     * ********************* 状态变化 *******************
     */
-  private def switch2Offline = {
-    mysql2KafkaTaskInfoManager.syncControllerStatus = Status.OFFLINE
-  }
-
-  private def switch2Online = {
-    mysql2KafkaTaskInfoManager.syncControllerStatus = Status.ONLINE
-  }
-
-  private def switch2Error = {
-    mysql2KafkaTaskInfoManager.syncControllerStatus = Status.ERROR
-  }
-
-
-  private def switch2Restarting = {
-    mysql2KafkaTaskInfoManager.syncControllerStatus = Status.RESTARTING
-  }
+  private def controllerChangeFunc(status: Status) = changeFunc(status)("controller",mysql2KafkaTaskInfoManager)
+  private def controllerOnChangeFunc = Mysql2KafkaTaskInfoManager.onChangeStatus(mysql2KafkaTaskInfoManager)
+  private def controllerChangeStatus(status: Status) = changeStatus(status,controllerChangeFunc,controllerOnChangeFunc)
 
   /**
     * **************** Actor生命周期 *******************
@@ -264,6 +253,7 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
     */
   override def preStart(): Unit
   = {
+    controllerChangeStatus(Status.OFFLINE)
     log.info("start init all workers")
     initWorkers
   }
@@ -282,7 +272,7 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
   = {
     log.info("syncController processing preRestart")
     //默认的话是会调用postStop，preRestart可以保存当前状态s
-    switch2Restarting
+    controllerChangeStatus(Status.RESTARTING)
     context.become(receive)
     super.preRestart(reason, message)
   }
@@ -292,7 +282,7 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
   = {
     log.info("syncController processing postRestart")
     log.info("syncController will restart in 1 minute")
-    switch2Offline
+
     context.system.scheduler.scheduleOnce(1 minute, self, SyncControllerMessage("restart"))
     //可以恢复之前的状态，默认会调用
     super.postRestart(reason)
@@ -302,7 +292,7 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
   override def supervisorStrategy = {
     AllForOneStrategy() {
       case _ => {
-        switch2Error
+        controllerChangeStatus(Status.ERROR)
         Escalate
       }
     }

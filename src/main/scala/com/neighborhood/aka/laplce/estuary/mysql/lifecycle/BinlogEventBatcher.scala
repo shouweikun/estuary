@@ -4,24 +4,24 @@ import java.util
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicLong
 
-import akka.actor.SupervisorStrategy.{Escalate, Restart}
-import akka.actor.{Actor, ActorLogging, ActorRef, AllForOneStrategy, OneForOneStrategy, Props}
+import akka.actor.SupervisorStrategy.Escalate
+import akka.actor.{Actor, ActorLogging, ActorRef, AllForOneStrategy, Props}
+import akka.pattern._
+import com.alibaba.fastjson.JSONObject
 import com.alibaba.otter.canal.protocol.CanalEntry
 import com.alibaba.otter.canal.protocol.CanalEntry.Column
 import com.neighborhood.aka.laplce.estuary.bean.key.BinlogKey
 import com.neighborhood.aka.laplce.estuary.bean.support.KafkaMessage
 import com.neighborhood.aka.laplce.estuary.core.lifecycle
+import com.neighborhood.aka.laplce.estuary.core.lifecycle.Status.Status
 import com.neighborhood.aka.laplce.estuary.core.lifecycle._
 import com.neighborhood.aka.laplce.estuary.core.utils.JsonUtil
 import com.neighborhood.aka.laplce.estuary.mysql.{CanalEntryJsonHelper, Mysql2KafkaTaskInfoManager, MysqlBinlogParser}
 import com.taobao.tddl.dbsync.binlog.LogEvent
 
-
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
-import akka.pattern._
-import com.alibaba.fastjson.JSONObject
 
 /**
   * Created by john_liu on 2018/2/6.
@@ -70,15 +70,13 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
     case SyncControllerMessage(msg) => {
       msg match {
         case "start" => {
-          context.become(online)
-          switch2Online
+          batcherChangeStatus(Status.ONLINE)
         }
       }
     }
     case BatcherMessage(msg) => {
       msg match {
         case "restart" => {
-          switch2Restarting
           self ! SyncControllerMessage("start")
         }
       }
@@ -353,28 +351,17 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
   /**
     * ********************* 状态变化 *******************
     */
-  private def switch2Offline = {
-    mysql2KafkaTaskInfoManager.batcherStatus = Status.OFFLINE
-  }
+  private def batcherChangeFunc(status: Status) = changeFunc(status)("batcher",mysql2KafkaTaskInfoManager)
+  private def batcherOnChangeFunc = Mysql2KafkaTaskInfoManager.onChangeStatus(mysql2KafkaTaskInfoManager)
+  private def batcherChangeStatus(status: Status) = changeStatus(status, batcherChangeFunc, batcherOnChangeFunc)
 
-  private def switch2Error = {
-    mysql2KafkaTaskInfoManager.batcherStatus = Status.ERROR
-  }
-
-  private def switch2Online = {
-    mysql2KafkaTaskInfoManager.batcherStatus = Status.ONLINE
-  }
-
-  private def switch2Restarting = {
-    mysql2KafkaTaskInfoManager.batcherStatus = Status.RESTARTING
-  }
 
   /**
     * ********************* Actor生命周期 *******************
     */
   override def preStart(): Unit = {
     //状态置为offline
-    switch2Offline
+    batcherChangeStatus(Status.OFFLINE)
 
 
   }
@@ -385,7 +372,7 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
     log.info("batcher process preRestart")
-    switch2Restarting
+    batcherChangeStatus(Status.RESTARTING)
     super.preRestart(reason, message)
   }
 
@@ -397,7 +384,7 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
   override def supervisorStrategy = {
     AllForOneStrategy() {
       case _ => {
-        switch2Error
+        batcherChangeStatus(Status.ERROR)
         Escalate
       }
     }
