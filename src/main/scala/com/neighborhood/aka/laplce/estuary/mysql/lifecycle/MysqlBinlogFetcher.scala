@@ -3,6 +3,7 @@ package com.neighborhood.aka.laplce.estuary.mysql.lifecycle
 import java.io.IOException
 import java.nio.ByteBuffer
 import java.util
+import java.util.concurrent.Executors
 
 import akka.actor.SupervisorStrategy.Restart
 import akka.actor.{Actor, ActorLogging, ActorRef, OneForOneStrategy, Props}
@@ -24,6 +25,7 @@ import org.apache.commons.lang.StringUtils
 
 import scala.annotation.tailrec
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 
 /**
@@ -33,6 +35,8 @@ import scala.concurrent.duration._
   */
 
 class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager, binlogEventBatcher: ActorRef) extends Actor with SourceDataFetcher with ActorLogging {
+
+  implicit val transTaskPool = Executors.newSingleThreadExecutor()
   /**
     * binlogParser 解析binlog
     */
@@ -150,8 +154,10 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
           }
         }
         case "fetch" => {
+          //如果两分钟还不能拿到数据，发起重连
+          val flag = Await.result(Future(fetcher.fetch()), 2 minutes)
           try {
-            val flag = fetcher.fetch()
+
             //            println(flag)
             //            println("before fetch")
             if (flag) {
@@ -227,7 +233,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
     if (filterEntry(entry)) {
       val after = System.currentTimeMillis()
       //      println(after-before)
-     // Thread.sleep(2)
+      // Thread.sleep(2)
       log.debug(s"fetch entry: ${entry.get.getHeader.getLogfileName},${entry.get.getHeader.getLogfileOffset},${after - before}")
       binlogEventBatcher ! entry.get
     } else {

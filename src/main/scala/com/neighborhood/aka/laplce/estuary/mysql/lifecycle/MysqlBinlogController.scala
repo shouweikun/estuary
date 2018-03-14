@@ -110,15 +110,7 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
     case SyncControllerMessage(msg) => {
 
     }
-    case "status" => {
-      val syncControllerStatus = mysql2KafkaTaskInfoManager.status
-      val fetcherStatus = mysql2KafkaTaskInfoManager.fetcherStatus
-      val sinkerStatus = mysql2KafkaTaskInfoManager.sinkerStatus
-      val batcherStatus = mysql2KafkaTaskInfoManager.batcherStatus
-      val listenerStatus = mysql2KafkaTaskInfoManager.heartBeatListenerStatus
-      val map = Map("syncControllerStatus" -> syncControllerStatus, "fetcherStatus" -> fetcherStatus, "sinkerStatus" -> sinkerStatus, "batcherStatus" -> batcherStatus, "listenerStatus" -> listenerStatus)
-      sender() ! JSONObject.apply(map)
-    }
+
   }
 
   /**

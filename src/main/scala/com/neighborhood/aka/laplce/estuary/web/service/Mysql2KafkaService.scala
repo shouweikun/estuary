@@ -12,7 +12,7 @@ import org.codehaus.jackson.map.ObjectMapper
   */
 object Mysql2KafkaService {
 
-  val taskStatusMap = new ConcurrentHashMap[String, Map[String, String]]()
+
 
   def startOneTask(mysql2KafkaTaskInfoBean: Mysql2KafkaTaskInfoBean): String = {
     val prop = MysqlBinlogController.props(mysql2KafkaTaskInfoBean)

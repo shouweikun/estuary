@@ -2,6 +2,7 @@ package com.neighborhood.aka.laplce.estuary.mysql
 
 import java.net.InetSocketAddress
 import java.nio.charset.Charset
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 
 import com.alibaba.otter.canal.common.zookeeper.ZkClientx
@@ -19,6 +20,8 @@ import com.neighborhood.aka.laplce.estuary.core.sink.KafkaSinkFunc
 import com.neighborhood.aka.laplce.estuary.core.task.{RecourceManager, TaskManager}
 import com.typesafe.config.Config
 import org.apache.commons.lang.StringUtils
+
+import scala.util.parsing.json.JSONObject
 
 /**
   * Created by john_liu on 2018/2/7.
@@ -73,7 +76,7 @@ class Mysql2KafkaTaskInfoManager(taskInfoBean: Mysql2KafkaTaskInfoBean) extends 
   /**
     * 同步任务开始entry
     */
-  var startPosition: EntryPosition = if(StringUtils.isEmpty(this.taskInfo.journalName))new EntryPosition("mysql-bin.000013", 4L) else new EntryPosition(this.taskInfo.journalName,this.taskInfo.position)
+  var startPosition: EntryPosition = if (StringUtils.isEmpty(this.taskInfo.journalName)) new EntryPosition("mysql-bin.000013", 4L) else new EntryPosition(this.taskInfo.journalName, this.taskInfo.position)
   /**
     * canal的mysqlConnection
     */
@@ -106,8 +109,6 @@ class Mysql2KafkaTaskInfoManager(taskInfoBean: Mysql2KafkaTaskInfoBean) extends 
     */
   @volatile
   var heartBeatListenerStatus: Status = Status.OFFLINE
-  val a = new AtomicReference[Status]()
-
   /**
     * sinker的状态
     */
@@ -194,11 +195,28 @@ class Mysql2KafkaTaskInfoManager(taskInfoBean: Mysql2KafkaTaskInfoBean) extends 
 }
 
 object Mysql2KafkaTaskInfoManager {
+  lazy val zkClientx = null
+  val taskStatusMap = new ConcurrentHashMap[String, Map[String, Status]]()
+
   /**
     * 任务管理器的构造的工厂方法
     */
   def buildManager(taskInfoBean: Mysql2KafkaTaskInfoBean): Mysql2KafkaTaskInfoManager = {
     new Mysql2KafkaTaskInfoManager(taskInfoBean)
   }
-  lazy val zkClientx = null
+
+  /**
+    *每当任务状态变化时，更新之
+    */
+  def onChangeStatus(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager): Unit = {
+    val syncTaskId = mysql2KafkaTaskInfoManager.taskInfo.syncTaskId
+    val syncControllerStatus = mysql2KafkaTaskInfoManager.syncControllerStatus
+    val fetcherStatus = mysql2KafkaTaskInfoManager.fetcherStatus
+    val sinkerStatus = mysql2KafkaTaskInfoManager.sinkerStatus
+    val batcherStatus = mysql2KafkaTaskInfoManager.batcherStatus
+    val listenerStatus = mysql2KafkaTaskInfoManager.heartBeatListenerStatus
+    val map = Map("syncControllerStatus" -> syncControllerStatus, "fetcherStatus" -> fetcherStatus, "sinkerStatus" -> sinkerStatus, "batcherStatus" -> batcherStatus, "listenerStatus" -> listenerStatus)
+
+    taskStatusMap.put(syncTaskId, map)
+  }
 }

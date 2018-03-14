@@ -41,7 +41,7 @@ class Mysql2KafkaTaskController {
   }
 
   @ApiOperation(value = "停止任务", httpMethod = "GET", notes = "")
-  @RequestMapping(value = Array("/restart"), method = Array(RequestMethod.GET))
+  @RequestMapping(value = Array("/stop"), method = Array(RequestMethod.GET))
   def stopTask(@RequestParam("id") id: String): Boolean = {
     Mysql2KafkaService.stopTask(id)
   }
