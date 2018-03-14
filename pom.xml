@@ -324,7 +324,7 @@
                         <manifest>
                             <addClasspath>true</addClasspath>
                             <classpathPrefix>lib/</classpathPrefix>
-                            <mainClass>com.neighborhood.aka.laplace.estuary.web.App</mainClass>
+                            <mainClass>com.neighborhood.aka.laplace.estuary.web.App$</mainClass>
                         </manifest>
                     </archive>
                 </configuration>

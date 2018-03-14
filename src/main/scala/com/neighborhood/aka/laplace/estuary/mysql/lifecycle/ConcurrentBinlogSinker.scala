@@ -75,7 +75,6 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
     case SyncControllerMessage(msg) => {
       msg match {
         case "start" => {
-          throw new StackOverflowError
           //online模式
           log.info("sinker swtich to online")
           context.become(online)
