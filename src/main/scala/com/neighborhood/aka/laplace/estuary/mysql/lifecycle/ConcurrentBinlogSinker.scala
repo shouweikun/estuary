@@ -172,7 +172,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
     }
 
     // log.info(kafkaMessage.getJsonValue.substring(0, 5))
-    kafkaSinker.ayncSink(kafkaMessage.getBaseDataJsonKey.asInstanceOf[BinlogKey], kafkaMessage.getJsonValue)(topic)(callback)
+   // kafkaSinker.ayncSink(kafkaMessage.getBaseDataJsonKey.asInstanceOf[BinlogKey], kafkaMessage.getJsonValue)(topic)(callback)
     val after = System.currentTimeMillis()
 
     // log.info(s"sink cost time :${after-before}")
@@ -209,7 +209,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
   }
 
   override def postStop(): Unit = {
-    if (!isAbnormal.get()) {
+    if (!isAbnormal.get() && !StringUtils.isEmpty(lastSavedJournalName)) {
       val theJournalName = this.lastSavedJournalName
       val theOffset = this.lastSavedOffset
       logPositionHandler.persistLogPosition(destination, theJournalName, theOffset)

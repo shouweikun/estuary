@@ -72,6 +72,7 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
       msg match {
         case "start" => {
           batcherChangeStatus(Status.ONLINE)
+          context.become(online)
         }
       }
     }

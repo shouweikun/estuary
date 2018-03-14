@@ -244,6 +244,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
       //      println(after-before)
       // Thread.sleep(2)
       log.debug(s"fetch entry: ${entry.get.getHeader.getLogfileName},${entry.get.getHeader.getLogfileOffset},${after - before}")
+      binlogEventBatcher ! "1"
       binlogEventBatcher ! entry.get
     } else {
       //throw new Exception("the fetched data is null")
