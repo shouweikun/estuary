@@ -12,6 +12,7 @@ object ActorRefHolder extends theActorSystem {
   //todo 初始化守护Actor
   //todo 保留重要ActorRef
   val syncDaemon = system.actorOf(Props(classOf[SyncDaemon]), "syncDaemon")
+
   var actorRefMap:Map[String, ActorRef] = Map.empty
 
   def addNewTaskActorRef(key:String,value:ActorRef): Boolean = {

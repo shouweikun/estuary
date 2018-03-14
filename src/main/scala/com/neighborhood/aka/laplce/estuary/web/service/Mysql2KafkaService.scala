@@ -51,4 +51,8 @@ object Mysql2KafkaService {
     }
 
   }
+
+  def checkSystemStatus = {
+   ???
+  }
 }

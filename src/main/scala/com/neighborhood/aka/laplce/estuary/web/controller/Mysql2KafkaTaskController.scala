@@ -45,7 +45,11 @@ class Mysql2KafkaTaskController {
   def stopTask(@RequestParam("id") id: String): Boolean = {
     Mysql2KafkaService.stopTask(id)
   }
-
+  @ApiOperation(value = "查看AkkaSystem状态", httpMethod = "GET", notes = "")
+  @RequestMapping(value = Array("/system/status"), method = Array(RequestMethod.GET))
+  def checkSystemStatus(): String = {
+    Mysql2KafkaService.checkSystemStatus
+  }
   def buildTaskInfo(requestBody: Mysql2kafkaTaskRequestBean): Mysql2KafkaTaskInfoBean = {
     val taskInfo = new Mysql2KafkaTaskInfoBean
     //任务id

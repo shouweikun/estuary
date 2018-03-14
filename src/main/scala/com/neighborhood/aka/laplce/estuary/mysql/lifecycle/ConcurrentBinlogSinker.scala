@@ -71,6 +71,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
     case SyncControllerMessage(msg) => {
       msg match {
         case "start" => {
+          throw new StackOverflowError
           //online模式
           log.info("sinker swtich to online")
           context.become(online)
@@ -85,6 +86,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
 
   def online: Receive = {
     case list: List[Any] => {
+
       /**
         * 待保存的BinlogOffset
         */
@@ -167,7 +169,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
     }
 
     // log.info(kafkaMessage.getJsonValue.substring(0, 5))
-   // kafkaSinker.ayncSink(kafkaMessage.getBaseDataJsonKey.asInstanceOf[BinlogKey], kafkaMessage.getJsonValue)(topic)(callback)
+    kafkaSinker.ayncSink(kafkaMessage.getBaseDataJsonKey.asInstanceOf[BinlogKey], kafkaMessage.getJsonValue)(topic)(callback)
     val after = System.currentTimeMillis()
 
     // log.info(s"sink cost time :${after-before}")
@@ -227,6 +229,13 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
 
   override def supervisorStrategy = {
     OneForOneStrategy() {
+      case e:StackOverflowError =>
+        {
+          sinkerChangeStatus(Status.ERROR)
+          log.error("stackOverFlow")
+          Escalate
+        }
+
       case e: ZkTimeoutException => {
         sinkerChangeStatus(Status.ERROR)
         log.error("can not connect to zookeeper server")
