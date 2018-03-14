@@ -24,12 +24,6 @@ trait worker {
     * 错误处理
     */
   def processError(e: Throwable, message: WorkerMessage)
-  /**
-    * 状态变化
-    */
-  def changeStatus(status: Status,changFunc: Status => Unit, onChangeFunc: => Unit):Unit = {
-    changFunc(status)
-    onChangeFunc
-  }
+
 
 }

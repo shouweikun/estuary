@@ -94,31 +94,7 @@ class Mysql2KafkaTaskInfoManager(taskInfoBean: Mysql2KafkaTaskInfoBean) extends 
     */
   lazy val logPositionHandler: LogPositionHandler = buildEntryPositionHandler
 
-  /**
-    * fetcher的状态
-    */
-  @volatile
-  var fetcherStatus: Status = Status.OFFLINE
-  /**
-    * batcher的状态
-    */
-  @volatile
-  var batcherStatus: Status = Status.OFFLINE
-  /**
-    * heartbeatListener的状态
-    */
-  @volatile
-  var heartBeatListenerStatus: Status = Status.OFFLINE
-  /**
-    * sinker的状态
-    */
-  @volatile
-  var sinkerStatus: Status = Status.OFFLINE
-  /**
-    * syncControllerStatus的状态
-    */
-  @volatile
-  var syncControllerStatus: Status = Status.OFFLINE
+
 
   /**
     * 实现@trait ResourceManager

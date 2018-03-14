@@ -7,7 +7,9 @@ import akka.actor.{Actor, ActorLogging, ActorRef, OneForOneStrategy, Props}
 import com.neighborhood.aka.laplce.estuary.bean.key.BinlogKey
 import com.neighborhood.aka.laplce.estuary.bean.support.KafkaMessage
 import com.neighborhood.aka.laplce.estuary.core.lifecycle
+import com.neighborhood.aka.laplce.estuary.core.lifecycle.Status.Status
 import com.neighborhood.aka.laplce.estuary.core.lifecycle.{SinkerMessage, SourceDataSinker, Status, SyncControllerMessage}
+import com.neighborhood.aka.laplce.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplce.estuary.mysql.Mysql2KafkaTaskInfoManager
 import org.I0Itec.zkclient.exception.ZkTimeoutException
 import org.apache.kafka.clients.producer.{Callback, RecordMetadata}
@@ -72,7 +74,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
           //online模式
           log.info("sinker swtich to online")
           context.become(online)
-          switch2Online
+          sinkerChangeStatus(Status.ONLINE)
         }
         case x => {
           log.warning(s"sinker offline unhandled message:$x")
@@ -187,28 +189,17 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
     * ********************* 状态变化 *******************
     */
 
-  private def switch2Offline = {
-    mysql2KafkaTaskInfoManager.sinkerStatus = Status.OFFLINE
-  }
+  private def changeFunc(status:Status) =TaskManager.changeFunc(status,mysql2KafkaTaskInfoManager)
+  private def onChangeFunc = Mysql2KafkaTaskInfoManager.onChangeStatus(mysql2KafkaTaskInfoManager)
+  private def sinkerChangeStatus(status: Status) = TaskManager.changeStatus(status,changeFunc,onChangeFunc)
 
-  private def switch2Error = {
-    mysql2KafkaTaskInfoManager.sinkerStatus = Status.ERROR
-  }
-
-  private def switch2Online = {
-    mysql2KafkaTaskInfoManager.sinkerStatus = Status.ONLINE
-  }
-
-  private def switch2Restarting = {
-    mysql2KafkaTaskInfoManager.sinkerStatus = Status.RESTARTING
-  }
 
 
   /**
     * **************** Actor生命周期 *******************
     */
   override def preStart(): Unit = {
-    switch2Offline
+    sinkerChangeStatus(Status.OFFLINE)
 
   }
 
@@ -225,7 +216,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
   }
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
-    switch2Restarting
+    sinkerChangeStatus(Status.RESTARTING)
     context.become(receive)
   }
 
@@ -237,20 +228,20 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
   override def supervisorStrategy = {
     OneForOneStrategy() {
       case e: ZkTimeoutException => {
-        switch2Error
+        sinkerChangeStatus(Status.ERROR)
         log.error("can not connect to zookeeper server")
         Escalate
       }
       case e: Exception => {
-        switch2Error
+        sinkerChangeStatus(Status.ERROR)
         Escalate
       }
       case error: Error => {
-        switch2Error
+        sinkerChangeStatus(Status.ERROR)
         Escalate
       }
       case _ => {
-        switch2Error
+        sinkerChangeStatus(Status.ERROR)
         Escalate
       }
     }

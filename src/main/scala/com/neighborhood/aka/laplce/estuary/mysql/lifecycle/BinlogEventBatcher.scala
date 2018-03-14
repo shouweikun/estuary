@@ -15,6 +15,7 @@ import com.neighborhood.aka.laplce.estuary.bean.support.KafkaMessage
 import com.neighborhood.aka.laplce.estuary.core.lifecycle
 import com.neighborhood.aka.laplce.estuary.core.lifecycle.Status.Status
 import com.neighborhood.aka.laplce.estuary.core.lifecycle._
+import com.neighborhood.aka.laplce.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplce.estuary.core.utils.JsonUtil
 import com.neighborhood.aka.laplce.estuary.mysql.{CanalEntryJsonHelper, Mysql2KafkaTaskInfoManager, MysqlBinlogParser}
 import com.taobao.tddl.dbsync.binlog.LogEvent
@@ -351,11 +352,9 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
   /**
     * ********************* 状态变化 *******************
     */
-  private def batcherChangeFunc(status: Status) = changeFunc(status)("batcher",mysql2KafkaTaskInfoManager)
-  private def batcherOnChangeFunc = Mysql2KafkaTaskInfoManager.onChangeStatus(mysql2KafkaTaskInfoManager)
-  private def batcherChangeStatus(status: Status) = changeStatus(status, batcherChangeFunc, batcherOnChangeFunc)
-
-
+  private def changeFunc(status:Status) =TaskManager.changeFunc(status,mysql2KafkaTaskInfoManager)
+  private def onChangeFunc = Mysql2KafkaTaskInfoManager.onChangeStatus(mysql2KafkaTaskInfoManager)
+  private def batcherChangeStatus(status: Status) = TaskManager.changeStatus(status,changeFunc,onChangeFunc)
   /**
     * ********************* Actor生命周期 *******************
     */

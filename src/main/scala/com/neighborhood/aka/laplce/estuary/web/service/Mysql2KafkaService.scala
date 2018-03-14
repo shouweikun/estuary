@@ -24,7 +24,7 @@ object Mysql2KafkaService {
     Option(Mysql2KafkaTaskInfoManager.taskStatusMap.get(syncTaskId))
     match {
       case Some(x) => {
-        s"{$syncTaskId:${x.map(kv => s"{${kv._1}:${kv._2}").mkString(",")}}"
+        s"{$syncTaskId:${x.map(kv => s"${kv._1}:${kv._2}").mkString(",")}}"
       }
       case None => s"$syncTaskId:None}"
     }

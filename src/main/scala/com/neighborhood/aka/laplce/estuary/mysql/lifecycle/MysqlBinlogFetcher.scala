@@ -16,7 +16,9 @@ import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
 import com.alibaba.otter.canal.parse.inbound.mysql.dbsync.{DirectLogFetcher, TableMetaCache}
 import com.alibaba.otter.canal.protocol.CanalEntry
 import com.alibaba.otter.canal.protocol.position.EntryPosition
+import com.neighborhood.aka.laplce.estuary.core.lifecycle.Status.Status
 import com.neighborhood.aka.laplce.estuary.core.lifecycle._
+import com.neighborhood.aka.laplce.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplce.estuary.mysql.{Mysql2KafkaTaskInfoManager, MysqlBinlogParser}
 import com.taobao.tddl.dbsync.binlog.event.FormatDescriptionLogEvent
 import com.taobao.tddl.dbsync.binlog.{LogContext, LogDecoder, LogEvent, LogPosition}
@@ -101,7 +103,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
       msg match {
         case "stop" => {
           context.become(receive)
-          switch2Offline
+          fetcherChangeStatus(Status.OFFLINE)
         }
         case "start" => {
           try {
@@ -135,7 +137,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
     case FetcherMessage(msg) => {
       msg match {
         case "start" => {
-          switch2Online
+          fetcherChangeStatus(Status.ONLINE)
           self ! FetcherMessage("predump")
         }
         case "predump" => {
@@ -331,7 +333,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
     //todo 记录log
     errorCount += 1
     if (isCrashed) {
-      switch2Error
+      fetcherChangeStatus(Status.ERROR)
       errorCount = 0
       println(message.msg)
       e.printStackTrace()
@@ -344,22 +346,9 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
   /**
     * ********************* 状态变化 *******************
     */
-  private def switch2Offline = {
-    mysql2KafkaTaskInfoManager.fetcherStatus = Status.OFFLINE
-  }
-
-
-  private def switch2Error = {
-    mysql2KafkaTaskInfoManager.fetcherStatus = Status.ERROR
-  }
-
-  private def switch2Online = {
-    mysql2KafkaTaskInfoManager.fetcherStatus = Status.ONLINE
-  }
-
-  private def switch2Restarting = {
-    mysql2KafkaTaskInfoManager.fetcherStatus = Status.RESTARTING
-  }
+  private def changeFunc(status:Status) =TaskManager.changeFunc(status,mysql2KafkaTaskInfoManager)
+  private def onChangeFunc = Mysql2KafkaTaskInfoManager.onChangeStatus(mysql2KafkaTaskInfoManager)
+  private def fetcherChangeStatus(status: Status) = TaskManager.changeStatus(status,changeFunc,onChangeFunc)
 
   /**
     * ********************* Actor生命周期 *******************
@@ -367,7 +356,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
   override def preStart(): Unit = {
     if (mysqlMetaConnection.isDefined && mysqlConnection.get.isConnected) mysqlConnection.get.disconnect()
     //状态置为offline
-    switch2Offline
+    fetcherChangeStatus(Status.OFFLINE)
   }
 
   override def postRestart(reason: Throwable): Unit = {
@@ -384,27 +373,27 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
 
     context.become(receive)
-    switch2Restarting
+    fetcherChangeStatus(Status.RESTARTING)
     super.preRestart(reason, message)
   }
 
   override def supervisorStrategy = {
     OneForOneStrategy() {
       case e: ZkTimeoutException => {
-        switch2Error
+        fetcherChangeStatus(Status.ERROR)
         Restart
         //todo log
       }
       case e: Exception => {
-        switch2Error
+        fetcherChangeStatus(Status.ERROR)
         Restart
       }
       case error: Error => {
-        switch2Error
+        fetcherChangeStatus(Status.ERROR)
         Restart
       }
       case _ => {
-        switch2Error
+        fetcherChangeStatus(Status.ERROR)
         Restart
       }
     }

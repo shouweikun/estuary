@@ -7,6 +7,7 @@ import com.neighborhood.aka.laplce.estuary.bean.task.Mysql2KafkaTaskInfoBean
 import com.neighborhood.aka.laplce.estuary.core.lifecycle
 import com.neighborhood.aka.laplce.estuary.core.lifecycle.Status.Status
 import com.neighborhood.aka.laplce.estuary.core.lifecycle._
+import com.neighborhood.aka.laplce.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplce.estuary.mysql.Mysql2KafkaTaskInfoManager
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -235,10 +236,9 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
   /**
     * ********************* 状态变化 *******************
     */
-  private def controllerChangeFunc(status: Status) = changeFunc(status)("controller",mysql2KafkaTaskInfoManager)
-  private def controllerOnChangeFunc = Mysql2KafkaTaskInfoManager.onChangeStatus(mysql2KafkaTaskInfoManager)
-  private def controllerChangeStatus(status: Status) = changeStatus(status,controllerChangeFunc,controllerOnChangeFunc)
-
+  private def changeFunc(status:Status) =TaskManager.changeFunc(status,mysql2KafkaTaskInfoManager)
+  private def onChangeFunc = Mysql2KafkaTaskInfoManager.onChangeStatus(mysql2KafkaTaskInfoManager)
+  private def controllerChangeStatus(status: Status) = TaskManager.changeStatus(status,changeFunc,onChangeFunc)
   /**
     * **************** Actor生命周期 *******************
     */
