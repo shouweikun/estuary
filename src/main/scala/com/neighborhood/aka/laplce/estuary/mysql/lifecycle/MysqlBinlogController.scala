@@ -79,6 +79,7 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
   }
 
   def online: Receive = {
+    case "restart" => throw new RuntimeException("重启")
 
     case ListenerMessage(msg) => {
       msg match {

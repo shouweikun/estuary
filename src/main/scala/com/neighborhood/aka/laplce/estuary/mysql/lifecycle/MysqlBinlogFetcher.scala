@@ -227,7 +227,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
     if (filterEntry(entry)) {
       val after = System.currentTimeMillis()
       //      println(after-before)
-      Thread.sleep(2)
+     // Thread.sleep(2)
       log.debug(s"fetch entry: ${entry.get.getHeader.getLogfileName},${entry.get.getHeader.getLogfileOffset},${after - before}")
       binlogEventBatcher ! entry.get
     } else {

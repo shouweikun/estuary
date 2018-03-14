@@ -34,8 +34,22 @@ class Mysql2KafkaTaskController {
   }
 
 
+  @ApiOperation(value = "重启任务", httpMethod = "GET", notes = "")
+  @RequestMapping(value = Array("/restart"), method = Array(RequestMethod.GET))
+  def restartTask(@RequestParam("id") id: String): Boolean = {
+    Mysql2KafkaService.reStartTask(id)
+  }
+
+  @ApiOperation(value = "停止任务", httpMethod = "GET", notes = "")
+  @RequestMapping(value = Array("/restart"), method = Array(RequestMethod.GET))
+  def stopTask(@RequestParam("id") id: String): Boolean = {
+    Mysql2KafkaService.stopTask(id)
+  }
+
   def buildTaskInfo(requestBody: Mysql2kafkaTaskRequestBean): Mysql2KafkaTaskInfoBean = {
     val taskInfo = new Mysql2KafkaTaskInfoBean
+    //任务id
+    taskInfo.syncTaskId = requestBody.getSyncTaskId
     //监听用
     taskInfo.listenRetrytime = requestBody.getListenRetrytime
     taskInfo.listenTimeout = requestBody.getListenTimeout
@@ -44,10 +58,10 @@ class Mysql2KafkaTaskController {
     taskInfo.zookeeperServers = requestBody.getZookeeperServers
     //kafka用
     taskInfo.kafkaRetries = requestBody.getKafkaRetries
-    taskInfo.lingerMs = requestBody.getLingerMs
-    taskInfo.bootstrapServers = requestBody.getBootstrapServers
-    taskInfo.ack = requestBody.getAck
-    taskInfo.topic = requestBody.getTopic
+    taskInfo.lingerMs = requestBody.getKafkaLingerMs
+    taskInfo.bootstrapServers = requestBody.getKafkaBootstrapServers
+    taskInfo.ack = requestBody.getKafkaAck
+    taskInfo.topic = requestBody.getKafkaTopic
     //mysql用
     taskInfo.master = new MysqlCredentialBean(requestBody.getMysqladdress, requestBody.getMysqlPort, requestBody.getMysqlUsername, requestBody.getMysqlPassword, requestBody.getMysqlDefaultDatabase)
     //过滤用
@@ -59,8 +73,8 @@ class Mysql2KafkaTaskController {
     taskInfo.eventBlackFilterPattern = requestBody.getEventBlackFilterPattern
     taskInfo.eventFilterPattern = requestBody.getEventFilterPattern
     //开始的position
-    taskInfo.journalName = requestBody.getJournalName
-    taskInfo.position = requestBody.getPosition
+    taskInfo.journalName = requestBody.getBinlogJournalName
+    taskInfo.position = requestBody.getBinlogPosition
     //模式设置
     taskInfo.isProfiling = requestBody.isProfiling
     taskInfo.isTransactional = requestBody.isTransactional

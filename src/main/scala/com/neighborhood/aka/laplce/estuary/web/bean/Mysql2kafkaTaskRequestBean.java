@@ -1,6 +1,7 @@
 package com.neighborhood.aka.laplce.estuary.web.bean;
 
 import com.neighborhood.aka.laplce.estuary.bean.identity.DataSyncType;
+import jdk.nashorn.internal.objects.annotations.Getter;
 
 import java.nio.charset.Charset;
 
@@ -8,10 +9,12 @@ import java.nio.charset.Charset;
 /**
  * Created by john_liu on 2018/3/11.
  */
+
 public class Mysql2kafkaTaskRequestBean {
-    private String journalName;
-    private long Position;
-    private long timeStamp;
+    private String syncTaskId;
+    private String binlogJournalName;
+    private long binlogPosition;
+    private long binlogTimeStamp;
     private boolean isCounting;
     private boolean isProfiling;
     private boolean isTransactional;
@@ -28,13 +31,13 @@ public class Mysql2kafkaTaskRequestBean {
     private boolean filterTableError = false;
     private String eventFilterPattern = "";
     private String eventBlackFilterPattern = "";
-    private String bootstrapServers = "";
-    private String maxBlockMs = "";
-    private String ack = "";
-    private String lingerMs = "";
+    private String kafkaBootstrapServers = "";
+    private String kafkaMaxBlockMs = "";
+    private String kafkaAck = "";
+    private String kafkaLingerMs = "";
     private String kafkaRetries = "";
-    private String topic = "";
-    private String Mysqladdress;
+    private String kafkaTopic = "";
+    private String mysqladdress;
     private int mysqlPort;
     private String mysqlUsername;
     private String mysqlPassword;
@@ -50,61 +53,36 @@ public class Mysql2kafkaTaskRequestBean {
     // zookeeper 链接超时设置,单位毫秒
     private int zookeeperTimeout = 10000;
 
-    public int getListenTimeout() {
-        return listenTimeout;
+    public String getSyncTaskId() {
+        return syncTaskId;
     }
 
-    public void setListenTimeout(int listenTimeout) {
-        this.listenTimeout = listenTimeout;
+    public void setSyncTaskId(String syncTaskId) {
+        this.syncTaskId = syncTaskId;
     }
 
-    public int getListenRetrytime() {
-        return listenRetrytime;
+    public String getBinlogJournalName() {
+        return binlogJournalName;
     }
 
-    public void setListenRetrytime(int listenRetrytime) {
-        this.listenRetrytime = listenRetrytime;
+    public void setBinlogJournalName(String binlogJournalName) {
+        this.binlogJournalName = binlogJournalName;
     }
 
-    public String getZookeeperServers() {
-        return zookeeperServers;
+    public long getBinlogPosition() {
+        return binlogPosition;
     }
 
-    public void setZookeeperServers(String zookeeperServers) {
-        this.zookeeperServers = zookeeperServers;
+    public void setBinlogPosition(long binlogPosition) {
+        this.binlogPosition = binlogPosition;
     }
 
-    public int getZookeeperTimeout() {
-        return zookeeperTimeout;
+    public long getBinlogTimeStamp() {
+        return binlogTimeStamp;
     }
 
-    public void setZookeeperTimeout(int zookeeperTimeout) {
-        this.zookeeperTimeout = zookeeperTimeout;
-    }
-
-
-    public String getJournalName() {
-        return journalName;
-    }
-
-    public void setJournalName(String journalName) {
-        this.journalName = journalName;
-    }
-
-    public long getPosition() {
-        return Position;
-    }
-
-    public void setPosition(long position) {
-        Position = position;
-    }
-
-    public long getTimeStamp() {
-        return timeStamp;
-    }
-
-    public void setTimeStamp(long timeStamp) {
-        this.timeStamp = timeStamp;
+    public void setBinlogTimeStamp(long binlogTimeStamp) {
+        this.binlogTimeStamp = binlogTimeStamp;
     }
 
     public boolean isCounting() {
@@ -235,12 +213,60 @@ public class Mysql2kafkaTaskRequestBean {
         this.eventBlackFilterPattern = eventBlackFilterPattern;
     }
 
+    public String getKafkaBootstrapServers() {
+        return kafkaBootstrapServers;
+    }
+
+    public void setKafkaBootstrapServers(String kafkaBootstrapServers) {
+        this.kafkaBootstrapServers = kafkaBootstrapServers;
+    }
+
+    public String getKafkaMaxBlockMs() {
+        return kafkaMaxBlockMs;
+    }
+
+    public void setKafkaMaxBlockMs(String kafkaMaxBlockMs) {
+        this.kafkaMaxBlockMs = kafkaMaxBlockMs;
+    }
+
+    public String getKafkaAck() {
+        return kafkaAck;
+    }
+
+    public void setKafkaAck(String kafkaAck) {
+        this.kafkaAck = kafkaAck;
+    }
+
+    public String getKafkaLingerMs() {
+        return kafkaLingerMs;
+    }
+
+    public void setKafkaLingerMs(String kafkaLingerMs) {
+        this.kafkaLingerMs = kafkaLingerMs;
+    }
+
+    public String getKafkaRetries() {
+        return kafkaRetries;
+    }
+
+    public void setKafkaRetries(String kafkaRetries) {
+        this.kafkaRetries = kafkaRetries;
+    }
+
+    public String getKafkaTopic() {
+        return kafkaTopic;
+    }
+
+    public void setKafkaTopic(String kafkaTopic) {
+        this.kafkaTopic = kafkaTopic;
+    }
+
     public String getMysqladdress() {
-        return Mysqladdress;
+        return mysqladdress;
     }
 
     public void setMysqladdress(String mysqladdress) {
-        Mysqladdress = mysqladdress;
+        this.mysqladdress = mysqladdress;
     }
 
     public int getMysqlPort() {
@@ -275,51 +301,35 @@ public class Mysql2kafkaTaskRequestBean {
         this.mysqlDefaultDatabase = mysqlDefaultDatabase;
     }
 
-    public String getBootstrapServers() {
-        return bootstrapServers;
+    public int getListenTimeout() {
+        return listenTimeout;
     }
 
-    public void setBootstrapServers(String bootstrapServers) {
-        this.bootstrapServers = bootstrapServers;
+    public void setListenTimeout(int listenTimeout) {
+        this.listenTimeout = listenTimeout;
     }
 
-    public String getMaxBlockMs() {
-        return maxBlockMs;
+    public int getListenRetrytime() {
+        return listenRetrytime;
     }
 
-    public void setMaxBlockMs(String maxBlockMs) {
-        this.maxBlockMs = maxBlockMs;
+    public void setListenRetrytime(int listenRetrytime) {
+        this.listenRetrytime = listenRetrytime;
     }
 
-    public String getAck() {
-        return ack;
+    public String getZookeeperServers() {
+        return zookeeperServers;
     }
 
-    public void setAck(String ack) {
-        this.ack = ack;
+    public void setZookeeperServers(String zookeeperServers) {
+        this.zookeeperServers = zookeeperServers;
     }
 
-    public String getLingerMs() {
-        return lingerMs;
+    public int getZookeeperTimeout() {
+        return zookeeperTimeout;
     }
 
-    public void setLingerMs(String lingerMs) {
-        this.lingerMs = lingerMs;
-    }
-
-    public String getKafkaRetries() {
-        return kafkaRetries;
-    }
-
-    public void setKafkaRetries(String kafkaRetries) {
-        this.kafkaRetries = kafkaRetries;
-    }
-
-    public String getTopic() {
-        return topic;
-    }
-
-    public void setTopic(String topic) {
-        this.topic = topic;
+    public void setZookeeperTimeout(int zookeeperTimeout) {
+        this.zookeeperTimeout = zookeeperTimeout;
     }
 }

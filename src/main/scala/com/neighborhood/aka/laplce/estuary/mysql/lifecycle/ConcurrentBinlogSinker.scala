@@ -111,7 +111,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
 
       val after = System.currentTimeMillis()
       //这次任务完成后
-     // log.info(s"send处理用了${after - before}")
+      log.info(s"send处理用了${after - before}")
       //保存这次任务的binlog
       //判断的原因是如果本次写入没有事务offset就不记录
       if (!StringUtils.isEmpty(savedJournalName)) {
@@ -165,7 +165,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
     }
 
     // log.info(kafkaMessage.getJsonValue.substring(0, 5))
-    kafkaSinker.ayncSink(kafkaMessage.getBaseDataJsonKey.asInstanceOf[BinlogKey], kafkaMessage.getJsonValue)(topic)(callback)
+   // kafkaSinker.ayncSink(kafkaMessage.getBaseDataJsonKey.asInstanceOf[BinlogKey], kafkaMessage.getJsonValue)(topic)(callback)
     val after = System.currentTimeMillis()
 
     // log.info(s"sink cost time :${after-before}")
@@ -213,7 +213,12 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
   }
 
   override def postStop(): Unit = {
-
+    if (!isAbnormal.get()) {
+      val theJournalName = this.lastSavedJournalName
+      val theOffset = this.lastSavedOffset
+      logPositionHandler.persistLogPosition(destination, theJournalName, theOffset)
+      log.info(s"记录binlog $theJournalName,$theOffset")
+    }
     kafkaSinker.kafkaProducer.close()
     sinkTaskPool.environment.shutdown()
     //logPositionHandler.logPositionManage
