@@ -1,4 +1,4 @@
-package com.neighborhood.aka.laplace.estuary.core.utils
+package com.neighborhood.aka.laplace.estuary.mysql
 
 import java.io._
 import java.util

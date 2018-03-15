@@ -5,7 +5,7 @@ import java.io.File
 import com.alibaba.otter.canal.protocol.position.EntryPosition
 import com.neighborhood.aka.laplace.estuary.bean.credential.MysqlCredentialBean
 import com.neighborhood.aka.laplace.estuary.bean.task.Mysql2KafkaTaskInfoBean
-import com.neighborhood.aka.laplace.estuary.core.utils.JsonUtil
+import com.neighborhood.aka.laplace.estuary.mysql.JsonUtil
 import com.typesafe.config.ConfigFactory
 
 /**
