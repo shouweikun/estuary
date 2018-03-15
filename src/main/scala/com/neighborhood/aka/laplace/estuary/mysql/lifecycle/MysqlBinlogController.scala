@@ -47,6 +47,7 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
       context.become(online)
       controllerChangeStatus(Status.ONLINE)
       startAllWorkers
+      if (taskInfoBean.isCosting) context.system.scheduler.scheduleOnce(3 seconds, self, SyncControllerMessage("cost"))
       log.info("controller switched to online,start all workers")
     }
     case "restart" => {
@@ -106,7 +107,17 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
       }
     }
     case SyncControllerMessage(msg) => {
-
+      msg match {
+        case "cost" => {
+          if (taskInfoBean.isCosting) {
+            context
+              .child("powerAdapter")
+              .map(ref => ref ! SyncControllerMessage("cost"))
+            context.system.scheduler.scheduleOnce(3 seconds, self, SyncControllerMessage("cost"))
+          }
+        }
+        case _ => {}
+      }
     }
 
   }
@@ -185,9 +196,9 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
   }
 
   def initWorkers: Unit = {
-     //初始化powerAdapter
+    //初始化powerAdapter
     log.info("initialize powerAdapter")
-    context.actorOf(PowerAdapter.props(mysql2KafkaTaskInfoManager),"powerAdapter")
+    context.actorOf(PowerAdapter.props(mysql2KafkaTaskInfoManager), "powerAdapter")
     //初始化HeartBeatsListener
     log.info("initialize listener")
     context.actorOf(MysqlConnectionListener.props(mysql2KafkaTaskInfoManager).withDispatcher("akka.pinned-dispatcher"), "heartBeatsListener")
@@ -233,9 +244,12 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
   /**
     * ********************* 状态变化 *******************
     */
-  private def changeFunc(status:Status) =TaskManager.changeFunc(status,mysql2KafkaTaskInfoManager)
+  private def changeFunc(status: Status) = TaskManager.changeFunc(status, mysql2KafkaTaskInfoManager)
+
   private def onChangeFunc = Mysql2KafkaTaskInfoManager.onChangeStatus(mysql2KafkaTaskInfoManager)
-  private def controllerChangeStatus(status: Status) = TaskManager.changeStatus(status,changeFunc,onChangeFunc)
+
+  private def controllerChangeStatus(status: Status) = TaskManager.changeStatus(status, changeFunc, onChangeFunc)
+
   /**
     * **************** Actor生命周期 *******************
     */

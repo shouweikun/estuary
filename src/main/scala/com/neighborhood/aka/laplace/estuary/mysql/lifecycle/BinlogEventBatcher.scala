@@ -203,7 +203,10 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
         val after = System.currentTimeMillis()
         log.info(s"batcher json化 用了${after - before}")
         if (isCounting) mysql2KafkaTaskInfoManager.batchCount.getAndAdd(batchThreshold.get())
-        if (isCosting) mysql2KafkaTaskInfoManager.batchCost.set(after - before)
+        if (isCosting) mysql2KafkaTaskInfoManager.powerAdapter match {
+          case Some(x) => x ! BatcherMessage(s"${after - before}")
+          case _ => log.warning("powerAdapter not exist")
+        }
         re
       }
         .pipeTo(binlogEventSinker)

@@ -8,7 +8,7 @@ import com.neighborhood.aka.laplace.estuary.bean.key.BinlogKey
 import com.neighborhood.aka.laplace.estuary.bean.support.KafkaMessage
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status.Status
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.{SinkerMessage, SourceDataSinker, Status, SyncControllerMessage}
+import com.neighborhood.aka.laplace.estuary.core.lifecycle._
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mysql.Mysql2KafkaTaskInfoManager
 import org.I0Itec.zkclient.exception.ZkTimeoutException
@@ -126,7 +126,10 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
       //这次任务完成后
       //log.info(s"send处理用了${after - before},s$lastSavedJournalName:$lastSavedOffset")
       if (isCounting) mysql2KafkaTaskInfoManager.sinkCount.addAndGet(count)
-      if (isCosting) mysql2KafkaTaskInfoManager.sinkCost.set(after - before)
+      if (isCosting) mysql2KafkaTaskInfoManager.powerAdapter match {
+        case Some(x) => x ! SinkerMessage(s"${after - before}")
+        case _ => log.warning("powerAdapter not exist")
+      }
       //保存这次任务的binlog
       //判断的原因是如果本次写入没有事务offset就不记录
       if (!StringUtils.isEmpty(savedJournalName)) {

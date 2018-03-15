@@ -172,7 +172,8 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
           try {
             if (flag) {
               fetchOne
-              context.system.scheduler.scheduleOnce(mysql2KafkaTaskInfoManager.taskInfo.fetchDelay.get() milliseconds, self, FetcherMessage("fetch"))
+
+              context.system.scheduler.scheduleOnce(mysql2KafkaTaskInfoManager.taskInfo.fetchDelay.get() millisecond, self, FetcherMessage("fetch"))
               //              println("after fetch")
             } else {
 
@@ -245,7 +246,10 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
       //log.debug(s"fetch entry: ${entry.get.getHeader.getLogfileName},${entry.get.getHeader.getLogfileOffset},${after - before}")
       binlogEventBatcher ! entry.get
       if (isCounting) mysql2KafkaTaskInfoManager.fetchCount.incrementAndGet()
-      if (isCosting) mysql2KafkaTaskInfoManager.fetchCost.set(after - before)
+      if (isCosting) mysql2KafkaTaskInfoManager.powerAdapter match {
+        case Some(x) => x ! FetcherMessage(s"${after - before}")
+        case _ => log.warning("powerAdapter not exist")
+      }
     } else {
       //throw new Exception("the fetched data is null")
     }
