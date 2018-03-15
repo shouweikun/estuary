@@ -1,13 +1,9 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle
 
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong}
 
 import akka.actor.SupervisorStrategy.Escalate
-import akka.actor.{Actor, ActorLogging, ActorRef, OneForOneStrategy, Props}
-import com.neighborhood.aka.laplace.estuary.bean.support.KafkaMessage
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.{SourceDataSinker, Status}
-import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
-import com.neighborhood.aka.laplace.estuary.mysql.Mysql2KafkaTaskInfoManager
+import akka.actor.{Actor, ActorLogging, OneForOneStrategy, Props}
 import com.neighborhood.aka.laplace.estuary.bean.key.BinlogKey
 import com.neighborhood.aka.laplace.estuary.bean.support.KafkaMessage
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
@@ -69,6 +65,8 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
     startPosition.get.getPostion.getJournalName
   } else ""
 
+  var isCounting = mysql2KafkaTaskInfoManager.taskInfo.isCounting
+ //  lazy val theBatchCount = new AtomicLong(0)
 
   //offline
   override def receive: Receive = {
@@ -98,6 +96,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
         * 待保存的Binlog文件名称
         */
       var savedJournalName: String = ""
+      lazy val count = list.size
       val before = System.currentTimeMillis()
       val task = list.par
       task.tasksupport = sinkTaskPool
@@ -118,7 +117,8 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
 
       val after = System.currentTimeMillis()
       //这次任务完成后
-      log.info(s"send处理用了${after - before}")
+      log.info(s"send处理用了${after - before},s$lastSavedJournalName:$lastSavedOffset")
+      if (isCounting) mysql2KafkaTaskInfoManager.sinkCount.addAndGet(count)
       //保存这次任务的binlog
       //判断的原因是如果本次写入没有事务offset就不记录
       if (!StringUtils.isEmpty(savedJournalName)) {
@@ -172,7 +172,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
     }
 
     // log.info(kafkaMessage.getJsonValue.substring(0, 5))
-   // kafkaSinker.ayncSink(kafkaMessage.getBaseDataJsonKey.asInstanceOf[BinlogKey], kafkaMessage.getJsonValue)(topic)(callback)
+    //  kafkaSinker.ayncSink(kafkaMessage.getBaseDataJsonKey.asInstanceOf[BinlogKey], kafkaMessage.getJsonValue)(topic)(callback)
     val after = System.currentTimeMillis()
 
     // log.info(s"sink cost time :${after-before}")
@@ -194,10 +194,11 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
     * ********************* 状态变化 *******************
     */
 
-  private def changeFunc(status:Status) =TaskManager.changeFunc(status,mysql2KafkaTaskInfoManager)
-  private def onChangeFunc = Mysql2KafkaTaskInfoManager.onChangeStatus(mysql2KafkaTaskInfoManager)
-  private def sinkerChangeStatus(status: Status) = TaskManager.changeStatus(status,changeFunc,onChangeFunc)
+  private def changeFunc(status: Status) = TaskManager.changeFunc(status, mysql2KafkaTaskInfoManager)
 
+  private def onChangeFunc = Mysql2KafkaTaskInfoManager.onChangeStatus(mysql2KafkaTaskInfoManager)
+
+  private def sinkerChangeStatus(status: Status) = TaskManager.changeStatus(status, changeFunc, onChangeFunc)
 
 
   /**
@@ -232,12 +233,11 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
 
   override def supervisorStrategy = {
     OneForOneStrategy() {
-      case e:StackOverflowError =>
-        {
-          sinkerChangeStatus(Status.ERROR)
-          log.error("stackOverFlow")
-          Escalate
-        }
+      case e: StackOverflowError => {
+        sinkerChangeStatus(Status.ERROR)
+        log.error("stackOverFlow")
+        Escalate
+      }
 
       case e: ZkTimeoutException => {
         sinkerChangeStatus(Status.ERROR)

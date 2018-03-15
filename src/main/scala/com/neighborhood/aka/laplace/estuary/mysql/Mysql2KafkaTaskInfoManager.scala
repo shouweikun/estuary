@@ -3,7 +3,7 @@ package com.neighborhood.aka.laplace.estuary.mysql
 import java.net.InetSocketAddress
 import java.nio.charset.Charset
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.atomic.{AtomicLong, AtomicReference}
 
 import com.alibaba.otter.canal.common.zookeeper.ZkClientx
 import com.alibaba.otter.canal.filter.aviater.AviaterRegexFilter
@@ -12,6 +12,7 @@ import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection.{BinlogFormat
 import com.alibaba.otter.canal.parse.inbound.mysql.dbsync.TableMetaCache
 import com.alibaba.otter.canal.parse.index.ZooKeeperLogPositionManager
 import com.alibaba.otter.canal.protocol.position.EntryPosition
+import com.google.common.util.concurrent.AtomicDouble
 import com.neighborhood.aka.laplace.estuary.bean.key.BinlogKey
 import com.neighborhood.aka.laplace.estuary.bean.task.Mysql2KafkaTaskInfoBean
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status
@@ -94,7 +95,9 @@ class Mysql2KafkaTaskInfoManager(taskInfoBean: Mysql2KafkaTaskInfoBean) extends 
     */
   lazy val logPositionHandler: LogPositionHandler = buildEntryPositionHandler
 
-
+  lazy val fetchCount = new AtomicLong(0)
+  lazy val batchCount = new AtomicLong(0)
+  lazy val sinkCount = new AtomicLong(0)
 
   /**
     * 实现@trait ResourceManager
@@ -173,16 +176,20 @@ class Mysql2KafkaTaskInfoManager(taskInfoBean: Mysql2KafkaTaskInfoBean) extends 
 object Mysql2KafkaTaskInfoManager {
   lazy val zkClientx = null
   val taskStatusMap = new ConcurrentHashMap[String, Map[String, Status]]()
+  val taskManagerMap = new ConcurrentHashMap[String, Mysql2KafkaTaskInfoManager]()
 
   /**
     * 任务管理器的构造的工厂方法
     */
   def buildManager(taskInfoBean: Mysql2KafkaTaskInfoBean): Mysql2KafkaTaskInfoManager = {
-    new Mysql2KafkaTaskInfoManager(taskInfoBean)
+    val syncTaskId = taskInfoBean.syncTaskId
+    val manager = new Mysql2KafkaTaskInfoManager(taskInfoBean)
+    Mysql2KafkaTaskInfoManager.taskManagerMap.put(syncTaskId, manager)
+    manager
   }
 
   /**
-    *每当任务状态变化时，更新之
+    * 每当任务状态变化时，更新之
     */
   def onChangeStatus(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager): Unit = {
     val syncTaskId = mysql2KafkaTaskInfoManager.taskInfo.syncTaskId
@@ -194,5 +201,13 @@ object Mysql2KafkaTaskInfoManager {
     val map = Map("syncControllerStatus" -> syncControllerStatus, "fetcherStatus" -> fetcherStatus, "sinkerStatus" -> sinkerStatus, "batcherStatus" -> batcherStatus, "listenerStatus" -> listenerStatus)
 
     taskStatusMap.put(syncTaskId, map)
+  }
+
+  def logCount(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager): Map[String, Long] = {
+    val sinkCount = mysql2KafkaTaskInfoManager.sinkCount.get()
+    val batchCount = mysql2KafkaTaskInfoManager.batchCount.get()
+    val fetchCount = mysql2KafkaTaskInfoManager.fetchCount.get()
+
+    Map("sinkCount" -> sinkCount, "batchCount" -> batchCount, "fetchCount" -> fetchCount)
   }
 }

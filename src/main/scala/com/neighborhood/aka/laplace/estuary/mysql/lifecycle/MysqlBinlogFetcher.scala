@@ -74,8 +74,12 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
   var binlogChecksum = 0
   /**
     * 是否记录耗时
+    *
+    * @todo 改成atomtic
     */
-  var necessary = mysql2KafkaTaskInfoManager.taskInfo.isProfiling
+  var isProfiling = mysql2KafkaTaskInfoManager.taskInfo.isProfiling
+
+  var isCounting = mysql2KafkaTaskInfoManager.taskInfo.isCounting
   /**
     * 数据fetch用
     */
@@ -171,7 +175,8 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
             //            println("before fetch")
             if (flag) {
               fetchOne
-              self ! FetcherMessage("fetch")
+
+              context.system.scheduler.scheduleOnce(0 second, self, FetcherMessage("fetch"))
               //              println("after fetch")
             } else {
 
@@ -244,8 +249,8 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
       //      println(after-before)
       // Thread.sleep(2)
       log.debug(s"fetch entry: ${entry.get.getHeader.getLogfileName},${entry.get.getHeader.getLogfileOffset},${after - before}")
-      binlogEventBatcher ! "1"
       binlogEventBatcher ! entry.get
+      if (isCounting) mysql2KafkaTaskInfoManager.fetchCount.incrementAndGet()
     } else {
       //throw new Exception("the fetched data is null")
     }
@@ -350,9 +355,11 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
   /**
     * ********************* 状态变化 *******************
     */
-  private def changeFunc(status:Status) =TaskManager.changeFunc(status,mysql2KafkaTaskInfoManager)
+  private def changeFunc(status: Status) = TaskManager.changeFunc(status, mysql2KafkaTaskInfoManager)
+
   private def onChangeFunc = Mysql2KafkaTaskInfoManager.onChangeStatus(mysql2KafkaTaskInfoManager)
-  private def fetcherChangeStatus(status: Status) = TaskManager.changeStatus(status,changeFunc,onChangeFunc)
+
+  private def fetcherChangeStatus(status: Status) = TaskManager.changeStatus(status, changeFunc, onChangeFunc)
 
   /**
     * ********************* Actor生命周期 *******************

@@ -66,6 +66,8 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
     */
   var savedJournalName: String = _
 
+  var isCounting = mysql2KafkaTaskInfoManager.taskInfo.isCounting
+
   //offline
   override def receive: Receive = {
     case SyncControllerMessage(msg) => {
@@ -120,10 +122,12 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
       binlogEventSinker ! entry
     } else {
       entryBatch = entryBatch.+:(entry)
-      if (entryBatch.size >= batchThreshold.get()) {
+      val theBatchThreshold = batchThreshold.get()
+      if (entryBatch.size >= theBatchThreshold) {
         val before = System.currentTimeMillis()
         flush
         val after = System.currentTimeMillis()
+        if(isCounting) mysql2KafkaTaskInfoManager.batchCount.getAndAdd(theBatchThreshold)
         //    log.info(s"batch flush cost ${after-before}")
       }
     }

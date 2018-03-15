@@ -28,7 +28,7 @@ class Mysql2KafkaTaskController {
   }
 
   @ApiOperation(value = "查看任务状态", httpMethod = "GET", notes = "")
-  @RequestMapping(value = Array("/check"), method = Array(RequestMethod.GET))
+  @RequestMapping(value = Array("/check/task"), method = Array(RequestMethod.GET))
   def checkTaskStatus(@RequestParam("id") id: String): String = {
     Mysql2KafkaService.checkTaskStatus(id)
   }
@@ -50,6 +50,15 @@ class Mysql2KafkaTaskController {
   def checkSystemStatus(): String = {
     Mysql2KafkaService.checkSystemStatus
   }
+
+  @ApiOperation(value = "查看count数", httpMethod = "GET", notes = "")
+  @RequestMapping(value = Array("/check/task/count"), method = Array(RequestMethod.GET))
+  def checkCount(@RequestParam("id") id: String): String = {
+    Mysql2KafkaService.checklogCount(id)
+  }
+
+
+
   def buildTaskInfo(requestBody: Mysql2kafkaTaskRequestBean): Mysql2KafkaTaskInfoBean = {
     val taskInfo = new Mysql2KafkaTaskInfoBean
     //任务id

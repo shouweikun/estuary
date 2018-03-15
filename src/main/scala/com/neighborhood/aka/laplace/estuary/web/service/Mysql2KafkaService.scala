@@ -44,13 +44,27 @@ object Mysql2KafkaService {
     map
       .get(syncTaskId)
     match {
-      case Some(x) => ActorRefHolder.system.stop(x); true
+      case Some(x) => ActorRefHolder.system.stop(x); ActorRefHolder.actorRefMap.filter(!_._1.equals(syncTaskId)) ;true
       case None => false
     }
 
   }
 
   def checkSystemStatus = {
-   ???
+    ???
+  }
+
+  def checklogCount(syncTaskId: String): String = {
+    val manager = Mysql2KafkaTaskInfoManager.taskManagerMap.get(syncTaskId)
+    Option(manager)
+    match {
+      case Some(x) =>if(x.taskInfo.isCounting) s"{$syncTaskId: ${
+        Mysql2KafkaTaskInfoManager
+          .logCount(x)
+          .map(kv => s"{${kv._1}:${kv._2}")
+          .mkString(",")
+      } }" else s"{$syncTaskId:count is not set}"
+      case None => "task not exist"
+    }
   }
 }
