@@ -32,22 +32,25 @@ class PowerAdapter(taskManager: TaskManager) extends Actor with ActorLogging {
     case BatcherMessage(x) => {
       val value = x.toLong
       val nextBatchTimeWriteIndex = (batchTimeWriteIndex + 1) % size
-      fetchTimeArray(nextBatchTimeWriteIndex) = value
-      fetchTimeWriteIndex = nextBatchTimeWriteIndex
+      batchTimeArray(nextBatchTimeWriteIndex) = value
+      batchTimeWriteIndex = nextBatchTimeWriteIndex
 
     }
     case SinkerMessage(x) => {
       val value = x.toLong
       val nextSinkTimeWriteIndex = (sinkTimeWriteIndex + 1) % size
-      fetchTimeArray(nextSinkTimeWriteIndex) = value
-      fetchTimeWriteIndex = nextSinkTimeWriteIndex
+      sinkTimeArray(nextSinkTimeWriteIndex) = value
+      sinkTimeWriteIndex = nextSinkTimeWriteIndex
 
     }
     case SyncControllerMessage(x) => {
       if (x.equals("cost")) {
-        taskManager.fetchCost.set(fetchTimeArray.fold(0)(_ + _) / size)
-        taskManager.batchCost.set(batchTimeArray.fold(0)(_ + _) / size)
-        taskManager.batchCost.set(batchTimeArray.fold(0)(_ + _) / size)
+        val fetchCost = (fetchTimeArray.fold(0L)(_ + _))./(size)
+        val batchCost = (batchTimeArray.fold(0L)(_ + _))./(size)
+        val sinkCost = (sinkTimeArray.fold(0L)(_ + _))./(size)
+        taskManager.fetchCost.set(fetchCost)
+        taskManager.batchCost.set(batchCost)
+        taskManager.sinkCost.set(sinkCost)
       }
     }
     case "controll" => {
