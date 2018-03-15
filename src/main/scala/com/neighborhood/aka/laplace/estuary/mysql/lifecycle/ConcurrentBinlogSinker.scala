@@ -170,11 +170,9 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
         }
       }
     }
+     val a = kafkaSinker.ayncSink(kafkaMessage.getBaseDataJsonKey.asInstanceOf[BinlogKey], kafkaMessage.getJsonValue)(topic)(callback)
 
-    // log.info(kafkaMessage.getJsonValue.substring(0, 5))
-    //  kafkaSinker.ayncSink(kafkaMessage.getBaseDataJsonKey.asInstanceOf[BinlogKey], kafkaMessage.getJsonValue)(topic)(callback)
     val after = System.currentTimeMillis()
-
     // log.info(s"sink cost time :${after-before}")
 
   }
