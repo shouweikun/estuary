@@ -237,7 +237,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
     val before = System.currentTimeMillis()
     val event = decoder.decode(fetcher, logContext)
     val entry = try {
-      binlogParser.parseAndProfilingIfNecessary(event, false)
+      binlogParser.parse(Option(event))
     } catch {
       case e: CanalParseException => {
         log.warning(s"table has been removed")
@@ -246,11 +246,10 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
     }
     if (filterEntry(entry)) {
       val after = System.currentTimeMillis()
-      //      println(after-before)
-      // Thread.sleep(2)
-      log.debug(s"fetch entry: ${entry.get.getHeader.getLogfileName},${entry.get.getHeader.getLogfileOffset},${after - before}")
+      //log.debug(s"fetch entry: ${entry.get.getHeader.getLogfileName},${entry.get.getHeader.getLogfileOffset},${after - before}")
       binlogEventBatcher ! entry.get
       if (isCounting) mysql2KafkaTaskInfoManager.fetchCount.incrementAndGet()
+      if(isProfiling) mysql2KafkaTaskInfoManager.fetchCost.set(after-before)
     } else {
       //throw new Exception("the fetched data is null")
     }

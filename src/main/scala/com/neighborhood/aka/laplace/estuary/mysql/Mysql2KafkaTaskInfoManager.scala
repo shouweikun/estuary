@@ -94,10 +94,18 @@ class Mysql2KafkaTaskInfoManager(taskInfoBean: Mysql2KafkaTaskInfoBean) extends 
     * logPosition处理器
     */
   lazy val logPositionHandler: LogPositionHandler = buildEntryPositionHandler
-
+  /**
+    * 数据条目记录
+    */
   lazy val fetchCount = new AtomicLong(0)
   lazy val batchCount = new AtomicLong(0)
   lazy val sinkCount = new AtomicLong(0)
+  /**
+    * 数据处理时间记录
+    */
+  lazy val fetchCost = new AtomicLong(0)
+  lazy val batchCost = new AtomicLong(0)
+  lazy val sinkCost = new AtomicLong(0)
 
   /**
     * 实现@trait ResourceManager
@@ -204,10 +212,17 @@ object Mysql2KafkaTaskInfoManager {
   }
 
   def logCount(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager): Map[String, Long] = {
-    val sinkCount = mysql2KafkaTaskInfoManager.sinkCount.get()
-    val batchCount = mysql2KafkaTaskInfoManager.batchCount.get()
     val fetchCount = mysql2KafkaTaskInfoManager.fetchCount.get()
+    val batchCount = mysql2KafkaTaskInfoManager.batchCount.get()
+    val sinkCount = mysql2KafkaTaskInfoManager.sinkCount.get()
 
     Map("sinkCount" -> sinkCount, "batchCount" -> batchCount, "fetchCount" -> fetchCount)
+  }
+
+  def logTimeCost(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager): Map[String, Long] = {
+    lazy val fetchCost = mysql2KafkaTaskInfoManager.fetchCost.get()
+    lazy val batchCost = mysql2KafkaTaskInfoManager.batchCost.get()
+    lazy val sinkCost = mysql2KafkaTaskInfoManager.sinkCost.get()
+    Map("fetchCost"->fetchCost,"batchCost"->batchCost,"sinkCost"->sinkCost)
   }
 }

@@ -32,8 +32,6 @@ class Mysql2KafkaTaskController {
   def checkTaskStatus(@RequestParam("id") id: String): String = {
     Mysql2KafkaService.checkTaskStatus(id)
   }
-
-
   @ApiOperation(value = "重启任务", httpMethod = "GET", notes = "")
   @RequestMapping(value = Array("/restart"), method = Array(RequestMethod.GET))
   def restartTask(@RequestParam("id") id: String): Boolean = {
@@ -57,7 +55,11 @@ class Mysql2KafkaTaskController {
     Mysql2KafkaService.checklogCount(id)
   }
 
-
+  @ApiOperation(value = "查看timeCost", httpMethod = "GET", notes = "")
+  @RequestMapping(value = Array("/check/task/profiling"), method = Array(RequestMethod.GET))
+  def checkTimeCost(@RequestParam("id") id: String): String = {
+    Mysql2KafkaService.checkTimeCost(id)
+  }
 
   def buildTaskInfo(requestBody: Mysql2kafkaTaskRequestBean): Mysql2KafkaTaskInfoBean = {
     val taskInfo = new Mysql2KafkaTaskInfoBean

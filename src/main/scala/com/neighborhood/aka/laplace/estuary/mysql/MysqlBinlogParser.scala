@@ -20,7 +20,7 @@ class MysqlBinlogParser(necessary: Boolean) extends LogEventConvert {
     }
 
   }
-
+   @deprecated
   def parseAndProfilingIfNecessary(event: LogEvent, necessary: Boolean = this.necessary): Option[CanalEntry.Entry] = {
 
     if (necessary) {

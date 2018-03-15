@@ -61,9 +61,23 @@ object Mysql2KafkaService {
       case Some(x) =>if(x.taskInfo.isCounting) s"{$syncTaskId: ${
         Mysql2KafkaTaskInfoManager
           .logCount(x)
-          .map(kv => s"{${kv._1}:${kv._2}")
+          .map(kv => s"${kv._1}:${kv._2}")
           .mkString(",")
       } }" else s"{$syncTaskId:count is not set}"
+      case None => "task not exist"
+    }
+  }
+
+  def checkTimeCost(syncTaskId:String):String = {
+    val manager = Mysql2KafkaTaskInfoManager.taskManagerMap.get(syncTaskId)
+    Option(manager)
+    match {
+      case Some(x) =>if(x.taskInfo.isProfiling) s"{$syncTaskId: ${
+        Mysql2KafkaTaskInfoManager
+          .logTimeCost(x)
+          .map(kv => s"${kv._1}:${kv._2}")
+          .mkString(",")
+      } }" else s"{$syncTaskId:profiling is not set}"
       case None => "task not exist"
     }
   }

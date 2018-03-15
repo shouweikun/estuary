@@ -64,8 +64,14 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
     * 待保存的Binlog文件名称
     */
   var savedJournalName: String = _
-
+  /**
+    * 是否计数
+    */
   var isCounting = mysql2KafkaTaskInfoManager.taskInfo.isCounting
+  /**
+    * 是否计数
+    */
+  var isProfiling = mysql2KafkaTaskInfoManager.taskInfo.isProfiling
 
   //offline
   override def receive: Receive = {
@@ -127,7 +133,7 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
         flush
         val after = System.currentTimeMillis()
         if(isCounting) mysql2KafkaTaskInfoManager.batchCount.getAndAdd(theBatchThreshold)
-        //    log.info(s"batch flush cost ${after-before}")
+        if(isProfiling)mysql2KafkaTaskInfoManager.batchCost.set(after-before)
       }
     }
   }

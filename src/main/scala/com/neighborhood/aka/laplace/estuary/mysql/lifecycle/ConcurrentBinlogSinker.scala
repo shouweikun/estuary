@@ -64,9 +64,15 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
   var lastSavedJournalName: String = if (startPosition.isDefined) {
     startPosition.get.getPostion.getJournalName
   } else ""
-
+  /**
+    * 是否计数
+    */
   var isCounting = mysql2KafkaTaskInfoManager.taskInfo.isCounting
- //  lazy val theBatchCount = new AtomicLong(0)
+  /**
+    * 是否计时
+    */
+  var isProfiling = mysql2KafkaTaskInfoManager.taskInfo.isProfiling
+  //  lazy val theBatchCount = new AtomicLong(0)
 
   //offline
   override def receive: Receive = {
@@ -117,8 +123,9 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
 
       val after = System.currentTimeMillis()
       //这次任务完成后
-      log.info(s"send处理用了${after - before},s$lastSavedJournalName:$lastSavedOffset")
+      //log.info(s"send处理用了${after - before},s$lastSavedJournalName:$lastSavedOffset")
       if (isCounting) mysql2KafkaTaskInfoManager.sinkCount.addAndGet(count)
+      if (isProfiling) mysql2KafkaTaskInfoManager.sinkCost.set(after - before)
       //保存这次任务的binlog
       //判断的原因是如果本次写入没有事务offset就不记录
       if (!StringUtils.isEmpty(savedJournalName)) {
@@ -127,7 +134,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
       }
 
 
-      //   log.info(s"JournalName update to $savedJournalName,offset update to $savedOffset")
+      log.info(s"JournalName update to $savedJournalName,offset update to $savedOffset")
 
     }
     // 定时记录logPosition
