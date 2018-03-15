@@ -140,8 +140,6 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
       }
 
 
-
-
     }
     // 定时记录logPosition
     case SyncControllerMessage("record") => logPositionHandler.persistLogPosition(destination, lastSavedJournalName, lastSavedOffset)
@@ -183,7 +181,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
         }
       }
     }
-    //val a = kafkaSinker.ayncSink(kafkaMessage.getBaseDataJsonKey.asInstanceOf[BinlogKey], kafkaMessage.getJsonValue)(topic)(callback)
+    kafkaSinker.ayncSink(kafkaMessage.getBaseDataJsonKey.asInstanceOf[BinlogKey], kafkaMessage.getJsonValue)(topic)(callback)
 
     val after = System.currentTimeMillis()
     // log.info(s"sink cost time :${after-before}")
