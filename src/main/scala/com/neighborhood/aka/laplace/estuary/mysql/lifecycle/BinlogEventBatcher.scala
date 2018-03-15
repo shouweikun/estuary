@@ -93,7 +93,6 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
     case entry: CanalEntry.Entry => {
 
 
-
     }
     case x => {
 
@@ -132,8 +131,8 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
         val before = System.currentTimeMillis()
         flush
         val after = System.currentTimeMillis()
-        if(isCounting) mysql2KafkaTaskInfoManager.batchCount.getAndAdd(theBatchThreshold)
-        if(isCosting)mysql2KafkaTaskInfoManager.batchCost.set(after-before)
+        if (isCounting) mysql2KafkaTaskInfoManager.batchCount.getAndAdd(theBatchThreshold)
+        if (isCosting) mysql2KafkaTaskInfoManager.batchCost.set(after - before)
       }
     }
   }
@@ -157,6 +156,13 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
                 val eventType = header.getEventType //事件类型
               val tempJsonKey = BinlogKey.buildBinlogKey(header)
                 //todo 添加tempJsonKey的具体信息
+                //tempJsonKey.appName = appName
+                //tempJsonKey.appServerIp = appServerIp
+                //tempJsonKey.appServerPort = appServerPort
+                //tempJsonKey.syncTaskStartTime = getSyncTaskStartTime
+                tempJsonKey.syncTaskId = mysql2KafkaTaskInfoManager.taskInfo.syncTaskId
+                tempJsonKey.msgSyncStartTime = before
+                tempJsonKey.msgSize = entry.getSerializedSize
                 //根据entry的类型来执行不同的操作
                 entryType match {
                   case CanalEntry.EntryType.TRANSACTIONEND => {
@@ -172,9 +178,19 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
                       case CanalEntry.EventType.INSERT => tranformDMLtoJson(entry, tempJsonKey, "INSERT")
                       case CanalEntry.EventType.UPDATE => tranformDMLtoJson(entry, tempJsonKey, "UPDATE")
                       //DDL操作直接将entry变为json
-                      case CanalEntry.EventType.ALTER =>
+                      case CanalEntry.EventType.ALTER => {
                         new KafkaMessage(tempJsonKey, CanalEntryJsonHelper.entryToJson(entry), header.getLogfileName, header.getLogfileOffset)
-                      case CanalEntry.EventType.CREATE => new KafkaMessage(tempJsonKey, CanalEntryJsonHelper.entryToJson(entry), header.getLogfileName, header.getLogfileOffset)
+                        val theAfter = System.currentTimeMillis()
+                        tempJsonKey.setMsgSyncEndTime(theAfter)
+                        tempJsonKey.setMsgSyncUsedTime(theAfter - before)
+                      }
+
+                      case CanalEntry.EventType.CREATE => {
+                        new KafkaMessage(tempJsonKey, CanalEntryJsonHelper.entryToJson(entry), header.getLogfileName, header.getLogfileOffset)
+                        val theAfter = System.currentTimeMillis()
+                        tempJsonKey.setMsgSyncEndTime(theAfter)
+                        tempJsonKey.setMsgSyncUsedTime(theAfter - before)
+                      }
                       case x => {
 
                         log.warning(s"unsupported EntryType:$x")
@@ -183,6 +199,7 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
                     }
                   }
                 }
+
             }
         val after = System.currentTimeMillis()
         log.info(s"batcher json化 用了${after - before}")
@@ -362,9 +379,12 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
   /**
     * ********************* 状态变化 *******************
     */
-  private def changeFunc(status:Status) =TaskManager.changeFunc(status,mysql2KafkaTaskInfoManager)
+  private def changeFunc(status: Status) = TaskManager.changeFunc(status, mysql2KafkaTaskInfoManager)
+
   private def onChangeFunc = Mysql2KafkaTaskInfoManager.onChangeStatus(mysql2KafkaTaskInfoManager)
-  private def batcherChangeStatus(status: Status) = TaskManager.changeStatus(status,changeFunc,onChangeFunc)
+
+  private def batcherChangeStatus(status: Status) = TaskManager.changeStatus(status, changeFunc, onChangeFunc)
+
   /**
     * ********************* Actor生命周期 *******************
     */
