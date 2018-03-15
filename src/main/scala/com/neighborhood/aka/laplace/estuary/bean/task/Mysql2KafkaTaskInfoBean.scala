@@ -55,13 +55,18 @@ class Mysql2KafkaTaskInfoBean extends MysqlBean with KafkaBean with BaseExtractB
     */
   var isTransactional: Boolean = false
   /**
+    * 是否打开功率调节器
+    */
+  var isPowerAdapted: Boolean = false
+  /**
     * entry打包的阈值
     */
   var batchThreshold: AtomicLong = new AtomicLong(50)
   /**
     * 数据拉取时延
+    * 单位微秒
     */
-  var fetchDelay:AtomicLong = new AtomicLong(2)
+  val fetchDelay:AtomicLong = new AtomicLong(2000)
   /**
     * 监听心跳
     */

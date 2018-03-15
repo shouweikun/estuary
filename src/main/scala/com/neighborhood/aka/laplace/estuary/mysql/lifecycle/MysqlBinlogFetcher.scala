@@ -173,7 +173,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
             if (flag) {
               fetchOne
 
-              context.system.scheduler.scheduleOnce(mysql2KafkaTaskInfoManager.taskInfo.fetchDelay.get() millisecond, self, FetcherMessage("fetch"))
+              context.system.scheduler.scheduleOnce(mysql2KafkaTaskInfoManager.taskInfo.fetchDelay.get microseconds, self, FetcherMessage("fetch"))
               //              println("after fetch")
             } else {
 

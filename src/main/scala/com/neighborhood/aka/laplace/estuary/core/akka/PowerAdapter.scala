@@ -3,6 +3,8 @@ package com.neighborhood.aka.laplace.estuary.core.akka
 import akka.actor.{Actor, ActorLogging, Props}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, FetcherMessage, SinkerMessage, SyncControllerMessage}
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
+import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
   * Created by john_liu on 2018/3/15.
@@ -44,17 +46,43 @@ class PowerAdapter(taskManager: TaskManager) extends Actor with ActorLogging {
 
     }
     case SyncControllerMessage(x) => {
-      if (x.equals("cost")) {
-        val fetchCost = (fetchTimeArray.fold(0L)(_ + _))./(size)
-        val batchCost = (batchTimeArray.fold(0L)(_ + _))./(size)
-        val sinkCost = (sinkTimeArray.fold(0L)(_ + _))./(size)
-        taskManager.fetchCost.set(fetchCost)
-        taskManager.batchCost.set(batchCost)
-        taskManager.sinkCost.set(sinkCost)
+      x match {
+        case "cost" => context.system.scheduler.scheduleOnce(3 seconds, self, "cost")
+        case "control" => context.system.scheduler.scheduleOnce(1 minute, self, "control")
       }
     }
-    case "controll" => {
-      //todo controller 逻辑
+    case "cost" => {
+      val fetchCost = (fetchTimeArray.fold(0L)(_ + _))./(size)
+      val batchCost = (batchTimeArray.fold(0L)(_ + _))./(size)
+      val sinkCost = (sinkTimeArray.fold(0L)(_ + _))./(size)
+      taskManager.fetchCost.set(fetchCost)
+      taskManager.batchCost.set(batchCost)
+      taskManager.sinkCost.set(sinkCost)
+      context.system.scheduler.scheduleOnce(3 seconds, self, "cost")
+    }
+    case "control" => {
+      //todo 好好编写策略
+      val sinkCost = taskManager.sinkCost.get()
+      val adjustedSinkCost = if (sinkCost <= 0) 1 else sinkCost
+      val batchCost = taskManager.batchCost.get()
+      val adjustedBatchCost = if (batchCost <= 0) 1 else batchCost
+      val fetchCost = taskManager.fetchCost.get()
+      val adjustedFetchCost = if (fetchCost <= 0) 1 else fetchCost
+      //调节策略
+      val batchThreshold = taskManager.batchThreshold.get
+      val delayDuration = if (sinkCost < batchCost) {
+        //sink速度比batch速度快的话
+
+        val left = adjustedSinkCost * 1000 / batchThreshold - adjustedFetchCost * 1000 + 1
+        val limitRatio = 4
+        val right = 1000 * adjustedBatchCost / limitRatio
+        math.max(left, right)
+      } else {
+        //sink速度比batch速度快的慢
+        adjustedSinkCost * 1000 / batchThreshold - adjustedFetchCost * 1000 + 1
+      }
+      taskManager.fetchDelay.set(delayDuration)
+      context.system.scheduler.scheduleOnce(1 minute, self, "control")
     }
   }
 }

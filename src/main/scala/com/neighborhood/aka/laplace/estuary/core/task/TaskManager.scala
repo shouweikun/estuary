@@ -5,9 +5,6 @@ import java.util.concurrent.atomic.{AtomicLong, AtomicReference}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.WorkerType.WorkerType
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{Status, WorkerType}
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.{Status, WorkerType}
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status.Status
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.WorkerType.WorkerType
 
 /**
   * Created by john_liu on 2018/2/7.
@@ -64,6 +61,14 @@ trait TaskManager {
     * 数据处理时间记录
     */
   lazy val sinkerLogPosition = new AtomicReference[String]("")
+  /**
+    * 拉取数据时延
+    */
+  lazy val fetchDelay: AtomicLong = null
+  /**
+    * 打包阈值
+    */
+  lazy val batchThreshold: AtomicLong = null
 
   /**
     * 任务运行状态
@@ -80,7 +85,7 @@ object TaskManager {
   /**
     * 状态变化
     */
-  def changeFunc(status: Status,taskManager: TaskManager)(implicit workerType: WorkerType): Unit = {
+  def changeFunc(status: Status, taskManager: TaskManager)(implicit workerType: WorkerType): Unit = {
     workerType match {
       case WorkerType.Listener => taskManager.heartBeatListenerStatus = status
       case WorkerType.Batcher => taskManager.batcherStatus = status

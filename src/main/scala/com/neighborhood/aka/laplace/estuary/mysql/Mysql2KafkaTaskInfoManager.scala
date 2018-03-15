@@ -32,6 +32,7 @@ class Mysql2KafkaTaskInfoManager(taskInfoBean: Mysql2KafkaTaskInfoBean) extends 
     * 传入的任务配置bean
     */
   val taskInfo = taskInfoBean
+
   /**
     * 支持的binlogFormat
     */
@@ -90,7 +91,10 @@ class Mysql2KafkaTaskInfoManager(taskInfoBean: Mysql2KafkaTaskInfoBean) extends 
     */
   lazy val logPositionHandler: LogPositionHandler = buildEntryPositionHandler
 
+  override lazy val fetchDelay: AtomicLong = taskInfo.fetchDelay
   var powerAdapter: Option[ActorRef] = None
+
+  override lazy val batchThreshold :AtomicLong= taskInfo.batchThreshold
 
   /**
     * 实现@trait ResourceManager

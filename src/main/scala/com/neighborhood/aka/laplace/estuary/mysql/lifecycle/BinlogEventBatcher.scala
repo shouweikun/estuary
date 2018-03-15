@@ -28,7 +28,7 @@ import scala.util.{Failure, Success, Try}
   */
 class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager) extends Actor with SourceDataBatcher with ActorLogging {
 
-  implicit val transTaskPool = Executors.newWorkStealingPool(50)
+  implicit val transTaskPool = Executors.newWorkStealingPool(10)
 
   /**
     * 拼接json用

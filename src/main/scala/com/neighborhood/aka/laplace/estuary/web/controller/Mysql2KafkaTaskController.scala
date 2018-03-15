@@ -103,6 +103,7 @@ class Mysql2KafkaTaskController {
     taskInfo.isTransactional = requestBody.isTransactional
     taskInfo.isCounting = requestBody.isCounting
     taskInfo.isProfiling = requestBody.isProfiling
+    taskInfo.isPowerAdapted = requestBody.isPowerAdapted
     //其他
     taskInfo.batchThreshold.set(requestBody.getBatchThreshold)
     taskInfo.fetchDelay.set(requestBody.getFetchDelay)

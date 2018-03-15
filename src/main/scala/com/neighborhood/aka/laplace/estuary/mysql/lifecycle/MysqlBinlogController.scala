@@ -3,20 +3,16 @@ package com.neighborhood.aka.laplace.estuary.mysql.lifecycle
 import akka.actor.SupervisorStrategy.{Escalate, Restart}
 import akka.actor.{Actor, ActorLogging, AllForOneStrategy, Props}
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status
-import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
-import com.neighborhood.aka.laplace.estuary.mysql.Mysql2KafkaTaskInfoManager
 import com.neighborhood.aka.laplace.estuary.bean.task.Mysql2KafkaTaskInfoBean
 import com.neighborhood.aka.laplace.estuary.core.akka.PowerAdapter
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status.Status
-import com.neighborhood.aka.laplace.estuary.core.lifecycle._
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.{Status, _}
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mysql.Mysql2KafkaTaskInfoManager
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
-import scala.util.parsing.json.JSONObject
 
 /**
   * Created by john_liu on 2018/2/1.
@@ -47,7 +43,12 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
       context.become(online)
       controllerChangeStatus(Status.ONLINE)
       startAllWorkers
-      if (taskInfoBean.isCosting) context.system.scheduler.scheduleOnce(3 seconds, self, SyncControllerMessage("cost"))
+      if (taskInfoBean.isCosting) context
+        .child("powerAdapter")
+        .map(ref => context.system.scheduler.scheduleOnce(3 second, ref, SyncControllerMessage("cost")))
+      if (taskInfoBean.isPowerAdapted) context
+        .child("powerAdapter")
+        .map(ref => context.system.scheduler.scheduleOnce(1 minute, ref, SyncControllerMessage("control")))
       log.info("controller switched to online,start all workers")
     }
     case "restart" => {

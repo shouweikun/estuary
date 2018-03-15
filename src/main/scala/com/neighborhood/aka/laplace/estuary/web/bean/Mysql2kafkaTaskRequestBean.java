@@ -13,6 +13,7 @@ public class Mysql2kafkaTaskRequestBean {
     private boolean isProfiling;
     private boolean isCosting;
     private boolean isTransactional;
+    private boolean isPowerAdapted;
     private long batchThreshold;
     private long fetchDelay;
     private String filterPattern;
@@ -79,6 +80,14 @@ public class Mysql2kafkaTaskRequestBean {
 
     public void setBinlogJournalName(String binlogJournalName) {
         this.binlogJournalName = binlogJournalName;
+    }
+
+    public boolean isPowerAdapted() {
+        return isPowerAdapted;
+    }
+
+    public void setPowerAdapted(boolean powerAdapted) {
+        isPowerAdapted = powerAdapted;
     }
 
     public long getBinlogPosition() {
