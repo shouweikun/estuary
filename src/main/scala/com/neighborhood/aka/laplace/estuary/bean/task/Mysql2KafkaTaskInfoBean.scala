@@ -45,6 +45,10 @@ class Mysql2KafkaTaskInfoBean extends MysqlBean with KafkaBean with BaseExtractB
     */
   var isCosting: Boolean = false
   /**
+    * 是否保留最新binlog位置
+    */
+  var isProfiling:Boolean = false
+  /**
     * 是否事务写
     * 默认否
     * 如果否的话，就是并行写
@@ -54,6 +58,10 @@ class Mysql2KafkaTaskInfoBean extends MysqlBean with KafkaBean with BaseExtractB
     * entry打包的阈值
     */
   var batchThreshold: AtomicLong = new AtomicLong(50)
+  /**
+    * 数据拉取时延
+    */
+  var fetchDelay:AtomicLong = new AtomicLong(2)
   /**
     * 监听心跳
     */

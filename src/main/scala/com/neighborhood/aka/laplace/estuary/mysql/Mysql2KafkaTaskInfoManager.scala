@@ -106,6 +106,11 @@ class Mysql2KafkaTaskInfoManager(taskInfoBean: Mysql2KafkaTaskInfoBean) extends 
   lazy val fetchCost = new AtomicLong(0)
   lazy val batchCost = new AtomicLong(0)
   lazy val sinkCost = new AtomicLong(0)
+  /**
+    * 数据处理时间记录
+    */
+  lazy val sinkerLogPosition = new AtomicReference[String]("")
+
 
   /**
     * 实现@trait ResourceManager

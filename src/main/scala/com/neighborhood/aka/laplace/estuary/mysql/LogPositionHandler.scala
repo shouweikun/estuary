@@ -334,7 +334,7 @@ class LogPositionHandler(binlogParser: MysqlBinlogParser, manager: ZooKeeperLogP
         override def sink(event: LogEvent): Boolean = {
           var entryPosition: EntryPosition = null
           try {
-            val entry = binlogParser.parseAndProfilingIfNecessary(event)
+            val entry = binlogParser.parse(Option(event))
             if (entry.isEmpty) return true
             val logfilename = entry.get.getHeader.getLogfileName
             val logfileoffset = entry.get.getHeader.getLogfileOffset

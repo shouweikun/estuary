@@ -18,7 +18,7 @@ trait KafkaBean extends DataSinkBean {
   /**
     * 最大阻塞时间
     */
-  var maxBlockMs: String = "2000"
+  var maxBlockMs: String = "5000"
   var ack: String = "1"
   var lingerMs: String = "0"
   var kafkaRetries: String = "3"

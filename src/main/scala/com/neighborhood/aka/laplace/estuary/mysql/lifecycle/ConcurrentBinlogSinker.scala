@@ -73,6 +73,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
     */
   var isCosting = mysql2KafkaTaskInfoManager.taskInfo.isCosting
   //  lazy val theBatchCount = new AtomicLong(0)
+  var isProfiling = mysql2KafkaTaskInfoManager.taskInfo.isProfiling
 
   //offline
   override def receive: Receive = {
@@ -131,10 +132,12 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
       if (!StringUtils.isEmpty(savedJournalName)) {
         this.lastSavedJournalName = savedJournalName
         this.lastSavedOffset = savedOffset
+        log.info(s"JournalName update to $savedJournalName,offset update to $savedOffset")
+        if (isProfiling) mysql2KafkaTaskInfoManager.sinkerLogPosition.set(s"$savedJournalName:$savedOffset")
       }
 
 
-      log.info(s"JournalName update to $savedJournalName,offset update to $savedOffset")
+
 
     }
     // 定时记录logPosition
@@ -177,7 +180,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
         }
       }
     }
-     val a = kafkaSinker.ayncSink(kafkaMessage.getBaseDataJsonKey.asInstanceOf[BinlogKey], kafkaMessage.getJsonValue)(topic)(callback)
+    val a = kafkaSinker.ayncSink(kafkaMessage.getBaseDataJsonKey.asInstanceOf[BinlogKey], kafkaMessage.getJsonValue)(topic)(callback)
 
     val after = System.currentTimeMillis()
     // log.info(s"sink cost time :${after-before}")
@@ -211,7 +214,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
     */
   override def preStart(): Unit = {
     sinkerChangeStatus(Status.OFFLINE)
-
+    if (isProfiling) mysql2KafkaTaskInfoManager.sinkerLogPosition.set(s"$lastSavedJournalName:$lastSavedOffset")
   }
 
   override def postStop(): Unit = {
@@ -220,6 +223,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
       val theOffset = this.lastSavedOffset
       logPositionHandler.persistLogPosition(destination, theJournalName, theOffset)
       log.info(s"记录binlog $theJournalName,$theOffset")
+      if (isProfiling) mysql2KafkaTaskInfoManager.sinkerLogPosition.set(s"$theJournalName:$theOffset")
     }
     kafkaSinker.kafkaProducer.close()
     sinkTaskPool.environment.shutdown()

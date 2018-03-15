@@ -81,4 +81,13 @@ object Mysql2KafkaService {
       case None => "task not exist"
     }
   }
+
+  def checklastSavedlogPosition(syncTaskId:String):String = {
+    val manager = Mysql2KafkaTaskInfoManager.taskManagerMap.get(syncTaskId)
+    Option(manager)
+    match {
+      case Some(x) =>if(x.taskInfo.isProfiling) s"{$syncTaskId:${ x.sinkerLogPosition.get()} }" else s"{$syncTaskId:profiling is not set}"
+      case None => "task not exist"
+    }
+  }
 }

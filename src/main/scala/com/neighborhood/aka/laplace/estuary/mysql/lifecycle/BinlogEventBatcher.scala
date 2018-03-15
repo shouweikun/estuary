@@ -28,7 +28,7 @@ import scala.util.{Failure, Success, Try}
   */
 class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager) extends Actor with SourceDataBatcher with ActorLogging {
 
-  implicit val transTaskPool = Executors.newWorkStealingPool(10)
+  implicit val transTaskPool = Executors.newWorkStealingPool(50)
 
   /**
     * 拼接json用
@@ -131,8 +131,7 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
         val before = System.currentTimeMillis()
         flush
         val after = System.currentTimeMillis()
-        if (isCounting) mysql2KafkaTaskInfoManager.batchCount.getAndAdd(theBatchThreshold)
-        if (isCosting) mysql2KafkaTaskInfoManager.batchCost.set(after - before)
+
       }
     }
   }
@@ -203,6 +202,8 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
             }
         val after = System.currentTimeMillis()
         log.info(s"batcher json化 用了${after - before}")
+        if (isCounting) mysql2KafkaTaskInfoManager.batchCount.getAndAdd(batchThreshold.get())
+        if (isCosting) mysql2KafkaTaskInfoManager.batchCost.set(after - before)
         re
       }
         .pipeTo(binlogEventSinker)

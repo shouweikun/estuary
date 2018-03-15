@@ -14,6 +14,7 @@ public class Mysql2kafkaTaskRequestBean {
     private boolean isCosting;
     private boolean isTransactional;
     private long batchThreshold;
+    private long fetchDelay;
     private String filterPattern;
     private String filterBlackPattern;
     private String defaultConnectionTimeoutInSeconds;
@@ -47,6 +48,14 @@ public class Mysql2kafkaTaskRequestBean {
     private String zookeeperServers = "10.10.248.207:2181;10.10.237.78:2181";
     // zookeeper 链接超时设置,单位毫秒
     private int zookeeperTimeout = 10000;
+
+    public long getFetchDelay() {
+        return fetchDelay;
+    }
+
+    public void setFetchDelay(long fetchDelay) {
+        this.fetchDelay = fetchDelay;
+    }
 
     public String getSyncTaskId() {
         return syncTaskId;

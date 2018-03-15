@@ -32,6 +32,7 @@ class Mysql2KafkaTaskController {
   def checkTaskStatus(@RequestParam("id") id: String): String = {
     Mysql2KafkaService.checkTaskStatus(id)
   }
+
   @ApiOperation(value = "重启任务", httpMethod = "GET", notes = "")
   @RequestMapping(value = Array("/restart"), method = Array(RequestMethod.GET))
   def restartTask(@RequestParam("id") id: String): Boolean = {
@@ -43,6 +44,7 @@ class Mysql2KafkaTaskController {
   def stopTask(@RequestParam("id") id: String): Boolean = {
     Mysql2KafkaService.stopTask(id)
   }
+
   @ApiOperation(value = "查看AkkaSystem状态", httpMethod = "GET", notes = "")
   @RequestMapping(value = Array("/system/status"), method = Array(RequestMethod.GET))
   def checkSystemStatus(): String = {
@@ -56,9 +58,15 @@ class Mysql2KafkaTaskController {
   }
 
   @ApiOperation(value = "查看timeCost", httpMethod = "GET", notes = "")
-  @RequestMapping(value = Array("/check/task/profiling"), method = Array(RequestMethod.GET))
+  @RequestMapping(value = Array("/check/task/cost"), method = Array(RequestMethod.GET))
   def checkTimeCost(@RequestParam("id") id: String): String = {
     Mysql2KafkaService.checkTimeCost(id)
+  }
+
+  @ApiOperation(value = "查看", httpMethod = "GET", notes = "")
+  @RequestMapping(value = Array("/check/task/profiling"), method = Array(RequestMethod.GET))
+  def checklastSavedlogPosition(@RequestParam("id") id: String): String = {
+    Mysql2KafkaService.checklastSavedlogPosition(id)
   }
 
   def buildTaskInfo(requestBody: Mysql2kafkaTaskRequestBean): Mysql2KafkaTaskInfoBean = {
@@ -94,9 +102,10 @@ class Mysql2KafkaTaskController {
     taskInfo.isCosting = requestBody.isCosting
     taskInfo.isTransactional = requestBody.isTransactional
     taskInfo.isCounting = requestBody.isCounting
+    taskInfo.isProfiling = requestBody.isProfiling
     //其他
     taskInfo.batchThreshold.set(requestBody.getBatchThreshold)
-
+    taskInfo.fetchDelay.set(requestBody.getFetchDelay)
     taskInfo
   }
 }
