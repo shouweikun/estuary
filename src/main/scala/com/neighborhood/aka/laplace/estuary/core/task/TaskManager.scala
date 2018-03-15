@@ -1,5 +1,7 @@
 package com.neighborhood.aka.laplace.estuary.core.task
 
+import java.util.concurrent.atomic.{AtomicLong, AtomicReference}
+
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.WorkerType.WorkerType
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{Status, WorkerType}
@@ -44,6 +46,24 @@ trait TaskManager {
     */
   @volatile
   var syncControllerStatus: Status = Status.OFFLINE
+
+  /**
+    * 数据条目记录
+    */
+  lazy val fetchCount = new AtomicLong(0)
+  lazy val batchCount = new AtomicLong(0)
+  lazy val sinkCount = new AtomicLong(0)
+
+  /**
+    * 数据处理时间记录
+    */
+  lazy val fetchCost = new AtomicLong(0)
+  lazy val batchCost = new AtomicLong(0)
+  lazy val sinkCost = new AtomicLong(0)
+  /**
+    * 数据处理时间记录
+    */
+  lazy val sinkerLogPosition = new AtomicReference[String]("")
 
   /**
     * 任务运行状态

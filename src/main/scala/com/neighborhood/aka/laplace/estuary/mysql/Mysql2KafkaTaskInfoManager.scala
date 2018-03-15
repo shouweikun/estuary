@@ -5,24 +5,19 @@ import java.nio.charset.Charset
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.{AtomicLong, AtomicReference}
 
+import akka.actor.ActorRef
 import com.alibaba.otter.canal.common.zookeeper.ZkClientx
 import com.alibaba.otter.canal.filter.aviater.AviaterRegexFilter
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection.{BinlogFormat, BinlogImage}
-import com.alibaba.otter.canal.parse.inbound.mysql.dbsync.TableMetaCache
 import com.alibaba.otter.canal.parse.index.ZooKeeperLogPositionManager
 import com.alibaba.otter.canal.protocol.position.EntryPosition
-import com.google.common.util.concurrent.AtomicDouble
 import com.neighborhood.aka.laplace.estuary.bean.key.BinlogKey
 import com.neighborhood.aka.laplace.estuary.bean.task.Mysql2KafkaTaskInfoBean
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status.Status
 import com.neighborhood.aka.laplace.estuary.core.sink.KafkaSinkFunc
 import com.neighborhood.aka.laplace.estuary.core.task.{RecourceManager, TaskManager}
-import com.typesafe.config.Config
 import org.apache.commons.lang.StringUtils
-
-import scala.util.parsing.json.JSONObject
 
 /**
   * Created by john_liu on 2018/2/7.
@@ -94,23 +89,8 @@ class Mysql2KafkaTaskInfoManager(taskInfoBean: Mysql2KafkaTaskInfoBean) extends 
     * logPosition处理器
     */
   lazy val logPositionHandler: LogPositionHandler = buildEntryPositionHandler
-  /**
-    * 数据条目记录
-    */
-  lazy val fetchCount = new AtomicLong(0)
-  lazy val batchCount = new AtomicLong(0)
-  lazy val sinkCount = new AtomicLong(0)
-  /**
-    * 数据处理时间记录
-    */
-  lazy val fetchCost = new AtomicLong(0)
-  lazy val batchCost = new AtomicLong(0)
-  lazy val sinkCost = new AtomicLong(0)
-  /**
-    * 数据处理时间记录
-    */
-  lazy val sinkerLogPosition = new AtomicReference[String]("")
 
+  var powerAdapter: Option[ActorRef] = None
 
   /**
     * 实现@trait ResourceManager
@@ -228,6 +208,6 @@ object Mysql2KafkaTaskInfoManager {
     lazy val fetchCost = mysql2KafkaTaskInfoManager.fetchCost.get()
     lazy val batchCost = mysql2KafkaTaskInfoManager.batchCost.get()
     lazy val sinkCost = mysql2KafkaTaskInfoManager.sinkCost.get()
-    Map("fetchCost"->fetchCost,"batchCost"->batchCost,"sinkCost"->sinkCost)
+    Map("fetchCost" -> fetchCost, "batchCost" -> batchCost, "sinkCost" -> sinkCost)
   }
 }

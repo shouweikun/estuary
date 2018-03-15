@@ -7,6 +7,7 @@ import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mysql.Mysql2KafkaTaskInfoManager
 import com.neighborhood.aka.laplace.estuary.bean.task.Mysql2KafkaTaskInfoBean
+import com.neighborhood.aka.laplace.estuary.core.akka.PowerAdapter
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle._
@@ -184,6 +185,9 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
   }
 
   def initWorkers: Unit = {
+     //初始化powerAdapter
+    log.info("initialize powerAdapter")
+    context.actorOf(PowerAdapter.props(mysql2KafkaTaskInfoManager),"powerAdapter")
     //初始化HeartBeatsListener
     log.info("initialize listener")
     context.actorOf(MysqlConnectionListener.props(mysql2KafkaTaskInfoManager).withDispatcher("akka.pinned-dispatcher"), "heartBeatsListener")
@@ -249,6 +253,7 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
     controllerChangeStatus(Status.OFFLINE)
     log.info("start init all workers")
     initWorkers
+    mysql2KafkaTaskInfoManager.powerAdapter = context.child("powerAdapter")
   }
 
   //正常关闭时会调用，关闭资源
