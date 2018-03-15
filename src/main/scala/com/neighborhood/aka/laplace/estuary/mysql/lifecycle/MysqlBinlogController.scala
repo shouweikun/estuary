@@ -215,7 +215,6 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
   @deprecated
   override def processError(e: Throwable, message: lifecycle.WorkerMessage): Unit = {
 
-    //todo 记录log
     errorCount += 1
     if (isCrashed) {
       controllerChangeStatus(Status.ERROR)
@@ -256,7 +255,7 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
   override def postStop(): Unit
 
   = {
-    //todo logstash
+    log.info("syncController processing postStop ")
 
     //    mysqlConnection.disconnect()
   }

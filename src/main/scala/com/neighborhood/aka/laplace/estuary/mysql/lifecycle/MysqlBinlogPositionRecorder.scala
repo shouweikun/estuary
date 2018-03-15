@@ -112,7 +112,6 @@ class MysqlBinlogPositionRecorder(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInf
     OneForOneStrategy() {
       case e: ZkTimeoutException => {
         Escalate
-        //todo log
       }
       case e: Exception => {
         Escalate

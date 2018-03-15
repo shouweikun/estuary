@@ -254,7 +254,7 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
     */
   def tranformDMLtoJson(entry: CanalEntry.Entry, temp: BinlogKey, eventString: String): Array[KafkaMessage] = {
 
-    Try(CanalEntry.RowChange.parseFrom(entry.getStoreValue)) match {
+    val re = Try(CanalEntry.RowChange.parseFrom(entry.getStoreValue)) match {
       case Success(rowChange) => {
         (0 until rowChange.getRowDatasCount)
           .map {
@@ -307,7 +307,10 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
         throw new RuntimeException("Error when parse rowchange:" + entry, e)
       }
     }
-
+    val theAfter = System.currentTimeMillis()
+    temp.setMsgSyncEndTime(theAfter)
+    temp.setMsgSyncUsedTime(temp.getMsgSyncEndTime - temp.getSyncTaskStartTime)
+    re
   }
 
   /**

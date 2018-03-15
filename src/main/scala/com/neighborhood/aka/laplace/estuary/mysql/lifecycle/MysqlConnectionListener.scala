@@ -101,7 +101,6 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
   }
 
   def listenHeartBeats: Unit = {
-    //todo connection None情况
     connection.foreach {
       conn =>
         val before = System.currentTimeMillis
@@ -138,7 +137,6 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
   }
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
-    //todo logstash
     context.become(receive)
     listenerChangeStatus(Status.RESTARTING)
     super.preRestart(reason, message)

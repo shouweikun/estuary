@@ -168,7 +168,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
         }
         case "fetch" => {
           //如果两分钟还不能拿到数据，发起重连
-          val flag = Await.result(Future(fetcher.fetch()), 2 minutes)
+          val flag = Await.result(Future(fetcher.fetch()), 1 hour)
           try {
 
             //            println(flag)
@@ -297,7 +297,6 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
     binlogDumpCmd.binlogPosition = binlogPosition
     binlogDumpCmd.slaveServerId = this.slaveId
     val cmdBody = binlogDumpCmd.toBytes
-    //todo logstash
     val binlogDumpHeader = new HeaderPacket
     binlogDumpHeader.setPacketBodyLength(cmdBody.length)
     binlogDumpHeader.setPacketSequenceNumber(0x00.toByte)
@@ -328,7 +327,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
       return false
     }
     val entry = entryOption.get
-    //todo 对entry过滤做明确设定
+    //我们只要rowdata和Transactioned
     if ((entry.getEntryType == CanalEntry.EntryType.ROWDATA) || (entry.getEntryType == CanalEntry.EntryType.TRANSACTIONEND)) true else {
       false
     }
@@ -338,7 +337,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
     * 错误处理
     */
   override def processError(e: Throwable, message: WorkerMessage): Unit = {
-    //todo 记录log
+    log.warning(s"fetcher throws exception $e")
     errorCount += 1
     if (isCrashed) {
       fetcherChangeStatus(Status.ERROR)
@@ -392,7 +391,6 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
       case e: ZkTimeoutException => {
         fetcherChangeStatus(Status.ERROR)
         Restart
-        //todo log
       }
       case e: Exception => {
         fetcherChangeStatus(Status.ERROR)
