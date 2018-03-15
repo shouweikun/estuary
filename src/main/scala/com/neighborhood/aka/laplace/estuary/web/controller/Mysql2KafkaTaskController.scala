@@ -28,7 +28,7 @@ class Mysql2KafkaTaskController {
   }
 
   @ApiOperation(value = "查看任务状态", httpMethod = "GET", notes = "")
-  @RequestMapping(value = Array("/check/task"), method = Array(RequestMethod.GET))
+  @RequestMapping(value = Array("/check/task/status"), method = Array(RequestMethod.GET))
   def checkTaskStatus(@RequestParam("id") id: String): String = {
     Mysql2KafkaService.checkTaskStatus(id)
   }
@@ -91,7 +91,7 @@ class Mysql2KafkaTaskController {
     taskInfo.journalName = requestBody.getBinlogJournalName
     taskInfo.position = requestBody.getBinlogPosition
     //模式设置
-    taskInfo.isProfiling = requestBody.isProfiling
+    taskInfo.isCosting = requestBody.isCosting
     taskInfo.isTransactional = requestBody.isTransactional
     taskInfo.isCounting = requestBody.isCounting
     //其他

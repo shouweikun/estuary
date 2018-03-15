@@ -13,6 +13,7 @@ import scala.annotation.tailrec
 /**
   * Created by john_liu on 2018/2/6.
   */
+@deprecated
 //todo scala 风格的RingBuffer
 class BinlogTransactionBufferSinker(sinkFunc: SinkFunc) extends Actor with ActorLogging {
   private val INIT_SQEUENCE = -1

@@ -11,6 +11,7 @@ public class Mysql2kafkaTaskRequestBean {
     private long binlogTimeStamp;
     private boolean isCounting;
     private boolean isProfiling;
+    private boolean isCosting;
     private boolean isTransactional;
     private long batchThreshold;
     private String filterPattern;
@@ -49,6 +50,14 @@ public class Mysql2kafkaTaskRequestBean {
 
     public String getSyncTaskId() {
         return syncTaskId;
+    }
+
+    public boolean isCosting() {
+        return isCosting;
+    }
+
+    public void setCosting(boolean costing) {
+        isCosting = costing;
     }
 
     public void setSyncTaskId(String syncTaskId) {

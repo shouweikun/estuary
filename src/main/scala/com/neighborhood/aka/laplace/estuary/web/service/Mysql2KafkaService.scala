@@ -72,7 +72,7 @@ object Mysql2KafkaService {
     val manager = Mysql2KafkaTaskInfoManager.taskManagerMap.get(syncTaskId)
     Option(manager)
     match {
-      case Some(x) =>if(x.taskInfo.isProfiling) s"{$syncTaskId: ${
+      case Some(x) =>if(x.taskInfo.isCosting) s"{$syncTaskId: ${
         Mysql2KafkaTaskInfoManager
           .logTimeCost(x)
           .map(kv => s"${kv._1}:${kv._2}")

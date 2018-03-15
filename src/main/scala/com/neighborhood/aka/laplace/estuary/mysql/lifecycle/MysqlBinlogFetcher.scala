@@ -77,7 +77,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
     *
     * @todo 改成atomtic
     */
-  var isProfiling = mysql2KafkaTaskInfoManager.taskInfo.isProfiling
+  var isCosting = mysql2KafkaTaskInfoManager.taskInfo.isCosting
 
   var isCounting = mysql2KafkaTaskInfoManager.taskInfo.isCounting
   /**
@@ -249,7 +249,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
       //log.debug(s"fetch entry: ${entry.get.getHeader.getLogfileName},${entry.get.getHeader.getLogfileOffset},${after - before}")
       binlogEventBatcher ! entry.get
       if (isCounting) mysql2KafkaTaskInfoManager.fetchCount.incrementAndGet()
-      if(isProfiling) mysql2KafkaTaskInfoManager.fetchCost.set(after-before)
+      if (isCosting) mysql2KafkaTaskInfoManager.fetchCost.set(after - before)
     } else {
       //throw new Exception("the fetched data is null")
     }

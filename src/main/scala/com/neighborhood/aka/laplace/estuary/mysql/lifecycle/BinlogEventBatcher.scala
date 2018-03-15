@@ -69,9 +69,9 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
     */
   var isCounting = mysql2KafkaTaskInfoManager.taskInfo.isCounting
   /**
-    * 是否计数
+    * 是否计时
     */
-  var isProfiling = mysql2KafkaTaskInfoManager.taskInfo.isProfiling
+  var isCosting = mysql2KafkaTaskInfoManager.taskInfo.isCosting
 
   //offline
   override def receive: Receive = {
@@ -91,12 +91,12 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
       }
     }
     case entry: CanalEntry.Entry => {
-      //todo log
+
 
 
     }
     case x => {
-      //todo log
+
       println(s"BinlogBatcher unhandled Message : $x")
     }
   }
@@ -133,7 +133,7 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
         flush
         val after = System.currentTimeMillis()
         if(isCounting) mysql2KafkaTaskInfoManager.batchCount.getAndAdd(theBatchThreshold)
-        if(isProfiling)mysql2KafkaTaskInfoManager.batchCost.set(after-before)
+        if(isCosting)mysql2KafkaTaskInfoManager.batchCost.set(after-before)
       }
     }
   }

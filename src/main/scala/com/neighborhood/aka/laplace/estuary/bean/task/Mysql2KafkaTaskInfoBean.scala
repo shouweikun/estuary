@@ -43,7 +43,7 @@ class Mysql2KafkaTaskInfoBean extends MysqlBean with KafkaBean with BaseExtractB
   /**
     * 是否计算每条数据的时间，默认不计时
     */
-  var isProfiling: Boolean = false
+  var isCosting: Boolean = false
   /**
     * 是否事务写
     * 默认否

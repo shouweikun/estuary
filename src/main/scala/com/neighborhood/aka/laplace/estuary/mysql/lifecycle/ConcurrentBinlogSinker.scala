@@ -71,7 +71,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
   /**
     * 是否计时
     */
-  var isProfiling = mysql2KafkaTaskInfoManager.taskInfo.isProfiling
+  var isCosting = mysql2KafkaTaskInfoManager.taskInfo.isCosting
   //  lazy val theBatchCount = new AtomicLong(0)
 
   //offline
@@ -125,7 +125,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
       //这次任务完成后
       //log.info(s"send处理用了${after - before},s$lastSavedJournalName:$lastSavedOffset")
       if (isCounting) mysql2KafkaTaskInfoManager.sinkCount.addAndGet(count)
-      if (isProfiling) mysql2KafkaTaskInfoManager.sinkCost.set(after - before)
+      if (isCosting) mysql2KafkaTaskInfoManager.sinkCost.set(after - before)
       //保存这次任务的binlog
       //判断的原因是如果本次写入没有事务offset就不记录
       if (!StringUtils.isEmpty(savedJournalName)) {

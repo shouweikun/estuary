@@ -9,7 +9,7 @@ import com.taobao.tddl.dbsync.binlog.LogEvent
 /**
   * Created by john_liu on 2018/2/2.
   */
-class MysqlBinlogParser(necessary: Boolean) extends LogEventConvert {
+class MysqlBinlogParser extends LogEventConvert {
 
   lazy val count = new AtomicLong(0)
 
@@ -21,7 +21,7 @@ class MysqlBinlogParser(necessary: Boolean) extends LogEventConvert {
 
   }
    @deprecated
-  def parseAndProfilingIfNecessary(event: LogEvent, necessary: Boolean = this.necessary): Option[CanalEntry.Entry] = {
+  def parseAndProfilingIfNecessary(event: LogEvent, necessary: Boolean): Option[CanalEntry.Entry] = {
 
     if (necessary) {
       
