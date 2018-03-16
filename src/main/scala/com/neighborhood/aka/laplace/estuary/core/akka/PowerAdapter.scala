@@ -74,7 +74,7 @@ class PowerAdapter(taskManager: TaskManager) extends Actor with ActorLogging {
         //sink速度比batch速度快的话
 
         val left = (adjustedSinkCost * 1000 / batchThreshold - adjustedFetchCost * 1000 + 1) * (0.8).toLong
-        val limitRatio = 7
+        val limitRatio = 6
         val right = 1000 * adjustedBatchCost / limitRatio / batchThreshold
         log.info(s"adjustedFetchCost:$adjustedFetchCost,adjustedBatchCost:$adjustedBatchCost,adjustedSinkCost:$adjustedSinkCost,left:$left,right:$right,limitRatio:$limitRatio")
         math.max(left, right)
