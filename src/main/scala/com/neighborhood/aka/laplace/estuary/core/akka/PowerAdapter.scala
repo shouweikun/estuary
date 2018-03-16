@@ -74,13 +74,14 @@ class PowerAdapter(taskManager: TaskManager) extends Actor with ActorLogging {
         //sink速度比batch速度快的话
 
         val left = adjustedSinkCost * 1000 / batchThreshold - adjustedFetchCost * 1000 + 1
-        val limitRatio = 4
+        val limitRatio = 5
         val right = 1000 * adjustedBatchCost / limitRatio
         math.max(left, right)
       } else {
         //sink速度比batch速度快的慢
         adjustedSinkCost * 1000 / batchThreshold - adjustedFetchCost * 1000 + 1
       }
+      log.info(s"delayDuration:$delayDuration")
       taskManager.fetchDelay.set(delayDuration)
       context.system.scheduler.scheduleOnce(1 minute, self, "control")
     }

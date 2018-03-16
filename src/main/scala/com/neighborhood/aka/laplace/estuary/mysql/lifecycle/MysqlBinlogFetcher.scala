@@ -167,11 +167,12 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
           }
         }
         case "fetch" => {
+          val before = System.currentTimeMillis()
           //如果一个小时还不能拿到数据，发起重连
           val flag = Await.result(Future(fetcher.fetch()), 1 hour)
           try {
             if (flag) {
-              fetchOne
+              fetchOne(before)
 
               context.system.scheduler.scheduleOnce(mysql2KafkaTaskInfoManager.taskInfo.fetchDelay.get microseconds, self, FetcherMessage("fetch"))
               //              println("after fetch")
@@ -222,7 +223,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
   @tailrec
   final def loopFetchAll: Unit = {
     if (fetcher.fetch()) {
-      fetchOne
+      fetchOne()
       loopFetchAll
     }
   }
@@ -230,8 +231,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
   /**
     * 从连接中取数据
     */
-  def fetchOne = {
-    val before = System.currentTimeMillis()
+  def fetchOne(before: Long = System.currentTimeMillis()) = {
     val event = decoder.decode(fetcher, logContext)
     val entry = try {
       binlogParser.parse(Option(event))
@@ -241,17 +241,19 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
         None
       }
     }
-    if (filterEntry(entry)) {
-      val after = System.currentTimeMillis()
+    val cost = if (filterEntry(entry)) {
       //log.debug(s"fetch entry: ${entry.get.getHeader.getLogfileName},${entry.get.getHeader.getLogfileOffset},${after - before}")
       binlogEventBatcher ! entry.get
-      if (isCounting) mysql2KafkaTaskInfoManager.fetchCount.incrementAndGet()
-      if (isCosting) mysql2KafkaTaskInfoManager.powerAdapter match {
-        case Some(x) => x ! FetcherMessage(s"${after - before}")
-        case _ => log.warning("powerAdapter not exist")
-      }
+      System.currentTimeMillis() - before
     } else {
       //throw new Exception("the fetched data is null")
+      //如果拿不到数据，默认在时间上随机增加3-5倍
+      (System.currentTimeMillis() - before) * (2 * (math.random) + 3)
+    }.toLong
+    if (isCounting) mysql2KafkaTaskInfoManager.fetchCount.incrementAndGet()
+    if (isCosting) mysql2KafkaTaskInfoManager.powerAdapter match {
+      case Some(x) => x ! FetcherMessage(s"$cost")
+      case _ => log.warning("powerAdapter not exist")
     }
   }
 
