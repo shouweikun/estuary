@@ -47,8 +47,8 @@ class PowerAdapter(taskManager: TaskManager) extends Actor with ActorLogging {
     }
     case SyncControllerMessage(x) => {
       x match {
-        case "cost" => context.system.scheduler.scheduleOnce(3 seconds, self, "cost")
-        case "control" => context.system.scheduler.scheduleOnce(1 minute, self, "control")
+        case "cost" => context.system.scheduler.schedule(3 seconds, 3 seconds, self, "cost")
+        case "control" => context.system.scheduler.schedule(1 minutes, 1 minutes, self, "control")
       }
     }
     case "cost" => {
@@ -58,7 +58,7 @@ class PowerAdapter(taskManager: TaskManager) extends Actor with ActorLogging {
       taskManager.fetchCost.set(fetchCost)
       taskManager.batchCost.set(batchCost)
       taskManager.sinkCost.set(sinkCost)
-      context.system.scheduler.scheduleOnce(3 seconds, self, "cost")
+
     }
     case "control" => {
       //todo 好好编写策略
@@ -73,18 +73,28 @@ class PowerAdapter(taskManager: TaskManager) extends Actor with ActorLogging {
       val delayDuration = if (sinkCost < batchCost) {
         //sink速度比batch速度快的话
 
-        val left = adjustedSinkCost * 1000 / batchThreshold - adjustedFetchCost * 1000 + 1
-        val limitRatio = 4
+        val left = (adjustedSinkCost * 1000 / batchThreshold - adjustedFetchCost * 1000 + 1) * (0.8).toLong
+        val limitRatio = 7
         val right = 1000 * adjustedBatchCost / limitRatio / batchThreshold
         log.info(s"adjustedFetchCost:$adjustedFetchCost,adjustedBatchCost:$adjustedBatchCost,adjustedSinkCost:$adjustedSinkCost,left:$left,right:$right,limitRatio:$limitRatio")
         math.max(left, right)
       } else {
         //sink速度比batch速度快的慢
-        adjustedSinkCost * 1000 / batchThreshold - adjustedFetchCost * 1000 + 1
+        math.max((adjustedSinkCost * 1000 / batchThreshold - adjustedFetchCost * 1000 + 1) * (0.8).toLong, 0)
       }
       log.info(s"delayDuration:$delayDuration")
-      taskManager.fetchDelay.set(delayDuration)
-      context.system.scheduler.scheduleOnce(1 minute, self, "control")
+      val sinkCount = taskManager.sinkCount.get()
+      val batchCount = taskManager.batchCount.get()
+      val fetchCount = taskManager.fetchCount.get()
+      val finalDelayDuration: Long = (fetchCost - sinkCost) / batchThreshold match {
+        case x if (x < 5) => delayDuration
+        case x if (x < 50) => delayDuration * 15 / 10
+        case x if (x < 500) => delayDuration * 7
+        case x if (x < 1000) => delayDuration * 10
+        case _ => Long.MaxValue
+      }
+      log.info(s"finalDelayDuration:$finalDelayDuration")
+      taskManager.fetchDelay.set(finalDelayDuration)
     }
   }
 }
