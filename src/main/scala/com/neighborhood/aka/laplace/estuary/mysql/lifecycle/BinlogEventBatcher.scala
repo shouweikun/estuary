@@ -183,7 +183,6 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
                         tempJsonKey.setMsgSyncEndTime(theAfter)
                         tempJsonKey.setMsgSyncUsedTime(theAfter - before)
                       }
-
                       case CanalEntry.EventType.CREATE => {
                         new KafkaMessage(tempJsonKey, CanalEntryJsonHelper.entryToJson(entry), header.getLogfileName, header.getLogfileOffset)
                         val theAfter = System.currentTimeMillis()
