@@ -82,15 +82,17 @@ class PowerAdapter(taskManager: TaskManager) extends Actor with ActorLogging {
           val batchCount = taskManager.batchCount.get()
           val fetchCount = taskManager.fetchCount.get()
           val finalDelayDuration: Long = ((fetchCount - sinkCount) / batchThreshold, fetchCost, batchCost, sinkCost) match {
-            case (_, x, y, z) if (x > 15 || y > 400 || z > 220) => math.max(10000, delayDuration)//10ms
-            case (_, x, y, z) if (x > 30 || y > 600 || z > 350) => math.max(200000, delayDuration)//200ms
-            case (_, x, y, z) if (x > 40 || y > 900 || z > 400) => math.max(300000, delayDuration)//300ms
+            case (_, x, y, z) if (x > 20 || y > 1700 || z > 250) => math.max(300000, delayDuration) //300ms
+            case (_, x, y, z) if (x > 12 || y > 1500 || z > 220) => math.max(150000, delayDuration) //150ms
+            case (_, x, y, z) if (x > 8 || y > 1300 || z > 180) => math.max(30000, delayDuration) //30ms
+            case (_, x, y, z) if (x > 3 || y > 950 || z > 140) => math.max(8000, delayDuration) //8ms
+            case (_, x, y, z) if (x > 1 || y > 600 || z > 120) => math.max(1500, delayDuration) //1.5ms
             case (w, _, _, _) if (w < 5) => 0
             case (w, _, _, _) if (w < 50) => delayDuration
             case (w, _, _, _) if (w < 200) => delayDuration * 15 / 10
             case (w, _, _, _) if (w < 1000) => delayDuration * 7
             case (w, _, _, _) if (w < 2000) => delayDuration * 10
-            case _ => math.max(delayDuration,60000000) //一分钟
+            case _ => math.max(delayDuration, 60000000) //一分钟
 
           }
           log.info(s"finalDelayDuration:$finalDelayDuration")
