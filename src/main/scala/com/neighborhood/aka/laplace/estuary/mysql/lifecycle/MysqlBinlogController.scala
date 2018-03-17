@@ -210,7 +210,7 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
         context.
           system
           .scheduler
-          .schedule(8 seconds, 8 seconds, ref, SyncControllerMessage("control")));
+          .schedule(4 seconds, 4 seconds, ref, SyncControllerMessage("control")));
     log.info("power Control ON")
   }
 

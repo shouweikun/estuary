@@ -89,11 +89,11 @@ class PowerAdapter(taskManager: TaskManager) extends Actor with ActorLogging {
             case (_, x, y, z) if (x > 2 || y > 1300 || z > 200) => math.max(7000, delayDuration) //7ms
             case (_, x, y, z) if (x > 1 || y > 950 || z > 180) => math.max(2000, delayDuration) //2ms
             case (_, x, y, z) if (x > 1 || y > 700 || z > 160) => math.max(1500, delayDuration) //1.5ms
-            case (w, _, _, _) if (w < 50) => delayDuration
-            case (w, _, _, _) if (w < 200) => delayDuration * 15 / 10
-            case (w, _, _, _) if (w < 1000) => delayDuration * 7
-            case (w, _, _, _) if (w < 2000) => delayDuration * 10
-            case _ => math.max(delayDuration, 60000000) //1min
+            case (w, _, _, _) if (w < 3 * 4) => delayDuration
+            case (w, _, _, _) if (w < 8 * 4) => delayDuration * 15 / 10
+            case (w, _, _, _) if (w < 20 * 4) => delayDuration * 7
+            case (w, _, _, _) if (w < 100 * 4) => delayDuration * 10
+            case _ => math.max(delayDuration, 10000000) //10s
 
           }
           log.info(s"finalDelayDuration:$finalDelayDuration")
