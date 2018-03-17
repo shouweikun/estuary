@@ -83,8 +83,11 @@ class PowerAdapter(taskManager: TaskManager) extends Actor with ActorLogging {
           val fetchCount = taskManager.fetchCount.get()
           val finalDelayDuration: Long = ((fetchCount - sinkCount) / batchThreshold, fetchCost, batchCost, sinkCost) match {
             case (w, _, _, _) if (w < 4) => 0
-            case (_, x, y, z) if (x > 5 || y > 2000 || z > 400) => math.max(100000, delayDuration) //100ms
-            case (_, x, y, z) if (x > 3 || y > 1800 || z > 300) => math.max(50000, delayDuration) //50ms
+            case (_,x,y,z) if(x>4||y>3000||z>450)=>  math.max(80000,delayDuration)
+            case (_, x, y, z) if (x > 4 || y > 3500 || z > 500) => math.max(60000, delayDuration) //60ms
+            case (_, x, y, z) if (x > 3 || y > 2500 || z > 450) => math.max(40000, delayDuration) //40ms
+            case (_, x, y, z) if (x > 3 || y > 2000 || z > 400) => math.max(25000, delayDuration) //25ms
+            case (_, x, y, z) if (x > 2 || y > 1800 || z > 300) => math.max(20000, delayDuration) //20ms
             case (_, x, y, z) if (x > 2 || y > 1700 || z > 250) => math.max(10000, delayDuration) //10ms
             case (_, x, y, z) if (x > 2 || y > 1300 || z > 200) => math.max(7000, delayDuration) //7ms
             case (_, x, y, z) if (x > 1 || y > 950 || z > 180) => math.max(2000, delayDuration) //2ms
