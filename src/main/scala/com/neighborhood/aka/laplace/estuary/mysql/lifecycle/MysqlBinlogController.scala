@@ -170,7 +170,7 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
       .map {
         ref =>
           ref ! SyncControllerMessage("start")
-          context.system.scheduler.schedule(1 minutes, 1 minutes, ref, SyncControllerMessage("save"))
+          context.system.scheduler.schedule(30 seconds, 30 seconds, ref, SyncControllerMessage("save"))
       }
     //启动batcher
     context
@@ -210,7 +210,7 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
         context.
           system
           .scheduler
-          .schedule(1 minute, 1 minute, ref, SyncControllerMessage("control")));
+          .schedule(8 seconds, 8 seconds, ref, SyncControllerMessage("control")));
     log.info("power Control ON")
   }
 
