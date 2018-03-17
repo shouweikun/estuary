@@ -190,11 +190,11 @@ object Mysql2KafkaTaskInfoManager {
     */
   def onChangeStatus(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager): Unit = {
     val syncTaskId = mysql2KafkaTaskInfoManager.taskInfo.syncTaskId
-    val syncControllerStatus = mysql2KafkaTaskInfoManager.syncControllerStatus
-    val fetcherStatus = mysql2KafkaTaskInfoManager.fetcherStatus
-    val sinkerStatus = mysql2KafkaTaskInfoManager.sinkerStatus
-    val batcherStatus = mysql2KafkaTaskInfoManager.batcherStatus
-    val listenerStatus = mysql2KafkaTaskInfoManager.heartBeatListenerStatus
+    val syncControllerStatus = mysql2KafkaTaskInfoManager.syncControllerStatus.get
+    val fetcherStatus = mysql2KafkaTaskInfoManager.fetcherStatus.get
+    val sinkerStatus = mysql2KafkaTaskInfoManager.sinkerStatus.get
+    val batcherStatus = mysql2KafkaTaskInfoManager.batcherStatus.get
+    val listenerStatus = mysql2KafkaTaskInfoManager.heartBeatListenerStatus.get
     val map = Map("syncControllerStatus" -> syncControllerStatus, "fetcherStatus" -> fetcherStatus, "sinkerStatus" -> sinkerStatus, "batcherStatus" -> batcherStatus, "listenerStatus" -> listenerStatus)
 
     taskStatusMap.put(syncTaskId, map)

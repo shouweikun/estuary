@@ -74,19 +74,19 @@ class MysqlBinlogPositionRecorder(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInf
     */
 
   private def switch2Offline = {
-    mysql2KafkaTaskInfoManager.sinkerStatus = Status.OFFLINE
+   // mysql2KafkaTaskInfoManager.sinkerStatus = Status.OFFLINE
   }
 
   private def switch2Error = {
-    mysql2KafkaTaskInfoManager.sinkerStatus = Status.ERROR
+   // mysql2KafkaTaskInfoManager.sinkerStatus = Status.ERROR
   }
 
   private def switch2Online = {
-    mysql2KafkaTaskInfoManager.sinkerStatus = Status.ONLINE
+  //  mysql2KafkaTaskInfoManager.sinkerStatus = Status.ONLINE
   }
 
   private def switch2Restarting = {
-    mysql2KafkaTaskInfoManager.sinkerStatus = Status.RESTARTING
+   // mysql2KafkaTaskInfoManager.sinkerStatus = Status.RESTARTING
   }
 
   /**

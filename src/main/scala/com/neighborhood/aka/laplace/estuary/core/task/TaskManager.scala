@@ -22,27 +22,26 @@ trait TaskManager {
     * fetcher的状态
     */
   @volatile
-  var fetcherStatus: Status = Status.OFFLINE
+  var fetcherStatus: AtomicReference[Status] = new AtomicReference[Status](Status.OFFLINE)
   /**
     * batcher的状态
     */
   @volatile
-  var batcherStatus: Status = Status.OFFLINE
+  var batcherStatus: AtomicReference[Status] = new AtomicReference[Status](Status.OFFLINE)
   /**
     * heartbeatListener的状态
     */
   @volatile
-  var heartBeatListenerStatus: Status = Status.OFFLINE
+  var heartBeatListenerStatus: AtomicReference[Status] = new AtomicReference[Status](Status.OFFLINE)
   /**
     * sinker的状态
     */
-  @volatile
-  var sinkerStatus: Status = Status.OFFLINE
+
+  val sinkerStatus: AtomicReference[Status] = new AtomicReference[Status](Status.OFFLINE)
   /**
     * syncControllerStatus的状态
     */
-  @volatile
-  var syncControllerStatus: Status = Status.OFFLINE
+  val syncControllerStatus: AtomicReference[Status] = new AtomicReference[Status](Status.OFFLINE)
 
   /**
     * 数据条目记录
@@ -75,7 +74,7 @@ trait TaskManager {
     * 此trait的实现类可以扩展此方法返回具体部件的状态
     */
   def taskStatus: Map[String, Status] = {
-    val thisTaskStatus = syncControllerStatus
+    val thisTaskStatus = syncControllerStatus.get()
     Map("task" -> thisTaskStatus)
   }
 
@@ -87,11 +86,11 @@ object TaskManager {
     */
   def changeFunc(status: Status, taskManager: TaskManager)(implicit workerType: WorkerType): Unit = {
     workerType match {
-      case WorkerType.Listener => taskManager.heartBeatListenerStatus = status
-      case WorkerType.Batcher => taskManager.batcherStatus = status
-      case WorkerType.Sinker => taskManager.sinkerStatus = status
-      case WorkerType.Fetcher => taskManager.fetcherStatus = status
-      case WorkerType.SyncController => taskManager.syncControllerStatus = status
+      case WorkerType.Listener => taskManager.heartBeatListenerStatus.set(status)
+      case WorkerType.Batcher => taskManager.batcherStatus.set(status)
+      case WorkerType.Sinker => taskManager.sinkerStatus.set(status)
+      case WorkerType.Fetcher => taskManager.fetcherStatus.set(status)
+      case WorkerType.SyncController => taskManager.syncControllerStatus.set(status)
     }
   }
 

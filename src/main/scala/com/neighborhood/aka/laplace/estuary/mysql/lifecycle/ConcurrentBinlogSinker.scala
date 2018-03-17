@@ -53,6 +53,22 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
     */
   val isAbnormal = new AtomicBoolean(false)
   /**
+    * 作为对外访问的position窗口
+    */
+  val sinkerLogPosition = mysql2KafkaTaskInfoManager.sinkerLogPosition
+  /**
+    * 待保存的BinlogOffset
+    */
+  var schedulingSavedOffset: Long = if (startPosition.isDefined) {
+    startPosition.get.getPostion.getPosition
+  } else 4L
+  /**
+    * 待保存的Binlog文件名称
+    */
+  var schedulingSavedJournalName: String = if (startPosition.isDefined) {
+    startPosition.get.getPostion.getJournalName
+  } else ""
+  /**
     * 待保存的BinlogOffset
     */
   var lastSavedOffset: Long = if (startPosition.isDefined) {
@@ -135,14 +151,22 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
       if (!StringUtils.isEmpty(savedJournalName)) {
         this.lastSavedJournalName = savedJournalName
         this.lastSavedOffset = savedOffset
-        log.info(s"JournalName update to $savedJournalName,offset update to $savedOffset")
+        // log.info(s"JournalName update to $savedJournalName,offset update to $savedOffset")
         if (isProfiling) mysql2KafkaTaskInfoManager.sinkerLogPosition.set(s"$savedJournalName:$savedOffset")
       }
 
 
     }
     // 定时记录logPosition
-    case SyncControllerMessage("record") => logPositionHandler.persistLogPosition(destination, lastSavedJournalName, lastSavedOffset)
+    case SyncControllerMessage("save") => {
+      //如果JournalName
+      if (!StringUtils.isEmpty(schedulingSavedJournalName)) {
+        logPositionHandler.persistLogPosition(destination, schedulingSavedJournalName, schedulingSavedOffset)
+        log.info(s"save logPosition $schedulingSavedJournalName:$schedulingSavedOffset")
+      }
+      schedulingSavedOffset = lastSavedOffset
+      schedulingSavedJournalName = lastSavedJournalName
+    }
     case x => {
       log.warning(s"sinker online unhandled message $x")
 
@@ -160,8 +184,8 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
       * 写数据时的异常
       */
     val callback = new Callback {
-      val thisJournalName = lastSavedJournalName
-      val thisOffset = lastSavedOffset
+      val thisJournalName: String = schedulingSavedJournalName
+      val thisOffset: Long = schedulingSavedOffset
 
       override def onCompletion(metadata: RecordMetadata, exception: Exception): Unit = {
         if (exception != null) {
@@ -220,8 +244,8 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
 
   override def postStop(): Unit = {
     if (!isAbnormal.get() && !StringUtils.isEmpty(lastSavedJournalName)) {
-      val theJournalName = this.lastSavedJournalName
-      val theOffset = this.lastSavedOffset
+      val theJournalName = this.schedulingSavedJournalName
+      val theOffset = this.schedulingSavedOffset
       logPositionHandler.persistLogPosition(destination, theJournalName, theOffset)
       log.info(s"记录binlog $theJournalName,$theOffset")
       if (isProfiling) mysql2KafkaTaskInfoManager.sinkerLogPosition.set(s"$theJournalName:$theOffset")

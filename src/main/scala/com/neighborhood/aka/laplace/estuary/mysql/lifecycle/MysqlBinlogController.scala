@@ -1,7 +1,10 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle
 
+import java.util.concurrent.Executors
+
 import akka.actor.SupervisorStrategy.{Escalate, Restart}
-import akka.actor.{Actor, ActorLogging, AllForOneStrategy, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, AllForOneStrategy, OneForOneStrategy, Props}
+import akka.routing.RoundRobinPool
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
 import com.neighborhood.aka.laplace.estuary.bean.task.Mysql2KafkaTaskInfoBean
 import com.neighborhood.aka.laplace.estuary.core.akka.PowerAdapter
@@ -11,7 +14,7 @@ import com.neighborhood.aka.laplace.estuary.core.lifecycle.{Status, _}
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mysql.Mysql2KafkaTaskInfoManager
 
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 /**
@@ -24,7 +27,7 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
   val mysql2KafkaTaskInfoManager = resourceManager
   //canal的mysqlConnection
   val mysqlConnection: MysqlConnection = resourceManager.mysqlConnection
-
+  implicit val scheduleTaskPool = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor())
 
   override var errorCountThreshold: Int = 3
   override var errorCount: Int = 0
@@ -43,18 +46,13 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
       context.become(online)
       controllerChangeStatus(Status.ONLINE)
       startAllWorkers
-      if (taskInfoBean.isCosting) context
-        .child("powerAdapter")
-        .map(ref => context.system.scheduler.scheduleOnce(3 second, ref, SyncControllerMessage("cost")))
-      if (taskInfoBean.isPowerAdapted) context
-        .child("powerAdapter")
-        .map(ref => context.system.scheduler.scheduleOnce(1 minute, ref, SyncControllerMessage("control")))
+
       log.info("controller switched to online,start all workers")
     }
     case "restart" => {
       context.become(online)
       controllerChangeStatus(Status.ONLINE)
-      restartAllWorkers
+      startAllWorkers
       log.info("controller switched to online,restart all workers")
     }
     case ListenerMessage(msg) => {
@@ -123,40 +121,40 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
 
   }
 
-  /**
-    * 重启时调用
-    * 与StartAllWorkers的区别是
-    * StartAllWorkers的区别是 重启不需要scheduler的定时方法
-    */
-  def restartAllWorkers = {
-    //启动sinker
-    context
-      .child("binlogSinker")
-      .map {
-        ref =>
-          ref ! SyncControllerMessage("start")
-          context.system.scheduler.schedule(5 minutes, 5 minutes, ref, SyncControllerMessage("record"))
-      }
-    //启动batcher
-    context
-      .child("binlogBatcher")
-      .map {
-        ref => context.system.scheduler.scheduleOnce(1 second, ref, SyncControllerMessage("start"))
-      }
-    //启动fetcher
-    context
-      .child("binlogFetcher")
-      .map {
-        ref => context.system.scheduler.scheduleOnce(2 second, ref, SyncControllerMessage("start"))
-      }
-    //启动listener
-    context
-      .child("heartBeatsListener")
-      .map {
-        ref =>
-          ref ! SyncControllerMessage("start")
-      }
-  }
+  //  /**
+  //    * 重启时调用
+  //    * 与StartAllWorkers的区别是
+  //    * StartAllWorkers的区别是 重启不需要scheduler的定时方法
+  //    */
+  //  def restartAllWorkers = {
+  //    //启动sinker
+  //    context
+  //      .child("binlogSinker")
+  //      .map {
+  //        ref =>
+  //          ref ! SyncControllerMessage("start")
+  //          context.system.scheduler.schedule(5 minutes, 5 minutes, ref, SyncControllerMessage("record"))
+  //      }
+  //    //启动batcher
+  //    context
+  //      .child("binlogBatcher")
+  //      .map {
+  //        ref => context.system.scheduler.scheduleOnce(1 second, ref, akka.routing.Broadcast(SyncControllerMessage("start")))
+  //      }
+  //    //启动fetcher
+  //    context
+  //      .child("binlogFetcher")
+  //      .map {
+  //        ref => context.system.scheduler.scheduleOnce(2 second, ref, SyncControllerMessage("start"))
+  //      }
+  //    //启动listener
+  //    context
+  //      .child("heartBeatsListener")
+  //      .map {
+  //        ref =>
+  //          ref ! SyncControllerMessage("start")
+  //      }
+  //  }
 
   def startAllWorkers = {
     //启动recorder
@@ -170,13 +168,15 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
     context
       .child("binlogSinker")
       .map {
-        ref => ref ! SyncControllerMessage("start")
+        ref =>
+          ref ! SyncControllerMessage("start")
+          context.system.scheduler.schedule(1 minutes, 1 minutes, ref, SyncControllerMessage("save"))
       }
     //启动batcher
     context
       .child("binlogBatcher")
       .map {
-        ref => context.system.scheduler.scheduleOnce(1 second, ref, SyncControllerMessage("start"))
+        ref => context.system.scheduler.scheduleOnce(1 second, ref, akka.routing.Broadcast(SyncControllerMessage("start")))
       }
     //启动fetcher
     context
@@ -194,9 +194,28 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
           //开始之后每`queryTimeOut`毫秒一次
           context.system.scheduler.schedule(queryTimeOut milliseconds, queryTimeOut milliseconds, ref, ListenerMessage("listen"))
       }
+
+    if (taskInfoBean.isCosting)
+      context
+        .child("powerAdapter")
+        .map(ref =>
+          context
+            .system
+            .scheduler
+            .schedule(3 seconds, 3 seconds, ref, SyncControllerMessage("cost")));
+    log.info("cost compute ON")
+    if (taskInfoBean.isPowerAdapted) context
+      .child("powerAdapter")
+      .map(ref =>
+        context.
+          system
+          .scheduler
+          .schedule(1 minute, 1 minute, ref, SyncControllerMessage("control")));
+    log.info("power Control ON")
   }
 
   def initWorkers: Unit = {
+
     //初始化powerAdapter
     log.info("initialize powerAdapter")
     context.actorOf(PowerAdapter.props(mysql2KafkaTaskInfoManager), "powerAdapter")
@@ -219,7 +238,11 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
     }
     log.info("initialize batcher")
     //初始化binlogEventBatcher
-    val binlogEventBatcher = context.actorOf(BinlogEventBatcher.prop(binlogSinker, resourceManager), "binlogBatcher")
+    val binlogEventBatcher = context.actorOf(BinlogEventBatcher
+      .prop(binlogSinker, resourceManager)
+      .withRouter(new RoundRobinPool(4).withSupervisorStrategy(OneForOneStrategy() {
+        case _ => Escalate
+      })), "binlogBatcher")
     log.info("initialize fetcher")
     //初始化binlogFetcher
     context.actorOf(Props(classOf[MysqlBinlogFetcher], resourceManager, binlogEventBatcher).withDispatcher("akka.pinned-dispatcher"), "binlogFetcher")

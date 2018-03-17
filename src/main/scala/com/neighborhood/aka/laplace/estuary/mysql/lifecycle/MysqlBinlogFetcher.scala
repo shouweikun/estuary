@@ -29,8 +29,7 @@ import org.I0Itec.zkclient.exception.ZkTimeoutException
 import org.apache.commons.lang.StringUtils
 
 import scala.annotation.tailrec
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration._
 
 /**
@@ -41,7 +40,7 @@ import scala.concurrent.duration._
 
 class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager, binlogEventBatcher: ActorRef) extends Actor with SourceDataFetcher with ActorLogging {
 
-  implicit val transTaskPool = Executors.newSingleThreadExecutor()
+  implicit val transTaskPool = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor())
   /**
     * binlogParser 解析binlog
     */

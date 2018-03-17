@@ -28,7 +28,7 @@ import scala.util.{Failure, Success, Try}
   */
 class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager) extends Actor with SourceDataBatcher with ActorLogging {
 
-  implicit val transTaskPool = Executors.newWorkStealingPool(10)
+  implicit val transTaskPool = Executors.newWorkStealingPool(5)
 
   /**
     * 拼接json用
@@ -151,9 +151,9 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
             map {
               entry =>
                 val entryType = entry.getEntryType //entry类型
-              val header = entry.getHeader
+                val header = entry.getHeader
                 val eventType = header.getEventType //事件类型
-              val tempJsonKey = BinlogKey.buildBinlogKey(header)
+                val tempJsonKey = BinlogKey.buildBinlogKey(header)
                 //todo 添加tempJsonKey的具体信息
                 //tempJsonKey.appName = appName
                 //tempJsonKey.appServerIp = appServerIp
@@ -313,6 +313,7 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
     val theAfter = System.currentTimeMillis()
     temp.setMsgSyncEndTime(theAfter)
     temp.setMsgSyncUsedTime(temp.getMsgSyncEndTime - temp.getSyncTaskStartTime)
+    //log.info(s"${temp.msgSyncStartTime},${temp.getMsgSyncEndTime-temp.getSyncTaskStartTime}")
     re
   }
 
