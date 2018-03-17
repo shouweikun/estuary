@@ -81,12 +81,14 @@ class PowerAdapter(taskManager: TaskManager) extends Actor with ActorLogging {
           val sinkCount = taskManager.sinkCount.get()
           val batchCount = taskManager.batchCount.get()
           val fetchCount = taskManager.fetchCount.get()
-          val finalDelayDuration: Long = (fetchCount - sinkCount) / batchThreshold match {
-            case x if (x < 20) => 0
-            case x if (x < 200) => delayDuration * 15 / 10
-            case x if (x < 1000) => delayDuration * 7
-            case x if (x < 2000) => delayDuration * 10
-            case _ => if (delayDuration > 60000000) delayDuration else 60000000 //一分钟
+          val finalDelayDuration: Long = ((fetchCount - sinkCount) / batchThreshold, fetchCost, batchCost, sinkCost) match {
+            case (_, x, y, z) if (x > 20 || y > 500 || z > 300) => math.max(50000, delayDuration)//50ms
+            case (w, _, _, _) if (w < 5) => 0
+            case (w, _, _, _) if (w < 50) => delayDuration
+            case (w, _, _, _) if (w < 200) => delayDuration * 15 / 10
+            case (w, _, _, _) if (w < 1000) => delayDuration * 7
+            case (w, _, _, _) if (w < 2000) => delayDuration * 10
+            case _ => math.max(delayDuration,60000000) //一分钟
 
           }
           log.info(s"finalDelayDuration:$finalDelayDuration")
