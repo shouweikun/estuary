@@ -172,8 +172,8 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
           try {
             if (flag) {
               fetchOne(before)
-
-              context.system.scheduler.scheduleOnce(mysql2KafkaTaskInfoManager.taskInfo.fetchDelay.get microseconds, self, FetcherMessage("fetch"))
+              val fetchDelay = mysql2KafkaTaskInfoManager.taskInfo.fetchDelay.get
+              context.system.scheduler.scheduleOnce(fetchDelay microseconds, self, FetcherMessage("fetch"))
               //              println("after fetch")
             } else {
 

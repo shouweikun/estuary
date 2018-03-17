@@ -86,7 +86,8 @@ class PowerAdapter(taskManager: TaskManager) extends Actor with ActorLogging {
             case x if (x < 200) => delayDuration * 15 / 10
             case x if (x < 1000) => delayDuration * 7
             case x if (x < 2000) => delayDuration * 10
-            case _ => Long.MaxValue
+            case _ => if (delayDuration > 60000000) delayDuration else 60000000 //一分钟
+
           }
           log.info(s"finalDelayDuration:$finalDelayDuration")
           taskManager.fetchDelay.set(finalDelayDuration)
