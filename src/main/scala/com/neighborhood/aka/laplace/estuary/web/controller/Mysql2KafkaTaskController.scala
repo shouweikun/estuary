@@ -24,7 +24,7 @@ class Mysql2KafkaTaskController {
   @RequestMapping(value = Array("/new/"), method = Array(RequestMethod.POST))
   def createNewTask(@RequestBody requestBody: Mysql2kafkaTaskRequestBean) = {
     //todo 检验任务合法性
-    Mysql2KafkaService.startOneTask(buildTaskInfo(requestBody))
+    Mysql2KafkaService.startNewOneTask(buildTaskInfo(requestBody))
   }
 
   @ApiOperation(value = "查看任务状态", httpMethod = "GET", notes = "")

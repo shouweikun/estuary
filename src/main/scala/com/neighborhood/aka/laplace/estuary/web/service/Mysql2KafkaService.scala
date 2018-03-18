@@ -9,13 +9,29 @@ import com.neighborhood.aka.laplace.estuary.web.akka.ActorRefHolder
   * Created by john_liu on 2018/3/10.
   */
 object Mysql2KafkaService {
+  def loadOneExistTask(syncTaskId: String):Mysql2KafkaTaskInfoBean = {
+    ???
+  }
+  def loadAllExistTask :List[Mysql2KafkaTaskInfoBean] = {
+    ???
+  }
+  def startAllExistTask:String = {
+    loadAllExistTask
+      .map(startNewOneTask(_))
+      .mkString(",")
 
 
-  def startOneTask(mysql2KafkaTaskInfoBean: Mysql2KafkaTaskInfoBean): String = {
+  }
+  def startOneExistTask(syncTaskId: String): String = {
+    startNewOneTask(loadOneExistTask(syncTaskId))
+  }
+
+
+  def startNewOneTask(mysql2KafkaTaskInfoBean: Mysql2KafkaTaskInfoBean): String = {
     val prop = MysqlBinlogController.props(mysql2KafkaTaskInfoBean)
     ActorRefHolder.syncDaemon ! (prop, Option(mysql2KafkaTaskInfoBean.syncTaskId))
     //todo 持久化任务
-    "mession submitted"
+    s"mession:${mysql2KafkaTaskInfoBean.syncTaskId} submitted"
   }
 
   def checkTaskStatus(syncTaskId: String): String = {
@@ -44,7 +60,7 @@ object Mysql2KafkaService {
     map
       .get(syncTaskId)
     match {
-      case Some(x) => ActorRefHolder.system.stop(x); ActorRefHolder.actorRefMap.filter(!_._1.equals(syncTaskId)) ;true
+      case Some(x) => ActorRefHolder.system.stop(x); ActorRefHolder.actorRefMap = map.filter(!_._1.equals(syncTaskId)); true
       case None => false
     }
 
@@ -58,7 +74,7 @@ object Mysql2KafkaService {
     val manager = Mysql2KafkaTaskInfoManager.taskManagerMap.get(syncTaskId)
     Option(manager)
     match {
-      case Some(x) =>if(x.taskInfo.isCounting) s"{$syncTaskId: ${
+      case Some(x) => if (x.taskInfo.isCounting) s"{$syncTaskId: ${
         Mysql2KafkaTaskInfoManager
           .logCount(x)
           .map(kv => s"${kv._1}:${kv._2}")
@@ -68,11 +84,11 @@ object Mysql2KafkaService {
     }
   }
 
-  def checkTimeCost(syncTaskId:String):String = {
+  def checkTimeCost(syncTaskId: String): String = {
     val manager = Mysql2KafkaTaskInfoManager.taskManagerMap.get(syncTaskId)
     Option(manager)
     match {
-      case Some(x) =>if(x.taskInfo.isCosting) s"{$syncTaskId: ${
+      case Some(x) => if (x.taskInfo.isCosting) s"{$syncTaskId: ${
         Mysql2KafkaTaskInfoManager
           .logTimeCost(x)
           .map(kv => s"${kv._1}:${kv._2}")
@@ -82,11 +98,11 @@ object Mysql2KafkaService {
     }
   }
 
-  def checklastSavedlogPosition(syncTaskId:String):String = {
+  def checklastSavedlogPosition(syncTaskId: String): String = {
     val manager = Mysql2KafkaTaskInfoManager.taskManagerMap.get(syncTaskId)
     Option(manager)
     match {
-      case Some(x) =>if(x.taskInfo.isProfiling) s"{$syncTaskId:${ x.sinkerLogPosition.get()} }" else s"{$syncTaskId:profiling is not set}"
+      case Some(x) => if (x.taskInfo.isProfiling) s"{$syncTaskId:${x.sinkerLogPosition.get()} }" else s"{$syncTaskId:profiling is not set}"
       case None => "task not exist"
     }
   }
