@@ -82,20 +82,22 @@ class PowerAdapter(taskManager: TaskManager) extends Actor with ActorLogging {
           val batchCount = taskManager.batchCount.get()
           val fetchCount = taskManager.fetchCount.get()
           val finalDelayDuration: Long = ((fetchCount - sinkCount) / batchThreshold, fetchCost, batchCost, sinkCost) match {
-            case (w, _, _, _) if (w < 4) => 0
-            case (_,x,y,z) if(x>4||y>3000||z>450)=>  math.max(80000,delayDuration)
-            case (_, x, y, z) if (x > 4 || y > 3500 || z > 500) => math.max(60000, delayDuration) //60ms
-            case (_, x, y, z) if (x > 3 || y > 2500 || z > 450) => math.max(40000, delayDuration) //40ms
-            case (_, x, y, z) if (x > 3 || y > 2000 || z > 400) => math.max(25000, delayDuration) //25ms
-            case (_, x, y, z) if (x > 2 || y > 1800 || z > 300) => math.max(20000, delayDuration) //20ms
-            case (_, x, y, z) if (x > 2 || y > 1700 || z > 250) => math.max(10000, delayDuration) //10ms
-            case (_, x, y, z) if (x > 2 || y > 1300 || z > 200) => math.max(7000, delayDuration) //7ms
+            case (_, x, y, z) if (x > 3 || y > 10000 || z > 800) => math.max(120000, delayDuration) //120ms 防止数据太大
+            case (_, x, y, z) if (x > 3 || y > 8000 || z > 750) => math.max(100000, delayDuration) //100ms 防止数据太大
+            case (_, x, y, z) if (x > 2 || y > 6000 || z > 700) => math.max(80000, delayDuration) //80ms 防止数据太大
+            case (_, x, y, z) if (x > 2 || y > 4000 || z > 600) => math.max(60000, delayDuration) //60ms 防止数据太大
+            case (w, _, _, _) if (w < 4) => 0 //0s 快速拉取数据
+            case (w, _, _, _) if (w < 50 * 4) => math.max(delayDuration * 10,3000000) //3s
+            case (_, x, y, z) if (x > 2 || y > 2500 || z > 450) => math.max(35000, delayDuration) //40ms
+            case (_, x, y, z) if (x > 2 || y > 2000 || z > 400) => math.max(25000, delayDuration) //25ms
+            case (_, x, y, z) if (x > 1 || y > 1800 || z > 300) => math.max(20000, delayDuration) //20ms
+            case (_, x, y, z) if (x >1 || y > 1700 || z > 250) => math.max(10000, delayDuration) //10ms
+            case (_, x, y, z) if (x > 1 || y > 1300 || z > 200) => math.max(7000, delayDuration) //7ms
             case (_, x, y, z) if (x > 1 || y > 950 || z > 180) => math.max(2000, delayDuration) //2ms
             case (_, x, y, z) if (x > 1 || y > 700 || z > 160) => math.max(1500, delayDuration) //1.5ms
             case (w, _, _, _) if (w < 3 * 4) => delayDuration
             case (w, _, _, _) if (w < 8 * 4) => delayDuration * 15 / 10
             case (w, _, _, _) if (w < 20 * 4) => delayDuration * 7
-            case (w, _, _, _) if (w < 100 * 4) => delayDuration * 10
             case _ => math.max(delayDuration, 10000000) //10s
 
           }
