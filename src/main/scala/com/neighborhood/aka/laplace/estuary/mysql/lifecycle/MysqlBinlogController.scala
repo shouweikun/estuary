@@ -206,7 +206,7 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
           context
             .system
             .scheduler
-            .schedule(1 seconds, 1 seconds, ref, SyncControllerMessage("cost")));
+            .schedule(3 seconds, 3 seconds, ref, SyncControllerMessage("cost")));
     log.info("cost compute ON")
     if (taskInfoBean.isPowerAdapted) context
       .child("powerAdapter")
@@ -214,7 +214,7 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
         context.
           system
           .scheduler
-          .schedule(1 seconds, 1 seconds, ref, SyncControllerMessage("control")));
+          .schedule(3 seconds, 3 seconds, ref, SyncControllerMessage("control")));
     log.info("power Control ON")
   }
 
