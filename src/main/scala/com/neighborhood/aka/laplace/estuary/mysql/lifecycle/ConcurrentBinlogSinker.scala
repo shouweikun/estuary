@@ -91,6 +91,8 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
   //  lazy val theBatchCount = new AtomicLong(0)
   var isProfiling = mysql2KafkaTaskInfoManager.taskInfo.isProfiling
 
+  var lastSinkTimestamp: Long = System.currentTimeMillis()
+
   //offline
   override def receive: Receive = {
     case SyncControllerMessage(msg) => {
@@ -139,6 +141,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
         }
 
       val after = System.currentTimeMillis()
+      lastSinkTimestamp = after
       //这次任务完成后
       //log.info(s"send处理用了${after - before},s$lastSavedJournalName:$lastSavedOffset")
       if (isCounting) mysql2KafkaTaskInfoManager.sinkCount.addAndGet(count)
@@ -166,6 +169,9 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
       }
       schedulingSavedOffset = lastSavedOffset
       schedulingSavedJournalName = lastSavedJournalName
+    }
+    case SyncControllerMessage("checkSend") => {
+     if((System.currentTimeMillis() -lastSinkTimestamp) > (1000 * 60 * 5)) sender() ! SinkerMessage("flush")
     }
     case x => {
       log.warning(s"sinker online unhandled message $x")

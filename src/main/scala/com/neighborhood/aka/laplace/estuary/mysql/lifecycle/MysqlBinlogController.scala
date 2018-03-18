@@ -102,6 +102,9 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
         case "error" => {
           throw new RuntimeException("sinker has something wrong")
         }
+        case "flush" => context
+          .child("binlogBatcher")
+          .map(ref => ref ! akka.routing.Broadcast(SyncControllerMessage("flush")))
         case _ => {}
       }
     }
@@ -171,6 +174,7 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
         ref =>
           ref ! SyncControllerMessage("start")
           context.system.scheduler.schedule(30 seconds, 30 seconds, ref, SyncControllerMessage("save"))
+          context.system.scheduler.schedule(5 minutes, 5 minutes, ref, SyncControllerMessage("checkSend"))
       }
     //启动batcher
     context
@@ -202,7 +206,7 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
           context
             .system
             .scheduler
-            .schedule(3 seconds, 3 seconds, ref, SyncControllerMessage("cost")));
+            .schedule(1 seconds, 1 seconds, ref, SyncControllerMessage("cost")));
     log.info("cost compute ON")
     if (taskInfoBean.isPowerAdapted) context
       .child("powerAdapter")
@@ -210,7 +214,7 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
         context.
           system
           .scheduler
-          .schedule(4 seconds, 4 seconds, ref, SyncControllerMessage("control")));
+          .schedule(1 seconds, 1 seconds, ref, SyncControllerMessage("control")));
     log.info("power Control ON")
   }
 
