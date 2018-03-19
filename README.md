@@ -22,5 +22,8 @@ estuary致力于提供一个数据实时同步的方案,实现从source到sink�
 4. 任务信息持久化
 5. 去Spring化（可能采用Akka http 或者 Play!）
 6. 打包机制
+7. 反压
+8. 集群化
+
  
 
