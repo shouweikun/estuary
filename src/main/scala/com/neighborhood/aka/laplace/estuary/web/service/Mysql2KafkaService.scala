@@ -9,19 +9,22 @@ import com.neighborhood.aka.laplace.estuary.web.akka.ActorRefHolder
   * Created by john_liu on 2018/3/10.
   */
 object Mysql2KafkaService {
-  def loadOneExistTask(syncTaskId: String):Mysql2KafkaTaskInfoBean = {
+  def loadOneExistTask(syncTaskId: String): Mysql2KafkaTaskInfoBean = {
     ???
   }
-  def loadAllExistTask :List[Mysql2KafkaTaskInfoBean] = {
+
+  def loadAllExistTask: List[Mysql2KafkaTaskInfoBean] = {
     ???
   }
-  def startAllExistTask:String = {
+
+  def startAllExistTask: String = {
     loadAllExistTask
       .map(startNewOneTask(_))
       .mkString(",")
 
 
   }
+
   def startOneExistTask(syncTaskId: String): String = {
     startNewOneTask(loadOneExistTask(syncTaskId))
   }
@@ -47,8 +50,8 @@ object Mysql2KafkaService {
 
   def reStartTask(syncTaskId: String): Boolean = {
     val map = ActorRefHolder.actorRefMap
-    map
-      .get(syncTaskId)
+    Option(map
+      .get(syncTaskId))
     match {
       case Some(x) => x ! "restart"; true
       case None => false
@@ -57,11 +60,11 @@ object Mysql2KafkaService {
 
   def stopTask(syncTaskId: String): Boolean = {
     val map = ActorRefHolder.actorRefMap
-    map
-      .get(syncTaskId)
-    match {
-
-      case Some(x) => ActorRefHolder.system.stop(x); map.-(syncTaskId); true
+    Option(
+      map
+        .get(syncTaskId)
+    ) match {
+      case Some(x) => ActorRefHolder.system.stop(x); map.remove(syncTaskId); true
       case None => false
     }
 
