@@ -33,7 +33,7 @@ trait KafkaBean extends DataSinkBean {
   /**
     * 依照特定规则映射表和数据库找出topic
     */
-  var specificTopics: Map[String,String] = _
+  var specificTopics: Map[String,String] = Map.empty
   /**
     * 最大接收数据
     */
