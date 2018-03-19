@@ -22,7 +22,7 @@ import org.apache.commons.lang.StringUtils
 /**
   * Created by john_liu on 2018/2/7.
   */
-class Mysql2KafkaTaskInfoManager(taskInfoBean: Mysql2KafkaTaskInfoBean) extends TaskManager with RecourceManager[String, MysqlConnection, KafkaSinkFunc[BinlogKey, String]] {
+class Mysql2KafkaTaskInfoManager(taskInfoBean: Mysql2KafkaTaskInfoBean) extends TaskManager with RecourceManager[String, MysqlConnection, KafkaSinkFunc[String]] {
 
   /**
     * 同步任务控制器的ActorRef
@@ -108,8 +108,8 @@ class Mysql2KafkaTaskInfoManager(taskInfoBean: Mysql2KafkaTaskInfoBean) extends 
     *
     * @return KafkaSinkFunc
     */
-  override def buildSink: KafkaSinkFunc[BinlogKey, String] = {
-    new KafkaSinkFunc[BinlogKey, String](this.taskInfo)
+  override def buildSink: KafkaSinkFunc[String] = {
+    new KafkaSinkFunc[String](this.taskInfo)
   }
 
   /**

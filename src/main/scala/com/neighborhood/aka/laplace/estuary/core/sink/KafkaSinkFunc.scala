@@ -12,7 +12,7 @@ import scala.util.{Failure, Success, Try}
 /**
   * Created by john_liu on 2018/2/7.
   */
-class KafkaSinkFunc[K <: BaseDataJsonKey, V](kafkaBean: KafkaBean) extends SinkFunc {
+class KafkaSinkFunc[V](kafkaBean: KafkaBean) extends SinkFunc {
   //  /**
   //    * 异步写入时的ExecutionContext
   //    * 值得注意的是，该ExecutionContext是Kafka公用的
@@ -21,7 +21,7 @@ class KafkaSinkFunc[K <: BaseDataJsonKey, V](kafkaBean: KafkaBean) extends SinkF
   /**
     * Kafka生产者
     */
-  lazy val kafkaProducer = KafkaSinkFunc.buildKafkaProducer[K, V](kafkaBean)
+  lazy val kafkaProducer = KafkaSinkFunc.buildKafkaProducer[V](kafkaBean)
   /**
     * defaultTopic
     */
@@ -36,7 +36,7 @@ class KafkaSinkFunc[K <: BaseDataJsonKey, V](kafkaBean: KafkaBean) extends SinkF
     * @param value 待写入的数据
     * @return Boolean 是否写入成功
     */
-  def sink(key: K, value: V): Boolean = {
+  def sink(key: BaseDataJsonKey, value: V): Boolean = {
     val record = buildRecord(key, value)
     Try(kafkaProducer.send(record).get()) match {
       case Success(x) => {
@@ -59,7 +59,7 @@ class KafkaSinkFunc[K <: BaseDataJsonKey, V](kafkaBean: KafkaBean) extends SinkF
     * @param value 待写入的数据
     * @return Future[RecordMetadata 是否写入成功
     */
-  def ayncSink(key: K, value: V)(topic: String)(callback: Callback): Future[RecordMetadata] = {
+  def ayncSink(key: BaseDataJsonKey, value: V)(topic: String)(callback: Callback): Future[RecordMetadata] = {
     val record = buildRecord(key, value)
     kafkaProducer.send(record, callback)
   }
@@ -93,9 +93,9 @@ class KafkaSinkFunc[K <: BaseDataJsonKey, V](kafkaBean: KafkaBean) extends SinkF
     * @param value 待写入的数据
     * @return ProducerRecord[String,V]
     */
-  def buildRecord(key: K, value: V): ProducerRecord[K, V] = {
+  def buildRecord(key: BaseDataJsonKey, value: V): ProducerRecord[BaseDataJsonKey, V] = {
     key.setMsgSyncEndTime(System.currentTimeMillis())
-    new ProducerRecord[K, V](topic, key, value)
+    new ProducerRecord[BaseDataJsonKey, V](topic, key, value)
   }
 }
 
@@ -107,10 +107,10 @@ object KafkaSinkFunc {
     * @return KafkaProducer
     *         根据kafkaBean的参数设置,初始化一个producer
     */
-  def buildKafkaProducer[K, V](kafkaBean: KafkaBean): KafkaProducer[K, V] = {
+  def buildKafkaProducer[V](kafkaBean: KafkaBean): KafkaProducer[BaseDataJsonKey, V] = {
     val props = new Properties()
     props.putAll(KafkaBean.buildConfig(kafkaBean))
-    new KafkaProducer[K, V](props)
+    new KafkaProducer[BaseDataJsonKey, V](props)
   }
 
 }
