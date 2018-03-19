@@ -9,13 +9,29 @@ import com.neighborhood.aka.laplace.estuary.web.akka.ActorRefHolder
   * Created by john_liu on 2018/3/10.
   */
 object Mysql2KafkaService {
+  def loadOneExistTask(syncTaskId: String):Mysql2KafkaTaskInfoBean = {
+    ???
+  }
+  def loadAllExistTask :List[Mysql2KafkaTaskInfoBean] = {
+    ???
+  }
+  def startAllExistTask:String = {
+    loadAllExistTask
+      .map(startNewOneTask(_))
+      .mkString(",")
 
 
-  def startOneTask(mysql2KafkaTaskInfoBean: Mysql2KafkaTaskInfoBean): String = {
+  }
+  def startOneExistTask(syncTaskId: String): String = {
+    startNewOneTask(loadOneExistTask(syncTaskId))
+  }
+
+
+  def startNewOneTask(mysql2KafkaTaskInfoBean: Mysql2KafkaTaskInfoBean): String = {
     val prop = MysqlBinlogController.props(mysql2KafkaTaskInfoBean)
     ActorRefHolder.syncDaemon ! (prop, Option(mysql2KafkaTaskInfoBean.syncTaskId))
     //todo 持久化任务
-    "mession submitted"
+    s"mession:${mysql2KafkaTaskInfoBean.syncTaskId} submitted"
   }
 
   def checkTaskStatus(syncTaskId: String): String = {
@@ -44,6 +60,7 @@ object Mysql2KafkaService {
     map
       .get(syncTaskId)
     match {
+
       case Some(x) => ActorRefHolder.system.stop(x); map.-(syncTaskId); true
       case None => false
     }
