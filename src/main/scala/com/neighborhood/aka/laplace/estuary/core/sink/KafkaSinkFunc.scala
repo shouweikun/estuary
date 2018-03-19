@@ -23,10 +23,13 @@ class KafkaSinkFunc[K <: BaseDataJsonKey, V](kafkaBean: KafkaBean) extends SinkF
     */
   lazy val kafkaProducer = KafkaSinkFunc.buildKafkaProducer[K, V](kafkaBean)
   /**
-    * 待写入的topic
+    * defaultTopic
     */
   val topic = kafkaBean.topic
-
+  /**
+    * 库表名和topic映射map
+    */
+  val specificTopics = kafkaBean.specificTopics
 
   /**
     * @param key   分区key
@@ -56,7 +59,7 @@ class KafkaSinkFunc[K <: BaseDataJsonKey, V](kafkaBean: KafkaBean) extends SinkF
     * @param value 待写入的数据
     * @return Future[RecordMetadata 是否写入成功
     */
-  def ayncSink(key: K, value: V)(topic:String)(callback: Callback): Future[RecordMetadata] = {
+  def ayncSink(key: K, value: V)(topic: String)(callback: Callback): Future[RecordMetadata] = {
     val record = buildRecord(key, value)
     kafkaProducer.send(record, callback)
   }
@@ -65,11 +68,14 @@ class KafkaSinkFunc[K <: BaseDataJsonKey, V](kafkaBean: KafkaBean) extends SinkF
     kafkaProducer.flush()
   }
 
-  def findTopic(key:String = ""):String = {
-    //todo
-    this.topic
-  }
+  def findTopic(key: String = ""): String = {
+    specificTopics
+      .get(key) match {
+      case Some(tpc) => tpc
+      case None => this.topic
+    }
 
+  }
 
 
   //  /**

@@ -21,17 +21,14 @@ trait TaskManager {
   /**
     * fetcher的状态
     */
-  @volatile
   var fetcherStatus: AtomicReference[Status] = new AtomicReference[Status](Status.OFFLINE)
   /**
     * batcher的状态
     */
-  @volatile
   var batcherStatus: AtomicReference[Status] = new AtomicReference[Status](Status.OFFLINE)
   /**
     * heartbeatListener的状态
     */
-  @volatile
   var heartBeatListenerStatus: AtomicReference[Status] = new AtomicReference[Status](Status.OFFLINE)
   /**
     * sinker的状态
