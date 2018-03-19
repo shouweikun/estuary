@@ -53,10 +53,6 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
     */
   val isAbnormal = new AtomicBoolean(false)
   /**
-    * 是否发生异常
-    */
-  var syncSequenceIncrement: Long = 0L
-  /**
     * 作为对外访问的position窗口
     */
   val sinkerLogPosition = mysql2KafkaTaskInfoManager.sinkerLogPosition
@@ -125,18 +121,17 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
         * 待保存的Binlog文件名称
         */
       var savedJournalName: String = ""
-      lazy val count = list.size
-      val theSyncSequenceIncrement = this.syncSequenceIncrement
-      this.syncSequenceIncrement += 1
+      val count = list.size
       val before = System.currentTimeMillis()
-      val task = list.par
+      val task = (0 until count).zip(list).par
+
       task.tasksupport = sinkTaskPool
       task
         .map {
           x =>
-            x match {
-              case message: KafkaMessage => handleSinkTask(message)
-              case messages: Array[KafkaMessage] => messages.map(handleSinkTask(_))
+            x._2 match {
+              case message: KafkaMessage => handleSinkTask(message)(x._1)
+              case messages: Array[KafkaMessage] => messages.map(handleSinkTask(_)(x._1))
 
               case BinlogPositionInfo(journalName, offset) => {
                 savedJournalName = journalName
