@@ -7,6 +7,7 @@ import com.neighborhood.aka.laplace.estuary.web.service.Mysql2KafkaService
 import com.neighborhood.aka.laplace.estuary.web.utils.ValidationUtils
 import io.swagger.annotations.ApiOperation
 import org.springframework.web.bind.annotation._
+import scala.collection.JavaConverters._
 
 /**
   * Created by john_liu on 2018/3/10.
@@ -103,6 +104,15 @@ class Mysql2KafkaTaskController {
     taskInfo.bootstrapServers = requestBody.getKafkaBootstrapServers
     taskInfo.ack = requestBody.getKafkaAck
     taskInfo.topic = requestBody.getKafkaTopic
+    taskInfo.specificTopics = requestBody
+      .getKafkaSpecficTopics
+      .asScala //转化为scala集合
+      .flatMap {
+      kv =>
+        kv._2 // 库表名
+          .split(",") //通过`,`逗号分隔
+          .map(newK => newK -> kv._1) //转换为`库表 -> topic`的形式
+    }.toMap
     //mysql用
     taskInfo.master = new MysqlCredentialBean(requestBody.getMysqladdress, requestBody.getMysqlPort, requestBody.getMysqlUsername, requestBody.getMysqlPassword, requestBody.getMysqlDefaultDatabase)
     //过滤用

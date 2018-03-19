@@ -1,5 +1,7 @@
 package com.neighborhood.aka.laplace.estuary.web.bean;
 
+import java.util.Map;
+
 /**
  * Created by john_liu on 2018/3/11.
  */
@@ -34,6 +36,7 @@ public class Mysql2kafkaTaskRequestBean {
     private String kafkaLingerMs = "";
     private String kafkaRetries = "";
     private String kafkaTopic = "";
+    private Map<String,String> kafkaSpecficTopics;
     private String mysqladdress;
     private int mysqlPort;
     private String mysqlUsername;
@@ -46,9 +49,17 @@ public class Mysql2kafkaTaskRequestBean {
     //支持的binlogFormat
     // binlog.format = ""
     //zookeeper地址,可以设置多个，用";"分隔
-    private String zookeeperServers = "10.10.248.207:2181;10.10.237.78:2181";
+    private String zookeeperServers;
     // zookeeper 链接超时设置,单位毫秒
     private int zookeeperTimeout = 10000;
+
+    public Map<String, String> getKafkaSpecficTopics() {
+        return kafkaSpecficTopics;
+    }
+
+    public void setKafkaSpecficTopics(Map<String, String> kafkaSpecficTopics) {
+        this.kafkaSpecficTopics = kafkaSpecficTopics;
+    }
 
     public long getFetchDelay() {
         return fetchDelay;
