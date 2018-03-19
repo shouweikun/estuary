@@ -53,6 +53,10 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
     */
   val isAbnormal = new AtomicBoolean(false)
   /**
+    * 是否发生异常
+    */
+  var syncSequenceIncrement: Long = 0L
+  /**
     * 作为对外访问的position窗口
     */
   val sinkerLogPosition = mysql2KafkaTaskInfoManager.sinkerLogPosition
@@ -122,6 +126,8 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
         */
       var savedJournalName: String = ""
       lazy val count = list.size
+      val theSyncSequenceIncrement = this.syncSequenceIncrement
+      this.syncSequenceIncrement += 1
       val before = System.currentTimeMillis()
       val task = list.par
       task.tasksupport = sinkTaskPool
@@ -171,7 +177,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
       schedulingSavedJournalName = lastSavedJournalName
     }
     case SyncControllerMessage("checkSend") => {
-     if((System.currentTimeMillis() -lastSinkTimestamp) > (1000 * 60 * 5)) sender() ! SinkerMessage("flush")
+      if ((System.currentTimeMillis() - lastSinkTimestamp) > (1000 * 60 * 5)) sender() ! SinkerMessage("flush")
     }
     case x => {
       log.warning(s"sinker online unhandled message $x")
@@ -182,10 +188,13 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
   /**
     *
     */
-  def handleSinkTask(kafkaMessage: KafkaMessage, journalName: String = this.lastSavedJournalName, offset: Long = this.lastSavedOffset): Unit = {
+  def handleSinkTask(kafkaMessage: KafkaMessage, journalName: String = this.lastSavedJournalName, offset: Long = this.lastSavedOffset)(syncSequenceId: Long): Unit = {
     val before = System.currentTimeMillis()
     val key = s"${kafkaMessage.getBaseDataJsonKey.asInstanceOf[BinlogKey].getDbName}.${kafkaMessage.getBaseDataJsonKey.asInstanceOf[BinlogKey].getTableName}"
     val topic = kafkaSinker.findTopic(key)
+    kafkaMessage.getBaseDataJsonKey.setKafkaTopic(topic)
+    kafkaMessage.getBaseDataJsonKey.setSyncTaskSequence(syncSequenceId)
+
     /**
       * 写数据时的异常
       */
