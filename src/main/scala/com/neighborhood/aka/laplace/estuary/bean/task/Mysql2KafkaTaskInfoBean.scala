@@ -62,6 +62,10 @@ class Mysql2KafkaTaskInfoBean extends MysqlBean with KafkaBean with BaseExtractB
     */
   var batchThreshold: AtomicLong = new AtomicLong(50)
   /**
+    * binlog文件名称
+    */
+  var batcherNum: Int = 4
+  /**
     * 数据拉取时延
     * 单位微秒
     */

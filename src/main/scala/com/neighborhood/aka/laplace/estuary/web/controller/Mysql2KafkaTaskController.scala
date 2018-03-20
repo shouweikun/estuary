@@ -129,7 +129,7 @@ class Mysql2KafkaTaskController {
     if (!StringUtils.isEmpty(requestBody.getEventFilterPattern))
       taskInfo.eventFilterPattern = requestBody.getEventFilterPattern
     //开始的position
-    if(!StringUtils.isEmpty(requestBody.getBinlogJournalName)){
+    if (!StringUtils.isEmpty(requestBody.getBinlogJournalName)) {
       taskInfo.journalName = requestBody.getBinlogJournalName
       taskInfo.position = requestBody.getBinlogPosition
     }
@@ -138,12 +138,18 @@ class Mysql2KafkaTaskController {
     taskInfo.isTransactional = requestBody.isTransactional
     taskInfo.isCounting = requestBody.isCounting
     taskInfo.isProfiling = requestBody.isProfiling
-    List(requestBody.isCosting,requestBody.isCounting,requestBody.isProfiling).forall(x=>x) match {
+    List(requestBody.isCosting, requestBody.isCounting, requestBody.isProfiling).forall(x => x) match {
       case true => taskInfo.isPowerAdapted = requestBody.isPowerAdapted
       case _ => {}
     }
-    //其他
-    taskInfo.batchThreshold.set(requestBody.getBatchThreshold)
+    //batcher
+    if (requestBody.getBatchThreshold > 0) {
+      taskInfo.batchThreshold.set(requestBody.getBatchThreshold)
+    }
+    if (requestBody.getBatcherCount > 0) {
+      taskInfo.batcherNum = requestBody.getBatcherCount
+    }
+    //fetcher
     taskInfo.fetchDelay.set(requestBody.getFetchDelay)
     taskInfo
   }

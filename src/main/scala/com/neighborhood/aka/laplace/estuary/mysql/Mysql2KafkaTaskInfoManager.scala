@@ -96,6 +96,8 @@ class Mysql2KafkaTaskInfoManager(taskInfoBean: Mysql2KafkaTaskInfoBean) extends 
 
   override lazy val batchThreshold :AtomicLong= taskInfo.batchThreshold
 
+  override var batchNum = taskInfo.batcherNum
+
   /**
     * 实现@trait ResourceManager
     *

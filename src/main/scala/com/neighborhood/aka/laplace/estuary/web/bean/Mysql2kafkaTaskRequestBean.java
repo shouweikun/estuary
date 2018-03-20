@@ -16,6 +16,7 @@ public class Mysql2kafkaTaskRequestBean {
     private boolean isCosting = true;
     private boolean isTransactional = false;
     private boolean isPowerAdapted = true;
+    private int batcherCount = 4;
     private long batchThreshold = 50;
     private long fetchDelay = 0;
     private String filterPattern;
@@ -55,6 +56,14 @@ public class Mysql2kafkaTaskRequestBean {
 
     public Map<String, String> getKafkaSpecficTopics() {
         return kafkaSpecficTopics;
+    }
+
+    public int getBatcherCount() {
+        return batcherCount;
+    }
+
+    public void setBatcherCount(int batcherCount) {
+        this.batcherCount = batcherCount;
     }
 
     public void setKafkaSpecficTopics(Map<String, String> kafkaSpecficTopics) {

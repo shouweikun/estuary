@@ -100,7 +100,7 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
     case SinkerMessage(msg) => {
       msg match {
         case "error" => {
-          throw new RuntimeException("sinker has something wrong")
+          throw new RuntimeException("sinker went wrong when sending data")
         }
         case "flush" => context
           .child("binlogBatcher")
@@ -244,7 +244,7 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
     //初始化binlogEventBatcher
     val binlogEventBatcher = context.actorOf(BinlogEventBatcher
       .prop(binlogSinker, resourceManager)
-      .withRouter(new RoundRobinPool(4).withSupervisorStrategy(OneForOneStrategy() {
+      .withRouter(new RoundRobinPool(taskInfoBean.batcherNum).withSupervisorStrategy(OneForOneStrategy() {
         case _ => Escalate
       })), "binlogBatcher")
     log.info("initialize fetcher")

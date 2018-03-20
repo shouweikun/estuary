@@ -65,6 +65,10 @@ trait TaskManager {
     * 打包阈值
     */
   lazy val batchThreshold: AtomicLong = null
+  /**
+    * batcher的数量
+    */
+  var batcherNum: Int = _
 
   /**
     * 任务运行状态
