@@ -12,35 +12,31 @@ class SyncDaemon extends Actor with ActorLogging {
 
   override def receive: Receive = {
     case (prop: Props, name: Option[String]) => {
-      val actorAndReason = startNewTask(prop, name)
-      log.info(s"${actorAndReason._2}")
-      //保存这个任务的ActorRef
-      if (ActorRefHolder.addNewTaskActorRef(name.get, actorAndReason._1))
-        log.info(s"actorRef:${name.get} 添加成功") else log.warning(s"actorRef:${name.get} 添加失败")
-      actorAndReason._1 ! "start"
+      name.fold(
+        log.warning("不可以空缺任务id!")
+      )(taskName => {
+        val actorAndReason = startNewTask(prop, taskName)
+        log.info(s"${actorAndReason._2}")
+        //保存这个任务的ActorRef
+        if (ActorRefHolder.addNewTaskActorRef(name.get, actorAndReason._1))
+          log.info(s"actorRef:${name.get} 添加成功") else log.warning(s"actorRef:${name.get} 添加失败")
+        actorAndReason._1 ! "start"
+      })
     }
     case x => log.warning(s"SyncDeamon unhandled message $x")
   }
 
   override def supervisorStrategy = {
     OneForOneStrategy() {
-      case e: InvalidActorNameException => Resume
+      case InvalidActorNameException(_) => Resume
       case _ => Restart
     }
   }
 
-  def startNewTask(prop: Props, name: Option[String]): (ActorRef, String) = {
-
-    name match {
-      case Some(x) => {
-        if (context.child(x).isDefined) {
-          (context.child(x).get, s"该任务id:${name.get}已经存在")
-        } else {
-          (context.actorOf(prop, x), s"任务id:${name.get}启动成功")
-        }
-      }
-      case None => (null, "不可以空缺任务id!")
-    }
+  def startNewTask(prop: Props, name: String): (ActorRef, String) = {
+      context.child(name).fold(
+        (context.child(name).get, s"该任务id:$name 已经存在")
+      )(actorRef => (actorRef,s"任务id:$name 启动成功"))
   }
 
 
