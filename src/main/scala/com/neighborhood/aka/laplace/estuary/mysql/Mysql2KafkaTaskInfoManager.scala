@@ -12,6 +12,7 @@ import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection.{BinlogFormat, BinlogImage}
 import com.alibaba.otter.canal.parse.index.ZooKeeperLogPositionManager
 import com.alibaba.otter.canal.protocol.position.EntryPosition
+import com.neighborhood.aka.laplace.estuary.bean.credential.MysqlCredentialBean
 import com.neighborhood.aka.laplace.estuary.bean.key.BinlogKey
 import com.neighborhood.aka.laplace.estuary.bean.task.Mysql2KafkaTaskInfoBean
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status.Status
@@ -94,16 +95,16 @@ class Mysql2KafkaTaskInfoManager(taskInfoBean: Mysql2KafkaTaskInfoBean) extends 
   override lazy val fetchDelay: AtomicLong = taskInfo.fetchDelay
   var powerAdapter: Option[ActorRef] = None
 
-  override lazy val batchThreshold :AtomicLong= taskInfo.batchThreshold
+  override lazy val batchThreshold: AtomicLong = taskInfo.batchThreshold
 
-  override var batchNum = taskInfo.batcherNum
+  override var batcherNum = taskInfo.batcherNum
 
   /**
     * 实现@trait ResourceManager
     *
     * @return canal的mysqlConnection
     */
-  override def buildSource: MysqlConnection = buildMysqlConnection
+  override def buildSource: MysqlConnection = buildMysqlConnection()
 
   /**
     * 实现@trait ResourceManager
@@ -117,14 +118,9 @@ class Mysql2KafkaTaskInfoManager(taskInfoBean: Mysql2KafkaTaskInfoBean) extends 
   /**
     * @return canal的mysqlConnection
     */
-  def buildMysqlConnection: MysqlConnection = {
-    //charsetNumber
-    val connectionCharsetNumber: Byte = taskInfo.connectionCharsetNumber
-    //字符集
-    val connectionCharset: Charset = taskInfo.connectionCharset
-    val receiveBufferSize = taskInfo.receiveBufferSize
-    val sendBufferSize = taskInfo.sendBufferSize
-    val masterCredentialInfo = taskInfo.master
+  def buildMysqlConnection(
+                            connectionCharsetNumber: Byte = taskInfo.connectionCharsetNumber, connectionCharset: Charset = taskInfo.connectionCharset, receiveBufferSize: Int = taskInfo.receiveBufferSize, sendBufferSize: Int = taskInfo.sendBufferSize, masterCredentialInfo: MysqlCredentialBean = taskInfo.master
+                          ): MysqlConnection = {
     val address = new InetSocketAddress(masterCredentialInfo.address, masterCredentialInfo.port)
     val username = masterCredentialInfo.username
     val password = masterCredentialInfo.password

@@ -273,7 +273,6 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
 
   /**
     * 加载mysql的binlogChecksum机制
-    *
     */
   private def loadBinlogChecksum(mysqlConnection: MysqlConnection): Unit = {
     var rs: ResultSetPacket = null
