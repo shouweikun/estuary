@@ -11,16 +11,16 @@ import scala.concurrent.ExecutionContext.Implicits.global
   */
 class PowerAdapter(taskManager: TaskManager) extends Actor with ActorLogging {
 
-  val size: Int = 100
+  val size: Int = 10
   var fetchTimeArray: Array[Long] = new Array[Long](size)
   var batchTimeArray: Array[Long] = new Array[Long](size)
   var sinkTimeArray: Array[Long] = new Array[Long](size)
 
-  var fetchTimeWriteIndex = 0
+  var fetchTimeWriteIndex: Int = 0
 
-  var batchTimeWriteIndex = 0
+  var batchTimeWriteIndex: Int = 0
 
-  var sinkTimeWriteIndex = 0
+  var sinkTimeWriteIndex: Int = 0
 
 
   override def receive: Receive = {
@@ -65,11 +65,14 @@ class PowerAdapter(taskManager: TaskManager) extends Actor with ActorLogging {
           val adjustedFetchCost = if (fetchCost <= 0) 1 else fetchCost
           //调节策略
           val batchThreshold = taskManager.batchThreshold.get
+          val fetchCount = taskManager.fetchCount.get()
+          val batchCount = taskManager.batchCount.get()
+          val sinkCount = taskManager.sinkCount.get()
+          val batcherNum = taskManager.batcherNum
           val delayDuration = if (sinkCost < batchCost) {
             //sink速度比batch速度快的话
-
             val left = (adjustedSinkCost * 1000 / batchThreshold - adjustedFetchCost * 1000 + 1) * 70 / 100
-            val limitRatio = 4 * 3
+            val limitRatio = batcherNum * 3
             val right = 1000 * adjustedBatchCost / limitRatio / batchThreshold
             log.info(s"adjustedFetchCost:$adjustedFetchCost,adjustedBatchCost:$adjustedBatchCost,adjustedSinkCost:$adjustedSinkCost,left:$left,right:$right,limitRatio:$limitRatio")
             math.max(left, right)
@@ -78,10 +81,7 @@ class PowerAdapter(taskManager: TaskManager) extends Actor with ActorLogging {
             math.max((adjustedSinkCost * 1000 / batchThreshold - adjustedFetchCost * 1000 + 1) * 70 / 100, 0)
           }
           log.info(s"delayDuration:$delayDuration")
-          val fetchCount = taskManager.fetchCount.get()
-          val batchCount = taskManager.batchCount.get()
-          val sinkCount = taskManager.sinkCount.get()
-          val batcherNum = taskManager.batcherNum
+
           log.info(s"${(fetchCount - sinkCount) / batchThreshold},$fetchCost,$batchCost,$sinkCost")
           val finalDelayDuration: Long = ((fetchCount - sinkCount) / batchThreshold, fetchCost, batchCost, sinkCost) match {
             case (_, x, y, z) if (x > 3 || y > 10000 || z > 800) => math.max(100000, delayDuration) //100ms 防止数据太大

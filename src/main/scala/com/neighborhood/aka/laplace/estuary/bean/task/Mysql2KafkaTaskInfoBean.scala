@@ -12,7 +12,7 @@ import com.neighborhood.aka.laplace.estuary.bean.resource.MysqlBean
 /**
   * Created by john_liu on 2018/2/7.
   */
-class Mysql2KafkaTaskInfoBean extends MysqlBean with KafkaBean with BaseExtractBean {
+final class Mysql2KafkaTaskInfoBean extends MysqlBean with KafkaBean with BaseExtractBean {
 
 
   /**
@@ -46,7 +46,7 @@ class Mysql2KafkaTaskInfoBean extends MysqlBean with KafkaBean with BaseExtractB
   /**
     * 是否保留最新binlog位置
     */
-  var isProfiling:Boolean = false
+  var isProfiling: Boolean = false
   /**
     * 是否事务写
     * 默认否
@@ -69,7 +69,7 @@ class Mysql2KafkaTaskInfoBean extends MysqlBean with KafkaBean with BaseExtractB
     * 数据拉取时延
     * 单位微秒
     */
-  val fetchDelay:AtomicLong = new AtomicLong(2000)
+  val fetchDelay: AtomicLong = new AtomicLong(2000)
   /**
     * 监听心跳
     */
@@ -83,4 +83,7 @@ class Mysql2KafkaTaskInfoBean extends MysqlBean with KafkaBean with BaseExtractB
   var zookeeperServers = "10.10.248.207:2181;10.10.237.78:2181"
   // zookeeper 链接超时设置,单位毫秒
   var zookeeperTimeout = 10000
+}
+object Mysql2KafkaTaskInfoBean {
+  def apply: Mysql2KafkaTaskInfoBean = new Mysql2KafkaTaskInfoBean()
 }
