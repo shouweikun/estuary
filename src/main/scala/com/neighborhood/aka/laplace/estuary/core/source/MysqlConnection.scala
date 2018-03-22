@@ -32,7 +32,7 @@ import scala.util.Try
 class MysqlConnection(
                        private val charset: Charset = Charset.forName("UTF-8"),
                        private val binlogFormat: BinlogFormat = null,
-                       private val slaveId:Long = System.currentTimeMillis(),
+                       private val slaveId: Long = System.currentTimeMillis(),
                        private val binlogImage: BinlogImage = null,
                        private val address: InetSocketAddress = _,
                        private val username: String,
@@ -193,10 +193,10 @@ class MysqlConnection(
   /**
     * 加速主备切换时的查找速度，做一些特殊优化，比如只解析事务头或者尾
     */
-  def seek(binlogfilename: String, binlogPosition: Long)(mysqlConnection: MysqlConnection = this):Unit= {
-     updateSettings(mysqlConnection)
-     sendBinlogDump(binlogfilename,binlogPosition)
-    fetcher4Seek =new DirectLogFetcher(connector.getReceiveBufferSize)
+  def seek(binlogfilename: String, binlogPosition: Long)(mysqlConnection: MysqlConnection = this): Unit = {
+    updateSettings(mysqlConnection)
+    sendBinlogDump(binlogfilename, binlogPosition)
+    fetcher4Seek = new DirectLogFetcher(connector.getReceiveBufferSize)
     fetcher4Seek.start(connector.getChannel)
     decoder4Seek = new LogDecoder
     decoder4Seek.handle(LogEvent.ROTATE_EVENT)
@@ -209,4 +209,6 @@ class MysqlConnection(
     fetcher4Seek.close()
 
   }
+
+  def getConnector = this.connector
 }

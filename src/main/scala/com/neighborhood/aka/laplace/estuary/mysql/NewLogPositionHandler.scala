@@ -6,10 +6,10 @@ import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong}
 
 import com.alibaba.otter.canal.parse.exception.CanalParseException
 import com.alibaba.otter.canal.parse.inbound.SinkFunction
-import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
 import com.alibaba.otter.canal.parse.index.ZooKeeperLogPositionManager
 import com.alibaba.otter.canal.protocol.CanalEntry
 import com.alibaba.otter.canal.protocol.position.{EntryPosition, LogIdentity, LogPosition}
+import com.neighborhood.aka.laplace.estuary.core.source.MysqlConnection
 import com.taobao.tddl.dbsync.binlog.LogEvent
 import org.apache.commons.lang.StringUtils
 
@@ -18,7 +18,7 @@ import scala.annotation.tailrec
 /**
   * Created by john_liu on 2018/2/4.
   */
-class LogPositionHandler(binlogParser: MysqlBinlogParser, manager: ZooKeeperLogPositionManager, master: Option[EntryPosition] = None, standby: Option[EntryPosition] = None, slaveId: Long = -1L, destination: String = "", address: InetSocketAddress) {
+class NewLogPositionHandler(binlogParser: MysqlBinlogParser, manager: ZooKeeperLogPositionManager, master: Option[EntryPosition] = None, standby: Option[EntryPosition] = None, slaveId: Long = -1L, destination: String = "", address: InetSocketAddress) {
   val logPositionManager = manager
 
   /**
@@ -177,29 +177,7 @@ class LogPositionHandler(binlogParser: MysqlBinlogParser, manager: ZooKeeperLogP
     val reDump = new AtomicBoolean(false)
     val address = mysqlConnection.getConnector.getAddress
     mysqlConnection.synchronized(mysqlConnection.reconnect())
-    mysqlConnection.seek(entryPosition.getJournalName, entryPosition.getPosition, new SinkFunction[LogEvent]() {
-      private var lastPosition: LogPosition = null
-
-      def sink(event: LogEvent): Boolean = try {
-        val entry = binlogParser.parse(Option(event))
-        if (entry.isEmpty) return true
-        // 直接查询第一条业务数据，确认是否为事务Begin/End
-        if ((CanalEntry.EntryType.TRANSACTIONBEGIN eq entry.get.getEntryType) || (CanalEntry.EntryType.TRANSACTIONEND eq entry.get.getEntryType)) {
-          lastPosition = buildLastPositionByEntry(entry.get, address)
-          false
-        }
-        else {
-          reDump.set(true)
-          lastPosition = buildLastPositionByEntry(entry.get, address)
-          false
-        }
-      } catch {
-        case e: Exception =>
-          // 上一次记录的poistion可能为一条update/insert/delete变更事件，直接进行dump的话，会缺少tableMap事件，导致tableId未进行解析
-          reDump.set(true)
-          false
-      }
-    })
+    mysqlConnection.seek(entryPosition.getJournalName, entryPosition.getPosition)
     // 针对开始的第一条为非Begin记录，需要从该binlog扫描
     if (reDump.get) {
       val preTransactionStartPosition = new AtomicLong(0L)
@@ -375,8 +353,6 @@ class LogPositionHandler(binlogParser: MysqlBinlogParser, manager: ZooKeeperLogP
   }
 }
 
-object LogPositionHandler {
-  val BINLOG_START_OFFEST = 4L
-}
+
 
 
