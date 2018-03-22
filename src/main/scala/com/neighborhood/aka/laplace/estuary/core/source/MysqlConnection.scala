@@ -18,7 +18,8 @@ import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection.{BinlogFormat, BinlogImage}
 import com.alibaba.otter.canal.parse.inbound.mysql.dbsync.{DirectLogFetcher, TableMetaCache}
 import com.neighborhood.aka.laplace.estuary.mysql.MysqlBinlogParser
-import com.taobao.tddl.dbsync.binlog.{LogContext, LogDecoder, LogEvent}
+import com.taobao.tddl.dbsync.binlog.event.FormatDescriptionLogEvent
+import com.taobao.tddl.dbsync.binlog.{LogContext, LogDecoder, LogEvent, LogPosition}
 
 import scala.util.Try
 
@@ -31,6 +32,7 @@ import scala.util.Try
 class MysqlConnection(
                        private val charset: Charset = Charset.forName("UTF-8"),
                        private val binlogFormat: BinlogFormat = null,
+                       private val slaveId:Long = System.currentTimeMillis(),
                        private val binlogImage: BinlogImage = null,
                        private val address: InetSocketAddress = _,
                        private val username: String,
@@ -38,10 +40,10 @@ class MysqlConnection(
                      ) extends DataSourceConnection {
 
   private lazy val connector: MysqlConnector = new MysqlConnector(address, username, password)
-  private var slaveId: Long = 0L
   /**
     * mysql的checksum校验机制
     */
+
   private var binlogChecksum: Int = 0
   /**
     * 数据fetch用
@@ -49,6 +51,13 @@ class MysqlConnection(
   var fetcher: DirectLogFetcher = null
   var logContext: LogContext = null
   var decoder: LogDecoder = null
+
+  /**
+    * 数据seek用
+    */
+  var fetcher4Seek: DirectLogFetcher = null
+  var logContext4Seek: LogContext = null
+  var decoder4Seek: LogDecoder = null
 
   override def connect(): Unit = connector.connect()
 
@@ -74,6 +83,7 @@ class MysqlConnection(
     new MysqlConnection(
       charset,
       binlogFormat,
+      System.currentTimeMillis(),
       binlogImage,
       address,
       username,
@@ -166,5 +176,37 @@ class MysqlConnection(
     val tableMetaCache: TableMetaCache = new TableMetaCache(metaConnection)
     binlogParser.setTableMetaCache(tableMetaCache)
     metaConnection
+  }
+
+  def dump(binlogFileName: String, binlogPosition: Long)(mysqlConnection: MysqlConnection = this) = {
+    updateSettings()
+    sendBinlogDump(binlogFileName, binlogPosition)()
+    val connector = mysqlConnection.connector
+    fetcher = new DirectLogFetcher(connector.getReceiveBufferSize)
+    fetcher.start(connector.getChannel)
+    decoder = new LogDecoder(LogEvent.UNKNOWN_EVENT, LogEvent.ENUM_END_EVENT)
+    logContext = new LogContext
+    logContext.setLogPosition(new LogPosition(binlogFileName, binlogPosition))
+    logContext.setFormatDescription(new FormatDescriptionLogEvent(4, binlogChecksum))
+  }
+
+  /**
+    * 加速主备切换时的查找速度，做一些特殊优化，比如只解析事务头或者尾
+    */
+  def seek(binlogfilename: String, binlogPosition: Long)(mysqlConnection: MysqlConnection = this):Unit= {
+     updateSettings(mysqlConnection)
+     sendBinlogDump(binlogfilename,binlogPosition)
+    fetcher4Seek =new DirectLogFetcher(connector.getReceiveBufferSize)
+    fetcher4Seek.start(connector.getChannel)
+    decoder4Seek = new LogDecoder
+    decoder4Seek.handle(LogEvent.ROTATE_EVENT)
+    decoder4Seek.handle(LogEvent.FORMAT_DESCRIPTION_EVENT)
+    decoder4Seek.handle(LogEvent.QUERY_EVENT)
+    decoder4Seek.handle(LogEvent.XID_EVENT)
+    logContext4Seek = new LogContext
+    logContext4Seek.setLogPosition(new LogPosition(binlogfilename))
+
+    fetcher4Seek.close()
+
   }
 }
