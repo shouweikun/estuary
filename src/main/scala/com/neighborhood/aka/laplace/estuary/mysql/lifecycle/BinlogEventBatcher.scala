@@ -96,7 +96,7 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
     }
     case x => {
 
-      println(s"BinlogBatcher unhandled Message : $x")
+      log.info(s"BinlogBatcher unhandled Message : $x")
     }
   }
 
@@ -144,6 +144,7 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
   def flush = {
     if (!entryBatch.isEmpty) {
       val batch = entryBatch
+      val size = batch.size
       val entryJsonList = Future {
         val before = System.currentTimeMillis()
         val re =
@@ -201,7 +202,7 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
             }
         val after = System.currentTimeMillis()
         //log.info(s"batcher json化 用了${after - before}")
-        if (isCounting) mysql2KafkaTaskInfoManager.batchCount.getAndAdd(batchThreshold.get())
+        if (isCounting) mysql2KafkaTaskInfoManager.batchCount.getAndAdd(size)
         if (isCosting) mysql2KafkaTaskInfoManager.powerAdapter match {
           case Some(x) => x ! BatcherMessage(s"${after - before}")
           case _ => log.warning("powerAdapter not exist")

@@ -209,7 +209,7 @@ class LogPositionHandler(binlogParser: MysqlBinlogParser, manager: ZooKeeperLogP
 
         override def sink(event: LogEvent): Boolean = {
           try {
-            val entry = binlogParser.parseAndProfilingIfNecessary(event, false)
+            val entry = binlogParser.parse(Option(event))
             if (entry.isEmpty) return true
             // 直接查询第一条业务数据，确认是否为事务Begin
             // 记录一下transaction begin position

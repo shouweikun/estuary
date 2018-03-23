@@ -170,7 +170,7 @@ class MysqlConnection(
     * 这里暂时忽略，可以再以后有必要的时候进行添加
     *
     */
-  def preDump(mysqlConnection: MysqlConnection)(binlogParser: MysqlBinlogParser): com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection = {
+  def preDump(mysqlConnection: MysqlConnection)(implicit binlogParser: MysqlBinlogParser): com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection = {
     //设置tableMetaCache
     val metaConnection = mysqlConnection.toCanalMysqlConnection
     val tableMetaCache: TableMetaCache = new TableMetaCache(metaConnection)
@@ -193,7 +193,7 @@ class MysqlConnection(
   /**
     * 加速主备切换时的查找速度，做一些特殊优化，比如只解析事务头或者尾
     */
-  def seek(binlogfilename: String, binlogPosition: Long)(mysqlConnection: MysqlConnection = this): Unit = {
+  def seek(binlogfilename: String, binlogPosition: Long)(mysqlConnection: MysqlConnection = this)(implicit binlogParser: MysqlBinlogParser): Unit = {
     updateSettings(mysqlConnection)
     sendBinlogDump(binlogfilename, binlogPosition)
     fetcher4Seek = new DirectLogFetcher(connector.getReceiveBufferSize)
@@ -205,8 +205,6 @@ class MysqlConnection(
     decoder4Seek.handle(LogEvent.XID_EVENT)
     logContext4Seek = new LogContext
     logContext4Seek.setLogPosition(new LogPosition(binlogfilename))
-
-    fetcher4Seek.close()
 
   }
 
