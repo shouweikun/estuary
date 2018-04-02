@@ -5,7 +5,7 @@ import java.net.InetSocketAddress
 import java.nio.ByteBuffer
 import java.nio.charset.Charset
 import java.util
-import java.util.List
+
 
 import com.alibaba.otter.canal.parse.driver.mysql.packets.HeaderPacket
 import com.alibaba.otter.canal.parse.driver.mysql.packets.client.BinlogDumpCommandPacket
@@ -34,7 +34,7 @@ class MysqlConnection(
                        private val binlogFormat: BinlogFormat = null,
                        private val slaveId: Long = System.currentTimeMillis(),
                        private val binlogImage: BinlogImage = null,
-                       private val address: InetSocketAddress = _,
+                       private val address: InetSocketAddress = null,
                        private val username: String,
                        private val password: String
                      ) extends DataSourceConnection {
@@ -195,7 +195,7 @@ class MysqlConnection(
     */
   def seek(binlogfilename: String, binlogPosition: Long)(mysqlConnection: MysqlConnection = this)(implicit binlogParser: MysqlBinlogParser): Unit = {
     updateSettings(mysqlConnection)
-    sendBinlogDump(binlogfilename, binlogPosition)
+    sendBinlogDump(binlogfilename, binlogPosition)(mysqlConnection)
     fetcher4Seek = new DirectLogFetcher(connector.getReceiveBufferSize)
     fetcher4Seek.start(connector.getChannel)
     decoder4Seek = new LogDecoder
