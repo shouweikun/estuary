@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <property name="logDir" value="logs"/>
+    <property name="FILE_LOG_PATTERN"
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{80}:%L - %msg%n"></property>
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${logDir}/estuary.log</file>
+    　　　　<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+    　　　　　　　　　<fileNamePattern>${logDir}/estuary.%d{yyyy-MM-dd}.log</fileNamePattern>
+    　　　　　　　　　<maxHistory>5</maxHistory>
+    　　　　　　　　　</rollingPolicy>
+    <!--　　　　　　　　　<encoder>-->
+    <!--　　　　　　　　　　　<pattern>%-4relative [%thread] %-5level %logger{35} - %msg%n</pattern>-->
+    <!--　　　　　　　　　</encoder>-->
+        <encoder charset="UTF-8">
+            <pattern>${FILE_LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        　　　　　　<encoder charset="UTF-8">
+        <pattern>${FILE_LOG_PATTERN}</pattern>
+    </encoder>
+    </appender>
+    <logger name="com" level="INFO" additivity="true"/>
+    <root level="INFO">
+    　　　<appender-ref ref="FILE" />
+        <appender-ref ref="CONSOLE"/>
+    </root>
+</configuration>
