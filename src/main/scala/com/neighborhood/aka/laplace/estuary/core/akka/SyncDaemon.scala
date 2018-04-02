@@ -1,7 +1,7 @@
 package com.neighborhood.aka.laplace.estuary.core.akka
 
-import akka.actor.SupervisorStrategy.{Escalate, Restart, Resume}
-import akka.actor.{Actor, ActorLogging, ActorRef, AllForOneStrategy, InvalidActorNameException, OneForOneStrategy, Props}
+import akka.actor.SupervisorStrategy.{Restart, Resume}
+import akka.actor.{Actor, ActorLogging, ActorRef, InvalidActorNameException, OneForOneStrategy, Props}
 import com.neighborhood.aka.laplace.estuary.web.akka.ActorRefHolder
 
 /**
@@ -17,9 +17,6 @@ class SyncDaemon extends Actor with ActorLogging {
       )(taskName => {
         val actorAndReason = startNewTask(prop, taskName)
         log.info(s"${actorAndReason._2}")
-        //保存这个任务的ActorRef
-        if (ActorRefHolder.addNewTaskActorRef(name.get, actorAndReason._1))
-          log.info(s"actorRef:${name.get} 添加成功") else log.warning(s"actorRef:${name.get} 添加失败")
         actorAndReason._1 ! "start"
       })
     }
@@ -34,9 +31,13 @@ class SyncDaemon extends Actor with ActorLogging {
   }
 
   def startNewTask(prop: Props, name: String): (ActorRef, String) = {
-      context.child(name).fold(
-        (context.child(name).get, s"该任务id:$name 已经存在")
-      )(actorRef => (actorRef,s"任务id:$name 启动成功"))
+    context.child(name).fold {
+      val actorAndReason = (context.actorOf(prop, name), s"任务id:$name 创建成功")
+      //保存这个任务的ActorRef
+      if (ActorRefHolder.addNewTaskActorRef(name, actorAndReason._1))
+        log.info(s"actorRef:${name} 添加成功") else log.warning(s"actorRef:${name} 添加失败")
+        actorAndReason
+    }(actorRef => (actorRef, s"任务id:$name 已经存在"))
   }
 
 
