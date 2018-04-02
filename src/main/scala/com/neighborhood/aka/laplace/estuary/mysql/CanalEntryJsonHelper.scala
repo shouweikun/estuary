@@ -28,6 +28,9 @@ object CanalEntryJsonHelper {
     sb.append("}")
     sb.toString
   }
-
+  def dummyDataJson:String = {
+    val tableName = "daas_heartbeats_check"
+    ""
+  }
   def headerToJson(obj: CanalEntry.Header): String = jsonFormat.printToString(obj)
 }

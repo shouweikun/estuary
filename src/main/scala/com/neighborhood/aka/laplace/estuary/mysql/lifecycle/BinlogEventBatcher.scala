@@ -152,9 +152,9 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
             map {
               entry =>
                 val entryType = entry.getEntryType //entry类型
-                val header = entry.getHeader
+              val header = entry.getHeader
                 val eventType = header.getEventType //事件类型
-                val tempJsonKey = BinlogKey.buildBinlogKey(header)
+              val tempJsonKey = BinlogKey.buildBinlogKey(header)
                 //todo 添加tempJsonKey的具体信息
                 //tempJsonKey.appName = appName
                 //tempJsonKey.appServerIp = appServerIp
@@ -217,6 +217,8 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
       //清空list
       //      throw new Exception
       entryBatch = List.empty
+    } else {
+
     }
   }
 

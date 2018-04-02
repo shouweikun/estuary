@@ -173,6 +173,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
     }
     case SyncControllerMessage("checkSend") => {
       if ((System.currentTimeMillis() - lastSinkTimestamp) > (1000 * 60 * 5)) sender() ! SinkerMessage("flush")
+
     }
     case x => {
       log.warning(s"sinker online unhandled message $x")
