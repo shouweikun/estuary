@@ -236,7 +236,8 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
       binlogParser.parse(Option(event))
     } catch {
       case e: CanalParseException => {
-        log.warning(s"table has been removed")
+
+        log.warning(s"$e,cause:${e.getCause}")
         None
       }
     }
