@@ -304,7 +304,7 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
               }
 
               val finalDataString = s"${START_JSON}${STRING_CONTAINER}header${STRING_CONTAINER}${KEY_VALUE_SPLIT}${getEntryHeaderJson(entry.getHeader)}${ELEMENT_SPLIT}${STRING_CONTAINER}rowChange${STRING_CONTAINER}${KEY_VALUE_SPLIT}${START_JSON}${STRING_CONTAINER}rowDatas$START_ARRAY" +
-                s"${STRING_CONTAINER}${KEY_VALUE_SPLIT}${START_JSON}${rowChangeStr}${END_JSON}$END_ARRAY${END_JSON}${END_JSON}"
+                s"${STRING_CONTAINER}${KEY_VALUE_SPLIT}${START_JSON}${rowChangeStr}${END_JSON}${END_JSON}${END_JSON}"
               kafkaMessage.setJsonValue(finalDataString)
               kafkaMessage
           }.toArray
