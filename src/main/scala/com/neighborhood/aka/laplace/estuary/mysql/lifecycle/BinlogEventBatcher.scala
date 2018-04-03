@@ -18,6 +18,7 @@ import com.neighborhood.aka.laplace.estuary.core.lifecycle.{SourceDataBatcher, S
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mysql.{CanalEntryJsonHelper, JsonUtil, Mysql2KafkaTaskInfoManager, MysqlBinlogParser}
 import com.taobao.tddl.dbsync.binlog.LogEvent
+import org.springframework.util.StringUtils
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -218,7 +219,15 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
       //      throw new Exception
       entryBatch = List.empty
     } else {
-
+      //todo
+      val eventFilterPattern = mysql2KafkaTaskInfoManager.taskInfo.eventFilterPattern
+      val eventBlackFilterPattern = mysql2KafkaTaskInfoManager.taskInfo.eventBlackFilterPattern
+      val dbNames = if (StringUtils.isEmpty(eventFilterPattern)) List.empty else eventFilterPattern.split("[^a-zA-Z]*").toList;
+      val blackDbNames = if (StringUtils.isEmpty(eventFilterPattern)) List.empty else eventFilterPattern.split("[^a-zA-Z]*").toList;
+      (dbNames.size == 0, blackDbNames.size == 0) match {
+        case (true,true) => {log.}
+      }
+     // CanalEntryJsonHelper.dummyDataJson()
     }
   }
 

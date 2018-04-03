@@ -1,5 +1,6 @@
 package com.neighborhood.aka.laplace.estuary.web.bean;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -43,6 +44,7 @@ public class Mysql2kafkaTaskRequestBean {
     private String mysqlUsername;
     private String mysqlPassword;
     private String mysqlDefaultDatabase;
+//    private List<String> mysqlDatabases;
     private int listenTimeout = 5000;
     private int listenRetrytime = 3;
     // 支持的binlogImage
