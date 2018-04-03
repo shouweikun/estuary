@@ -241,6 +241,15 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
       context.actorOf(ConcurrentBinlogSinker.prop(resourceManager), "binlogSinker")
     }
     log.info("initialize batcher")
+
+    def initBatchersAndRouter = {
+      //batcher数量
+      val num = taskInfoBean.batcherNum
+      //初始化ddl处理器
+      context.actorOf(BinlogEventBatcher
+        .prop(binlogSinker, resourceManager, true), "ddlHandler")
+    }
+
     //初始化binlogEventBatcher
     val binlogEventBatcher = context.actorOf(BinlogEventBatcher
       .prop(binlogSinker, resourceManager)

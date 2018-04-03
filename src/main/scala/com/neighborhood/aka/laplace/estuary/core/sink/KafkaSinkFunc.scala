@@ -30,6 +30,11 @@ class KafkaSinkFunc[V](kafkaBean: KafkaBean) extends SinkFunc {
     * 库表名和topic映射map
     */
   val specificTopics = kafkaBean.specificTopics
+  /**
+    * ddl用topic
+    * //todo
+    */
+  val ddlTopic = ""
 
   /**
     * @param key   分区key
@@ -71,6 +76,7 @@ class KafkaSinkFunc[V](kafkaBean: KafkaBean) extends SinkFunc {
   def findTopic(key: String = ""): String = {
     specificTopics
       .get(key) match {
+      case Some("DDL")=> ddlTopic
       case Some(tpc) => tpc
       case None => this.topic
     }

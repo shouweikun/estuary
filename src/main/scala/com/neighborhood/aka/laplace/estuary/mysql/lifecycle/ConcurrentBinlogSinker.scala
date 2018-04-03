@@ -172,9 +172,10 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
       schedulingSavedJournalName = lastSavedJournalName
     }
     case SyncControllerMessage("checkSend") => {
-      val timeInterval =(System.currentTimeMillis() - lastSinkTimestamp)
+      val timeInterval = (System.currentTimeMillis() - lastSinkTimestamp)
       log.info(s"sinker checkSend timeInterval:$timeInterval")
-      if ( timeInterval > (1000 * 20)) context.parent ! SinkerMessage("flush");log.info(s"sinker checkSend trigger to flush")
+      if (timeInterval > (1000 * 20)) context.parent ! SinkerMessage("flush");
+      log.info(s"sinker checkSend trigger to flush")
 
     }
     case x => {
@@ -188,7 +189,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
     */
   def handleSinkTask(kafkaMessage: KafkaMessage, journalName: String = this.lastSavedJournalName, offset: Long = this.lastSavedOffset)(syncSequenceId: Long): Unit = {
     val before = System.currentTimeMillis()
-    val key = s"${kafkaMessage.getBaseDataJsonKey.asInstanceOf[BinlogKey].getDbName}.${kafkaMessage.getBaseDataJsonKey.asInstanceOf[BinlogKey].getTableName}"
+    val key = if (kafkaMessage.getBaseDataJsonKey.asInstanceOf[BinlogKey].getDbName.trim == "DDL") "DDL" else s"${kafkaMessage.getBaseDataJsonKey.asInstanceOf[BinlogKey].getDbName}.${kafkaMessage.getBaseDataJsonKey.asInstanceOf[BinlogKey].getTableName}"
     val topic = kafkaSinker.findTopic(key)
     kafkaMessage.getBaseDataJsonKey.setKafkaTopic(topic)
     kafkaMessage.getBaseDataJsonKey.setSyncTaskSequence(syncSequenceId)
@@ -218,7 +219,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
         }
       }
     }
-    kafkaSinker.ayncSink(kafkaMessage.getBaseDataJsonKey,kafkaMessage.getJsonValue)(topic)(callback)
+    kafkaSinker.ayncSink(kafkaMessage.getBaseDataJsonKey, kafkaMessage.getJsonValue)(topic)(callback)
 
     val after = System.currentTimeMillis()
     // log.info(s"sink cost time :${after-before}")

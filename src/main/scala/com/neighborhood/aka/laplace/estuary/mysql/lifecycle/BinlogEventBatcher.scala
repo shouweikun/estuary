@@ -26,9 +26,13 @@ import scala.util.{Failure, Success, Try}
 /**
   * Created by john_liu on 2018/2/6.
   */
-class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager) extends Actor with SourceDataBatcher with ActorLogging {
+class BinlogEventBatcher(
+                          binlogEventSinker: ActorRef,
+                          mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
+                          isDdlHandler: Boolean = false
+                        ) extends Actor with SourceDataBatcher with ActorLogging {
 
-  implicit val transTaskPool = Executors.newWorkStealingPool(5)
+  implicit val transTaskPool = if (isDdlHandler) Executors.newWorkStealingPool(1) else Executors.newWorkStealingPool(1)
 
   /**
     * 拼接json用
@@ -51,7 +55,7 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
   /**
     * 打包的阈值
     */
-  val batchThreshold: AtomicLong = mysql2KafkaTaskInfoManager.taskInfo.batchThreshold
+  val batchThreshold: AtomicLong = if (isDdlHandler) new AtomicLong(1) else mysql2KafkaTaskInfoManager.taskInfo.batchThreshold
   /**
     * 打包的entry
     */
@@ -145,7 +149,8 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
     if (!entryBatch.isEmpty) {
       val batch = entryBatch
       val size = batch.size
-      val entryJsonList = Future {
+
+      def flushData = {
         val before = System.currentTimeMillis()
         val re =
           batch.
@@ -179,10 +184,10 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
                       case CanalEntry.EventType.UPDATE => tranformDMLtoJson(entry, tempJsonKey, "UPDATE")
                       //DDL操作直接将entry变为json
                       case CanalEntry.EventType.ALTER => {
-                        transforDDltoJson(tempJsonKey,entry, header.getLogfileName, header.getLogfileOffset,before)
+                        transferDDltoJson(tempJsonKey, entry, header.getLogfileName, header.getLogfileOffset, before)
                       }
                       case CanalEntry.EventType.CREATE => {
-                        transforDDltoJson(tempJsonKey,entry, header.getLogfileName, header.getLogfileOffset,before)
+                        transferDDltoJson(tempJsonKey, entry, header.getLogfileName, header.getLogfileOffset, before)
                         val theAfter = System.currentTimeMillis()
                         tempJsonKey.setMsgSyncEndTime(theAfter)
                         tempJsonKey.setMsgSyncUsedTime(theAfter - before)
@@ -206,13 +211,8 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
         }
         re
       }
-        .pipeTo(binlogEventSinker)
 
-      //将解析好的entryJsonList发送给Sinker
-      // binlogEventSinker ! entryJsonList
-
-      //清空list
-      //      throw new Exception
+      if (isDdlHandler) binlogEventSinker ! flushData else Future(flushData).pipeTo(binlogEventSinker)
       entryBatch = List.empty
     } else {
 
@@ -257,7 +257,9 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
     * @param before        开始时间
     *                      将DDL类型的CanalEntry 转换成Json
     */
-  def transforDDltoJson(tempJsonKey: BinlogKey, entry: CanalEntry.Entry, logfileName: String, logfileOffset: Long, before: Long): KafkaMessage = {
+  def transferDDltoJson(tempJsonKey: BinlogKey, entry: CanalEntry.Entry, logfileName: String, logfileOffset: Long, before: Long): KafkaMessage = {
+    //让程序知道是DDL
+    tempJsonKey.setDbName("DDL")
     val re = new KafkaMessage(tempJsonKey, CanalEntryJsonHelper.entryToJson(entry), logfileName, logfileOffset)
     val theAfter = System.currentTimeMillis()
     tempJsonKey.setMsgSyncEndTime(theAfter)
@@ -445,7 +447,7 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
 }
 
 object BinlogEventBatcher {
-  def prop(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager): Props = Props(new BinlogEventBatcher(binlogEventSinker, mysql2KafkaTaskInfoManager))
+  def prop(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,isDdlHandler: Boolean = false): Props = Props(new BinlogEventBatcher(binlogEventSinker, mysql2KafkaTaskInfoManager))
 }
 
 
