@@ -179,13 +179,10 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
                       case CanalEntry.EventType.UPDATE => tranformDMLtoJson(entry, tempJsonKey, "UPDATE")
                       //DDL操作直接将entry变为json
                       case CanalEntry.EventType.ALTER => {
-                        new KafkaMessage(tempJsonKey, CanalEntryJsonHelper.entryToJson(entry), header.getLogfileName, header.getLogfileOffset)
-                        val theAfter = System.currentTimeMillis()
-                        tempJsonKey.setMsgSyncEndTime(theAfter)
-                        tempJsonKey.setMsgSyncUsedTime(theAfter - before)
+                        transforDDltoJson(tempJsonKey,entry, header.getLogfileName, header.getLogfileOffset,before)
                       }
                       case CanalEntry.EventType.CREATE => {
-                        new KafkaMessage(tempJsonKey, CanalEntryJsonHelper.entryToJson(entry), header.getLogfileName, header.getLogfileOffset)
+                        transforDDltoJson(tempJsonKey,entry, header.getLogfileName, header.getLogfileOffset,before)
                         val theAfter = System.currentTimeMillis()
                         tempJsonKey.setMsgSyncEndTime(theAfter)
                         tempJsonKey.setMsgSyncUsedTime(theAfter - before)
@@ -250,6 +247,22 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
         log.warning(s"${event} cannot be resolved")
       }
     }
+  }
+
+  /**
+    * @param tempJsonKey   BinlogJsonKey
+    * @param entry         entry
+    * @param logfileName   binlog文件名
+    * @param logfileOffset binlog文件偏移量
+    * @param before        开始时间
+    *                      将DDL类型的CanalEntry 转换成Json
+    */
+  def transforDDltoJson(tempJsonKey: BinlogKey, entry: CanalEntry.Entry, logfileName: String, logfileOffset: Long, before: Long): KafkaMessage = {
+    val re = new KafkaMessage(tempJsonKey, CanalEntryJsonHelper.entryToJson(entry), logfileName, logfileOffset)
+    val theAfter = System.currentTimeMillis()
+    tempJsonKey.setMsgSyncEndTime(theAfter)
+    tempJsonKey.setMsgSyncUsedTime(theAfter - before)
+    re
   }
 
   /**
