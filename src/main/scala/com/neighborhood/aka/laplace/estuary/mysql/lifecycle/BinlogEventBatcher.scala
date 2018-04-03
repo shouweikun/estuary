@@ -182,16 +182,16 @@ class BinlogEventBatcher(
                       case CanalEntry.EventType.DELETE => tranformDMLtoJson(entry, tempJsonKey, "DELETE")
                       case CanalEntry.EventType.INSERT => tranformDMLtoJson(entry, tempJsonKey, "INSERT")
                       case CanalEntry.EventType.UPDATE => tranformDMLtoJson(entry, tempJsonKey, "UPDATE")
-                      //DDL操作直接将entry变为json
+                      //DDL操作直接将entry变为json,目前只处理Alter
                       case CanalEntry.EventType.ALTER => {
                         transferDDltoJson(tempJsonKey, entry, header.getLogfileName, header.getLogfileOffset, before)
                       }
-                      case CanalEntry.EventType.CREATE => {
-                        transferDDltoJson(tempJsonKey, entry, header.getLogfileName, header.getLogfileOffset, before)
-                        val theAfter = System.currentTimeMillis()
-                        tempJsonKey.setMsgSyncEndTime(theAfter)
-                        tempJsonKey.setMsgSyncUsedTime(theAfter - before)
-                      }
+//                      case CanalEntry.EventType.CREATE => {
+//                        transferDDltoJson(tempJsonKey, entry, header.getLogfileName, header.getLogfileOffset, before)
+//                        val theAfter = System.currentTimeMillis()
+//                        tempJsonKey.setMsgSyncEndTime(theAfter)
+//                        tempJsonKey.setMsgSyncUsedTime(theAfter - before)
+//                      }
                       case x => {
 
                         log.warning(s"unsupported EntryType:$x")
