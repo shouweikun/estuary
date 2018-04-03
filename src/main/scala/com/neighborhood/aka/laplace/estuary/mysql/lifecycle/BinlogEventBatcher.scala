@@ -225,7 +225,7 @@ class BinlogEventBatcher(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager
       val dbNames = if (StringUtils.isEmpty(eventFilterPattern)) List.empty else eventFilterPattern.split("[^a-zA-Z]*").toList;
       val blackDbNames = if (StringUtils.isEmpty(eventFilterPattern)) List.empty else eventFilterPattern.split("[^a-zA-Z]*").toList;
       (dbNames.size == 0, blackDbNames.size == 0) match {
-        case (true,true) => {log.}
+        case (true,true) => {}
       }
      // CanalEntryJsonHelper.dummyDataJson()
     }
