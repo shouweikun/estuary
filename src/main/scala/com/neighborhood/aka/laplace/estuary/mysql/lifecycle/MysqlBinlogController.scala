@@ -248,6 +248,13 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
       //初始化ddl处理器
       context.actorOf(BinlogEventBatcher
         .prop(binlogSinker, resourceManager, true), "ddlHandler")
+      Range(1, num)
+      //初始化batcher
+        .foreach {
+          index =>
+            context.actorOf(BinlogEventBatcher
+              .prop(binlogSinker, resourceManager), s"binlogBatcher$index")
+        }
     }
 
     //初始化binlogEventBatcher
