@@ -235,12 +235,30 @@ class BinlogEventBatcher(
     } else {
       val eventFilterPattern = mysql2KafkaTaskInfoManager.taskInfo.eventFilterPattern
       val eventBlackFilterPattern = mysql2KafkaTaskInfoManager.taskInfo.eventBlackFilterPattern
+
       val concernedDbNames = eventFilterPattern
         .split("[^a-zA-Z]*")
       val ignoredDbNames = eventBlackFilterPattern
         .split("[^a-zA-z]*")
-      (concernedDbNames.size>0,ignoredDbNames.size>0) match {
-        case (true,true) =>
+
+      /**
+        *
+        * @param dbNameList 需要发送dummyData的db名称列表
+        * @param sinker     sinker的ActorRef
+        *                   构造假数据并发送给sinker
+        */
+      def buildAndSendDummyKafkaMessage(dbNameList: Array[String])(sinker: ActorRef): Unit = {
+        val kafkaMessageList: List[Any] = dbNameList
+          .map {
+            dbName =>
+              CanalEntryJsonHelper.dummyKafkaMessage(dbName)
+          }.toList
+      }
+
+      (concernedDbNames.size > 0, ignoredDbNames.size > 0) match {
+        case (true, _) => buildAndSendDummyKafkaMessage(concernedDbNames)(binlogEventSinker)
+        case (_, true) =>
+        case (_, false) =>
       }
     }
   }
@@ -474,7 +492,7 @@ class BinlogEventBatcher(
 }
 
 object BinlogEventBatcher {
-  def prop(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager, isDdlHandler: Boolean = false): Props = Props(new BinlogEventBatcher(binlogEventSinker, mysql2KafkaTaskInfoManager,isDdlHandler))
+  def prop(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager, isDdlHandler: Boolean = false): Props = Props(new BinlogEventBatcher(binlogEventSinker, mysql2KafkaTaskInfoManager, isDdlHandler))
 }
 
 

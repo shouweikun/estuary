@@ -26,6 +26,7 @@ import org.I0Itec.zkclient.exception.ZkTimeoutException
 import org.apache.commons.lang.StringUtils
 
 import scala.annotation.tailrec
+import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
 
@@ -315,9 +316,25 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
     //设置tableMetaCache
     val metaConnection = mysqlConnection.fork()
     metaConnection.connect()
+    getSchemas(metaConnection)
     val tableMetaCache: TableMetaCache = new TableMetaCache(metaConnection)
     binlogParser.setTableMetaCache(tableMetaCache)
     metaConnection
+  }
+
+  private def getSchemas(mysqlConnection: MysqlConnection): List[String] = {
+    //如果没连接的话连接一下
+    if (!mysqlConnection.isConnected) mysqlConnection.connect()
+    val querySchemaCmd = "show databases"
+    val fieldName = "Database"
+    val ignoredDatabaseName = "information_schema"
+    val list = mysqlConnection
+      .query(querySchemaCmd)
+      .getFieldValues
+    (0 until list.size)
+      .map(list.get(_))
+      .filter(!_.equals(ignoredDatabaseName))
+      .toList
   }
 
   /**
@@ -413,6 +430,6 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
 
 object MysqlBinlogFetcher {
   def props(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager, binlogEventBatcher: ActorRef, binlogDdlHandler: ActorRef = null): Props = {
-    Props(new MysqlBinlogFetcher(mysql2KafkaTaskInfoManager, binlogEventBatcher,binlogDdlHandler))
+    Props(new MysqlBinlogFetcher(mysql2KafkaTaskInfoManager, binlogEventBatcher, binlogDdlHandler))
   }
 }
