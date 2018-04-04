@@ -31,6 +31,10 @@ trait KafkaBean extends DataSinkBean {
     */
   var topic: String = _
   /**
+    * ddl专用Topic
+    */
+  var ddlTopic: String = _
+  /**
     * 依照特定规则映射表和数据库找出topic
     */
   var specificTopics: Map[String,String] = Map.empty

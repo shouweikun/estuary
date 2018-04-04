@@ -38,6 +38,7 @@ public class Mysql2kafkaTaskRequestBean {
     private String kafkaLingerMs = "";
     private String kafkaRetries = "";
     private String kafkaTopic = "";
+    private String kafkaDdlTopic = "";
     private Map<String, String> kafkaSpecficTopics;
     private String mysqladdress;
     private int mysqlPort;
@@ -55,6 +56,14 @@ public class Mysql2kafkaTaskRequestBean {
     private String zookeeperServers;
     // zookeeper 链接超时设置,单位毫秒
     private int zookeeperTimeout = 10000;
+
+    public String getKafkaDdlTopic() {
+        return kafkaDdlTopic;
+    }
+
+    public void setKafkaDdlTopic(String kafkaDdlTopic) {
+        this.kafkaDdlTopic = kafkaDdlTopic;
+    }
 
     public Map<String, String> getKafkaSpecficTopics() {
         return kafkaSpecficTopics;

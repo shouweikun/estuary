@@ -3,8 +3,7 @@ package com.neighborhood.aka.laplace.estuary.mysql.lifecycle
 import java.util.concurrent.Executors
 
 import akka.actor.SupervisorStrategy.{Escalate, Restart}
-import akka.actor.{Actor, ActorLogging, ActorRef, AllForOneStrategy, OneForOneStrategy, Props}
-import akka.routing.RoundRobinPool
+import akka.actor.{Actor, ActorLogging, AllForOneStrategy, Props}
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
 import com.neighborhood.aka.laplace.estuary.bean.task.Mysql2KafkaTaskInfoBean
 import com.neighborhood.aka.laplace.estuary.core.akka.PowerAdapter
@@ -13,6 +12,7 @@ import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{Status, _}
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mysql.Mysql2KafkaTaskInfoManager
+import com.neighborhood.aka.laplace.estuary.mysql.akkaUtil.DivideDDLRoundRobinRoutingGroup
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
@@ -78,7 +78,6 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
 
   def online: Receive = {
     case "restart" => throw new RuntimeException("重启")
-
     case ListenerMessage(msg) => {
       msg match {
         //        case "restart" => {
@@ -241,15 +240,38 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
       context.actorOf(ConcurrentBinlogSinker.prop(resourceManager), "binlogSinker")
     }
     log.info("initialize batcher")
+
+    def initBatchersAndRouter:List[String] = {
+      //batcher数量
+      val num = taskInfoBean.batcherNum
+      val pathPrefix = s"/user/syncDaemon/${taskInfoBean.syncTaskId}"
+      //初始化ddl处理器
+      context.actorOf(BinlogEventBatcher
+        .prop(binlogSinker, resourceManager, true).withDispatcher(""), "ddlHandler")
+      val paths = Range(0, num)
+      //初始化batcher
+        .map{
+          index =>
+            context.actorOf(BinlogEventBatcher
+              .prop(binlogSinker, resourceManager).withDispatcher("akka.batcher-dispatcher"), s"binlogBatcher$index")
+           s"$pathPrefix/binlogBatcher$index"
+        }
+       .+:(s"$pathPrefix/ddlHandler")
+       .toList
+      paths
+    }
+
     //初始化binlogEventBatcher
-    val binlogEventBatcher = context.actorOf(BinlogEventBatcher
-      .prop(binlogSinker, resourceManager)
-      .withRouter(new RoundRobinPool(taskInfoBean.batcherNum).withSupervisorStrategy(OneForOneStrategy() {
-        case _ => Escalate
-      })), "binlogBatcher")
+    val binlogEventBatcher = context.actorOf( DivideDDLRoundRobinRoutingGroup(initBatchersAndRouter).props(),"binlogBatcher")
+//    val binlogEventBatcher = context.actorOf(BinlogEventBatcher
+//      .prop(binlogSinker, resourceManager)
+//      .withRouter(new RoundRobinPool(taskInfoBean.batcherNum).withSupervisorStrategy(OneForOneStrategy() {
+//        case _ => Escalate
+//      })), "binlogBatcher")
     log.info("initialize fetcher")
     //初始化binlogFetcher
     context.actorOf(Props(classOf[MysqlBinlogFetcher], resourceManager, binlogEventBatcher).withDispatcher("akka.pinned-dispatcher"), "binlogFetcher")
+
   }
 
   /**
