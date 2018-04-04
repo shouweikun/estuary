@@ -316,12 +316,19 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
     //设置tableMetaCache
     val metaConnection = mysqlConnection.fork()
     metaConnection.connect()
-    getSchemas(metaConnection)
+    mysql2KafkaTaskInfoManager.mysqlDatabaseNameList = getSchemas(metaConnection)
     val tableMetaCache: TableMetaCache = new TableMetaCache(metaConnection)
     binlogParser.setTableMetaCache(tableMetaCache)
     metaConnection
   }
 
+  /**
+    * 获取该mysql实例上所有的mysql库名
+    *
+    * @param mysqlConnection
+    * @return List[String] 该mysql实例上所有的mysql库名
+    *
+    */
   private def getSchemas(mysqlConnection: MysqlConnection): List[String] = {
     //如果没连接的话连接一下
     if (!mysqlConnection.isConnected) mysqlConnection.connect()

@@ -63,6 +63,10 @@ class BinlogEventBatcher(
     */
   val batchThreshold: AtomicLong = if (isDdlHandler) new AtomicLong(1) else mysql2KafkaTaskInfoManager.taskInfo.batchThreshold
   /**
+    * 该mysql实例所有的db
+    */
+  val mysqlDatabaseNameList = mysql2KafkaTaskInfoManager.mysqlDatabaseNameList
+  /**
     * 打包的entry
     */
   var entryBatch: List[CanalEntry.Entry] = List.empty
@@ -235,7 +239,6 @@ class BinlogEventBatcher(
     } else {
       val eventFilterPattern = mysql2KafkaTaskInfoManager.taskInfo.eventFilterPattern
       val eventBlackFilterPattern = mysql2KafkaTaskInfoManager.taskInfo.eventBlackFilterPattern
-
       val concernedDbNames = eventFilterPattern
         .split("[^a-zA-Z]*")
       val ignoredDbNames = eventBlackFilterPattern
@@ -247,18 +250,19 @@ class BinlogEventBatcher(
         * @param sinker     sinker的ActorRef
         *                   构造假数据并发送给sinker
         */
-      def buildAndSendDummyKafkaMessage(dbNameList: Array[String])(sinker: ActorRef): Unit = {
+      def buildAndSendDummyKafkaMessage(dbNameList: Iterable[String])(sinker: ActorRef): Unit = {
         val kafkaMessageList: List[Any] = dbNameList
           .map {
             dbName =>
               CanalEntryJsonHelper.dummyKafkaMessage(dbName)
           }.toList
+       sinker ! kafkaMessageList
       }
 
       (concernedDbNames.size > 0, ignoredDbNames.size > 0) match {
         case (true, _) => buildAndSendDummyKafkaMessage(concernedDbNames)(binlogEventSinker)
-        case (_, true) =>
-        case (_, false) =>
+        case (_, true) => buildAndSendDummyKafkaMessage(mysqlDatabaseNameList.diff(ignoredDbNames))(binlogEventSinker)
+        case (_, false) => buildAndSendDummyKafkaMessage(mysqlDatabaseNameList)
       }
     }
   }
