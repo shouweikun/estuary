@@ -30,6 +30,10 @@ class Mysql2KafkaTaskController {
     /** ******************************************************/
     ValidationUtils.notNull(requestBody.getKafkaBootstrapServers, "KafkaBootstrapServers cannot be null ")
     ValidationUtils.notblank(requestBody.getKafkaBootstrapServers, "KafkaBootstrapServers cannot be blank ")
+    ValidationUtils.notNull(requestBody.getKafkaTopic,"kafkaTopic cannot be null")
+    ValidationUtils.notblank(requestBody.getKafkaTopic, "kafkaTopic cannot be null")
+    ValidationUtils.notNull(requestBody.getKafkaDdlTopic,"kafkaDdlTopic cannot be null")
+    ValidationUtils.notblank(requestBody.getKafkaDdlTopic, "kafkaDdlTopic cannot be null")
     ValidationUtils.notNull(requestBody.getMysqladdress, "Mysqladdress cannot be null")
     ValidationUtils.notblank(requestBody.getMysqladdress, "Mysqladdress cannot be blank")
     ValidationUtils.notNull(requestBody.getMysqladdress, "Mysqladdress cannot be null")
@@ -106,6 +110,7 @@ class Mysql2KafkaTaskController {
     taskInfo.bootstrapServers = requestBody.getKafkaBootstrapServers
     if (!StringUtils.isEmpty(requestBody.getKafkaAck) && requestBody.getKafkaAck.toInt >= 1) taskInfo.ack = requestBody.getKafkaAck
     taskInfo.topic = requestBody.getKafkaTopic
+    taskInfo.ddlTopic = requestBody.getKafkaDdlTopic
     if (requestBody.getKafkaSpecficTopics != null)
       taskInfo.specificTopics = requestBody
         .getKafkaSpecficTopics
