@@ -41,8 +41,8 @@ class KafkaSinkFunc[V](kafkaBean: KafkaBean) extends SinkFunc {
     * @param value 待写入的数据
     * @return Boolean 是否写入成功
     */
-  def sink(key: BaseDataJsonKey, value: V): Boolean = {
-    val record = buildRecord(key, value)
+  def sink(key: BaseDataJsonKey, value: V)(topic:String): Boolean = {
+    val record = buildRecord(key, value,topic)
     Try(kafkaProducer.send(record).get()) match {
       case Success(x) => {
         //todo log
@@ -65,7 +65,7 @@ class KafkaSinkFunc[V](kafkaBean: KafkaBean) extends SinkFunc {
     * @return Future[RecordMetadata 是否写入成功
     */
   def ayncSink(key: BaseDataJsonKey, value: V)(topic: String)(callback: Callback): Future[RecordMetadata] = {
-    val record = buildRecord(key, value)
+    val record = buildRecord(key, value, topic)
     kafkaProducer.send(record, callback)
   }
 
@@ -76,9 +76,15 @@ class KafkaSinkFunc[V](kafkaBean: KafkaBean) extends SinkFunc {
   def findTopic(key: String = ""): String = {
     specificTopics
       .get(key) match {
-      case Some("DDL")=> ddlTopic
+      case None =>
+        if (key == "DDL") {
+          println(key);
+          ddlTopic
+        }
+        else this.topic
       case Some(tpc) => tpc
-      case None => this.topic
+
+
     }
 
   }
@@ -99,7 +105,7 @@ class KafkaSinkFunc[V](kafkaBean: KafkaBean) extends SinkFunc {
     * @param value 待写入的数据
     * @return ProducerRecord[String,V]
     */
-  def buildRecord(key: BaseDataJsonKey, value: V): ProducerRecord[BaseDataJsonKey, V] = {
+  def buildRecord(key: BaseDataJsonKey, value: V, topic: String): ProducerRecord[BaseDataJsonKey, V] = {
     key.setMsgSyncEndTime(System.currentTimeMillis())
     new ProducerRecord[BaseDataJsonKey, V](topic, key, value)
   }
