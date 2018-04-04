@@ -1,7 +1,7 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle
 
 import java.util
-import java.util.concurrent.Executors
+import java.util.concurrent.{Executors, ForkJoinPool}
 import java.util.concurrent.atomic.AtomicLong
 
 import akka.actor.SupervisorStrategy.Escalate
@@ -32,7 +32,7 @@ class BinlogEventBatcher(
                           isDdlHandler: Boolean = false
                         ) extends Actor with SourceDataBatcher with ActorLogging {
 
-  implicit val transTaskPool = if (isDdlHandler) Executors.newWorkStealingPool(1) else Executors.newWorkStealingPool(1)
+  implicit val transTaskPool = if (isDdlHandler) Executors.newWorkStealingPool() else new ForkJoinPool(5, ForkJoinPool.defaultForkJoinWorkerThreadFactory, null, true);
 
   /**
     * 拼接json用
@@ -149,8 +149,9 @@ class BinlogEventBatcher(
     if (!entryBatch.isEmpty) {
       val batch = entryBatch
       val size = batch.size
-
       def flushData = {
+
+
         val before = System.currentTimeMillis()
         val re =
           batch.
@@ -186,12 +187,12 @@ class BinlogEventBatcher(
                       case CanalEntry.EventType.ALTER => {
                         transferDDltoJson(tempJsonKey, entry, header.getLogfileName, header.getLogfileOffset, before)
                       }
-//                      case CanalEntry.EventType.CREATE => {
-//                        transferDDltoJson(tempJsonKey, entry, header.getLogfileName, header.getLogfileOffset, before)
-//                        val theAfter = System.currentTimeMillis()
-//                        tempJsonKey.setMsgSyncEndTime(theAfter)
-//                        tempJsonKey.setMsgSyncUsedTime(theAfter - before)
-//                      }
+                      //                      case CanalEntry.EventType.CREATE => {
+                      //                        transferDDltoJson(tempJsonKey, entry, header.getLogfileName, header.getLogfileOffset, before)
+                      //                        val theAfter = System.currentTimeMillis()
+                      //                        tempJsonKey.setMsgSyncEndTime(theAfter)
+                      //                        tempJsonKey.setMsgSyncUsedTime(theAfter - before)
+                      //                      }
                       case x => {
 
                         log.warning(s"unsupported EntryType:$x")
@@ -447,7 +448,7 @@ class BinlogEventBatcher(
 }
 
 object BinlogEventBatcher {
-  def prop(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,isDdlHandler: Boolean = false): Props = Props(new BinlogEventBatcher(binlogEventSinker, mysql2KafkaTaskInfoManager))
+  def prop(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager, isDdlHandler: Boolean = false): Props = Props(new BinlogEventBatcher(binlogEventSinker, mysql2KafkaTaskInfoManager))
 }
 
 
