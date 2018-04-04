@@ -216,7 +216,15 @@ class BinlogEventBatcher(
       if (isDdlHandler) binlogEventSinker ! flushData else Future(flushData).pipeTo(binlogEventSinker)
       entryBatch = List.empty
     } else {
-
+      val eventFilterPattern = mysql2KafkaTaskInfoManager.taskInfo.eventFilterPattern
+      val eventBlackFilterPattern = mysql2KafkaTaskInfoManager.taskInfo.eventBlackFilterPattern
+      val concernedDbNames = eventFilterPattern
+        .split("[^a-zA-Z]*")
+      val ignoredDbNames = eventBlackFilterPattern
+        .split("[^a-zA-z]*")
+      (concernedDbNames.size>0,ignoredDbNames.size>0) match {
+        case (true,true) =>
+      }
     }
   }
 
