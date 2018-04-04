@@ -84,6 +84,10 @@ class Mysql2KafkaTaskInfoManager(taskInfoBean: Mysql2KafkaTaskInfoBean) extends 
     */
   val kafkaSink = buildSink
   /**
+    * kafka客户端,专门处理DDL
+    */
+  val kafkaDdlSink = kafkaSink.fork
+  /**
     * MysqlBinlogParser
     */
   lazy val binlogParser: MysqlBinlogParser = buildParser

@@ -30,7 +30,7 @@ import scala.util.{Failure, Success, Try}
   *
   * @param binlogEventSinker sinker的ActorRef
   * @param mysql2KafkaTaskInfoManager
-  * @param isDdlHandler   是否是处理DDL标识
+  * @param isDdlHandler      是否是处理DDL标识
   */
 class BinlogEventBatcher(
                           binlogEventSinker: ActorRef,
@@ -82,6 +82,7 @@ class BinlogEventBatcher(
     * 是否计时
     */
   var isCosting = mysql2KafkaTaskInfoManager.taskInfo.isCosting
+
 
   //offline
   override def receive: Receive = {
@@ -162,9 +163,10 @@ class BinlogEventBatcher(
 
       /**
         * 处理Entry，根据类型转换成Json
+        *
         * @return List[Any]
         */
-      def flushData:List[Any] = {
+      def flushData: List[Any] = {
 
 
         val before = System.currentTimeMillis()
@@ -276,6 +278,7 @@ class BinlogEventBatcher(
   def transferDDltoJson(tempJsonKey: BinlogKey, entry: CanalEntry.Entry, logfileName: String, logfileOffset: Long, before: Long): KafkaMessage = {
     //让程序知道是DDL
     tempJsonKey.setDbName("DDL")
+    log.info(s"batch ddl ${CanalEntryJsonHelper.entryToJson(entry)}")
     val re = new KafkaMessage(tempJsonKey, CanalEntryJsonHelper.entryToJson(entry), logfileName, logfileOffset)
     val theAfter = System.currentTimeMillis()
     tempJsonKey.setMsgSyncEndTime(theAfter)
@@ -463,7 +466,7 @@ class BinlogEventBatcher(
 }
 
 object BinlogEventBatcher {
-  def prop(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager, isDdlHandler: Boolean = false): Props = Props(new BinlogEventBatcher(binlogEventSinker, mysql2KafkaTaskInfoManager))
+  def prop(binlogEventSinker: ActorRef, mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager, isDdlHandler: Boolean = false): Props = Props(new BinlogEventBatcher(binlogEventSinker, mysql2KafkaTaskInfoManager,isDdlHandler))
 }
 
 

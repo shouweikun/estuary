@@ -36,6 +36,10 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
     */
   val kafkaSinker = mysql2KafkaTaskInfoManager.kafkaSink
   /**
+    * kafkaDdlSinker
+    */
+  val kafkaDdlSinker = mysql2KafkaTaskInfoManager.kafkaDdlSink
+  /**
     * logPosition处理
     */
   val logPositionHandler = mysql2KafkaTaskInfoManager.logPositionHandler
@@ -220,7 +224,11 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
         }
       }
     }
-    if (ddlFlag) kafkaSinker.sink(kafkaMessage.getBaseDataJsonKey, kafkaMessage.getJsonValue)(topic) else kafkaSinker.ayncSink(kafkaMessage.getBaseDataJsonKey, kafkaMessage.getJsonValue)(topic)(callback)
+    if (ddlFlag) {
+      log.info(s"sink ddl :${kafkaMessage.getJsonValue}")
+      kafkaDdlSinker.sink(kafkaMessage.getBaseDataJsonKey, kafkaMessage.getJsonValue)(topic)
+    }
+    else kafkaSinker.ayncSink(kafkaMessage.getBaseDataJsonKey, kafkaMessage.getJsonValue)(topic)(callback)
 
     val after = System.currentTimeMillis()
     // log.info(s"sink cost time :${after-before}")

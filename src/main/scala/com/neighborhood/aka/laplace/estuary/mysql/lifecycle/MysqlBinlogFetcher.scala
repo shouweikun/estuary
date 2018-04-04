@@ -16,21 +16,18 @@ import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
 import com.alibaba.otter.canal.parse.inbound.mysql.dbsync.{DirectLogFetcher, TableMetaCache}
 import com.alibaba.otter.canal.protocol.CanalEntry
 import com.alibaba.otter.canal.protocol.position.EntryPosition
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.{SourceDataFetcher, Status}
-import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
-import com.neighborhood.aka.laplace.estuary.mysql.{Mysql2KafkaTaskInfoManager, MysqlBinlogParser}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status.Status
-import com.neighborhood.aka.laplace.estuary.core.lifecycle._
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.{SourceDataFetcher, Status, _}
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
-import com.neighborhood.aka.laplace.estuary.mysql.{Mysql2KafkaTaskInfoManager, MysqlBinlogParser}
+import com.neighborhood.aka.laplace.estuary.mysql.{CanalEntryJsonHelper, Mysql2KafkaTaskInfoManager, MysqlBinlogParser}
 import com.taobao.tddl.dbsync.binlog.event.FormatDescriptionLogEvent
 import com.taobao.tddl.dbsync.binlog.{LogContext, LogDecoder, LogEvent, LogPosition}
 import org.I0Itec.zkclient.exception.ZkTimeoutException
 import org.apache.commons.lang.StringUtils
 
 import scala.annotation.tailrec
-import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration._
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 /**
   * Created by john_liu on 2018/2/5.
@@ -38,7 +35,7 @@ import scala.concurrent.duration._
   * @todo 将fetcher和actor解耦
   */
 
-class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager, binlogEventBatcher: ActorRef) extends Actor with SourceDataFetcher with ActorLogging {
+class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager, binlogEventBatcher: ActorRef, binlogDdlHandler: ActorRef = null) extends Actor with SourceDataFetcher with ActorLogging {
 
   implicit val transTaskPool = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor())
   /**
@@ -243,7 +240,11 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
     }
     val cost = if (filterEntry(entry)) {
       //log.debug(s"fetch entry: ${entry.get.getHeader.getLogfileName},${entry.get.getHeader.getLogfileOffset},${after - before}")
-      binlogEventBatcher ! entry.get
+      if (entry.get.getHeader.getEventType == CanalEntry.EventType.ALTER) {
+        log.info(s"fetch ddl:${CanalEntryJsonHelper.entryToJson(entry.get)}");
+        Option(binlogDdlHandler).fold(log.warning("ddlHandler does not exist"))(x => x ! entry.get)
+      } else binlogEventBatcher ! entry.get
+
       if (isCounting) mysql2KafkaTaskInfoManager.fetchCount.incrementAndGet()
       System.currentTimeMillis() - before
     } else {
@@ -411,7 +412,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
 }
 
 object MysqlBinlogFetcher {
-  def props(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager, binlogEventBatcher: ActorRef): Props = {
-    Props(new MysqlBinlogFetcher(mysql2KafkaTaskInfoManager, binlogEventBatcher))
+  def props(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager, binlogEventBatcher: ActorRef, binlogDdlHandler: ActorRef = null): Props = {
+    Props(new MysqlBinlogFetcher(mysql2KafkaTaskInfoManager, binlogEventBatcher,binlogDdlHandler))
   }
 }
