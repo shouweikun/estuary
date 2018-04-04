@@ -3,7 +3,8 @@ package com.neighborhood.aka.laplace.estuary.mysql.lifecycle
 import java.util.concurrent.Executors
 
 import akka.actor.SupervisorStrategy.{Escalate, Restart}
-import akka.actor.{Actor, ActorLogging, AllForOneStrategy, Props}
+import akka.actor.{Actor, ActorLogging, AllForOneStrategy, OneForOneStrategy, Props}
+import akka.routing.RoundRobinPool
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
 import com.neighborhood.aka.laplace.estuary.bean.task.Mysql2KafkaTaskInfoBean
 import com.neighborhood.aka.laplace.estuary.core.akka.PowerAdapter
@@ -181,6 +182,10 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
       .map {
         ref => context.system.scheduler.scheduleOnce(1 second, ref, akka.routing.Broadcast(SyncControllerMessage("start")))
       }
+    context.child("ddlHandler")
+      .map {
+        ref => context.system.scheduler.scheduleOnce(1 second, ref, (SyncControllerMessage("start")))
+      }
     //启动fetcher
     context
       .child("binlogFetcher")
@@ -241,36 +246,36 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
     }
     log.info("initialize batcher")
 
-    def initBatchersAndRouter:List[String] = {
-      //batcher数量
-      val num = taskInfoBean.batcherNum
-      val pathPrefix = s"/user/syncDaemon/${taskInfoBean.syncTaskId}"
-      //初始化ddl处理器
-      context.actorOf(BinlogEventBatcher
-        .prop(binlogSinker, resourceManager, true).withDispatcher(""), "ddlHandler")
-      val paths = Range(0, num)
-      //初始化batcher
-        .map{
-          index =>
-            context.actorOf(BinlogEventBatcher
-              .prop(binlogSinker, resourceManager).withDispatcher("akka.batcher-dispatcher"), s"binlogBatcher$index")
-           s"$pathPrefix/binlogBatcher$index"
-        }
-       .+:(s"$pathPrefix/ddlHandler")
-       .toList
-      paths
-    }
-
-    //初始化binlogEventBatcher
-    val binlogEventBatcher = context.actorOf( DivideDDLRoundRobinRoutingGroup(initBatchersAndRouter).props(),"binlogBatcher")
-//    val binlogEventBatcher = context.actorOf(BinlogEventBatcher
-//      .prop(binlogSinker, resourceManager)
-//      .withRouter(new RoundRobinPool(taskInfoBean.batcherNum).withSupervisorStrategy(OneForOneStrategy() {
-//        case _ => Escalate
-//      })), "binlogBatcher")
+    //    def initBatchersAndRouter:List[String] = {
+    //      //batcher数量
+    //      val num = taskInfoBean.batcherNum
+    //      val pathPrefix = s"/user/syncDaemon/${taskInfoBean.syncTaskId}"
+    //      //初始化ddl处理器
+    //      context.actorOf(BinlogEventBatcher
+    //        .prop(binlogSinker, resourceManager, true).withDispatcher(""), "ddlHandler")
+    //      val paths = Range(0, num)
+    //      //初始化batcher
+    //        .map{
+    //          index =>
+    //            context.actorOf(BinlogEventBatcher
+    //              .prop(binlogSinker, resourceManager).withDispatcher("akka.batcher-dispatcher"), s"binlogBatcher$index")
+    //           s"$pathPrefix/binlogBatcher$index"
+    //        }
+    //       .toList
+    //      paths
+    //    }
+    //
+    //    //初始化binlogEventBatcher
+    //    val binlogEventBatcher = context.actorOf( DivideDDLRoundRobinRoutingGroup(initBatchersAndRouter).props(),"binlogBatcher")
+    val binlogDdlHandler = context.actorOf(BinlogEventBatcher.prop(binlogSinker, resourceManager, true).withDispatcher("akka.batcher-dispatcher"), "ddlHandler")
+    val binlogEventBatcher = context.actorOf(BinlogEventBatcher
+      .prop(binlogSinker, resourceManager)
+      .withRouter(new RoundRobinPool(taskInfoBean.batcherNum).withDispatcher("akka.batcher-dispatcher").withSupervisorStrategy(OneForOneStrategy() {
+        case _ => Escalate
+      })), "binlogBatcher")
     log.info("initialize fetcher")
     //初始化binlogFetcher
-    context.actorOf(Props(classOf[MysqlBinlogFetcher], resourceManager, binlogEventBatcher).withDispatcher("akka.pinned-dispatcher"), "binlogFetcher")
+    context.actorOf(MysqlBinlogFetcher.props(resourceManager, binlogEventBatcher,binlogDdlHandler).withDispatcher("akka.pinned-dispatcher"), "binlogFetcher")
 
   }
 
