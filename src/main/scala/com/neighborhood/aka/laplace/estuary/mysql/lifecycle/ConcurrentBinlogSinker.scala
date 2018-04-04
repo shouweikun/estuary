@@ -189,9 +189,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
     */
   def handleSinkTask(kafkaMessage: KafkaMessage, journalName: String = this.lastSavedJournalName, offset: Long = this.lastSavedOffset)(syncSequenceId: Long): Unit = {
     val before = System.currentTimeMillis()
-    val key = if (kafkaMessage.getBaseDataJsonKey.asInstanceOf[BinlogKey].getDbName.trim == "DDL")
-      "DDL"
-    else s"${kafkaMessage.getBaseDataJsonKey.asInstanceOf[BinlogKey].getDbName}.${kafkaMessage.getBaseDataJsonKey.asInstanceOf[BinlogKey].getTableName}"
+    val key = if (kafkaMessage.getBaseDataJsonKey.asInstanceOf[BinlogKey].getDbName.trim == "DDL") "DDL" else s"${kafkaMessage.getBaseDataJsonKey.asInstanceOf[BinlogKey].getDbName}.${kafkaMessage.getBaseDataJsonKey.asInstanceOf[BinlogKey].getTableName}"
     val topic = kafkaSinker.findTopic(key)
     kafkaMessage.getBaseDataJsonKey.setKafkaTopic(topic)
     kafkaMessage.getBaseDataJsonKey.setSyncTaskSequence(syncSequenceId)
@@ -216,12 +214,12 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
 
           }
 
-          //          throw new RuntimeException(s"Error when send data to kafka the journalName:$thisJournalName,offset:$thisOffset")
+          //throw new RuntimeException(s"Error when send data to kafka the journalName:$thisJournalName,offset:$thisOffset")
 
         }
       }
     }
-    //kafkaSinker.ayncSink(kafkaMessage.getBaseDataJsonKey, kafkaMessage.getJsonValue)(topic)(callback)
+    kafkaSinker.ayncSink(kafkaMessage.getBaseDataJsonKey, kafkaMessage.getJsonValue)(topic)(callback)
 
     val after = System.currentTimeMillis()
     // log.info(s"sink cost time :${after-before}")

@@ -34,7 +34,7 @@ class KafkaSinkFunc[V](kafkaBean: KafkaBean) extends SinkFunc {
     * ddl用topic
     * //todo
     */
-  val ddlTopic = ""
+  val ddlTopic = kafkaBean.ddlTopic
 
   /**
     * @param key   分区key
