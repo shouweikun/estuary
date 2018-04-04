@@ -167,8 +167,8 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
         }
         case "fetch" => {
           val before = System.currentTimeMillis()
-          //如果一个小时还不能拿到数据，发起重连
-          val flag = Await.result(Future(fetcher.fetch()), 1 hour)
+          //如果12小时还不能拿到数据，发起重连
+          val flag = Await.result(Future(fetcher.fetch()), 12 hours)
           try {
             if (flag) {
               fetchOne(before)
