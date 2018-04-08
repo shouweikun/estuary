@@ -146,6 +146,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
         }
 
       val after = System.currentTimeMillis()
+      //刷新一下最后写入时间
       lastSinkTimestamp = after
       //这次任务完成后
       //log.info(s"send处理用了${after - before},s$lastSavedJournalName:$lastSavedOffset")
@@ -178,8 +179,10 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
     case SyncControllerMessage("checkSend") => {
       val timeInterval = (System.currentTimeMillis() - lastSinkTimestamp)
       log.info(s"sinker checkSend timeInterval:$timeInterval")
-      if (timeInterval > (1000 * 20)) context.parent ! SinkerMessage("flush");
-      log.info(s"sinker checkSend trigger to flush")
+      if (timeInterval > (1000 * 20)) {
+        context.parent ! SinkerMessage("flush")
+        log.info(s"sinker checkSend trigger to flush")
+      }
 
     }
     case x => {
