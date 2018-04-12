@@ -2,7 +2,7 @@ package com.neighborhood.aka.laplace.estuary.actor
 
 import akka.actor.{ActorRef, Props}
 import com.neighborhood.aka.laplace.estuary.bean.task.Mysql2KafkaTaskInfoBean
-import com.neighborhood.aka.laplace.estuary.core.akka.{SyncDaemon, theActorSystem}
+import com.neighborhood.aka.laplace.estuary.core.akkaUtil.{SyncDaemon, theActorSystem}
 import com.neighborhood.aka.laplace.estuary.mysql.Mysql2KafkaTaskInfoManager
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.MysqlBinlogController
 import com.typesafe.config.Config
