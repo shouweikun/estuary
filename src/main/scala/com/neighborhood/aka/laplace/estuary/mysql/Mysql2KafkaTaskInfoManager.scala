@@ -95,12 +95,25 @@ class Mysql2KafkaTaskInfoManager(taskInfoBean: Mysql2KafkaTaskInfoBean) extends 
     * logPosition处理器
     */
   lazy val logPositionHandler: LogPositionHandler = buildEntryPositionHandler
-
+  /**
+    * 拉取数据的延迟
+    */
   override lazy val fetchDelay: AtomicLong = taskInfo.fetchDelay
+  /**
+    * 功率控制器
+    */
   var powerAdapter: Option[ActorRef] = None
-
+  /**
+    * 打包阈值
+    */
   override lazy val batchThreshold: AtomicLong = taskInfo.batchThreshold
-
+  /**
+    * 该mysql实例上所有的mysql库名
+    */
+  var mysqlDatabaseNameList: List[String] = _
+  /**
+    * batcher数量
+    */
   batcherNum = taskInfo.batcherNum
 
   /**
