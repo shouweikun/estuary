@@ -33,37 +33,12 @@ object CanalEntryJsonHelper {
 
   def dummyKafkaMessage(dbName: String): KafkaMessage = {
     val tableName = "daas_heartbeats_check"
-    val jsonKey = new BinlogKey
+    lazy val jsonKey = new BinlogKey
+    lazy val time = System.currentTimeMillis()
     val jsonValue =
-      s"""{
-         |	"header": {
-         |		"version": 1,
-         |		"logfileName": "mysql-bin.000000",
-         |		"logfileOffset": 4,
-         |		"serverId": 0,
-         |		"serverenCode": "UTF-8",
-         |		"executeTime":
-         |		"sourceType": "MYSQL",
-         |		"schemaName": "$dbName",
-         |		"tableName": "$tableName",
-         |		"eventLength": 651,
-         |		"eventType": "INSERT"
-         |	},
-         |	"rowChange": {
-         |		"rowDatas": [{
-         |			"afterColumns": [{
-         |				"sqlType": -5,
-         |				"isNull": false,
-         |				"mysqlType": "bigint(20) unsigned",
-         |				"name": "id",
-         |				"isKey": true,
-         |				"index": 0,
-         |				"updated": true,
-         |				"value": "${System.currentTimeMillis()}"
-         |			} ]
-         |		}]
-         |	}
-         |}"""
+      s"""{"header": {"version": 1,"logfileName": "mysql-bin.000000","logfileOffset": 4,"serverId": 0,"serverenCode": "UTF-8","executeTime": $time,"sourceType": "MYSQL","schemaName": "$dbName","tableName": "$tableName",	"eventLength": 651,"eventType": "INSERT"	},"rowChange": {"rowDatas": [{"afterColumns": [{"sqlType": -5,"isNull": false,"mysqlType": "bigint(20) unsigned","name": "id","isKey": true,"index": 0,	"updated": true,"value": "${time}"}]}]}}
+         |
+       """.stripMargin
     jsonKey.setDbName(dbName)
     jsonKey.setTableName(tableName)
     new KafkaMessage(jsonKey, jsonValue)

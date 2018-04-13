@@ -1,4 +1,4 @@
-package com.neighborhood.aka.laplace.estuary.actor
+package com.neighborhood.aka.laplace.estuary
 
 import java.io.File
 
@@ -7,6 +7,8 @@ import com.neighborhood.aka.laplace.estuary.bean.credential.MysqlCredentialBean
 import com.neighborhood.aka.laplace.estuary.bean.task.Mysql2KafkaTaskInfoBean
 import com.neighborhood.aka.laplace.estuary.mysql.JsonUtil
 import com.typesafe.config.ConfigFactory
+
+import scala.util.parsing.json.JSON
 
 /**
   * Created by john_liu on 2018/2/18.
@@ -52,5 +54,9 @@ object TestContext {
 
   def buildMysql2KafkaTaskManager = {
 
+  }
+
+  def isJson(str: String): Boolean = {
+    JSON.parseRaw(str).fold(false)(x => true)
   }
 }

@@ -250,8 +250,8 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
       System.currentTimeMillis() - before
     } else {
       //throw new Exception("the fetched data is null")
-      //如果拿不到数据，默认在时间上随机增加3-5倍
-      (System.currentTimeMillis() - before) * (2 * (math.random) + 3)
+      //如果拿不到数据，返回-1
+      -1
     }.toLong
     if (isCosting) mysql2KafkaTaskInfoManager.powerAdapter match {
       case Some(x) => x ! FetcherMessage(s"$cost")

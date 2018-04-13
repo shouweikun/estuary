@@ -216,17 +216,22 @@ object Mysql2KafkaTaskInfoManager {
   }
 
   def logCount(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager): Map[String, Long] = {
-    val fetchCount = mysql2KafkaTaskInfoManager.fetchCount.get()
-    val batchCount = mysql2KafkaTaskInfoManager.batchCount.get()
-    val sinkCount = mysql2KafkaTaskInfoManager.sinkCount.get()
-
-    Map("sinkCount" -> sinkCount, "batchCount" -> batchCount, "fetchCount" -> fetchCount)
+    lazy val fetchCount = mysql2KafkaTaskInfoManager.fetchCount.get()
+    lazy val batchCount = mysql2KafkaTaskInfoManager.batchCount.get()
+    lazy val sinkCount = mysql2KafkaTaskInfoManager.sinkCount.get()
+    lazy val fetchCountPerSecond = mysql2KafkaTaskInfoManager.fetchCountPerSecond.get()
+    lazy val batchCountPerSecond = mysql2KafkaTaskInfoManager.batchCountPerSecond.get()
+    lazy val sinkCountPerSecond = mysql2KafkaTaskInfoManager.sinkCountPerSecond.get()
+    Map("sinkCount" -> sinkCount, "batchCount" -> batchCount, "fetchCount" -> fetchCount, "fetchCountPerSecond" -> fetchCountPerSecond, "batchCountPerSecond" -> batchCountPerSecond, "sinkCountPerSecond" -> sinkCountPerSecond)
   }
 
   def logTimeCost(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager): Map[String, Long] = {
     lazy val fetchCost = mysql2KafkaTaskInfoManager.fetchCost.get()
     lazy val batchCost = mysql2KafkaTaskInfoManager.batchCost.get()
     lazy val sinkCost = mysql2KafkaTaskInfoManager.sinkCost.get()
-    Map("fetchCost" -> fetchCost, "batchCost" -> batchCost, "sinkCost" -> sinkCost)
+    lazy val fetchCostPercentage = mysql2KafkaTaskInfoManager.fetchCostPercentage.get()
+    lazy val batchCostPercentage = mysql2KafkaTaskInfoManager.batchCostPercentage.get()
+    lazy val sinkCostPercentage = mysql2KafkaTaskInfoManager.sinkCostPercentage.get()
+    Map("fetchCost" -> fetchCost, "batchCost" -> batchCost, "sinkCost" -> sinkCost, "fetchCostPercentage" -> fetchCostPercentage, "batchCostPercentage" -> batchCostPercentage, "sinkCostPercentage" -> sinkCostPercentage)
   }
 }
