@@ -7,13 +7,14 @@ import com.neighborhood.aka.laplace.estuary.bean.credential.MysqlCredentialBean
 import com.neighborhood.aka.laplace.estuary.bean.task.Mysql2KafkaTaskInfoBean
 import com.neighborhood.aka.laplace.estuary.mysql.JsonUtil
 import com.typesafe.config.ConfigFactory
+import org.scalamock.scalatest.MockFactory
 
 import scala.util.parsing.json.JSON
 
 /**
   * Created by john_liu on 2018/2/18.
   */
-object TestContext {
+object TestContext extends MockFactory{
   /**
     * Config
     */
@@ -50,7 +51,6 @@ object TestContext {
     */
   val startPosition = new EntryPosition("mysql-bin.000013", 4L)
 
-  def buildDummyMysqlEventParser: Class[_] = Class.forName("com.alibaba.otter.canal.parse.inbound.mysql.MysqlEventParser")
 
   def buildMysql2KafkaTaskManager = {
 
@@ -59,4 +59,5 @@ object TestContext {
   def isJson(str: String): Boolean = {
     JSON.parseRaw(str).fold(false)(x => true)
   }
+
 }

@@ -237,33 +237,33 @@ class BinlogEventBatcher(
       if (isDdlHandler) binlogEventSinker ! flushData else Future(flushData).pipeTo(binlogEventSinker)
       entryBatch = List.empty
     } else {
-//      val eventFilterPattern = mysql2KafkaTaskInfoManager.taskInfo.eventFilterPattern
-//      val eventBlackFilterPattern = mysql2KafkaTaskInfoManager.taskInfo.eventBlackFilterPattern
-//      val concernedDbNames = eventFilterPattern
-//        .split("[^a-zA-Z]*")
-//      val ignoredDbNames = eventBlackFilterPattern
-//        .split("[^a-zA-z]*")
-//
-//      /**
-//        *
-//        * @param dbNameList 需要发送dummyData的db名称列表
-//        * @param sinker     sinker的ActorRef
-//        *                   构造假数据并发送给sinker
-//        */
-//      def buildAndSendDummyKafkaMessage(dbNameList: Iterable[String])(sinker: ActorRef): Unit = {
-//        val kafkaMessageList: List[Any] = dbNameList
-//          .map {
-//            dbName =>
-//              CanalEntryJsonHelper.dummyKafkaMessage(dbName)
-//          }.toList
-//        sinker ! kafkaMessageList
-//      }
-//
-//      (concernedDbNames.size > 0, ignoredDbNames.size > 0) match {
-//        case (true, _) => buildAndSendDummyKafkaMessage(concernedDbNames)(binlogEventSinker)
-//        case (_, true) => buildAndSendDummyKafkaMessage(mysqlDatabaseNameList.diff(ignoredDbNames))(binlogEventSinker)
-//        case (_, false) => buildAndSendDummyKafkaMessage(mysqlDatabaseNameList)(binlogEventSinker)
-//      }
+      val eventFilterPattern = mysql2KafkaTaskInfoManager.taskInfo.eventFilterPattern
+      val eventBlackFilterPattern = mysql2KafkaTaskInfoManager.taskInfo.eventBlackFilterPattern
+      val concernedDbNames = eventFilterPattern
+        .split("[^a-zA-Z]*")
+      val ignoredDbNames = eventBlackFilterPattern
+        .split("[^a-zA-z]*")
+
+      /**
+        *
+        * @param dbNameList 需要发送dummyData的db名称列表
+        * @param sinker     sinker的ActorRef
+        *                   构造假数据并发送给sinker
+        */
+      def buildAndSendDummyKafkaMessage(dbNameList: Iterable[String])(sinker: ActorRef): Unit = {
+        val kafkaMessageList: List[Any] = dbNameList
+          .map {
+            dbName =>
+              CanalEntryJsonHelper.dummyKafkaMessage(dbName)
+          }.toList
+        sinker ! kafkaMessageList
+      }
+
+      (concernedDbNames.size > 0, ignoredDbNames.size > 0) match {
+        case (true, _) => buildAndSendDummyKafkaMessage(concernedDbNames)(binlogEventSinker)
+        case (_, true) => buildAndSendDummyKafkaMessage(mysqlDatabaseNameList.diff(ignoredDbNames))(binlogEventSinker)
+        case (_, false) => buildAndSendDummyKafkaMessage(mysqlDatabaseNameList)(binlogEventSinker)
+      }
     }
   }
 
