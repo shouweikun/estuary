@@ -20,7 +20,7 @@ import scala.util.Try
 /**
   * Created by john_liu on 2018/2/4.
   */
-class NewLogPositionHandler(
+class BinlogPositionHandler(
                              implicit binlogParser: MysqlBinlogParser,
                              manager: ZooKeeperLogPositionManager,
                              master: Option[EntryPosition] = None,
