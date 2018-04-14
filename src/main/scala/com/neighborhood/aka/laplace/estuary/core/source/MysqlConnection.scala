@@ -6,7 +6,6 @@ import java.nio.ByteBuffer
 import java.nio.charset.Charset
 import java.util
 
-
 import com.alibaba.otter.canal.parse.driver.mysql.packets.HeaderPacket
 import com.alibaba.otter.canal.parse.driver.mysql.packets.client.BinlogDumpCommandPacket
 import com.alibaba.otter.canal.parse.driver.mysql.packets.server.ResultSetPacket
@@ -17,10 +16,12 @@ import com.alibaba.otter.canal.parse.inbound.BinlogParser
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection.{BinlogFormat, BinlogImage}
 import com.alibaba.otter.canal.parse.inbound.mysql.dbsync.{DirectLogFetcher, TableMetaCache}
+import com.alibaba.otter.canal.protocol.CanalEntry
 import com.neighborhood.aka.laplace.estuary.mysql.MysqlBinlogParser
 import com.taobao.tddl.dbsync.binlog.event.FormatDescriptionLogEvent
 import com.taobao.tddl.dbsync.binlog.{LogContext, LogDecoder, LogEvent, LogPosition}
 
+import scala.annotation.tailrec
 import scala.util.Try
 
 /**
@@ -58,6 +59,11 @@ class MysqlConnection(
   var fetcher4Seek: DirectLogFetcher = null
   var logContext4Seek: LogContext = null
   var decoder4Seek: LogDecoder = null
+
+  /**
+    * 数据seek模式标志
+    */
+  var seekFlag: Boolean = false
 
   override def connect(): Unit = connector.connect()
 
@@ -205,8 +211,40 @@ class MysqlConnection(
     decoder4Seek.handle(LogEvent.XID_EVENT)
     logContext4Seek = new LogContext
     logContext4Seek.setLogPosition(new LogPosition(binlogfilename))
-
+    seekFlag = true
   }
 
   def getConnector = this.connector
+
+  /**
+    *
+    * @param binlogParser
+    * @return
+    */
+  final def fetch4Seek(implicit binlogParser: MysqlBinlogParser): CanalEntry.Entry = {
+    Option(fetcher4Seek)
+      .fold(throw new Exception("fetcher is null ,please seek before fetch")) {
+        fetcher =>
+          if (fetcher.fetch()) {
+            lazy val logEvent = decoder.decode(fetcher, logContext)
+            val entry = try {
+              binlogParser.parse(logEvent)
+            } catch {
+              case CanalParseException => fetch4Seek
+            }
+            entry
+          }
+          else throw new Exception("stream unexcepted end")
+      }
+  }
+
+  /**
+    * seek 结束后清理环境
+    */
+  def cleanSeekContext: Unit = {
+    fetcher4Seek = null
+    logContext4Seek = null
+    decoder4Seek = null
+    seekFlag = false
+  }
 }

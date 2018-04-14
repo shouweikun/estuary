@@ -178,6 +178,12 @@ class BinlogEventBatcher(
                     savedOffset = header.getLogfileOffset
                     BinlogPositionInfo(header.getLogfileName, header.getLogfileOffset)
                   }
+                  case CanalEntry.EntryType.TRANSACTIONBEGIN => {
+                    //将offset记录下来
+                    savedJournalName = header.getLogfileName
+                    savedOffset = header.getLogfileOffset
+                    BinlogPositionInfo(header.getLogfileName, header.getLogfileOffset)
+                  }
                   case CanalEntry.EntryType.ROWDATA => {
                     eventType match {
                       //DML操作都执行tranformDMLtoJson这个方法

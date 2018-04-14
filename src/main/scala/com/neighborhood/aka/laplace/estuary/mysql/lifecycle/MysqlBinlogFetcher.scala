@@ -115,7 +115,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
           try {
             mysqlConnection.map(_.connect())
             entryPosition = Option(logPositionHandler.findStartPosition(mysqlConnection.get)(errorCount > 0))
-
+                   //todo
             if (entryPosition.isDefined) {
               //寻找完后必须reconnect一下
               mysqlConnection.get.synchronized {
