@@ -167,9 +167,13 @@ class NewLogPositionHandler(
   }
 
   /**
-    * 寻找事务开始的position
+    *  寻找事务开始的position
     * 这个方法也做了scala风格的修改
-    * //todo
+    * 1.首先确认 当前给定的position是否是事务头/尾,如果是直接使用
+    * 2.否则从当前binlog头开始寻找，找到事务头
+    * @param mysqlConnection
+    * @param entryPosition
+    * @return position
     */
   def findTransactionBeginPosition(mysqlConnection: MysqlConnection, entryPosition: EntryPosition): Long = // 尝试找到一个合适的位置
   {
@@ -200,7 +204,6 @@ class NewLogPositionHandler(
     * @param entry   Canal Entry
     * @param address mysql地址
     *                从entry 构建成 LogPosition
-    * @todo 梳理逻辑
     */
 
   def buildLastPositionByEntry(entry: CanalEntry.Entry, address: InetSocketAddress = this.address) = {
