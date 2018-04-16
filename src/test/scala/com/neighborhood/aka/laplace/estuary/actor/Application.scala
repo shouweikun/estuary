@@ -21,10 +21,7 @@ object Application extends theActorSystem {
 //    taskInfoBean.master = mysqlBean
 //    val config = ConfigFactory.load(ConfigFactory.parseFile(conf))
 
-    val a = MysqlBinlogController.props(TestContext.mysql2KafkaTaskInfoBean)
 
-
-    daemon ! (a,Option("test1"))
 
   }
 

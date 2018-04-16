@@ -18,10 +18,6 @@ object TestContext extends MockFactory{
   /**
     * Config
     */
-  val dummyMysqlEventParser = buildDummyMysqlEventParser
-  /**
-    * Config
-    */
   val confPath = "/Users/john_liu/IdeaProjects/estuary/src/main/resources/application.conf"
   val conf = new File(confPath)
   val config = ConfigFactory.load(ConfigFactory.parseFile(conf))
