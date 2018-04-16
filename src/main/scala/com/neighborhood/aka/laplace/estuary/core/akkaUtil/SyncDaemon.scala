@@ -1,4 +1,4 @@
-package com.neighborhood.aka.laplace.estuary.core.akka
+package com.neighborhood.aka.laplace.estuary.core.akkaUtil
 
 import akka.actor.SupervisorStrategy.{Restart, Resume}
 import akka.actor.{Actor, ActorLogging, ActorRef, InvalidActorNameException, OneForOneStrategy, Props}

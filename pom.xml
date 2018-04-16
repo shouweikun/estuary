@@ -20,6 +20,7 @@
         <scala.version>2.11.11</scala.version>
         <hadoop.version>2.7.3</hadoop.version>
         <scalatest.version>3.2.0-SNAP7</scalatest.version>
+        <scalamock.version>4.1.0</scalamock.version>
         <cats.version>1.0.0-RC1</cats.version>
         <spark.version>1.6.3</spark.version>
         <canal.version>1.0.23</canal.version>
@@ -326,7 +327,12 @@
                 </exclusion>
             </exclusions>
         </dependency>
-
+        <dependency>
+            <groupId>org.scalamock</groupId>
+            <artifactId>scalamock_2.11</artifactId>
+            <version>${scalamock.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

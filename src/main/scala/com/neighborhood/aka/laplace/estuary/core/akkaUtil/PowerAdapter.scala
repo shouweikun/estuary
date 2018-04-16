@@ -1,8 +1,10 @@
-package com.neighborhood.aka.laplace.estuary.core.akka
+package com.neighborhood.aka.laplace.estuary.core.akkaUtil
 
 import akka.actor.{Actor, ActorLogging, Props}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, FetcherMessage, SinkerMessage, SyncControllerMessage}
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
+import com.neighborhood.aka.laplace.estuary.mysql.SettingConstant
+
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -17,10 +19,17 @@ class PowerAdapter(taskManager: TaskManager) extends Actor with ActorLogging {
   var sinkTimeArray: Array[Long] = new Array[Long](size)
 
   var fetchTimeWriteIndex: Int = 0
-
   var batchTimeWriteIndex: Int = 0
-
   var sinkTimeWriteIndex: Int = 0
+
+  var fetchTimeSum: Long = 0
+  var fetchCountSum: Long = 0
+
+  var batchTimeSum: Long = 0
+  var batchCountSum: Long = 0
+
+  var sinkTimeSum: Long = 0
+  var sinkCountSum: Long = 0
 
 
   override def receive: Receive = {
@@ -29,11 +38,24 @@ class PowerAdapter(taskManager: TaskManager) extends Actor with ActorLogging {
       */
     case FetcherMessage(x) => {
       val value = x.toLong
-      val nextFetchTimeWriteIndex = (fetchTimeWriteIndex + 1) % size
-      fetchTimeArray(nextFetchTimeWriteIndex) = value
-      fetchTimeWriteIndex = nextFetchTimeWriteIndex
+      value match {
+        case -1 => val nextFetchTimeWriteIndex = (fetchTimeWriteIndex + 1) % size
+          // 如果拿不到数据，默认在时间上随机增加3-5倍
+          fetchTimeArray(nextFetchTimeWriteIndex) = (2 * (math.random) + 3).toLong
+          fetchTimeWriteIndex = nextFetchTimeWriteIndex
+//          if (System.currentTimeMillis() % 5 == 0) fetchTimeSum += 1
+        case _ => {
+          val nextFetchTimeWriteIndex = (fetchTimeWriteIndex + 1) % size
+          fetchTimeArray(nextFetchTimeWriteIndex) = value
+          fetchTimeWriteIndex = nextFetchTimeWriteIndex
+          fetchCountSum += 1
+          fetchTimeSum += value
+        }
+      }
+
 
     }
+
     /**
       * 记录batch耗时
       */
@@ -42,8 +64,10 @@ class PowerAdapter(taskManager: TaskManager) extends Actor with ActorLogging {
       val nextBatchTimeWriteIndex = (batchTimeWriteIndex + 1) % size
       batchTimeArray(nextBatchTimeWriteIndex) = value
       batchTimeWriteIndex = nextBatchTimeWriteIndex
-
+      batchCountSum += 1
+      batchTimeSum += value
     }
+
     /**
       * 记录sink耗时
       */
@@ -52,7 +76,8 @@ class PowerAdapter(taskManager: TaskManager) extends Actor with ActorLogging {
       val nextSinkTimeWriteIndex = (sinkTimeWriteIndex + 1) % size
       sinkTimeArray(nextSinkTimeWriteIndex) = value
       sinkTimeWriteIndex = nextSinkTimeWriteIndex
-
+      sinkCountSum += 1
+      sinkTimeSum += value
     }
     case SyncControllerMessage(x) => {
       x match {
@@ -60,13 +85,15 @@ class PowerAdapter(taskManager: TaskManager) extends Actor with ActorLogging {
           * 计算各部件耗时并刷新
           */
         case "cost" => {
-          val fetchCost = (fetchTimeArray.fold(0L)(_ + _))./(size)
-          val batchCost = (batchTimeArray.fold(0L)(_ + _))./(size)
-          val sinkCost = (sinkTimeArray.fold(0L)(_ + _))./(size)
-          taskManager.fetchCost.set(fetchCost)
-          taskManager.batchCost.set(batchCost)
-          taskManager.sinkCost.set(sinkCost)
+          computeCost
+          //          val fetchCost = (fetchTimeArray.fold(0L)(_ + _))./(size)
+          //          val batchCost = (batchTimeArray.fold(0L)(_ + _))./(size)
+          //          val sinkCost = (sinkTimeArray.fold(0L)(_ + _))./(size)
+          //          taskManager.fetchCost.set(fetchCost)
+          //          taskManager.batchCost.set(batchCost)
+          //          taskManager.sinkCost.set(sinkCost)
         }
+
         /**
           * 功率控制
           */
@@ -101,12 +128,12 @@ class PowerAdapter(taskManager: TaskManager) extends Actor with ActorLogging {
           val finalDelayDuration: Long = ((fetchCount - sinkCount) / batchThreshold, fetchCost, batchCost, sinkCost) match {
             case (_, x, y, z) if (x > 50 || y > 10000 || z > 800) => math.max(100000, delayDuration) //100ms 防止数据太大
             case (w, _, _, _) if (w < 8 * batcherNum) => 0 //0s 快速拉取数据
-            case (_, x, y, z) if (x > 3 || y > 8000 || z > 750) => math.max(80000, delayDuration) //80ms 防止数据太大
-            case (_, x, y, z) if (x > 2 || y > 6000 || z > 700) => math.max(60000, delayDuration) //60ms 防止数据太大
-            case (_, x, y, z) if (x > 2 || y > 4000 || z > 600) => math.max(40000, delayDuration) //40ms 防止数据太大
-            case (_, x, y, z) if (x > 2 || y > 2500 || z > 450) => math.max(35000, delayDuration) //40ms
-            case (_, x, y, z) if (x > 2 || y > 2000 || z > 400) => math.max(25000, delayDuration) //25ms
-            case (_, x, y, z) if (x > 1 || y > 1800 || z > 300) => math.max(20000, delayDuration) //20ms
+            case (_, x, y, z) if (x > 12 || y > 8000 || z > 750) => math.max(80000, delayDuration) //80ms 防止数据太大
+            case (_, x, y, z) if (x > 9 || y > 6000 || z > 700) => math.max(60000, delayDuration) //60ms 防止数据太大
+            case (_, x, y, z) if (x > 6 || y > 4000 || z > 600) => math.max(40000, delayDuration) //40ms 防止数据太大
+            case (_, x, y, z) if (x > 4 || y > 2500 || z > 450) => math.max(35000, delayDuration) //40ms
+            case (_, x, y, z) if (x > 3 || y > 2000 || z > 400) => math.max(25000, delayDuration) //25ms
+            case (_, x, y, z) if (x > 2 || y > 1800 || z > 300) => math.max(20000, delayDuration) //20ms
             case (_, x, y, z) if (x > 1 || y > 1700 || z > 250) => math.max(10000, delayDuration) //10ms
             case (_, x, y, z) if (x > 1 || y > 1300 || z > 200) => math.max(7000, delayDuration) //7ms
             case (_, x, y, z) if (x > 1 || y > 950 || z > 180) => math.max(2000, delayDuration) //2ms
@@ -125,6 +152,37 @@ class PowerAdapter(taskManager: TaskManager) extends Actor with ActorLogging {
         }
       }
     }
+  }
+
+  def computeCost = {
+    val batchThrehold = taskManager.batchThreshold.get()
+    val fetchCost = (fetchTimeArray.fold(0L)(_ + _))./(size)
+    val batchCost = (batchTimeArray.fold(0L)(_ + _))./(size)
+    val sinkCost = (sinkTimeArray.fold(0L)(_ + _))./(size)
+    val fetchCostPercentage = fetchTimeSum / SettingConstant.COMPUTE_COST_CONSTANT / 10
+    val batchCostPercentage = batchTimeSum / SettingConstant.COMPUTE_COST_CONSTANT / 10 / taskManager.batcherNum
+    val sinkCostPercentage = sinkTimeSum / SettingConstant.COMPUTE_COST_CONSTANT / 10
+    val fetchCountPerSecond = fetchCountSum / SettingConstant.COMPUTE_COST_CONSTANT
+    val batchCountPerSecond = batchCountSum / SettingConstant.COMPUTE_COST_CONSTANT * batchThrehold
+    val sinkCountPerSecond = sinkCountSum / SettingConstant.COMPUTE_COST_CONSTANT * batchThrehold
+    taskManager.fetchCost.set(fetchCost)
+    taskManager.batchCost.set(batchCost)
+    taskManager.sinkCost.set(sinkCost)
+
+    taskManager.fetchCostPercentage.set(fetchCostPercentage)
+    taskManager.batchCostPercentage.set(batchCostPercentage)
+    taskManager.sinkCostPercentage.set(sinkCostPercentage)
+
+    taskManager.fetchCountPerSecond.set(fetchCountPerSecond)
+    taskManager.batchCountPerSecond.set(batchCountPerSecond)
+    taskManager.sinkCountPerSecond.set(sinkCountPerSecond)
+
+    fetchCountSum = 0
+    fetchTimeSum = 0
+    batchTimeSum = 0
+    batchCountSum = 0
+    sinkTimeSum = 0
+    sinkCountSum = 0
   }
 }
 

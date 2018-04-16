@@ -177,6 +177,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
       schedulingSavedJournalName = lastSavedJournalName
     }
     case SyncControllerMessage("checkSend") => {
+      context.parent ! SinkerMessage("flushDdl")
       val timeInterval = (System.currentTimeMillis() - lastSinkTimestamp)
       log.info(s"sinker checkSend timeInterval:$timeInterval")
       if (timeInterval > (1000 * 20)) {
