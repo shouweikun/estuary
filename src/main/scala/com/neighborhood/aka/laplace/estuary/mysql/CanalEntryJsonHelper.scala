@@ -3,6 +3,8 @@ package com.neighborhood.aka.laplace.estuary.mysql
 import com.alibaba.otter.canal.protocol.CanalEntry
 import com.google.protobuf.InvalidProtocolBufferException
 import com.googlecode.protobuf.format.JsonFormat
+import com.neighborhood.aka.laplace.estuary.bean.key.BinlogKey
+import com.neighborhood.aka.laplace.estuary.bean.support.KafkaMessage
 
 /**
   * Created by john_liu on 2018/2/27.
@@ -28,37 +30,19 @@ object CanalEntryJsonHelper {
     sb.append("}")
     sb.toString
   }
-  def dummyDataJson(dbName:String):String = {
+
+  def dummyKafkaMessage(dbName: String): KafkaMessage = {
     val tableName = "daas_heartbeats_check"
-    s"""{
-	"header": {
-		"version": 1,
-		"logfileName": "mysql-bin.000000",
-		"logfileOffset": 4,
-		"serverId": 0,
-		"serverenCode": "UTF-8",
-		"executeTime": 0,
-		"sourceType": "MYSQL",
-		"schemaName": "$dbName",
-		"tableName": "$tableName",
-		"eventLength": 0,
-		"eventType": "INSERT"
-	},
-	"rowChange": {
-		"rowDatas": [{
-			"afterColumns": [{
-				"index": "0",
-				"isKey": "false",
-				"isNull": "false",
-				"mysqlType": "varchar(255)",
-				"name": "cif_check",
-				"sqlType": "12",
-				"updated": "true",
-				"value": "${System.currentTimeMillis()}"
-			}]
-		}]
-	}
-}"""
+    lazy val jsonKey = new BinlogKey
+    lazy val time = System.currentTimeMillis()
+    val jsonValue =
+      s"""{"header": {"version": 1,"logfileName": "mysql-bin.000000","logfileOffset": 4,"serverId": 0,"serverenCode": "UTF-8","executeTime": $time,"sourceType": "MYSQL","schemaName": "$dbName","tableName": "$tableName",	"eventLength": 651,"eventType": "INSERT"	},"rowChange": {"rowDatas": [{"afterColumns": [{"sqlType": -5,"isNull": false,"mysqlType": "bigint(20) unsigned","name": "id","isKey": true,"index": 0,	"updated": true,"value": "${time}"}]}]}}
+         |
+       """.stripMargin
+    jsonKey.setDbName(dbName)
+    jsonKey.setTableName(tableName)
+    new KafkaMessage(jsonKey, jsonValue)
   }
+
   def headerToJson(obj: CanalEntry.Header): String = jsonFormat.printToString(obj)
 }
