@@ -33,6 +33,7 @@ class Mysql2KafkaTaskController {
     ValidationUtils.notNull(requestBody.getKafkaTopic,"kafkaTopic cannot be null")
     ValidationUtils.notblank(requestBody.getKafkaTopic, "kafkaTopic cannot be null")
     ValidationUtils.notNull(requestBody.getKafkaDdlTopic,"kafkaDdlTopic cannot be null")
+
     ValidationUtils.notblank(requestBody.getKafkaDdlTopic, "kafkaDdlTopic cannot be null")
     ValidationUtils.notNull(requestBody.getMysqladdress, "Mysqladdress cannot be null")
     ValidationUtils.notblank(requestBody.getMysqladdress, "Mysqladdress cannot be blank")

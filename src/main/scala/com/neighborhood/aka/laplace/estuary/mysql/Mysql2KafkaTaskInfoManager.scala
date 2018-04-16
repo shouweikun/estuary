@@ -74,7 +74,7 @@ class Mysql2KafkaTaskInfoManager(taskInfoBean: Mysql2KafkaTaskInfoBean) extends 
   /**
     * 同步任务开始entry
     */
-  var startPosition: EntryPosition = if (StringUtils.isEmpty(this.taskInfo.journalName)) new EntryPosition("mysql-bin.000013", 4L) else new EntryPosition(this.taskInfo.journalName, this.taskInfo.position)
+  var startPosition: EntryPosition = if (StringUtils.isEmpty(this.taskInfo.journalName)) null else new EntryPosition(this.taskInfo.journalName, this.taskInfo.position)
   /**
     * canal的mysqlConnection
     */
