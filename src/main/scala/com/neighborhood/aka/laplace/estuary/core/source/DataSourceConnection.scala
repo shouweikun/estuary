@@ -16,4 +16,6 @@ trait DataSourceConnection {
   def disconnect(): Unit
 
   def isConnected: Boolean
+
+  def fork:DataSourceConnection
 }
