@@ -241,8 +241,9 @@ class BinlogEventBatcher(
       log.info(s"ddlHandler is sending heartbeats at time:${System.currentTimeMillis}")
       val eventFilterPattern = mysql2KafkaTaskInfoManager.taskInfo.eventFilterPattern
       val eventBlackFilterPattern = mysql2KafkaTaskInfoManager.taskInfo.eventBlackFilterPattern
-      val concernedDbNames = if (StringUtils.isEmpty(eventFilterPattern)) Array.empty[String] else eventFilterPattern.split("[^a-zA-z]*")
-      val ignoredDbNames = if (StringUtils.isEmpty(eventFilterPattern)) Array.empty[String] else eventBlackFilterPattern.split("[^a-zA-z]*")
+      //todo 有问题， 应该专门提供一个参数选项
+      val concernedDbNames = if (StringUtils.isEmpty(eventFilterPattern)) Array.empty[String] else eventFilterPattern.split(",")
+      val ignoredDbNames = if (StringUtils.isEmpty(eventFilterPattern)) Array.empty[String] else eventBlackFilterPattern.split(",")
 
 
       /**
