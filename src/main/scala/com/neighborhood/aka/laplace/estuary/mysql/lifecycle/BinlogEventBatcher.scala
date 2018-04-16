@@ -18,6 +18,7 @@ import com.neighborhood.aka.laplace.estuary.core.lifecycle.{SourceDataBatcher, S
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mysql.{CanalEntryJsonHelper, JsonUtil, Mysql2KafkaTaskInfoManager, MysqlBinlogParser}
 import com.taobao.tddl.dbsync.binlog.LogEvent
+import org.springframework.util.StringUtils
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -65,7 +66,7 @@ class BinlogEventBatcher(
   /**
     * 该mysql实例所有的db
     */
-  val mysqlDatabaseNameList = mysql2KafkaTaskInfoManager.mysqlDatabaseNameList
+  lazy val mysqlDatabaseNameList = mysql2KafkaTaskInfoManager.mysqlDatabaseNameList
   /**
     * 打包的entry
     */
@@ -240,10 +241,9 @@ class BinlogEventBatcher(
       log.info(s"ddlHandler is sending heartbeats at time:${System.currentTimeMillis}")
       val eventFilterPattern = mysql2KafkaTaskInfoManager.taskInfo.eventFilterPattern
       val eventBlackFilterPattern = mysql2KafkaTaskInfoManager.taskInfo.eventBlackFilterPattern
-      val concernedDbNames = eventFilterPattern
-        .split("[^a-zA-Z]*")
-      val ignoredDbNames = eventBlackFilterPattern
-        .split("[^a-zA-z]*")
+      val concernedDbNames = if (StringUtils.isEmpty(eventFilterPattern)) Array.empty[String] else eventFilterPattern.split("[^a-zA-z]*")
+      val ignoredDbNames = if (StringUtils.isEmpty(eventFilterPattern)) Array.empty[String] else eventBlackFilterPattern.split("[^a-zA-z]*")
+
 
       /**
         *

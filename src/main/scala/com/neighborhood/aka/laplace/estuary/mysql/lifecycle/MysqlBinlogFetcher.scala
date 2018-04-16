@@ -148,6 +148,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
           log.debug("fetcher predump")
           mysqlMetaConnection = Option(preDump(mysqlConnection.get))
           mysqlConnection.get.connect
+          mysql2KafkaTaskInfoManager.mysqlDatabaseNameList =getSchemas(mysqlConnection.get)
           val startPosition = entryPosition.get
           try {
             if (StringUtils.isEmpty(startPosition.getJournalName) && Option(startPosition.getTimestamp).isEmpty) {

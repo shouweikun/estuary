@@ -102,15 +102,21 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
         case "error" => {
           throw new RuntimeException("sinker went wrong when sending data")
         }
-        case "flush" => context
-          .child("binlogBatcher")
-          .map(ref => ref ! akka.routing.Broadcast(SyncControllerMessage("flush")))
+        case "flush" => {
+          context
+            .child("binlogBatcher")
+        }
+        case "flushDdl" => {
+          context
+            .child("ddlHandler")
+            .map(ref => ref ! SyncControllerMessage("flush"))
+        }
         case _ => {}
       }
     }
     case SyncControllerMessage(msg) => {
       msg match {
-          //实质上没有上
+        //实质上没有上
         case "cost" => {
           if (taskInfoBean.isCosting) {
             context
@@ -220,7 +226,7 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
           system
           .scheduler
           .schedule(SettingConstant.POWER_CONTROL_CONSTANT seconds, SettingConstant.POWER_CONTROL_CONSTANT seconds, ref, SyncControllerMessage("control")));
-      log.info("power Control ON")
+    log.info("power Control ON")
   }
 
   def initWorkers: Unit = {
