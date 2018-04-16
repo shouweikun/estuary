@@ -24,6 +24,9 @@ class PowerAdapter(taskManager: TaskManager) extends Actor with ActorLogging {
 
 
   override def receive: Receive = {
+    /**
+      * 记录fetch耗时
+      */
     case FetcherMessage(x) => {
       val value = x.toLong
       val nextFetchTimeWriteIndex = (fetchTimeWriteIndex + 1) % size
@@ -31,6 +34,9 @@ class PowerAdapter(taskManager: TaskManager) extends Actor with ActorLogging {
       fetchTimeWriteIndex = nextFetchTimeWriteIndex
 
     }
+    /**
+      * 记录batch耗时
+      */
     case BatcherMessage(x) => {
       val value = x.toLong
       val nextBatchTimeWriteIndex = (batchTimeWriteIndex + 1) % size
@@ -38,6 +44,9 @@ class PowerAdapter(taskManager: TaskManager) extends Actor with ActorLogging {
       batchTimeWriteIndex = nextBatchTimeWriteIndex
 
     }
+    /**
+      * 记录sink耗时
+      */
     case SinkerMessage(x) => {
       val value = x.toLong
       val nextSinkTimeWriteIndex = (sinkTimeWriteIndex + 1) % size
@@ -47,6 +56,9 @@ class PowerAdapter(taskManager: TaskManager) extends Actor with ActorLogging {
     }
     case SyncControllerMessage(x) => {
       x match {
+        /**
+          * 计算各部件耗时并刷新
+          */
         case "cost" => {
           val fetchCost = (fetchTimeArray.fold(0L)(_ + _))./(size)
           val batchCost = (batchTimeArray.fold(0L)(_ + _))./(size)
@@ -55,6 +67,9 @@ class PowerAdapter(taskManager: TaskManager) extends Actor with ActorLogging {
           taskManager.batchCost.set(batchCost)
           taskManager.sinkCost.set(sinkCost)
         }
+        /**
+          * 功率控制
+          */
         case "control" => {
           //todo 好好编写策略
           val sinkCost = taskManager.sinkCost.get()
@@ -84,11 +99,11 @@ class PowerAdapter(taskManager: TaskManager) extends Actor with ActorLogging {
 
           log.info(s"${(fetchCount - sinkCount) / batchThreshold},$fetchCost,$batchCost,$sinkCost")
           val finalDelayDuration: Long = ((fetchCount - sinkCount) / batchThreshold, fetchCost, batchCost, sinkCost) match {
-            case (_, x, y, z) if (x > 3 || y > 10000 || z > 800) => math.max(100000, delayDuration) //100ms 防止数据太大
+            case (_, x, y, z) if (x > 50 || y > 10000 || z > 800) => math.max(100000, delayDuration) //100ms 防止数据太大
+            case (w, _, _, _) if (w < 8 * batcherNum) => 0 //0s 快速拉取数据
             case (_, x, y, z) if (x > 3 || y > 8000 || z > 750) => math.max(80000, delayDuration) //80ms 防止数据太大
             case (_, x, y, z) if (x > 2 || y > 6000 || z > 700) => math.max(60000, delayDuration) //60ms 防止数据太大
             case (_, x, y, z) if (x > 2 || y > 4000 || z > 600) => math.max(40000, delayDuration) //40ms 防止数据太大
-            case (w, _, _, _) if (w < 8 * batcherNum) => 0 //0s 快速拉取数据
             case (_, x, y, z) if (x > 2 || y > 2500 || z > 450) => math.max(35000, delayDuration) //40ms
             case (_, x, y, z) if (x > 2 || y > 2000 || z > 400) => math.max(25000, delayDuration) //25ms
             case (_, x, y, z) if (x > 1 || y > 1800 || z > 300) => math.max(20000, delayDuration) //20ms

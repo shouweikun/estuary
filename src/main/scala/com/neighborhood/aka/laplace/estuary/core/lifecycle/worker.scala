@@ -1,7 +1,5 @@
 package com.neighborhood.aka.laplace.estuary.core.lifecycle
 
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status.Status
-
 /**
   * Created by john_liu on 2018/2/8.
   */
