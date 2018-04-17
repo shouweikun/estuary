@@ -234,7 +234,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
 
     @tailrec
     def fetchUntilSome: Option[CanalEntry.Entry] = {
-      val event = decoder.decode(fetcher, logContext)
+      lazy val event = decoder.decode(fetcher, logContext)
       lazy val entry = try {
         binlogParser.parse(Option(event))
 
@@ -247,10 +247,10 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
       }
       if (filterEntry(entry)) entry else if
       (fetcher.fetch()) fetchUntilSome
-      else fetchUntilSome
+      else throw new Exception("impossible,unexpected end of stream")
     }
 
-    val entry = fetchUntilSome
+    lazy val entry = fetchUntilSome
     if (entry.get.getHeader.getEventType == CanalEntry.EventType.ALTER) {
       log.info(s"fetch ddl:${CanalEntryJsonHelper.entryToJson(entry.get)}");
       Option(binlogDdlHandler).fold(log.warning("ddlHandler does not exist"))(x => x ! entry.get)
