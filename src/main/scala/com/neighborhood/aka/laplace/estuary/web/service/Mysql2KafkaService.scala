@@ -7,6 +7,7 @@ import com.neighborhood.aka.laplace.estuary.mongodb.MongoPersistence
 import com.neighborhood.aka.laplace.estuary.mysql.Mysql2KafkaTaskInfoManager
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.MysqlBinlogController
 import com.neighborhood.aka.laplace.estuary.web.akka.ActorRefHolder
+import com.neighborhood.aka.laplace.estuary.web.akka.ActorRefHolder.actorRefMap
 import com.neighborhood.aka.laplace.estuary.web.bean.Mysql2kafkaTaskRequestBean
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -38,12 +39,20 @@ object Mysql2KafkaService {
     ???
   }
   def startOneExistTask(key: String,value: String): String = {
-    val mysql2kafkaTaskRequestBean=loadOneExistTask(key,value)
-    var mysql2KafkaTaskInfoBean= mysqlTaskBeanTransform.transform(mysql2kafkaTaskRequestBean)
-    val prop = MysqlBinlogController.props(mysql2KafkaTaskInfoBean)
-    ActorRefHolder.syncDaemon ! (prop, Option(mysql2KafkaTaskInfoBean.syncTaskId))
-    //    开启已经存在的任务不需要持久化
-    s"mession: exist task ${mysql2KafkaTaskInfoBean.syncTaskId} submitted"
+    Option(actorRefMap.get(key))
+    match{
+      case value => {
+        s"mession: exist task ${value} already started"
+      }
+      case _ => {
+        val mysql2kafkaTaskRequestBean=loadOneExistTask(key,value)
+        val mysql2KafkaTaskInfoBean= mysqlTaskBeanTransform.transform(mysql2kafkaTaskRequestBean)
+        val prop = MysqlBinlogController.props(mysql2KafkaTaskInfoBean)
+        ActorRefHolder.syncDaemon ! (prop, Option(mysql2KafkaTaskInfoBean.syncTaskId))
+        //    开启已经存在的任务不需要持久化
+        s"mession: exist task ${mysql2KafkaTaskInfoBean.syncTaskId} submitted"
+      }
+    }
   }
 
 
