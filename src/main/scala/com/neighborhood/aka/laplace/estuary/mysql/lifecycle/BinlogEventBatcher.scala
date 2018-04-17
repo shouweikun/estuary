@@ -266,6 +266,8 @@ class BinlogEventBatcher(
         case (_, true) => buildAndSendDummyKafkaMessage(mysqlDatabaseNameList.diff(ignoredDbNames))(binlogEventSinker)
         case (_, false) => buildAndSendDummyKafkaMessage(mysqlDatabaseNameList)(binlogEventSinker)
       }
+
+      if (isCounting) mysql2KafkaTaskInfoManager.batchCount.incrementAndGet
     }
   }
 
