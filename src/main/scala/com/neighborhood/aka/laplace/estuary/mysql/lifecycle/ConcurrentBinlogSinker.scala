@@ -225,8 +225,9 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
 
           log.error("Error when send :" + key + ", metadata:" + metadata + exception + "lastSavedPoint" + s" thisJournalName = $thisJournalName" + s" thisOffset = $thisOffset")
           if (isAbnormal.compareAndSet(false, true)) {
-
-            logPositionHandler.persistLogPosition(destination, thisJournalName, thisOffset)
+            if (!StringUtils.isEmpty(thisJournalName)) {
+              logPositionHandler.persistLogPosition(destination, thisJournalName, thisOffset)
+            }
             context.parent ! SinkerMessage("error")
             log.info("send to recorder lastSavedPoint" + s"thisJournalName = $thisJournalName" + s"thisOffset = $thisOffset")
             //todo 做的不好 ，应该修改一下messge模型
