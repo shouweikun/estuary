@@ -75,6 +75,14 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
   /**
     * 待保存的BinlogOffset
     */
+  var scheduledSavedOffset: Long = schedulingSavedOffset
+  /**
+    * 待保存的Binlog文件名称
+    */
+  var scheduledSavedJournalName: String = schedulingSavedJournalName
+  /**
+    * 待保存的BinlogOffset
+    */
   var lastSavedOffset: Long = if (startPosition.isDefined) {
     startPosition.get.getPostion.getPosition
   } else 4L
@@ -161,7 +169,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
         this.lastSavedJournalName = savedJournalName
         this.lastSavedOffset = savedOffset
         // log.info(s"JournalName update to $savedJournalName,offset update to $savedOffset")
-        if (isProfiling) mysql2KafkaTaskInfoManager.sinkerLogPosition.set(s"$savedJournalName:$savedOffset")
+        if (isProfiling) mysql2KafkaTaskInfoManager.sinkerLogPosition.set(s"latest binlog:{$savedJournalName:$savedOffset},save point:{$schedulingSavedJournalName:$schedulingSavedOffset}")
       }
 
 
@@ -173,6 +181,8 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
         logPositionHandler.persistLogPosition(destination, schedulingSavedJournalName, schedulingSavedOffset)
         log.info(s"save logPosition $schedulingSavedJournalName:$schedulingSavedOffset")
       }
+      scheduledSavedJournalName = schedulingSavedJournalName
+      scheduledSavedOffset = schedulingSavedOffset
       schedulingSavedOffset = lastSavedOffset
       schedulingSavedJournalName = lastSavedJournalName
     }
@@ -207,8 +217,8 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
       * 写数据时的异常
       */
     val callback = new Callback {
-      val thisJournalName: String = schedulingSavedJournalName
-      val thisOffset: Long = schedulingSavedOffset
+      val thisJournalName: String = scheduledSavedJournalName
+      val thisOffset: Long = scheduledSavedOffset
 
       override def onCompletion(metadata: RecordMetadata, exception: Exception): Unit = {
         if (exception != null) {
