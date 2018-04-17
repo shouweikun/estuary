@@ -58,6 +58,12 @@ class Mysql2KafkaTaskController {
     Mysql2KafkaService.startOneExistTask("syncTaskId",syncTaskId)
   }
 
+  @ApiOperation(value = "启动所有已经存在的mysql2kafka任务", httpMethod = "POST", notes = "")
+  @RequestMapping(value = Array("/start/exit/alltasks"), method = Array(RequestMethod.POST))
+  def startAllExitTasks() = {
+    Mysql2KafkaService.startAllExistTask
+  }
+
   @ApiOperation(value = "查看任务状态", httpMethod = "GET", notes = "")
   @RequestMapping(value = Array("/check/task/status"), method = Array(RequestMethod.GET))
   def checkTaskStatus(@RequestParam("id") id: String): String = {
