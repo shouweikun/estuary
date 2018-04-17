@@ -148,7 +148,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
           log.debug("fetcher predump")
           mysqlMetaConnection = Option(preDump(mysqlConnection.get))
           mysqlConnection.get.connect
-          mysql2KafkaTaskInfoManager.mysqlDatabaseNameList =getSchemas(mysqlConnection.get)
+          mysql2KafkaTaskInfoManager.mysqlDatabaseNameList = getSchemas(mysqlConnection.get)
           val startPosition = entryPosition.get
           try {
             if (StringUtils.isEmpty(startPosition.getJournalName) && Option(startPosition.getTimestamp).isEmpty) {
@@ -245,7 +245,9 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
       if (entry.get.getHeader.getEventType == CanalEntry.EventType.ALTER) {
         log.info(s"fetch ddl:${CanalEntryJsonHelper.entryToJson(entry.get)}");
         Option(binlogDdlHandler).fold(log.warning("ddlHandler does not exist"))(x => x ! entry.get)
-      } else binlogEventBatcher ! entry.get
+      }
+      else
+        binlogEventBatcher ! entry.get
 
       if (isCounting) mysql2KafkaTaskInfoManager.fetchCount.incrementAndGet()
       System.currentTimeMillis() - before

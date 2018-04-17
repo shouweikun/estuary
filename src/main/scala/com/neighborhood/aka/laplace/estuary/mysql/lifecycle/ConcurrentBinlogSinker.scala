@@ -143,7 +143,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
           x =>
             x._2 match {
               case message: KafkaMessage => handleSinkTask(message)(x._1)
-              case messages: Array[KafkaMessage] => messages.map(handleSinkTask(_)(x._1))
+              case messages: Array[KafkaMessage] => if (messages.length > 0) messages.map(handleSinkTask(_)(x._1))
 
               case BinlogPositionInfo(journalName, offset) => {
                 savedJournalName = journalName
@@ -169,7 +169,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
         this.lastSavedJournalName = savedJournalName
         this.lastSavedOffset = savedOffset
         // log.info(s"JournalName update to $savedJournalName,offset update to $savedOffset")
-        if (isProfiling) mysql2KafkaTaskInfoManager.sinkerLogPosition.set(s"latest binlog:{$savedJournalName:$savedOffset},save point:{$schedulingSavedJournalName:$schedulingSavedOffset}")
+        if (isProfiling) mysql2KafkaTaskInfoManager.sinkerLogPosition.set(s"latest binlog:{$savedJournalName:$savedOffset},save point:{$schedulingSavedJournalName:$schedulingSavedOffset},lastSavedPoint:{$scheduledSavedJournalName:$scheduledSavedOffset}")
       }
 
 
@@ -282,8 +282,8 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
 
   override def postStop(): Unit = {
     if (!isAbnormal.get() && !StringUtils.isEmpty(lastSavedJournalName)) {
-      val theJournalName = this.schedulingSavedJournalName
-      val theOffset = this.schedulingSavedOffset
+      val theJournalName = this.scheduledSavedJournalName
+      val theOffset = this.scheduledSavedOffset
       logPositionHandler.persistLogPosition(destination, theJournalName, theOffset)
       log.info(s"记录binlog $theJournalName,$theOffset")
       if (isProfiling) mysql2KafkaTaskInfoManager.sinkerLogPosition.set(s"$theJournalName:$theOffset")

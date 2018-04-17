@@ -23,7 +23,7 @@
         <scalamock.version>4.1.0</scalamock.version>
         <cats.version>1.0.0-RC1</cats.version>
         <spark.version>1.6.3</spark.version>
-        <canal.version>1.0.23</canal.version>
+        <canal.version>1.0.24</canal.version>
         <kafka.version>0.10.1.0</kafka.version>
         <akka.version>10.0.10</akka.version>
         <mongodb.version>3.4.0</mongodb.version>

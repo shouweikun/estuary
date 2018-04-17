@@ -116,15 +116,14 @@ class PowerAdapter(taskManager: TaskManager) extends Actor with ActorLogging {
             val left = (adjustedSinkCost * 1000 / batchThreshold - adjustedFetchCost * 1000 + 1) * 70 / 100
             val limitRatio = batcherNum * 3
             val right = 1000 * adjustedBatchCost / limitRatio / batchThreshold
-            log.info(s"adjustedFetchCost:$adjustedFetchCost,adjustedBatchCost:$adjustedBatchCost,adjustedSinkCost:$adjustedSinkCost,left:$left,right:$right,limitRatio:$limitRatio")
+            log.debug(s"adjustedFetchCost:$adjustedFetchCost,adjustedBatchCost:$adjustedBatchCost,adjustedSinkCost:$adjustedSinkCost,left:$left,right:$right,limitRatio:$limitRatio")
             math.max(left, right)
           } else {
             //sink速度比batch速度快的慢
             math.max((adjustedSinkCost * 1000 / batchThreshold - adjustedFetchCost * 1000 + 1) * 70 / 100, 0)
           }
-          log.info(s"delayDuration:$delayDuration")
+          log.debug(s"delayDuration:$delayDuration")
 
-          log.info(s"${(fetchCount - sinkCount) / batchThreshold},$fetchCost,$batchCost,$sinkCost")
           val finalDelayDuration: Long = ((fetchCount - sinkCount) / batchThreshold, fetchCost, batchCost, sinkCost) match {
             case (_, x, y, z) if (x > 50 || y > 10000 || z > 800) => math.max(100000, delayDuration) //100ms 防止数据太大
             case (w, _, _, _) if (w < 8 * batcherNum) => 0 //0s 快速拉取数据
@@ -147,7 +146,7 @@ class PowerAdapter(taskManager: TaskManager) extends Actor with ActorLogging {
             case _ => math.max(delayDuration, 3000000) //3s
 
           }
-          log.info(s"finalDelayDuration:$finalDelayDuration")
+          log.info(s"${(fetchCount - sinkCount) / batchThreshold},$fetchCost,$batchCost,$sinkCost,finalDelayDuration:$finalDelayDuration")
           taskManager.fetchDelay.set(finalDelayDuration)
         }
       }

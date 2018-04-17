@@ -1,8 +1,8 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle
 
 import java.util
-import java.util.concurrent.{Executors, ForkJoinPool}
 import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.{Executors, ForkJoinPool}
 
 import akka.actor.SupervisorStrategy.Escalate
 import akka.actor.{Actor, ActorLogging, ActorRef, AllForOneStrategy, Props}
@@ -131,6 +131,7 @@ class BinlogEventBatcher(
     }
     case SyncControllerMessage(msg) => {
       msg match {
+          //刷新数据
         case "flush" => flush
       }
     }
@@ -163,7 +164,7 @@ class BinlogEventBatcher(
     */
   def flush = {
     if (!entryBatch.isEmpty) {
-      val batch = entryBatch
+      val batch = entryBatch  //
       val size = batch.size
 
       /**
@@ -191,6 +192,36 @@ class BinlogEventBatcher(
                 tempJsonKey.syncTaskId = mysql2KafkaTaskInfoManager.taskInfo.syncTaskId
                 tempJsonKey.msgSyncStartTime = before
                 tempJsonKey.msgSize = entry.getSerializedSize
+
+                /**
+                  * 局部方法 判断eventType，根据eventType执行不同操作
+                  * @return
+                  */
+                def tranferEntry2JsonByEventType:Array[KafkaMessage]= {
+                  eventType match {
+                    //DML操作都执行tranformDMLtoJson这个方法
+                    case CanalEntry.EventType.DELETE => tranformDMLtoJson(entry, tempJsonKey, "DELETE")
+                    case CanalEntry.EventType.INSERT => tranformDMLtoJson(entry, tempJsonKey, "INSERT")
+                    case CanalEntry.EventType.UPDATE => tranformDMLtoJson(entry, tempJsonKey, "UPDATE")
+                    //DDL操作直接将entry变为json,目前只处理Alter
+                    case CanalEntry.EventType.ALTER => {
+                      Array(transferDDltoJson(tempJsonKey, entry, header.getLogfileName, header.getLogfileOffset, before))
+                    }
+                    //                      case CanalEntry.EventType.CREATE => {
+                    //                        transferDDltoJson(tempJsonKey, entry, header.getLogfileName, header.getLogfileOffset, before)
+                    //                        val theAfter = System.currentTimeMillis()
+                    //                        tempJsonKey.setMsgSyncEndTime(theAfter)
+                    //                        tempJsonKey.setMsgSyncUsedTime(theAfter - before)
+                    //                      }
+                    case x => {
+
+                      log.warning(s"unsupported EntryType:$x")
+                      Array.empty
+                    }
+
+                  }
+                }
+
                 //根据entry的类型来执行不同的操作
                 entryType match {
                   case CanalEntry.EntryType.TRANSACTIONEND => {
@@ -200,27 +231,7 @@ class BinlogEventBatcher(
                     BinlogPositionInfo(header.getLogfileName, header.getLogfileOffset)
                   }
                   case CanalEntry.EntryType.ROWDATA => {
-                    eventType match {
-                      //DML操作都执行tranformDMLtoJson这个方法
-                      case CanalEntry.EventType.DELETE => tranformDMLtoJson(entry, tempJsonKey, "DELETE")
-                      case CanalEntry.EventType.INSERT => tranformDMLtoJson(entry, tempJsonKey, "INSERT")
-                      case CanalEntry.EventType.UPDATE => tranformDMLtoJson(entry, tempJsonKey, "UPDATE")
-                      //DDL操作直接将entry变为json,目前只处理Alter
-                      case CanalEntry.EventType.ALTER => {
-                        transferDDltoJson(tempJsonKey, entry, header.getLogfileName, header.getLogfileOffset, before)
-                      }
-                      //                      case CanalEntry.EventType.CREATE => {
-                      //                        transferDDltoJson(tempJsonKey, entry, header.getLogfileName, header.getLogfileOffset, before)
-                      //                        val theAfter = System.currentTimeMillis()
-                      //                        tempJsonKey.setMsgSyncEndTime(theAfter)
-                      //                        tempJsonKey.setMsgSyncUsedTime(theAfter - before)
-                      //                      }
-                      case x => {
-
-                        log.warning(s"unsupported EntryType:$x")
-                      }
-
-                    }
+                    tranferEntry2JsonByEventType
                   }
                 }
 
@@ -331,6 +342,7 @@ class BinlogEventBatcher(
 
     val re = Try(CanalEntry.RowChange.parseFrom(entry.getStoreValue)) match {
       case Success(rowChange) => {
+       val a = rowChange.getRowDatasCount
         (0 until rowChange.getRowDatasCount)
           .map {
             index =>
