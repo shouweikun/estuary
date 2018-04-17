@@ -267,7 +267,8 @@ class BinlogEventBatcher(
         case (_, false) => buildAndSendDummyKafkaMessage(mysqlDatabaseNameList)(binlogEventSinker)
       }
 
-      if (isCounting) mysql2KafkaTaskInfoManager.batchCount.incrementAndGet
+      if (isCounting) mysql2KafkaTaskInfoManager.batchCount.incrementAndGet;
+      mysql2KafkaTaskInfoManager.fetchCount.incrementAndGet()
     }
   }
 
