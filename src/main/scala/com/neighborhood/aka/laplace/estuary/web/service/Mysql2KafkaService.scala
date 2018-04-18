@@ -2,12 +2,13 @@ package com.neighborhood.aka.laplace.estuary.web.service
 
 import com.neighborhood.aka.laplace.estuary.mysql.Mysql2KafkaTaskInfoManager
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.MysqlBinlogController
-import com.neighborhood.aka.laplace.estuary.web.akka.ActorRefHolder
-import com.neighborhood.aka.laplace.estuary.web.akka.ActorRefHolder.actorRefMap
+import com.neighborhood.aka.laplace.estuary.web.akkaUtil.ActorRefHolder
+import com.neighborhood.aka.laplace.estuary.web.akkaUtil.ActorRefHolder.actorRefMap
 import com.neighborhood.aka.laplace.estuary.web.bean.Mysql2kafkaTaskRequestBean
 import com.neighborhood.aka.laplace.estuary.web.dao.MongoPersistence
-import com.neighborhood.aka.laplace.estuary.web.utils.{MysqlTaskBeanTransformUtil, TaskBeanTransformUtil}
+import com.neighborhood.aka.laplace.estuary.web.utils.TaskBeanTransformUtil
 import org.slf4j.{Logger, LoggerFactory}
+import org.springframework.beans.factory.annotation.Autowired
 
 
 /**
@@ -16,6 +17,7 @@ import org.slf4j.{Logger, LoggerFactory}
 object Mysql2KafkaService {
 
   val logger: Logger = LoggerFactory.getLogger(Mysql2KafkaService.getClass)
+
   val mongoPersistence = new MongoPersistence[Mysql2kafkaTaskRequestBean]
 
   // 根据syncTaskId从mongodb中查询出详细信息

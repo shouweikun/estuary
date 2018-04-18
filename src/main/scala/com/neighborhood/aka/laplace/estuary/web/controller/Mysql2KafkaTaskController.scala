@@ -1,15 +1,10 @@
 package com.neighborhood.aka.laplace.estuary.web.controller
 
-import com.neighborhood.aka.laplace.estuary.bean.credential.MysqlCredentialBean
-import com.neighborhood.aka.laplace.estuary.bean.task.Mysql2KafkaTaskInfoBean
 import com.neighborhood.aka.laplace.estuary.web.bean.Mysql2kafkaTaskRequestBean
 import com.neighborhood.aka.laplace.estuary.web.service.Mysql2KafkaService
 import com.neighborhood.aka.laplace.estuary.web.utils.ValidationUtils
 import io.swagger.annotations.ApiOperation
-import org.springframework.util.StringUtils
 import org.springframework.web.bind.annotation._
-
-import scala.collection.JavaConverters._
 
 /**
   * Created by john_liu on 2018/3/10.
@@ -18,6 +13,24 @@ import scala.collection.JavaConverters._
 @RequestMapping(Array("/api/v1/estuary/mysql2kafka"))
 class Mysql2KafkaTaskController {
 
+
+  @ApiOperation(value = "开始一个已经存在的mysql2kafka任务", httpMethod = "POST", notes = "")
+  @RequestMapping(value = Array("/start/exit/onetask"), method = Array(RequestMethod.POST))
+  def startExitOne(@RequestParam("key") key: String,@RequestParam("value") value: String) = {
+    Mysql2KafkaService.startOneExistTask(key,value)
+  }
+
+  @ApiOperation(value = "根据syncTaskId重新启动mysql2kafka任务", httpMethod = "POST", notes = "")
+  @RequestMapping(value = Array("/start/exit/onetask/synctaskid"), method = Array(RequestMethod.POST))
+  def startExitSyncTaskId(@RequestParam("syncTaskId") syncTaskId: String) = {
+    Mysql2KafkaService.startOneExistTask("syncTaskId",syncTaskId)
+  }
+
+  @ApiOperation(value = "启动所有已经存在的mysql2kafka任务", httpMethod = "POST", notes = "")
+  @RequestMapping(value = Array("/start/exit/alltasks"), method = Array(RequestMethod.POST))
+  def startAllExitTasks() = {
+    Mysql2KafkaService.startAllExistTask
+  }
 
   @ApiOperation(value = "开始一个新的mysql2kafka任务", httpMethod = "POST", notes = "")
   @RequestMapping(value = Array("/new/"), method = Array(RequestMethod.POST))
