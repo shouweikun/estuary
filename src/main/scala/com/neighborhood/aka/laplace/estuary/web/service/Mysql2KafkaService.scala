@@ -1,12 +1,12 @@
 package com.neighborhood.aka.laplace.estuary.web.service
 
-import com.neighborhood.aka.laplace.estuary.bean.support.MysqlTaskBeanTransform
 import com.neighborhood.aka.laplace.estuary.mongodb.MongoPersistence
 import com.neighborhood.aka.laplace.estuary.mysql.Mysql2KafkaTaskInfoManager
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.MysqlBinlogController
 import com.neighborhood.aka.laplace.estuary.web.akka.ActorRefHolder
 import com.neighborhood.aka.laplace.estuary.web.akka.ActorRefHolder.actorRefMap
 import com.neighborhood.aka.laplace.estuary.web.bean.Mysql2kafkaTaskRequestBean
+import com.neighborhood.aka.laplace.estuary.web.utils.MysqlTaskBeanTransformUtil
 import org.slf4j.{Logger, LoggerFactory}
 
 
@@ -17,8 +17,7 @@ import org.slf4j.{Logger, LoggerFactory}
 object Mysql2KafkaService {
 
   val logger:Logger = LoggerFactory.getLogger(Mysql2KafkaService.getClass)
-  val mongoPersistence=new MongoPersistence
-  val mysqlTaskBeanTransform=new MysqlTaskBeanTransform
+  val mongoPersistence=new MongoPersistence[Mysql2kafkaTaskRequestBean]
 
   // 根据syncTaskId从mongodb中查询出详细信息
   def loadOneExistTask(key: String,value: String):Mysql2kafkaTaskRequestBean = {
@@ -46,7 +45,7 @@ object Mysql2KafkaService {
       }
       case _ => {
         val mysql2kafkaTaskRequestBean=loadOneExistTask(key,value)
-        val mysql2KafkaTaskInfoBean= mysqlTaskBeanTransform.transform(mysql2kafkaTaskRequestBean)
+        val mysql2KafkaTaskInfoBean= MysqlTaskBeanTransformUtil.transform(mysql2kafkaTaskRequestBean)
         val prop = MysqlBinlogController.props(mysql2KafkaTaskInfoBean)
         ActorRefHolder.syncDaemon ! (prop, Option(mysql2KafkaTaskInfoBean.syncTaskId))
         //    开启已经存在的任务不需要持久化
@@ -56,7 +55,7 @@ object Mysql2KafkaService {
   }
 
   def startAllExistTasks(mysql2kafkaTaskRequestBean: Mysql2kafkaTaskRequestBean):String={
-    val mysql2KafkaTaskInfoBean= mysqlTaskBeanTransform.transform(mysql2kafkaTaskRequestBean)
+    val mysql2KafkaTaskInfoBean= MysqlTaskBeanTransformUtil.transform(mysql2kafkaTaskRequestBean)
     val prop = MysqlBinlogController.props(mysql2KafkaTaskInfoBean)
     ActorRefHolder.syncDaemon ! (prop, Option(mysql2KafkaTaskInfoBean.syncTaskId))
     //    开启已经存在的任务不需要持久化
@@ -64,7 +63,7 @@ object Mysql2KafkaService {
   }
 
   def startNewOneTask(mysql2kafkaTaskRequestBean: Mysql2kafkaTaskRequestBean): String = {
-    val mysql2KafkaTaskInfoBean= mysqlTaskBeanTransform.transform(mysql2kafkaTaskRequestBean)
+    val mysql2KafkaTaskInfoBean= MysqlTaskBeanTransformUtil.transform(mysql2kafkaTaskRequestBean)
     val prop = MysqlBinlogController.props(mysql2KafkaTaskInfoBean)
     ActorRefHolder.syncDaemon ! (prop, Option(mysql2KafkaTaskInfoBean.syncTaskId))
     //todo 持久化任务

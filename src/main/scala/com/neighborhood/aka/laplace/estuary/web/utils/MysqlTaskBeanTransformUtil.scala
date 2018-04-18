@@ -1,4 +1,4 @@
-package com.neighborhood.aka.laplace.estuary.bean.support
+package com.neighborhood.aka.laplace.estuary.web.utils
 
 import com.neighborhood.aka.laplace.estuary.bean.credential.MysqlCredentialBean
 import com.neighborhood.aka.laplace.estuary.bean.task.Mysql2KafkaTaskInfoBean
@@ -7,7 +7,7 @@ import org.springframework.util.StringUtils
 
 import scala.collection.JavaConverters._
 
-class MysqlTaskBeanTransform{
+object MysqlTaskBeanTransformUtil{
   var taskInfo = new Mysql2KafkaTaskInfoBean
   def transform(requestBody : Mysql2kafkaTaskRequestBean): Mysql2KafkaTaskInfoBean ={
     //任务id

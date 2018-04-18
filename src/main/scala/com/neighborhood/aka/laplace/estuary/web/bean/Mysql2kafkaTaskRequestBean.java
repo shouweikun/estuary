@@ -6,7 +6,7 @@ import java.util.Map;
  * Created by john_liu on 2018/3/11.
  */
 
-public class Mysql2kafkaTaskRequestBean {
+public class Mysql2kafkaTaskRequestBean extends TaskRequestBean {
     private String syncTaskId;
     private String binlogJournalName;
     private long binlogPosition;
