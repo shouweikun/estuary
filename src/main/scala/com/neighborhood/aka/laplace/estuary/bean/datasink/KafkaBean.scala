@@ -10,7 +10,8 @@ import org.apache.kafka.common.serialization.StringSerializer
   * Created by john_liu on 2018/2/7.
   */
 trait KafkaBean extends DataSinkBean {
-  override var dataSinkType: DataSinkType = DataSinkType.KAFKA
+  //  override var dataSinkType: DataSinkType = DataSinkType.KAFKA
+  override var dataSinkType: String = SinkDataType.KAFKA.toString
   /**
     * broker地址
     */
