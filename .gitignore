@@ -1,7 +1,0 @@
-.idea/
-estuary.iml
-target/
-logs/
-.gitignore
-src/main/resources/application.conf
-
