@@ -2,7 +2,7 @@ package com.neighborhood.aka.laplace.estuary.actor
 
 import akka.actor.{ActorRef, Props}
 import com.neighborhood.aka.laplace.estuary.bean.task.Mysql2KafkaTaskInfoBean
-import com.neighborhood.aka.laplace.estuary.core.akka.{SyncDaemon, theActorSystem}
+import com.neighborhood.aka.laplace.estuary.core.akkaUtil.{SyncDaemon, theActorSystem}
 import com.neighborhood.aka.laplace.estuary.mysql.Mysql2KafkaTaskInfoManager
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.MysqlBinlogController
 import com.typesafe.config.Config
@@ -21,10 +21,7 @@ object Application extends theActorSystem {
 //    taskInfoBean.master = mysqlBean
 //    val config = ConfigFactory.load(ConfigFactory.parseFile(conf))
 
-    val a = MysqlBinlogController.props(TestContext.mysql2KafkaTaskInfoBean)
 
-
-    daemon ! (a,Option("test1"))
 
   }
 

@@ -3,7 +3,7 @@ package com.neighborhood.aka.laplace.estuary.web.akka
 import java.util.concurrent.ConcurrentHashMap
 
 import akka.actor.{ActorRef, Props}
-import com.neighborhood.aka.laplace.estuary.core.akka.{SyncDaemon, theActorSystem}
+import com.neighborhood.aka.laplace.estuary.core.akkaUtil.{SyncDaemon, theActorSystem}
 
 import scala.collection.mutable
 

@@ -1,12 +1,8 @@
 package com.neighborhood.aka.laplace.estuary.core.sink
 
-import java.util.concurrent.Future
-
 import com.neighborhood.aka.laplace.estuary.bean.datasink.KafkaBean
 import com.neighborhood.aka.laplace.estuary.bean.key.BaseDataJsonKey
 import org.apache.kafka.clients.producer._
-
-import scala.util.{Failure, Success, Try}
 
 /**
   * Created by john_liu on 2018/2/7.

@@ -1,5 +1,6 @@
 package com.neighborhood.aka.laplace.estuary.mysql
 
+import com.neighborhood.aka.laplace.estuary.bean.support.KafkaMessage
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.WorkerType
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.WorkerType.WorkerType

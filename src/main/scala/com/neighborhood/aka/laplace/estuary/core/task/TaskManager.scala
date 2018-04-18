@@ -54,6 +54,18 @@ trait TaskManager {
   lazy val batchCost = new AtomicLong(0)
   lazy val sinkCost = new AtomicLong(0)
   /**
+    * 数据处理时间占比
+    */
+  lazy val fetchCostPercentage = new AtomicLong(0)
+  lazy val batchCostPercentage = new AtomicLong(0)
+  lazy val sinkCostPercentage = new AtomicLong(0)
+  /**
+    * 每秒处理数据
+    */
+  lazy val fetchCountPerSecond = new AtomicLong(0)
+  lazy val batchCountPerSecond = new AtomicLong(0)
+  lazy val sinkCountPerSecond = new AtomicLong(0)
+  /**
     * 数据处理时间记录
     */
   lazy val sinkerLogPosition = new AtomicReference[String]("")
@@ -65,6 +77,10 @@ trait TaskManager {
     * 打包阈值
     */
   lazy val batchThreshold: AtomicLong = null
+  /**
+    * batcher的数量
+    */
+  var batcherNum: Int = _
 
   /**
     * 任务运行状态

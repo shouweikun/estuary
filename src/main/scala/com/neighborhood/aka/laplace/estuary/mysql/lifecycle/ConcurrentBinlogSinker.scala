@@ -36,6 +36,10 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
     */
   val kafkaSinker = mysql2KafkaTaskInfoManager.kafkaSink
   /**
+    * kafkaDdlSinker
+    */
+  val kafkaDdlSinker = mysql2KafkaTaskInfoManager.kafkaDdlSink
+  /**
     * logPosition处理
     */
   val logPositionHandler = mysql2KafkaTaskInfoManager.logPositionHandler
@@ -68,6 +72,14 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
   var schedulingSavedJournalName: String = if (startPosition.isDefined) {
     startPosition.get.getPostion.getJournalName
   } else ""
+  /**
+    * 待保存的BinlogOffset
+    */
+  var scheduledSavedOffset: Long = schedulingSavedOffset
+  /**
+    * 待保存的Binlog文件名称
+    */
+  var scheduledSavedJournalName: String = schedulingSavedJournalName
   /**
     * 待保存的BinlogOffset
     */
@@ -131,7 +143,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
           x =>
             x._2 match {
               case message: KafkaMessage => handleSinkTask(message)(x._1)
-              case messages: Array[KafkaMessage] => messages.map(handleSinkTask(_)(x._1))
+              case messages: Array[KafkaMessage] => if (messages.length > 0) messages.map(handleSinkTask(_)(x._1))
 
               case BinlogPositionInfo(journalName, offset) => {
                 savedJournalName = journalName
@@ -142,6 +154,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
         }
 
       val after = System.currentTimeMillis()
+      //刷新一下最后写入时间
       lastSinkTimestamp = after
       //这次任务完成后
       //log.info(s"send处理用了${after - before},s$lastSavedJournalName:$lastSavedOffset")
@@ -156,7 +169,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
         this.lastSavedJournalName = savedJournalName
         this.lastSavedOffset = savedOffset
         // log.info(s"JournalName update to $savedJournalName,offset update to $savedOffset")
-        if (isProfiling) mysql2KafkaTaskInfoManager.sinkerLogPosition.set(s"$savedJournalName:$savedOffset")
+        if (isProfiling) mysql2KafkaTaskInfoManager.sinkerLogPosition.set(s"latest binlog:{$savedJournalName:$savedOffset},save point:{$schedulingSavedJournalName:$schedulingSavedOffset},lastSavedPoint:{$scheduledSavedJournalName:$scheduledSavedOffset}")
       }
 
 
@@ -168,11 +181,20 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
         logPositionHandler.persistLogPosition(destination, schedulingSavedJournalName, schedulingSavedOffset)
         log.info(s"save logPosition $schedulingSavedJournalName:$schedulingSavedOffset")
       }
+      scheduledSavedJournalName = schedulingSavedJournalName
+      scheduledSavedOffset = schedulingSavedOffset
       schedulingSavedOffset = lastSavedOffset
       schedulingSavedJournalName = lastSavedJournalName
     }
     case SyncControllerMessage("checkSend") => {
-      if ((System.currentTimeMillis() - lastSinkTimestamp) > (1000 * 60 * 5)) sender() ! SinkerMessage("flush")
+      context.parent ! SinkerMessage("flushDdl")
+      val timeInterval = (System.currentTimeMillis() - lastSinkTimestamp)
+      log.info(s"sinker checkSend timeInterval:$timeInterval")
+      if (timeInterval > (1000 * 20)) {
+        context.parent ! SinkerMessage("flush")
+        log.info(s"sinker checkSend trigger to flush")
+      }
+
     }
     case x => {
       log.warning(s"sinker online unhandled message $x")
@@ -185,7 +207,8 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
     */
   def handleSinkTask(kafkaMessage: KafkaMessage, journalName: String = this.lastSavedJournalName, offset: Long = this.lastSavedOffset)(syncSequenceId: Long): Unit = {
     val before = System.currentTimeMillis()
-    val key = s"${kafkaMessage.getBaseDataJsonKey.asInstanceOf[BinlogKey].getDbName}.${kafkaMessage.getBaseDataJsonKey.asInstanceOf[BinlogKey].getTableName}"
+    val ddlFlag = kafkaMessage.getBaseDataJsonKey.asInstanceOf[BinlogKey].getDbName.trim == "DDL";
+    val key = if (ddlFlag) "DDL" else s"${kafkaMessage.getBaseDataJsonKey.asInstanceOf[BinlogKey].getDbName}.${kafkaMessage.getBaseDataJsonKey.asInstanceOf[BinlogKey].getTableName}"
     val topic = kafkaSinker.findTopic(key)
     kafkaMessage.getBaseDataJsonKey.setKafkaTopic(topic)
     kafkaMessage.getBaseDataJsonKey.setSyncTaskSequence(syncSequenceId)
@@ -194,28 +217,34 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
       * 写数据时的异常
       */
     val callback = new Callback {
-      val thisJournalName: String = schedulingSavedJournalName
-      val thisOffset: Long = schedulingSavedOffset
+      val thisJournalName: String = scheduledSavedJournalName
+      val thisOffset: Long = scheduledSavedOffset
 
       override def onCompletion(metadata: RecordMetadata, exception: Exception): Unit = {
         if (exception != null) {
 
-          log.error("Error when send :" + key + ", metadata:" + metadata + exception + "lastSavedPoint" + s" thisJournalName = $thisJournalName" + s" thisOffset = $thisOffset")
-          if (isAbnormal.compareAndSet(false, true)) {
 
-            logPositionHandler.persistLogPosition(destination, thisJournalName, thisOffset)
+          if (isAbnormal.compareAndSet(false, true)) {
+            if (!StringUtils.isEmpty(thisJournalName)) {
+              log.error("Error when send :" + key + ", metadata:" + metadata + exception + "lastSavedPoint" + s" thisJournalName = $thisJournalName" + s" thisOffset = $thisOffset")
+              logPositionHandler.persistLogPosition(destination, thisJournalName, thisOffset)
+            }
             context.parent ! SinkerMessage("error")
             log.info("send to recorder lastSavedPoint" + s"thisJournalName = $thisJournalName" + s"thisOffset = $thisOffset")
             //todo 做的不好 ，应该修改一下messge模型
 
           }
 
-          //          throw new RuntimeException(s"Error when send data to kafka the journalName:$thisJournalName,offset:$thisOffset")
+          //throw new RuntimeException(s"Error when send data to kafka the journalName:$thisJournalName,offset:$thisOffset")
 
         }
       }
     }
-    kafkaSinker.ayncSink(kafkaMessage.getBaseDataJsonKey,kafkaMessage.getJsonValue)(topic)(callback)
+    if (ddlFlag) {
+      log.info(s"sink ddl :${kafkaMessage.getJsonValue}")
+      kafkaDdlSinker.sink(kafkaMessage.getBaseDataJsonKey, kafkaMessage.getJsonValue)(topic)
+    }
+    else kafkaSinker.ayncSink(kafkaMessage.getBaseDataJsonKey, kafkaMessage.getJsonValue)(topic)(callback)
 
     val after = System.currentTimeMillis()
     // log.info(s"sink cost time :${after-before}")
@@ -254,8 +283,8 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
 
   override def postStop(): Unit = {
     if (!isAbnormal.get() && !StringUtils.isEmpty(lastSavedJournalName)) {
-      val theJournalName = this.schedulingSavedJournalName
-      val theOffset = this.schedulingSavedOffset
+      val theJournalName = this.scheduledSavedJournalName
+      val theOffset = this.scheduledSavedOffset
       logPositionHandler.persistLogPosition(destination, theJournalName, theOffset)
       log.info(s"记录binlog $theJournalName,$theOffset")
       if (isProfiling) mysql2KafkaTaskInfoManager.sinkerLogPosition.set(s"$theJournalName:$theOffset")

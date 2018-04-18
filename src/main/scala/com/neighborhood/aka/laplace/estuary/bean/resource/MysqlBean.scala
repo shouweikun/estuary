@@ -39,7 +39,7 @@ trait MysqlBean extends DataSourceBase {
     */
   var defaultConnectionTimeoutInSeconds = 30
 
-  var receiveBufferSize = 16 * 1024 * 1024
+  var receiveBufferSize:Int = 16 * 1024 * 1024
 
   var sendBufferSize = 16 * 1024
   /**

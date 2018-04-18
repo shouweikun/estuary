@@ -16,21 +16,19 @@ import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
 import com.alibaba.otter.canal.parse.inbound.mysql.dbsync.{DirectLogFetcher, TableMetaCache}
 import com.alibaba.otter.canal.protocol.CanalEntry
 import com.alibaba.otter.canal.protocol.position.EntryPosition
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.{SourceDataFetcher, Status}
-import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
-import com.neighborhood.aka.laplace.estuary.mysql.{Mysql2KafkaTaskInfoManager, MysqlBinlogParser}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status.Status
-import com.neighborhood.aka.laplace.estuary.core.lifecycle._
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.{SourceDataFetcher, Status, _}
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
-import com.neighborhood.aka.laplace.estuary.mysql.{Mysql2KafkaTaskInfoManager, MysqlBinlogParser}
+import com.neighborhood.aka.laplace.estuary.mysql.{CanalEntryJsonHelper, Mysql2KafkaTaskInfoManager, MysqlBinlogParser}
 import com.taobao.tddl.dbsync.binlog.event.FormatDescriptionLogEvent
 import com.taobao.tddl.dbsync.binlog.{LogContext, LogDecoder, LogEvent, LogPosition}
 import org.I0Itec.zkclient.exception.ZkTimeoutException
 import org.apache.commons.lang.StringUtils
 
 import scala.annotation.tailrec
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration._
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 /**
   * Created by john_liu on 2018/2/5.
@@ -38,7 +36,7 @@ import scala.concurrent.duration._
   * @todo 将fetcher和actor解耦
   */
 
-class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager, binlogEventBatcher: ActorRef) extends Actor with SourceDataFetcher with ActorLogging {
+class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager, binlogEventBatcher: ActorRef, binlogDdlHandler: ActorRef = null) extends Actor with SourceDataFetcher with ActorLogging {
 
   implicit val transTaskPool = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor())
   /**
@@ -150,6 +148,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
           log.debug("fetcher predump")
           mysqlMetaConnection = Option(preDump(mysqlConnection.get))
           mysqlConnection.get.connect
+          mysql2KafkaTaskInfoManager.mysqlDatabaseNameList = getSchemas(mysqlConnection.get)
           val startPosition = entryPosition.get
           try {
             if (StringUtils.isEmpty(startPosition.getJournalName) && Option(startPosition.getTimestamp).isEmpty) {
@@ -167,8 +166,8 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
         }
         case "fetch" => {
           val before = System.currentTimeMillis()
-          //如果一个小时还不能拿到数据，发起重连
-          val flag = Await.result(Future(fetcher.fetch()), 1 hour)
+          //如果12小时还不能拿到数据，发起重连
+          val flag = Await.result(Future(fetcher.fetch()), 12 hours)
           try {
             if (flag) {
               fetchOne(before)
@@ -231,29 +230,35 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
     * 从连接中取数据
     */
   def fetchOne(before: Long = System.currentTimeMillis()) = {
-    val event = decoder.decode(fetcher, logContext)
-    val entry = try {
-      binlogParser.parse(Option(event))
-    } catch {
-      case e: CanalParseException => {
-        log.warning(s"table has been removed")
-        None
+
+
+    @tailrec
+    def fetchUntilSome: Option[CanalEntry.Entry] = {
+      lazy val event = decoder.decode(fetcher, logContext)
+      lazy val entry = try {
+        binlogParser.parse(Option(event))
+
+      } catch {
+        case e: CanalParseException => {
+
+          log.warning(s"$e,cause:${e.getCause}")
+          None
+        }
       }
+      if (filterEntry(entry)) entry else if
+      (fetcher.fetch()) fetchUntilSome
+      else throw new Exception("impossible,unexpected end of stream")
     }
-    val cost = if (filterEntry(entry)) {
-      //log.debug(s"fetch entry: ${entry.get.getHeader.getLogfileName},${entry.get.getHeader.getLogfileOffset},${after - before}")
-      binlogEventBatcher ! entry.get
-      if (isCounting) mysql2KafkaTaskInfoManager.fetchCount.incrementAndGet()
-      System.currentTimeMillis() - before
-    } else {
-      //throw new Exception("the fetched data is null")
-      //如果拿不到数据，默认在时间上随机增加3-5倍
-      (System.currentTimeMillis() - before) * (2 * (math.random) + 3)
-    }.toLong
-    if (isCosting) mysql2KafkaTaskInfoManager.powerAdapter match {
-      case Some(x) => x ! FetcherMessage(s"$cost")
-      case _ => log.warning("powerAdapter not exist")
-    }
+
+    lazy val entry = fetchUntilSome
+    if (entry.get.getHeader.getEventType == CanalEntry.EventType.ALTER) {
+      log.info(s"fetch ddl:${CanalEntryJsonHelper.entryToJson(entry.get)}");
+      Option(binlogDdlHandler).fold(log.warning("ddlHandler does not exist"))(x => x ! entry.get)
+    } else binlogEventBatcher ! entry.get
+    lazy val cost = System.currentTimeMillis() - before
+    if (isCounting) mysql2KafkaTaskInfoManager.fetchCount.incrementAndGet()
+    if (isCosting) mysql2KafkaTaskInfoManager.powerAdapter.fold(log.warning("powerAdapter not exist"))(x => x ! FetcherMessage(s"$cost"))
+
   }
 
   /**
@@ -273,7 +278,6 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
 
   /**
     * 加载mysql的binlogChecksum机制
-    *
     */
   private def loadBinlogChecksum(mysqlConnection: MysqlConnection): Unit = {
     var rs: ResultSetPacket = null
@@ -314,9 +318,32 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
     //设置tableMetaCache
     val metaConnection = mysqlConnection.fork()
     metaConnection.connect()
+    mysql2KafkaTaskInfoManager.mysqlDatabaseNameList = getSchemas(metaConnection)
     val tableMetaCache: TableMetaCache = new TableMetaCache(metaConnection)
     binlogParser.setTableMetaCache(tableMetaCache)
     metaConnection
+  }
+
+  /**
+    * 获取该mysql实例上所有的mysql库名
+    *
+    * @param mysqlConnection
+    * @return List[String] 该mysql实例上所有的mysql库名
+    *
+    */
+  private def getSchemas(mysqlConnection: MysqlConnection): List[String] = {
+    //如果没连接的话连接一下
+    if (!mysqlConnection.isConnected) mysqlConnection.connect()
+    val querySchemaCmd = "show databases"
+    val fieldName = "Database"
+    val ignoredDatabaseName = "information_schema"
+    val list = mysqlConnection
+      .query(querySchemaCmd)
+      .getFieldValues
+    (0 until list.size)
+      .map(list.get(_))
+      .filter(!_.equals(ignoredDatabaseName))
+      .toList
   }
 
   /**
@@ -411,7 +438,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
 }
 
 object MysqlBinlogFetcher {
-  def props(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager, binlogEventBatcher: ActorRef): Props = {
-    Props(new MysqlBinlogFetcher(mysql2KafkaTaskInfoManager, binlogEventBatcher))
+  def props(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager, binlogEventBatcher: ActorRef, binlogDdlHandler: ActorRef = null): Props = {
+    Props(new MysqlBinlogFetcher(mysql2KafkaTaskInfoManager, binlogEventBatcher, binlogDdlHandler))
   }
 }

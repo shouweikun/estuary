@@ -30,6 +30,11 @@ class Mysql2KafkaTaskController {
     /** ******************************************************/
     ValidationUtils.notNull(requestBody.getKafkaBootstrapServers, "KafkaBootstrapServers cannot be null ")
     ValidationUtils.notblank(requestBody.getKafkaBootstrapServers, "KafkaBootstrapServers cannot be blank ")
+    ValidationUtils.notNull(requestBody.getKafkaTopic, "kafkaTopic cannot be null")
+    ValidationUtils.notblank(requestBody.getKafkaTopic, "kafkaTopic cannot be null")
+    ValidationUtils.notNull(requestBody.getKafkaDdlTopic, "kafkaDdlTopic cannot be null")
+
+    ValidationUtils.notblank(requestBody.getKafkaDdlTopic, "kafkaDdlTopic cannot be null")
     ValidationUtils.notNull(requestBody.getMysqladdress, "Mysqladdress cannot be null")
     ValidationUtils.notblank(requestBody.getMysqladdress, "Mysqladdress cannot be blank")
     ValidationUtils.notNull(requestBody.getMysqladdress, "Mysqladdress cannot be null")
@@ -106,6 +111,7 @@ class Mysql2KafkaTaskController {
     taskInfo.bootstrapServers = requestBody.getKafkaBootstrapServers
     if (!StringUtils.isEmpty(requestBody.getKafkaAck) && requestBody.getKafkaAck.toInt >= 1) taskInfo.ack = requestBody.getKafkaAck
     taskInfo.topic = requestBody.getKafkaTopic
+    taskInfo.ddlTopic = requestBody.getKafkaDdlTopic
     if (requestBody.getKafkaSpecficTopics != null)
       taskInfo.specificTopics = requestBody
         .getKafkaSpecficTopics
@@ -124,12 +130,14 @@ class Mysql2KafkaTaskController {
     taskInfo.filterQueryDcl = requestBody.isFilterQueryDcl
     taskInfo.filterQueryDml = requestBody.isFilterQueryDml
     taskInfo.filterQueryDdl = requestBody.isFilterQueryDdl
+    taskInfo.concernedDatabase = requestBody.getConcernedDataBase
+    taskInfo.ignoredDatabase = requestBody.getIgnoredDataBase
     if (!StringUtils.isEmpty(requestBody.getEventBlackFilterPattern))
       taskInfo.eventBlackFilterPattern = requestBody.getEventBlackFilterPattern
     if (!StringUtils.isEmpty(requestBody.getEventFilterPattern))
       taskInfo.eventFilterPattern = requestBody.getEventFilterPattern
     //开始的position
-    if(!StringUtils.isEmpty(requestBody.getBinlogJournalName)){
+    if (!StringUtils.isEmpty(requestBody.getBinlogJournalName)) {
       taskInfo.journalName = requestBody.getBinlogJournalName
       taskInfo.position = requestBody.getBinlogPosition
     }
@@ -138,12 +146,18 @@ class Mysql2KafkaTaskController {
     taskInfo.isTransactional = requestBody.isTransactional
     taskInfo.isCounting = requestBody.isCounting
     taskInfo.isProfiling = requestBody.isProfiling
-    List(requestBody.isCosting,requestBody.isCounting,requestBody.isProfiling).forall(x=>x) match {
+    List(requestBody.isCosting, requestBody.isCounting, requestBody.isProfiling).forall(x => x) match {
       case true => taskInfo.isPowerAdapted = requestBody.isPowerAdapted
       case _ => {}
     }
-    //其他
-    taskInfo.batchThreshold.set(requestBody.getBatchThreshold)
+    //batcher
+    if (requestBody.getBatchThreshold > 0) {
+      taskInfo.batchThreshold.set(requestBody.getBatchThreshold)
+    }
+    if (requestBody.getBatcherCount > 0) {
+      taskInfo.batcherNum = requestBody.getBatcherCount
+    }
+    //fetcher
     taskInfo.fetchDelay.set(requestBody.getFetchDelay)
     taskInfo
   }

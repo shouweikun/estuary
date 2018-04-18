@@ -6,19 +6,21 @@ import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong}
 
 import com.alibaba.otter.canal.parse.exception.CanalParseException
 import com.alibaba.otter.canal.parse.inbound.SinkFunction
-import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
+import com.alibaba.otter.canal.parse.inbound.mysql.dbsync.DirectLogFetcher
 import com.alibaba.otter.canal.parse.index.ZooKeeperLogPositionManager
 import com.alibaba.otter.canal.protocol.CanalEntry
 import com.alibaba.otter.canal.protocol.position.{EntryPosition, LogIdentity, LogPosition}
-import com.taobao.tddl.dbsync.binlog.LogEvent
+import com.neighborhood.aka.laplace.estuary.core.source.MysqlConnection
+import com.taobao.tddl.dbsync.binlog.{LogContext, LogDecoder, LogEvent}
 import org.apache.commons.lang.StringUtils
 
 import scala.annotation.tailrec
+import scala.util.Try
 
 /**
   * Created by john_liu on 2018/2/4.
   */
-class LogPositionHandler(binlogParser: MysqlBinlogParser, manager: ZooKeeperLogPositionManager, master: Option[EntryPosition] = None, standby: Option[EntryPosition] = None, slaveId: Long = -1L, destination: String = "", address: InetSocketAddress) {
+class NewLogPositionHandler(implicit binlogParser: MysqlBinlogParser, manager: ZooKeeperLogPositionManager, master: Option[EntryPosition] = None, standby: Option[EntryPosition] = None, slaveId: Long = -1L, destination: String = "", address: InetSocketAddress) {
   val logPositionManager = manager
 
   /**
@@ -80,7 +82,7 @@ class LogPositionHandler(binlogParser: MysqlBinlogParser, manager: ZooKeeperLogP
     //用taskMark来作为zookeeper中的destination
     val logPosition = Option(logPositionManager.getLatestIndexBy(destination))
     val entryPosition = logPosition match {
-      case Some(thePosition)if(StringUtils.isNotEmpty(thePosition.getPostion.getJournalName))=> {
+      case Some(thePosition) if (StringUtils.isNotEmpty(thePosition.getPostion.getJournalName)) => {
         //如果定位失败
         if (flag) { // binlog定位位点失败,可能有两个原因:
           // 1. binlog位点被删除
@@ -177,54 +179,12 @@ class LogPositionHandler(binlogParser: MysqlBinlogParser, manager: ZooKeeperLogP
     val reDump = new AtomicBoolean(false)
     val address = mysqlConnection.getConnector.getAddress
     mysqlConnection.synchronized(mysqlConnection.reconnect())
-    mysqlConnection.seek(entryPosition.getJournalName, entryPosition.getPosition, new SinkFunction[LogEvent]() {
-      private var lastPosition: LogPosition = null
-
-      def sink(event: LogEvent): Boolean = try {
-        val entry = binlogParser.parse(Option(event))
-        if (entry.isEmpty) return true
-        // 直接查询第一条业务数据，确认是否为事务Begin/End
-        if ((CanalEntry.EntryType.TRANSACTIONBEGIN eq entry.get.getEntryType) || (CanalEntry.EntryType.TRANSACTIONEND eq entry.get.getEntryType)) {
-          lastPosition = buildLastPositionByEntry(entry.get, address)
-          false
-        }
-        else {
-          reDump.set(true)
-          lastPosition = buildLastPositionByEntry(entry.get, address)
-          false
-        }
-      } catch {
-        case e: Exception =>
-          // 上一次记录的poistion可能为一条update/insert/delete变更事件，直接进行dump的话，会缺少tableMap事件，导致tableId未进行解析
-          reDump.set(true)
-          false
-      }
-    })
+    mysqlConnection.seek(entryPosition.getJournalName, entryPosition.getPosition)(mysqlConnection)
     // 针对开始的第一条为非Begin记录，需要从该binlog扫描
     if (reDump.get) {
       val preTransactionStartPosition = new AtomicLong(0L)
       mysqlConnection.reconnect()
-      mysqlConnection.seek(entryPosition.getJournalName, 4L, new SinkFunction[LogEvent]() {
-        private var lastPosition: LogPosition = null
-
-        override def sink(event: LogEvent): Boolean = {
-          try {
-            val entry = binlogParser.parse(Option(event))
-            if (entry.isEmpty) return true
-            // 直接查询第一条业务数据，确认是否为事务Begin
-            // 记录一下transaction begin position
-            if ((entry.get.getEntryType eq CanalEntry.EntryType.TRANSACTIONBEGIN) && entry.get.getHeader.getLogfileOffset < entryPosition.getPosition) preTransactionStartPosition.set(entry.get.getHeader.getLogfileOffset)
-            if (entry.get.getHeader.getLogfileOffset >= entryPosition.getPosition) return false // 退出
-            lastPosition = buildLastPositionByEntry(entry.get, address)
-            true
-          } catch {
-            case e: Exception =>
-
-              false
-          }
-
-        }
-      })
+      mysqlConnection.seek(entryPosition.getJournalName, 4L)(mysqlConnection)
       // 判断一下找到的最接近position的事务头的位置
       if (preTransactionStartPosition.get > entryPosition.getPosition) {
         //        logger.error("preTransactionEndPosition greater than startPosition from zk or localconf, maybe lost data")
@@ -316,67 +276,91 @@ class LogPositionHandler(binlogParser: MysqlBinlogParser, manager: ZooKeeperLogP
   }
 
   /**
-    * 注：canal原生的方法，这里仅进行最小程度的scala风格修改，其余均保留原来的样式
+    * 注：canal原生的方法，这里进行了scala风格修改
     * 根据给定的时间戳，在指定的binlog中找到最接近于该时间戳(必须是小于时间戳)的一个事务起始位置。
     * 针对最后一个binlog会给定endPosition，避免无尽的查询
     *
     * @todo test
     */
   private[estuary] def findAsPerTimestampInSpecificLogFile(mysqlConnection: MysqlConnection, startTimestamp: Long, endPosition: EntryPosition, searchBinlogFile: String): EntryPosition = {
-    val logPosition = new LogPosition
-    try {
+    Try {
       //重启一下
       mysqlConnection.synchronized(mysqlConnection.reconnect)
       // 开始遍历文件
-      mysqlConnection.seek(searchBinlogFile, 4L, new SinkFunction[LogEvent]() {
-        private var lastPosition: LogPosition = null
+      mysqlConnection.seek(searchBinlogFile, 4L)(mysqlConnection)
+      val fetcher: DirectLogFetcher = mysqlConnection.fetcher4Seek
+      val decoder: LogDecoder = mysqlConnection.decoder4Seek
+      val logContext: LogContext = mysqlConnection.logContext4Seek
 
-        override def sink(event: LogEvent): Boolean = {
-          var entryPosition: EntryPosition = null
-          try {
-            val entry = binlogParser.parse(Option(event))
-            if (entry.isEmpty) return true
-            val logfilename = entry.get.getHeader.getLogfileName
-            val logfileoffset = entry.get.getHeader.getLogfileOffset
-            val logposTimestamp = entry.get.getHeader.getExecuteTime
-            if (CanalEntry.EntryType.TRANSACTIONBEGIN == entry.get.getEntryType || CanalEntry.EntryType.TRANSACTIONEND == entry.get.getEntryType) {
-              //              logger.debug("compare exit condition:{},{},{}, startTimestamp={}...", Array[AnyRef](logfilename, logfileoffset, logposTimestamp, startTimestamp))
-              // 事务头和尾寻找第一条记录时间戳，如果最小的一条记录都不满足条件，可直接退出
-              if (logposTimestamp >= startTimestamp) return false
-            }
-            if (StringUtils.equals(endPosition.getJournalName, logfilename) && endPosition.getPosition <= (logfileoffset + event.getEventLen)) return false
-            // 记录一下上一个事务结束的位置，即下一个事务的position
-            // position = current +
-            // data.length，代表该事务的下一条offest，避免多余的事务重复
-            if (CanalEntry.EntryType.TRANSACTIONEND == entry.get.getEntryType) {
-              entryPosition = new EntryPosition(logfilename, logfileoffset + event.getEventLen, logposTimestamp)
-              //              logger.debug("set {} to be pending start position before finding another proper one...", entryPosition)
-              logPosition.setPostion(entryPosition)
-            }
-            else if (CanalEntry.EntryType.TRANSACTIONBEGIN == entry.get.getEntryType) { // 当前事务开始位点
-              entryPosition = new EntryPosition(logfilename, logfileoffset, logposTimestamp)
-              //              logger.debug("set {} to be pending start position before finding another proper one...", entryPosition)
-              logPosition.setPostion(entryPosition)
-            }
-            lastPosition = buildLastPositionByEntry(entry.get)
-          } catch {
-            case e: Throwable =>
-              throw new Exception("exception when find binlog by timestamp", e)
-          }
-          false
-        }
-      })
-    } catch {
-      case e: IOException =>
-      //        logger.error("ERROR ## findAsPerTimestampInSpecificLogFile has an error", e)
+      loopFetchAndFindEntry(fetcher, decoder, logContext)(startTimestamp, endPosition)
     }
-    if (logPosition.getPostion != null) logPosition.getPostion
-    else null
+      .getOrElse(null)
   }
+
+  /**
+    * 在寻找binlog位置时用的方法
+    *
+    * @param fetcher 拉取binlog文件的DirectFetcher
+    * @param decoder
+    * @todo test
+    */
+  @tailrec
+  private def loopFetchAndFindEntry(fetcher: DirectLogFetcher, decoder: LogDecoder, logContext: LogContext)(startTimestamp: Long = 0L, endPosition: EntryPosition = null): EntryPosition = {
+    if (fetcher.fetch()) {
+      val event = decoder.decode(fetcher, logContext)
+      val entry = try {
+        binlogParser.parse(Option(event))
+      } catch {
+        case e: CanalParseException => {
+          // log.warning(s"table has been removed")
+          None
+        }
+      }
+
+      /**
+        * 寻找到Entry并且判断这个Entry进行处理
+        * 如果比最后的时间戳还晚 -> 返回1 -> null
+        * 如果比最早的时间戳还早 -> 返回1 -> null
+        * 如果是事务头或者事务尾 -> 返回2 -> 以这个entry构建
+        * 如果不属于上述几种情况 -> 返回3 -> 继续loopFetch
+        *
+        * @todo test
+        */
+      def findAndJudgeEntry(entry: CanalEntry.Entry): Int = {
+        val logfilename = entry.getHeader.getLogfileName
+        val logfileoffset = entry.getHeader.getLogfileOffset
+        val logposTimestamp = entry.getHeader.getExecuteTime
+        val entryType = entry.getEntryType
+
+        //比最晚的都晚
+        def lateThanLatest: Boolean = if (endPosition != null) (StringUtils.equals(endPosition.getJournalName, logfilename) && endPosition.getPosition <= (logfileoffset + event.getEventLen)) else true
+
+        //比最早的都早
+        def earlierThanEarliest: Boolean = if (startTimestamp != 0) logposTimestamp >= startTimestamp else true
+
+        //综合两者
+        def outOfTimeRequirement = (lateThanLatest && earlierThanEarliest)
+
+        //进行判断
+        if (lateThanLatest) 1 else entryType match {
+          case CanalEntry.EntryType.TRANSACTIONEND => 2 //todo log
+          case CanalEntry.EntryType.TRANSACTIONBEGIN => 2 //todo log
+          case _ => 3 //todo log
+        }
+      }
+
+      if (entry.isEmpty) loopFetchAndFindEntry(fetcher, decoder, logContext)(startTimestamp, endPosition) else {
+        findAndJudgeEntry(entry.get) match {
+          case 1 => null
+          case 2 => new EntryPosition(entry.get.getHeader.getLogfileName, entry.get.getHeader.getLogfileOffset, entry.get.getHeader.getExecuteTime)
+          case _ => loopFetchAndFindEntry(fetcher, decoder, logContext)(startTimestamp, endPosition)
+        }
+      }
+    } else null //todo log
+  }
+
 }
 
-object LogPositionHandler {
-  val BINLOG_START_OFFEST = 4L
-}
+
 
 

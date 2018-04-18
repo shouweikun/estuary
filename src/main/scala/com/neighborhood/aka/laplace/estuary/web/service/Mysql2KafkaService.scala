@@ -4,11 +4,16 @@ import com.neighborhood.aka.laplace.estuary.bean.task.Mysql2KafkaTaskInfoBean
 import com.neighborhood.aka.laplace.estuary.mysql.Mysql2KafkaTaskInfoManager
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.MysqlBinlogController
 import com.neighborhood.aka.laplace.estuary.web.akka.ActorRefHolder
+import org.slf4j.{Logger, LoggerFactory}
 
 /**
   * Created by john_liu on 2018/3/10.
   */
 object Mysql2KafkaService {
+
+//  val logger:Logger = LoggerFactory.getLogger(Mysql2KafkaService.getClass)
+//  logger.info("====================logback log start======================")
+
   def loadOneExistTask(syncTaskId: String): Mysql2KafkaTaskInfoBean = {
     ???
   }

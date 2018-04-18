@@ -16,6 +16,7 @@ public class Mysql2kafkaTaskRequestBean {
     private boolean isCosting = true;
     private boolean isTransactional = false;
     private boolean isPowerAdapted = true;
+    private int batcherCount = 10;
     private long batchThreshold = 50;
     private long fetchDelay = 0;
     private String filterPattern;
@@ -36,6 +37,7 @@ public class Mysql2kafkaTaskRequestBean {
     private String kafkaLingerMs = "";
     private String kafkaRetries = "";
     private String kafkaTopic = "";
+    private String kafkaDdlTopic = "";
     private Map<String, String> kafkaSpecficTopics;
     private String mysqladdress;
     private int mysqlPort;
@@ -44,6 +46,8 @@ public class Mysql2kafkaTaskRequestBean {
     private String mysqlDefaultDatabase;
     private int listenTimeout = 5000;
     private int listenRetrytime = 3;
+    private String concernedDataBase = "";
+    private String ignoredDataBase = "";
     // 支持的binlogImage
     // binlog.images = ""
     //支持的binlogFormat
@@ -53,8 +57,40 @@ public class Mysql2kafkaTaskRequestBean {
     // zookeeper 链接超时设置,单位毫秒
     private int zookeeperTimeout = 10000;
 
+    public String getIgnoredDataBase() {
+        return ignoredDataBase;
+    }
+
+    public void setIgnoredDataBase(String ignoredDataBase) {
+        this.ignoredDataBase = ignoredDataBase;
+    }
+
+    public String getConcernedDataBase() {
+        return concernedDataBase;
+    }
+
+    public void setConcernedDataBase(String concernedDataBase) {
+        this.concernedDataBase = concernedDataBase;
+    }
+
+    public String getKafkaDdlTopic() {
+        return kafkaDdlTopic;
+    }
+
+    public void setKafkaDdlTopic(String kafkaDdlTopic) {
+        this.kafkaDdlTopic = kafkaDdlTopic;
+    }
+
     public Map<String, String> getKafkaSpecficTopics() {
         return kafkaSpecficTopics;
+    }
+
+    public int getBatcherCount() {
+        return batcherCount;
+    }
+
+    public void setBatcherCount(int batcherCount) {
+        this.batcherCount = batcherCount;
     }
 
     public void setKafkaSpecficTopics(Map<String, String> kafkaSpecficTopics) {
