@@ -71,6 +71,14 @@ final class Mysql2KafkaTaskInfoBean extends MysqlBean with KafkaBean with BaseEx
     */
   val fetchDelay: AtomicLong = new AtomicLong(2000)
   /**
+    * 同步关心的表
+    */
+  var concernedDatabase = ""
+  /**
+    * 同步忽略的表
+    */
+  var ignoredDatabase = ""
+  /**
     * 监听心跳
     */
   var listenTimeout = 5000

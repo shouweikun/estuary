@@ -240,14 +240,14 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
         }
       }
     }
-//    if (ddlFlag) {
-//      log.info(s"sink ddl :${kafkaMessage.getJsonValue}")
-//      kafkaDdlSinker.sink(kafkaMessage.getBaseDataJsonKey, kafkaMessage.getJsonValue)(topic)
-//    }
-//    else kafkaSinker.ayncSink(kafkaMessage.getBaseDataJsonKey, kafkaMessage.getJsonValue)(topic)(callback)
-//
-//    val after = System.currentTimeMillis()
-//    // log.info(s"sink cost time :${after-before}")
+    if (ddlFlag) {
+      log.info(s"sink ddl :${kafkaMessage.getJsonValue}")
+      kafkaDdlSinker.sink(kafkaMessage.getBaseDataJsonKey, kafkaMessage.getJsonValue)(topic)
+    }
+    else kafkaSinker.ayncSink(kafkaMessage.getBaseDataJsonKey, kafkaMessage.getJsonValue)(topic)(callback)
+
+    val after = System.currentTimeMillis()
+    // log.info(s"sink cost time :${after-before}")
 
   }
 

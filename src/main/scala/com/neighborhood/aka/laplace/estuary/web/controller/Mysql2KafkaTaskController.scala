@@ -30,9 +30,9 @@ class Mysql2KafkaTaskController {
     /** ******************************************************/
     ValidationUtils.notNull(requestBody.getKafkaBootstrapServers, "KafkaBootstrapServers cannot be null ")
     ValidationUtils.notblank(requestBody.getKafkaBootstrapServers, "KafkaBootstrapServers cannot be blank ")
-    ValidationUtils.notNull(requestBody.getKafkaTopic,"kafkaTopic cannot be null")
+    ValidationUtils.notNull(requestBody.getKafkaTopic, "kafkaTopic cannot be null")
     ValidationUtils.notblank(requestBody.getKafkaTopic, "kafkaTopic cannot be null")
-    ValidationUtils.notNull(requestBody.getKafkaDdlTopic,"kafkaDdlTopic cannot be null")
+    ValidationUtils.notNull(requestBody.getKafkaDdlTopic, "kafkaDdlTopic cannot be null")
 
     ValidationUtils.notblank(requestBody.getKafkaDdlTopic, "kafkaDdlTopic cannot be null")
     ValidationUtils.notNull(requestBody.getMysqladdress, "Mysqladdress cannot be null")
@@ -130,6 +130,8 @@ class Mysql2KafkaTaskController {
     taskInfo.filterQueryDcl = requestBody.isFilterQueryDcl
     taskInfo.filterQueryDml = requestBody.isFilterQueryDml
     taskInfo.filterQueryDdl = requestBody.isFilterQueryDdl
+    taskInfo.concernedDatabase = requestBody.getConcernedDataBase
+    taskInfo.ignoredDatabase = requestBody.getIgnoredDataBase
     if (!StringUtils.isEmpty(requestBody.getEventBlackFilterPattern))
       taskInfo.eventBlackFilterPattern = requestBody.getEventBlackFilterPattern
     if (!StringUtils.isEmpty(requestBody.getEventFilterPattern))
