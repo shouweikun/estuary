@@ -5,7 +5,7 @@ import java.util.concurrent.atomic.AtomicLong
 import com.neighborhood.aka.laplace.estuary.bean.datasink.{DataSinkType, KafkaBean}
 import com.neighborhood.aka.laplace.estuary.bean.resource.MysqlBean
 import com.neighborhood.aka.laplace.estuary.bean.datasink.KafkaBean
-import com.neighborhood.aka.laplace.estuary.bean.identity.{BaseExtractBean, DataSyncType}
+import com.neighborhood.aka.laplace.estuary.bean.identity.{BaseExtractBean, DataSyncType, SyncDataType}
 import com.neighborhood.aka.laplace.estuary.bean.identity.DataSyncType.DataSyncType
 import com.neighborhood.aka.laplace.estuary.bean.resource.MysqlBean
 
@@ -18,7 +18,8 @@ final class Mysql2KafkaTaskInfoBean extends MysqlBean with KafkaBean with BaseEx
   /**
     * 数据同步形式
     */
-  override var dataSyncType: DataSyncType = DataSyncType.NORMAL
+  //  override var dataSyncType: DataSyncType = DataSyncType.NORMAL
+  override var dataSyncType: String = SyncDataType.NORMAL.toString
   //从库id
   var slaveId: Long = System.currentTimeMillis()
   //binlog
@@ -70,6 +71,14 @@ final class Mysql2KafkaTaskInfoBean extends MysqlBean with KafkaBean with BaseEx
     * 单位微秒
     */
   val fetchDelay: AtomicLong = new AtomicLong(2000)
+  /**
+    * 同步关心的表
+    */
+  var concernedDatabase = ""
+  /**
+    * 同步忽略的表
+    */
+  var ignoredDatabase = ""
   /**
     * 监听心跳
     */

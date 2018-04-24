@@ -18,5 +18,6 @@ trait BaseExtractBean extends BaseBean{
   /**
     * 数据同步形式
     */
-  var dataSyncType : DataSyncType
+  //  var dataSyncType : DataSyncType
+  var dataSyncType : String
 }

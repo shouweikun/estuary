@@ -148,7 +148,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
           log.debug("fetcher predump")
           mysqlMetaConnection = Option(preDump(mysqlConnection.get))
           mysqlConnection.get.connect
-          mysql2KafkaTaskInfoManager.mysqlDatabaseNameList =getSchemas(mysqlConnection.get)
+          mysql2KafkaTaskInfoManager.mysqlDatabaseNameList = getSchemas(mysqlConnection.get)
           val startPosition = entryPosition.get
           try {
             if (StringUtils.isEmpty(startPosition.getJournalName) && Option(startPosition.getTimestamp).isEmpty) {
@@ -230,34 +230,35 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
     * 从连接中取数据
     */
   def fetchOne(before: Long = System.currentTimeMillis()) = {
-    val event = decoder.decode(fetcher, logContext)
-    val entry = try {
-      binlogParser.parse(Option(event))
-    } catch {
-      case e: CanalParseException => {
 
-        log.warning(s"$e,cause:${e.getCause}")
-        None
+
+    @tailrec
+    def fetchUntilSome: Option[CanalEntry.Entry] = {
+      lazy val event = decoder.decode(fetcher, logContext)
+      lazy val entry = try {
+        binlogParser.parse(Option(event))
+
+      } catch {
+        case e: CanalParseException => {
+
+          log.warning(s"$e,cause:${e.getCause}")
+          None
+        }
       }
+      if (filterEntry(entry)) entry else if
+      (fetcher.fetch()) fetchUntilSome
+      else throw new Exception("impossible,unexpected end of stream")
     }
-    val cost = if (filterEntry(entry)) {
-      //log.debug(s"fetch entry: ${entry.get.getHeader.getLogfileName},${entry.get.getHeader.getLogfileOffset},${after - before}")
-      if (entry.get.getHeader.getEventType == CanalEntry.EventType.ALTER) {
-        log.info(s"fetch ddl:${CanalEntryJsonHelper.entryToJson(entry.get)}");
-        Option(binlogDdlHandler).fold(log.warning("ddlHandler does not exist"))(x => x ! entry.get)
-      } else binlogEventBatcher ! entry.get
 
-      if (isCounting) mysql2KafkaTaskInfoManager.fetchCount.incrementAndGet()
-      System.currentTimeMillis() - before
-    } else {
-      //throw new Exception("the fetched data is null")
-      //如果拿不到数据，返回-1
-      -1
-    }.toLong
-    if (isCosting) mysql2KafkaTaskInfoManager.powerAdapter match {
-      case Some(x) => x ! FetcherMessage(s"$cost")
-      case _ => log.warning("powerAdapter not exist")
-    }
+    lazy val entry = fetchUntilSome
+    if (entry.get.getHeader.getEventType == CanalEntry.EventType.ALTER) {
+      log.info(s"fetch ddl:${CanalEntryJsonHelper.entryToJson(entry.get)}");
+      Option(binlogDdlHandler).fold(log.warning("ddlHandler does not exist"))(x => x ! entry.get)
+    } else binlogEventBatcher ! entry.get
+    lazy val cost = System.currentTimeMillis() - before
+    if (isCounting) mysql2KafkaTaskInfoManager.fetchCount.incrementAndGet()
+    if (isCosting) mysql2KafkaTaskInfoManager.powerAdapter.fold(log.warning("powerAdapter not exist"))(x => x ! FetcherMessage(s"$cost"))
+
   }
 
   /**

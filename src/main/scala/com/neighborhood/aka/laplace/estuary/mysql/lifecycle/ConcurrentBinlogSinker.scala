@@ -75,6 +75,14 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
   /**
     * 待保存的BinlogOffset
     */
+  var scheduledSavedOffset: Long = schedulingSavedOffset
+  /**
+    * 待保存的Binlog文件名称
+    */
+  var scheduledSavedJournalName: String = schedulingSavedJournalName
+  /**
+    * 待保存的BinlogOffset
+    */
   var lastSavedOffset: Long = if (startPosition.isDefined) {
     startPosition.get.getPostion.getPosition
   } else 4L
@@ -135,7 +143,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
           x =>
             x._2 match {
               case message: KafkaMessage => handleSinkTask(message)(x._1)
-              case messages: Array[KafkaMessage] => messages.map(handleSinkTask(_)(x._1))
+              case messages: Array[KafkaMessage] => if (messages.length > 0) messages.map(handleSinkTask(_)(x._1))
 
               case BinlogPositionInfo(journalName, offset) => {
                 savedJournalName = journalName
@@ -161,7 +169,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
         this.lastSavedJournalName = savedJournalName
         this.lastSavedOffset = savedOffset
         // log.info(s"JournalName update to $savedJournalName,offset update to $savedOffset")
-        if (isProfiling) mysql2KafkaTaskInfoManager.sinkerLogPosition.set(s"$savedJournalName:$savedOffset")
+        if (isProfiling) mysql2KafkaTaskInfoManager.sinkerLogPosition.set(s"latest binlog:{$savedJournalName:$savedOffset},save point:{$schedulingSavedJournalName:$schedulingSavedOffset},lastSavedPoint:{$scheduledSavedJournalName:$scheduledSavedOffset}")
       }
 
 
@@ -173,6 +181,8 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
         logPositionHandler.persistLogPosition(destination, schedulingSavedJournalName, schedulingSavedOffset)
         log.info(s"save logPosition $schedulingSavedJournalName:$schedulingSavedOffset")
       }
+      scheduledSavedJournalName = schedulingSavedJournalName
+      scheduledSavedOffset = schedulingSavedOffset
       schedulingSavedOffset = lastSavedOffset
       schedulingSavedJournalName = lastSavedJournalName
     }
@@ -207,16 +217,18 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
       * 写数据时的异常
       */
     val callback = new Callback {
-      val thisJournalName: String = schedulingSavedJournalName
-      val thisOffset: Long = schedulingSavedOffset
+      val thisJournalName: String = scheduledSavedJournalName
+      val thisOffset: Long = scheduledSavedOffset
 
       override def onCompletion(metadata: RecordMetadata, exception: Exception): Unit = {
         if (exception != null) {
 
-          log.error("Error when send :" + key + ", metadata:" + metadata + exception + "lastSavedPoint" + s" thisJournalName = $thisJournalName" + s" thisOffset = $thisOffset")
-          if (isAbnormal.compareAndSet(false, true)) {
 
-            logPositionHandler.persistLogPosition(destination, thisJournalName, thisOffset)
+          if (isAbnormal.compareAndSet(false, true)) {
+            if (!StringUtils.isEmpty(thisJournalName)) {
+              log.error("Error when send :" + key + ", metadata:" + metadata + exception + "lastSavedPoint" + s" thisJournalName = $thisJournalName" + s" thisOffset = $thisOffset")
+              logPositionHandler.persistLogPosition(destination, thisJournalName, thisOffset)
+            }
             context.parent ! SinkerMessage("error")
             log.info("send to recorder lastSavedPoint" + s"thisJournalName = $thisJournalName" + s"thisOffset = $thisOffset")
             //todo 做的不好 ，应该修改一下messge模型
@@ -271,8 +283,8 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
 
   override def postStop(): Unit = {
     if (!isAbnormal.get() && !StringUtils.isEmpty(lastSavedJournalName)) {
-      val theJournalName = this.schedulingSavedJournalName
-      val theOffset = this.schedulingSavedOffset
+      val theJournalName = this.scheduledSavedJournalName
+      val theOffset = this.scheduledSavedOffset
       logPositionHandler.persistLogPosition(destination, theJournalName, theOffset)
       log.info(s"记录binlog $theJournalName,$theOffset")
       if (isProfiling) mysql2KafkaTaskInfoManager.sinkerLogPosition.set(s"$theJournalName:$theOffset")

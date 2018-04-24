@@ -48,9 +48,9 @@ class MysqlBinlogPositionRecorder(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInf
         case _ =>{}
       }
     }
-    case BinlogPositionInfo(journalName, offset) => {
-      logPositionHandler.persistLogPosition(destination,journalName,offset)
-    }
+//    case BinlogPositionInfo(journalName, offset) => {
+//      logPositionHandler.persistLogPosition(destination,journalName,offset)
+//    }
 
   }
 
