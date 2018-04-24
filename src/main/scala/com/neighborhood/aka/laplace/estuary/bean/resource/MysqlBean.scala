@@ -19,11 +19,11 @@ trait MysqlBean extends DataSourceBase {
   /**
     * 主服务器（服务器地址，端口，用户名，密码）
     */
-  @Embedded var master: MysqlCredentialBean = null
+   var master: MysqlCredentialBean = null
   /**
     * 从服务器
     */
-  @Embedded var standby: MysqlCredentialBean = null
+   var standby: MysqlCredentialBean = null
   /**
     * 检测的Sql
     */

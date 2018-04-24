@@ -18,4 +18,6 @@ class MongoConnection(
   override def disconnect(): Unit = {}
 
   override def isConnected: Boolean = ???
+
+  override def fork: MongoConnection = ???
 }
