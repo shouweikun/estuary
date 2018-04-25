@@ -1,42 +1,75 @@
 package com.neighborhood.aka.laplace.estuary.mongo
 
-import com.mongodb.{MongoCredential, ServerAddress}
+import com.mongodb.{BasicDBObject, DBCollection, MongoCredential, ServerAddress}
 import com.mongodb.casbah.{MongoClient, MongoClientOptions, ReadPreference}
 import com.neighborhood.aka.laplace.estuary.bean.credential.MongoCredentialBean
 import com.neighborhood.aka.laplace.estuary.bean.resource.MongoBean
 import com.neighborhood.aka.laplace.estuary.core.source.DataSourceConnection
+import org.bson.BsonTimestamp
 
 /**
   * Created by john_liu on 2018/4/23.
   */
 class MongoConnection(
-                       val mongoBean: MongoBean
+                       val mongoBean: MongoBean,
+                       val mongoOffset: MongoOffset
                      )
   extends DataSourceConnection {
 
-  private lazy val connector = buildConnector
-  private lazy val oplogCollection = null
-  override def connect(): Unit = {
+  private var connector: MongoClient = null
+  private var oplogCollection: DBCollection = null
+  private var connectFlag = false
 
+  override def connect(): Unit = {
+    if (!connectFlag) {
+      reconnect()
+    }
   }
 
-  override def reconnect(): Unit = {}
+  override def reconnect(): Unit = {
+    connector = buildConnector
+    oplogCollection = buildOplogCollection
+    connectFlag = true
+  }
 
-  override def disconnect(): Unit = {}
+  override def disconnect(): Unit = {
+    if (connectFlag) {
+      connector.close()
+    }
+    connector = null
+    oplogCollection = null
+    connectFlag = false
+  }
 
-  override def isConnected: Boolean = ???
+  override def isConnected: Boolean = connectFlag
 
-  override def fork: MongoConnection = ???
+  override def fork: MongoConnection = new MongoConnection(mongoBean, mongoOffset)
 
-  def buildConnector: MongoClient = {
+  def getConnector = this.connector
+
+  private def buildConnector: MongoClient = {
     lazy val options = createMongoClientOptions
     lazy val hosts = createServerAddress()
     lazy val credential = if (mongoBean.authMechanism.equals(mongoBean.SCRAM_SHA_1)) createScramSha1Credential() else createMongoCRCredential()
     mongoBean
       .mongoCredentials
-      .fold(MongoClient(hosts, options))(_ => MongoClient(hosts, credential, options)
-      )
+      .fold(MongoClient(hosts, options))(_ => MongoClient(hosts, credential, options))
   }
+
+  private def prepareQuery(mongoOffset: MongoOffset = this.mongoOffset): BasicDBObject = {
+    lazy val ts = ("ts", new BasicDBObject("$gte", new BsonTimestamp(mongoOffset.getMongoTsSecond(), mongoOffset.getMongoTsInc())))
+    lazy val op = ("op", new BasicDBObject("$in", Array("i", "u", "d")))
+    lazy val fromMigrate = ("fromMigrate", new BasicDBObject("$exists", false))
+    //todo 确定是否使用
+    // lazy val   ns
+    //todo log
+    val query = new BasicDBObject()
+    List(ts, op, fromMigrate)
+      .map(kv => query.put(kv._1, kv._2))
+    query
+  }
+
+  private def buildOplogCollection = connector.getDB("local").getCollection("oplog.rs")
 
   private def createMongoClientOptions: com.mongodb.MongoClientOptions = MongoClientOptions.apply(
     readPreference = ReadPreference.Secondary,
