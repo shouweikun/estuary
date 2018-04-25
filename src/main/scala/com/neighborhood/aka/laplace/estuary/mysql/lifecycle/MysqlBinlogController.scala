@@ -14,6 +14,7 @@ import com.neighborhood.aka.laplace.estuary.core.lifecycle.{Status, _}
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mysql.{Mysql2KafkaTaskInfoManager, SettingConstant}
 import com.neighborhood.aka.laplace.estuary.mysql.akkaUtil.DivideDDLRoundRobinRoutingGroup
+import org.I0Itec.zkclient.exception.ZkTimeoutException
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
@@ -365,6 +366,18 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
 
   override def supervisorStrategy = {
     AllForOneStrategy() {
+      case e: ZkTimeoutException => {
+        controllerChangeStatus(Status.ERROR)
+        Restart
+      }
+      case e: Exception => {
+        controllerChangeStatus(Status.ERROR)
+        Restart
+      }
+      case error: Error => {
+        controllerChangeStatus(Status.ERROR)
+        Restart
+      }
       case _ => {
         controllerChangeStatus(Status.ERROR)
         Escalate
