@@ -14,7 +14,7 @@ import org.bson.BsonTimestamp
   */
 class MongoConnection(
                        val mongoBean: MongoBean,
-                       val mongoOffset: MongoOffset
+                       val startMongoOffset: MongoOffset
                      )
   extends DataSourceConnection {
 
@@ -45,10 +45,13 @@ class MongoConnection(
 
   override def isConnected: Boolean = connectFlag
 
-  override def fork: MongoConnection = new MongoConnection(mongoBean, mongoOffset)
+  override def fork: MongoConnection = new MongoConnection(mongoBean, startMongoOffset)
 
   def getConnector = this.connector
 
+  def buildOplogQuery = {
+    //todo
+  }
   private def buildConnector: MongoClient = {
     lazy val options = createMongoClientOptions
     lazy val hosts = createServerAddress()
@@ -58,8 +61,8 @@ class MongoConnection(
       .fold(MongoClient(hosts, options))(_ => MongoClient(hosts, credential, options))
   }
 
-  private def prepareQuery(mongoOffset: MongoOffset = this.mongoOffset): BasicDBObject = {
-    lazy val ts = ("ts", new BasicDBObject("$gte", new BsonTimestamp(mongoOffset.getMongoTsSecond(), mongoOffset.getMongoTsInc())))
+  private def prepareQuery(startMongoOffset: MongoOffset = this.startMongoOffset): BasicDBObject = {
+    lazy val ts = ("ts", new BasicDBObject("$gte", new BsonTimestamp(startMongoOffset.getMongoTsSecond(), startMongoOffset.getMongoTsInc())))
     lazy val op = ("op", new BasicDBObject("$in", Array("i", "u", "d")))
     lazy val fromMigrate = ("fromMigrate", new BasicDBObject("$exists", false))
     //todo log
