@@ -1,4 +1,4 @@
-package com.neighborhood.aka.laplace.estuary.web.akka
+package com.neighborhood.aka.laplace.estuary.web.akkaUtil
 
 import java.util.concurrent.ConcurrentHashMap
 

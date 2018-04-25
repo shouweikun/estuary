@@ -50,8 +50,12 @@ akka {
 
     }
   }
-}
 
+}
+mongodb{
+  url="mongodb://admin:instrum@localhost:27017/?authSource=admin&authMechanism=SCRAM-SHA-1"
+  dbName="testAdmin"
+}
 
 
 

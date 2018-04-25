@@ -7,6 +7,7 @@ import DataSourceType.DataSourceType
   */
 trait DataSourceBase {
 
-  var dataSourceType : DataSourceType
+  //  var dataSourceType : DataSourceType
+  var dataSourceType : String
 
 }
