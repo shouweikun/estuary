@@ -9,7 +9,7 @@ trait MongoBean extends DataSourceBase {
   val MONGODB_CR = "MONGODB-CR"
   val SCRAM_SHA_1 = "SCRAM-SHA-1";
   override val dataSourceType: String = SourceDataType.MONGO.toString
-  val mongoCredentials: List[MongoCredentialBean]
+  val mongoCredentials: Option[List[MongoCredentialBean]]
   val hosts: List[String]
   val port: Int
   /**
