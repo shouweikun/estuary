@@ -9,6 +9,8 @@ import org.bson.BsonTimestamp
 
 /**
   * Created by john_liu on 2018/4/23.
+  * @todo query 时间开始节点，无限getNext？
+  *
   */
 class MongoConnection(
                        val mongoBean: MongoBean,
@@ -60,9 +62,9 @@ class MongoConnection(
     lazy val ts = ("ts", new BasicDBObject("$gte", new BsonTimestamp(mongoOffset.getMongoTsSecond(), mongoOffset.getMongoTsInc())))
     lazy val op = ("op", new BasicDBObject("$in", Array("i", "u", "d")))
     lazy val fromMigrate = ("fromMigrate", new BasicDBObject("$exists", false))
-    //todo 确定是否使用
-    // lazy val   ns
     //todo log
+    lazy val ns = null
+
     val query = new BasicDBObject()
     List(ts, op, fromMigrate)
       .map(kv => query.put(kv._1, kv._2))

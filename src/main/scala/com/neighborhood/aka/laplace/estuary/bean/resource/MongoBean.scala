@@ -12,6 +12,8 @@ trait MongoBean extends DataSourceBase {
   val mongoCredentials: Option[List[MongoCredentialBean]]
   val hosts: List[String]
   val port: Int
+  val concernedNs:Array[String] = _
+  val ignoredNs:Array[String] = _
   /**
     * 读取数据时, 对于有replication set 复本集的collection是使用什么策略
     * primary,
