@@ -1,7 +1,7 @@
 
 akka {
   jvm-exit-on-fatal-error = true
-    loggers = ["akka.event.slf4j.Slf4jLogger"]
+    loggers = ["akka.event.slf4j.Slf4jLogger","com.neighborhood.aka.laplace.estuary.core.akkaUtil.EstuaryEventListener"]
   loglevel = "INFO"
 //    logging-filter = "akka.event.slf4j.Slf4jLoggingFilter"
   stdout-loglevel = "OFF"
