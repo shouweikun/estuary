@@ -19,12 +19,12 @@ class EstuaryEventListener extends Actor with ActorLogging{
 
     case Error(cause, logSource, logClass, message) => {
       //    消息体
-      val messageBody = new MessageBody
+      lazy val messageBody = new MessageBody
       //
       headers.setContentType(MediaType.APPLICATION_JSON)
       import scala.collection.JavaConversions._
       //      信息内容
-      val contents = List(s"${cause}, $logSource, $logClass, $message")
+      lazy val contents = List(s"cause:${cause},logSource:$logSource,logClass:$logClass,message $message")
       messageBody.setMessageContents(contents)
       //      手机号码列表
       messageBody.setMobiles(mobilelist)
