@@ -174,6 +174,7 @@ class Mysql2KafkaTaskInfoManager(taskInfoBean: Mysql2KafkaTaskInfoBean) extends 
     * @return logPosition处理器
     */
   def buildEntryPositionHandler: LogPositionHandler = {
+
     val servers = taskInfo.zookeeperServers
     val timeout = taskInfo.zookeeperTimeout
     val zkLogPositionManager = new ZooKeeperLogPositionManager

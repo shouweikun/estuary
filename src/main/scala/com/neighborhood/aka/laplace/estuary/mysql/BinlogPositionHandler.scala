@@ -21,12 +21,15 @@ import scala.util.Try
   * Created by john_liu on 2018/2/4.
   */
 class BinlogPositionHandler(
-                             implicit binlogParser: MysqlBinlogParser,
-                             manager: ZooKeeperLogPositionManager,
-                             master: Option[EntryPosition] = None,
-                             standby: Option[EntryPosition] = None,
-                             slaveId: Long = -1L, destination: String = "",
-                             address: InetSocketAddress
+
+                             val manager: ZooKeeperLogPositionManager,
+                             val master: Option[EntryPosition] = None,
+                             val standby: Option[EntryPosition] = None,
+                             val slaveId: Long = -1L,
+                             val destination: String = "",
+                             val address: InetSocketAddress,
+                             implicit val binlogParser: MysqlBinlogParser
+
                            ) {
   val logPositionManager = manager
 
