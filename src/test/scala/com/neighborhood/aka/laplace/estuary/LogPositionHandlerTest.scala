@@ -5,7 +5,8 @@ import java.net.InetSocketAddress
 
 import com.alibaba.otter.canal.parse.index.ZooKeeperLogPositionManager
 import com.neighborhood.aka.laplace.estuary.mysql.{BinlogPositionHandler, MysqlBinlogParser}
-import com.taobao.tddl.dbsync.binlog.{DirectLogFetcher, LogContext, LogDecoder}
+import com.alibaba.otter.canal.parse.inbound.mysql.dbsync.{DirectLogFetcher}
+import com.taobao.tddl.dbsync.binlog.{LogContext, LogDecoder}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 
@@ -21,8 +22,14 @@ class LogPositionHandlerTest extends FlatSpec with BeforeAndAfterAll with Matche
   val logContextMock = mock[LogContext]
   val logPositionHandler = new BinlogPositionHandler(binlogParser = binlogParserMock, manager = zooKeeperLogPositionManagerMock, address = inetAddress)
 
-  "loopFetchAndFindEntry" should "find Null when earlier than earliest"  in {
-     logPositionHandler.loopFetchAndFindEntry(fetcherMock,decoderMock,logContextMock)
+
+  override def beforeAll(): Unit = {
+    (fetcherMock.fetch _).when().returns(true)
+//    (decoderMock.decode _,_).expects()
+  }
+
+  "loopFetchAndFindEntry" should "find Null when earlier than earliest" in {
+    logPositionHandler.loopFetchAndFindEntry(fetcherMock, decoderMock, logContextMock)
   }
 
 }
