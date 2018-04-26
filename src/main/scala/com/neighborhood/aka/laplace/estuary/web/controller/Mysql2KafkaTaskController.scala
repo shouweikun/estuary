@@ -16,14 +16,14 @@ class Mysql2KafkaTaskController {
 
   @ApiOperation(value = "开始一个已经存在的mysql2kafka任务", httpMethod = "POST", notes = "")
   @RequestMapping(value = Array("/start/exit/onetask"), method = Array(RequestMethod.POST))
-  def startExitOne(@RequestParam("key") key: String,@RequestParam("value") value: String) = {
-    Mysql2KafkaService.startOneExistTask(key,value)
+  def startExitOne(@RequestParam("key") key: String, @RequestParam("value") value: String) = {
+    Mysql2KafkaService.startOneExistTask(key, value)
   }
 
   @ApiOperation(value = "根据syncTaskId重新启动mysql2kafka任务", httpMethod = "POST", notes = "")
   @RequestMapping(value = Array("/start/exit/onetask/synctaskid"), method = Array(RequestMethod.POST))
   def startExitSyncTaskId(@RequestParam("syncTaskId") syncTaskId: String) = {
-    Mysql2KafkaService.startOneExistTask("syncTaskId",syncTaskId)
+    Mysql2KafkaService.startOneExistTask("syncTaskId", syncTaskId)
   }
 
   @ApiOperation(value = "启动所有已经存在的mysql2kafka任务", httpMethod = "POST", notes = "")
@@ -38,9 +38,9 @@ class Mysql2KafkaTaskController {
     /** ******************************************************/
     ValidationUtils.notNull(requestBody.getKafkaBootstrapServers, "KafkaBootstrapServers cannot be null ")
     ValidationUtils.notblank(requestBody.getKafkaBootstrapServers, "KafkaBootstrapServers cannot be blank ")
-    ValidationUtils.notNull(requestBody.getKafkaTopic,"kafkaTopic cannot be null")
+    ValidationUtils.notNull(requestBody.getKafkaTopic, "kafkaTopic cannot be null")
     ValidationUtils.notblank(requestBody.getKafkaTopic, "kafkaTopic cannot be null")
-    ValidationUtils.notNull(requestBody.getKafkaDdlTopic,"kafkaDdlTopic cannot be null")
+    ValidationUtils.notNull(requestBody.getKafkaDdlTopic, "kafkaDdlTopic cannot be null")
     ValidationUtils.notblank(requestBody.getKafkaDdlTopic, "kafkaDdlTopic cannot be null")
     ValidationUtils.notNull(requestBody.getMysqladdress, "Mysqladdress cannot be null")
     ValidationUtils.notblank(requestBody.getMysqladdress, "Mysqladdress cannot be blank")
@@ -64,6 +64,12 @@ class Mysql2KafkaTaskController {
   @RequestMapping(value = Array("/check/task/status"), method = Array(RequestMethod.GET))
   def checkTaskStatus(@RequestParam("id") id: String): String = {
     Mysql2KafkaService.checkTaskStatus(id)
+  }
+
+  @ApiOperation(value = "查看所有已启动任务状态", httpMethod = "GET", notes = "")
+  @RequestMapping(value = Array("/check/task/"), method = Array(RequestMethod.GET))
+  def checkRunningTaskId(): String = {
+    Mysql2KafkaService.checkRunningTaskIds
   }
 
   @ApiOperation(value = "重启任务", httpMethod = "GET", notes = "")
