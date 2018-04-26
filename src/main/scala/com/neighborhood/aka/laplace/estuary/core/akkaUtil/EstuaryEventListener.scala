@@ -44,8 +44,9 @@ class EstuaryEventListener extends Actor with ActorLogging {
       lazy val now = System.currentTimeMillis()
       if (!informedSyncTaskMap.contains(taskMark) || now - informedSyncTaskMap.get(taskMark).getOrElse(1L) > TIME_INTERVAL) {
         buildandSendErrorMessage
+        informedSyncTaskMap.put(taskMark, now)
       }
-      informedSyncTaskMap.put(taskMark, now)
+
     }
   }
 }
