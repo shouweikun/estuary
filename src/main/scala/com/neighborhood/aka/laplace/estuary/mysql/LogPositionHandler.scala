@@ -197,7 +197,7 @@ class LogPositionHandler(
   {
     def prepareConnection(position: Long) = {
       mysqlConnection.reconnect()
-      mysqlConnection.seek(entryPosition.getJournalName, position)(mysqlConnection)
+      MysqlConnection.seek(entryPosition.getJournalName, position)(mysqlConnection)
     }
 
     prepareConnection(entryPosition.getPosition)
