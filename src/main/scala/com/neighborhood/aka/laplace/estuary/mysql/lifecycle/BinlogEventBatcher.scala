@@ -15,6 +15,7 @@ import com.neighborhood.aka.laplace.estuary.bean.support.KafkaMessage
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{SourceDataBatcher, Status, _}
+import com.neighborhood.aka.laplace.estuary.core.source.MysqlConnection
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mysql.{CanalEntryJsonHelper, JsonUtil, Mysql2KafkaTaskInfoManager, MysqlBinlogParser}
 import com.taobao.tddl.dbsync.binlog.LogEvent
@@ -66,7 +67,7 @@ class BinlogEventBatcher(
   /**
     * 该mysql实例所有的db
     */
-  lazy val mysqlDatabaseNameList = mysql2KafkaTaskInfoManager.mysqlDatabaseNameList
+  lazy val mysqlDatabaseNameList = MysqlConnection.getSchemas(mysql2KafkaTaskInfoManager.mysqlConnection.fork)
   /**
     * 打包的entry
     */
@@ -264,6 +265,7 @@ class BinlogEventBatcher(
         *                   构造假数据并发送给sinker
         */
       def buildAndSendDummyKafkaMessage(dbNameList: Iterable[String])(sinker: ActorRef): Unit = {
+
         val kafkaMessageList: List[Any] = dbNameList
           .map {
             dbName =>

@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.util.CollectionUtils
 
 import scala.annotation.tailrec
+import scala.concurrent.{Await, Future}
 import scala.util.Try
 
 /**
@@ -23,15 +24,15 @@ import scala.util.Try
   */
 class LogPositionHandler(
 
-                             val manager: ZooKeeperLogPositionManager,
-                             val master: Option[EntryPosition] = None,
-                             val standby: Option[EntryPosition] = None,
-                             val slaveId: Long = -1L,
-                             val destination: String = "",
-                             val address: InetSocketAddress,
-                             implicit val binlogParser: MysqlBinlogParser
+                          val manager: ZooKeeperLogPositionManager,
+                          val master: Option[EntryPosition] = None,
+                          val standby: Option[EntryPosition] = None,
+                          val slaveId: Long = -1L,
+                          val destination: String = "",
+                          val address: InetSocketAddress,
+                          implicit val binlogParser: MysqlBinlogParser
 
-                           ) {
+                        ) {
   val logger = LoggerFactory.getLogger(classOf[LogPositionHandler])
   val logPositionManager = manager
 
@@ -112,7 +113,7 @@ class LogPositionHandler(
             //jouralName是否定义
             val journalNameIsDefined = !StringUtils.isEmpty(thePosition.getJournalName)
             //时间戳是否定义
-            val timeStampIsDefined = (Option(thePosition).isDefined && thePosition.getTimestamp > 0L)
+            val timeStampIsDefined = (Option(thePosition.getTimestamp).isDefined && thePosition.getTimestamp > 0L)
             //positionOffset是否定义
             val positionOffsetIsDefined = (Option(thePosition.getPosition).isDefined && thePosition.getPosition >= 0L)
             (journalNameIsDefined, positionOffsetIsDefined, timeStampIsDefined) match {
@@ -156,9 +157,11 @@ class LogPositionHandler(
     */
   private def binlogIsRemoved(mysqlConnection: MysqlConnection, journalName: String): Boolean = {
     Try {
-      lazy val fields = mysqlConnection.query(s"show binlog events in '$journalName'").getFieldValues
+      import scala.concurrent.duration._
+      val fields = Await
+        .result(Future(mysqlConnection.query(s"show binlog events in '$journalName'").getFieldValues)(scala.concurrent.ExecutionContext.Implicits.global), 3 seconds)
       CollectionUtils.isEmpty(fields)
-    }.getOrElse(true)
+    }.getOrElse(throw new Exception("error when ensure binlog exists or not"))
   }
 
   /**

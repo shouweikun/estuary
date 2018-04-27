@@ -68,6 +68,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
   override def receive: Receive = {
 
     case FetcherMessage(msg) => {
+      throw  new Exception("dfsdf")
       msg match {
         case "restart" => {
           log.info("fetcher restarting")

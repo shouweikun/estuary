@@ -79,6 +79,7 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
   }
 
   def online: Receive = {
+    case "start" => startAllWorkers
     case "restart" => throw new RuntimeException("重启")
     case ListenerMessage(msg) => {
       msg match {
@@ -368,15 +369,17 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
     AllForOneStrategy() {
       case e: ZkTimeoutException => {
         controllerChangeStatus(Status.ERROR)
-        Restart
+        Escalate
       }
       case e: Exception => {
         controllerChangeStatus(Status.ERROR)
+        context.system.scheduler.scheduleOnce(30 seconds, self, "start")
         Restart
+
       }
       case error: Error => {
         controllerChangeStatus(Status.ERROR)
-        Restart
+        Escalate
       }
       case _ => {
         controllerChangeStatus(Status.ERROR)
