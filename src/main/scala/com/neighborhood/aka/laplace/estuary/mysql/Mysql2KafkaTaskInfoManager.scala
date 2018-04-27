@@ -183,7 +183,10 @@ class Mysql2KafkaTaskInfoManager(taskInfoBean: Mysql2KafkaTaskInfoBean) extends 
     val servers = taskInfo.zookeeperServers
     val timeout = taskInfo.zookeeperTimeout
     val zkLogPositionManager = new ZooKeeperLogPositionManager
-    zkLogPositionManager.setZkClientx(new ZkClientx(servers, timeout))
+    lazy val holdingZk = ZkClientx.getZkClient(servers)
+    lazy val zkClient = Option(holdingZk).fold(new ZkClientx(servers, timeout))(zk=>zk)
+    zkLogPositionManager.setZkClientx(zkClient)
+
     new LogPositionHandler(zkLogPositionManager, slaveId = this.slaveId, destination = this.taskInfo.syncTaskId, address = new InetSocketAddress(taskInfo.master.address, taskInfo.master.port), master = Option(startPosition), binlogParser = binlogParser)
 
   }

@@ -154,6 +154,8 @@ class LogPositionHandler(
     *
     * @param journalName
     * @return
+    *
+    *         @todo 有问题
     */
   private def binlogIsRemoved(mysqlConnection: MysqlConnection, journalName: String): Boolean = {
     Try {
@@ -161,7 +163,7 @@ class LogPositionHandler(
       val fields = Await
         .result(Future(mysqlConnection.query(s"show binlog events in '$journalName'").getFieldValues)(scala.concurrent.ExecutionContext.Implicits.global), 3 seconds)
       CollectionUtils.isEmpty(fields)
-    }.getOrElse(throw new Exception("error when ensure binlog exists or not"))
+    }.getOrElse(false)//throw new Exception("error when ensure binlog exists or not"))
   }
 
   /**

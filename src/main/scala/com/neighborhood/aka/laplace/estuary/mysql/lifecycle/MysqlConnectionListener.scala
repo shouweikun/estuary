@@ -139,7 +139,6 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
   }
 
   override def postRestart(reason: Throwable): Unit = {
-    context.parent ! ListenerMessage("restart")
     super.postRestart(reason)
   }
 

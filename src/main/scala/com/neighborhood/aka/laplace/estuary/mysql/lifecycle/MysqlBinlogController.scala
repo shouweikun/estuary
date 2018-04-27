@@ -373,8 +373,7 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
       }
       case e: Exception => {
         controllerChangeStatus(Status.ERROR)
-        context.system.scheduler.scheduleOnce(30 seconds, self, "start")
-        Restart
+        Escalate
 
       }
       case error: Error => {
