@@ -230,7 +230,7 @@ class MysqlConnection(
             val entry = try {
               binlogParser.parse(logEvent)
             } catch {
-              case CanalParseException => fetch4Seek
+              case e:CanalParseException => fetch4Seek(binlogParser)
             }
             entry
           }

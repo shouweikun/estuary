@@ -12,6 +12,7 @@ import com.alibaba.otter.canal.protocol.position.{EntryPosition, LogIdentity, Lo
 import com.neighborhood.aka.laplace.estuary.core.source.MysqlConnection
 import com.taobao.tddl.dbsync.binlog.{LogContext, LogDecoder}
 import org.apache.commons.lang.StringUtils
+import org.slf4j.LoggerFactory
 import org.springframework.util.CollectionUtils
 
 import scala.annotation.tailrec
@@ -31,6 +32,7 @@ class BinlogPositionHandler(
                              implicit val binlogParser: MysqlBinlogParser
 
                            ) {
+  val logger = LoggerFactory.getLogger(classOf[BinlogPositionHandler])
   val logPositionManager = manager
 
   /**
@@ -40,6 +42,7 @@ class BinlogPositionHandler(
     */
   def persistLogPosition(destination: String, logPosition: LogPosition): Unit = {
     manager.persistLogPosition(destination, logPosition)
+    logger.info(s"binlog Position Saved id:$destination")
   }
 
   /**
@@ -51,6 +54,7 @@ class BinlogPositionHandler(
   def persistLogPosition(destination: String, journalName: String, offest: Long): Unit = {
     val logPosition = buildLastPosition(journalName, offest)
     manager.persistLogPosition(destination, logPosition)
+    logger.info(s"binlog Position Saved id:$destination")
   }
 
   /**
@@ -89,12 +93,14 @@ class BinlogPositionHandler(
 
     def findBinlogPositionIfZkisEmptyOrInvaild = {
       //zookeeper未能拿到
+      logger.debug(s"do not find position in Zk id:$destination")
       //todo 主备切换
       //看看是否传入entryPosition
       master
         .fold {
           //未传入logPostion
           //读取最后位置
+
           findEndPosition(connection)
         } {
           //传入了logPosition的话
@@ -113,7 +119,7 @@ class BinlogPositionHandler(
               case (true, true, true) => thePosition
               case (true, true, false) => thePosition
               case (true, false, true) => findByStartTimeStamp(connection, timeStamp)
-              case (true, false, false) => findAsPerTimestampInSpecificLogFile(connection, timeStamp, findEndPosition(connection), journalName)
+              case (true, false, false) => findEndPosition(connection)
               case (false, true, true) => findByStartTimeStamp(connection, timeStamp)
               case (false, true, false) => findEndPosition(connection)
               case (false, false, true) => findByStartTimeStamp(connection, timeStamp)
@@ -124,12 +130,18 @@ class BinlogPositionHandler(
 
     logPositionFromZookeeper
       .fold {
+
         findBinlogPositionIfZkisEmptyOrInvaild
       } {
         //如果传了
         theLogPosition =>
           //binlog 被移除的话
-          if (binlogIsRemoved(connection, theLogPosition.getPostion.getJournalName)) findBinlogPositionIfZkisEmptyOrInvaild else theLogPosition.getPostion
+          if (binlogIsRemoved(connection, theLogPosition.getPostion.getJournalName)) findBinlogPositionIfZkisEmptyOrInvaild else {
+            logger.debug(s"find logPosition by zk, id:$destination position:${
+              theLogPosition.getPostion.getJournalName
+            }:${theLogPosition.getPostion.getPosition}")
+            theLogPosition.getPostion
+          }
       }
 
   }
@@ -146,7 +158,7 @@ class BinlogPositionHandler(
     Try {
       lazy val fields = mysqlConnection.query(s"show binlog events in '$journalName'").getFieldValues
       CollectionUtils.isEmpty(fields)
-    }.getOrElse(false)
+    }.getOrElse(true)
   }
 
   /**
@@ -154,7 +166,8 @@ class BinlogPositionHandler(
     *
     */
   def findEndPosition(mysqlConnection: MysqlConnection): EntryPosition = {
-    try {
+    logger.debug(s"start find endPosition id:$destination")
+    lazy val re = try {
       val packet = mysqlConnection.query("show master status")
       val fields = Option(packet.getFieldValues)
 
@@ -166,14 +179,16 @@ class BinlogPositionHandler(
         throw new CanalParseException(" command : 'show master status' has an error!", e);
       }
     }
-
+    logger.debug(s"find end Position ${re.getJournalName}:${re.getPosition},id:$destination")
+    re
   }
 
   /**
-    *  寻找事务开始的position
+    * 寻找事务开始的position
     * 这个方法也做了scala风格的修改
     * 1.首先确认 当前给定的position是否是事务头/尾,如果是直接使用
     * 2.否则从当前binlog头开始寻找，找到事务头
+    *
     * @param mysqlConnection
     * @param entryPosition
     * @return position
@@ -189,15 +204,17 @@ class BinlogPositionHandler(
     if (mysqlConnection.fetch4Seek.getEntryType == CanalEntry.EntryType.TRANSACTIONBEGIN || mysqlConnection.fetch4Seek.getEntryType == CanalEntry.EntryType.TRANSACTIONEND) entryPosition.getPosition
     else {
       prepareConnection(4L)
+
       @tailrec
-      lazy val loopFind: Long = {
+      def loopFind: Long = {
         val theEntry = mysqlConnection.fetch4Seek
-        if (theEntry.getHeader.getLogfileOffset > entryPosition.getPosition){
+        if (theEntry.getHeader.getLogfileOffset > entryPosition.getPosition) {
           throw new CanalParseException("the current entry is bigger than last when find Transaction Begin Position")
         }
-          if (theEntry.getEntryType == CanalEntry.EntryType.TRANSACTIONBEGIN)
-            theEntry.getHeader.getLogfileOffset else loopFind
+        if (theEntry.getEntryType == CanalEntry.EntryType.TRANSACTIONBEGIN)
+          theEntry.getHeader.getLogfileOffset else loopFind
       }
+
       loopFind
     }
 
@@ -338,7 +355,7 @@ class BinlogPositionHandler(
     * @todo test
     */
   @tailrec
-  private[estuary] def loopFetchAndFindEntry(fetcher: DirectLogFetcher, decoder: LogDecoder, logContext: LogContext)(startTimestamp: Long = 0L, endPosition: EntryPosition = null): EntryPosition = {
+  final private[estuary] def loopFetchAndFindEntry(fetcher: DirectLogFetcher, decoder: LogDecoder, logContext: LogContext)(startTimestamp: Long = 0L, endPosition: EntryPosition = null): EntryPosition = {
     if (fetcher.fetch()) {
       val event = decoder.decode(fetcher, logContext)
       val entry = try {
@@ -360,22 +377,22 @@ class BinlogPositionHandler(
         * @todo test
         */
       def findAndJudgeEntry(entry: CanalEntry.Entry): Int = {
-        val logfilename = entry.getHeader.getLogfileName
-        val logfileoffset = entry.getHeader.getLogfileOffset
-        val logposTimestamp = entry.getHeader.getExecuteTime
-        val entryType = entry.getEntryType
+        lazy val logfilename = entry.getHeader.getLogfileName
+        lazy val logfileoffset = entry.getHeader.getLogfileOffset
+        lazy val logposTimestamp = entry.getHeader.getExecuteTime
+        lazy val entryType = entry.getEntryType
 
         //比最晚的都晚
-        def lateThanLatest: Boolean = if (endPosition != null) (StringUtils.equals(endPosition.getJournalName, logfilename) && endPosition.getPosition <= (logfileoffset + event.getEventLen)) else true
+        def lateThanLatest: Boolean = if (endPosition != null) (StringUtils.equals(endPosition.getJournalName, logfilename) && endPosition.getPosition <= (logfileoffset + event.getEventLen)) else false
 
         //比最早的都早
-        def earlierThanEarliest: Boolean = if (startTimestamp != 0) logposTimestamp >= startTimestamp else true
+        def earlierThanEarliest: Boolean = if (startTimestamp != 0) logposTimestamp >= startTimestamp else false
 
         //综合两者
-        def outOfTimeRequirement = (lateThanLatest && earlierThanEarliest)
+        def outOfTimeRequirement = (lateThanLatest || earlierThanEarliest)
 
         //进行判断
-        if (lateThanLatest) 1 else entryType match {
+        if (outOfTimeRequirement) 1 else entryType match {
           case CanalEntry.EntryType.TRANSACTIONEND => 2 //todo log
           case CanalEntry.EntryType.TRANSACTIONBEGIN => 2 //todo log
           case _ => 3 //todo log
@@ -389,7 +406,7 @@ class BinlogPositionHandler(
           case _ => loopFetchAndFindEntry(fetcher, decoder, logContext)(startTimestamp, endPosition)
         }
       }
-    } else null //todo log
+    } else throw new Exception("unexcepted end") //todo log
   }
 
 }

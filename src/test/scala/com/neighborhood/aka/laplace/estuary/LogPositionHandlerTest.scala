@@ -3,10 +3,12 @@ package com.neighborhood.aka.laplace.estuary
 
 import java.net.InetSocketAddress
 
+import com.alibaba.otter.canal.parse.inbound.mysql.dbsync.DirectLogFetcher
 import com.alibaba.otter.canal.parse.index.ZooKeeperLogPositionManager
+import com.alibaba.otter.canal.protocol.CanalEntry
+import com.alibaba.otter.canal.protocol.position.EntryPosition
 import com.neighborhood.aka.laplace.estuary.mysql.{BinlogPositionHandler, MysqlBinlogParser}
-import com.alibaba.otter.canal.parse.inbound.mysql.dbsync.{DirectLogFetcher}
-import com.taobao.tddl.dbsync.binlog.{LogContext, LogDecoder}
+import com.taobao.tddl.dbsync.binlog.{LogContext, LogDecoder, LogEvent}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 
@@ -17,19 +19,13 @@ class LogPositionHandlerTest extends FlatSpec with BeforeAndAfterAll with Matche
   val binlogParserMock = mock[MysqlBinlogParser]
   val zooKeeperLogPositionManagerMock = mock[ZooKeeperLogPositionManager]
   val inetAddress = new InetSocketAddress("test", 1)
-  val fetcherMock = mock[DirectLogFetcher]
-  val decoderMock = mock[LogDecoder]
-  val logContextMock = mock[LogContext]
   val logPositionHandler = new BinlogPositionHandler(binlogParser = binlogParserMock, manager = zooKeeperLogPositionManagerMock, address = inetAddress)
 
 
   override def beforeAll(): Unit = {
-    (fetcherMock.fetch _).when().returns(true)
-//    (decoderMock.decode _,_).expects()
+
   }
 
-  "loopFetchAndFindEntry" should "find Null when earlier than earliest" in {
-    logPositionHandler.loopFetchAndFindEntry(fetcherMock, decoderMock, logContextMock)
-  }
+
 
 }
