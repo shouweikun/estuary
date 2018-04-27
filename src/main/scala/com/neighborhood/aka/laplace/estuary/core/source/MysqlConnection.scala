@@ -32,15 +32,24 @@ import scala.util.Try
 
 class MysqlConnection(
                        private val charset: Charset = Charset.forName("UTF-8"),
+                       private val charserNum: Byte = 33.toByte,
                        private val binlogFormat: BinlogFormat = null,
                        private val slaveId: Long = System.currentTimeMillis(),
                        private val binlogImage: BinlogImage = null,
-                       private val address: InetSocketAddress = null,
+                       private val address: InetSocketAddress,
+                       private val receiveBufferSize: Int = 16 * 1024 * 1024,
+                       private val sendBufferSize: Int = 16 * 1024,
                        private val username: String,
-                       private val password: String
+                       private val password: String,
+                       private val database: String = "retl"
                      ) extends DataSourceConnection {
 
-  private lazy val connector: MysqlConnector = new MysqlConnector(address, username, password)
+  private lazy val connector: MysqlConnector = {
+    val re = new MysqlConnector(address, username, password, charserNum, database)
+    re.setReceiveBufferSize(receiveBufferSize)
+    re.setSendBufferSize(sendBufferSize)
+    re
+  }
   /**
     * mysql的checksum校验机制
     */
@@ -88,17 +97,24 @@ class MysqlConnection(
   def fork: MysqlConnection = {
     new MysqlConnection(
       charset,
+      charserNum,
       binlogFormat,
       System.currentTimeMillis(),
       binlogImage,
       address,
+      receiveBufferSize,
+      sendBufferSize,
       username,
       password
     )
   }
 
   def toCanalMysqlConnection: com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection = {
-    new com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
+    val re = new com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection(address, username, password, charserNum, database)
+    re.setCharset(charset)
+    re.getConnector.setReceiveBufferSize(receiveBufferSize)
+    re.getConnector.setSendBufferSize(sendBufferSize)
+    re
   }
 
 
@@ -230,7 +246,7 @@ class MysqlConnection(
             val entry = try {
               binlogParser.parse(logEvent)
             } catch {
-              case e:CanalParseException => fetch4Seek(binlogParser)
+              case e: CanalParseException => fetch4Seek(binlogParser)
             }
             entry
           }

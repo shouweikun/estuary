@@ -12,12 +12,12 @@ import com.alibaba.otter.canal.parse.driver.mysql.packets.client.BinlogDumpComma
 import com.alibaba.otter.canal.parse.driver.mysql.packets.server.ResultSetPacket
 import com.alibaba.otter.canal.parse.driver.mysql.utils.PacketManager
 import com.alibaba.otter.canal.parse.exception.{CanalParseException, TableIdNotFoundException}
-import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
 import com.alibaba.otter.canal.parse.inbound.mysql.dbsync.{DirectLogFetcher, TableMetaCache}
 import com.alibaba.otter.canal.protocol.CanalEntry
 import com.alibaba.otter.canal.protocol.position.EntryPosition
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{SourceDataFetcher, Status, _}
+import com.neighborhood.aka.laplace.estuary.core.source.MysqlConnection
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mysql.{CanalEntryJsonHelper, Mysql2KafkaTaskInfoManager, MysqlBinlogParser}
 import com.taobao.tddl.dbsync.binlog.event.FormatDescriptionLogEvent
@@ -56,7 +56,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
     * mysql链接
     * 必须是fork 出来的
     */
-  val mysqlConnection: Option[MysqlConnection] = Option(mysql2KafkaTaskInfoManager.mysqlConnection.fork())
+  val mysqlConnection: Option[MysqlConnection] = Option(mysql2KafkaTaskInfoManager.mysqlConnection.fork)
   /**
     * 寻址处理器
     */
@@ -112,7 +112,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
         case "start" => {
           try {
             mysqlConnection.map(_.connect())
-            entryPosition = Option(logPositionHandler.findStartPosition(mysqlConnection.get)(errorCount > 0))
+            entryPosition = Option(logPositionHandler.findStartPosition(mysqlConnection.get))
                    //todo
             if (entryPosition.isDefined) {
               //寻找完后必须reconnect一下
@@ -148,7 +148,6 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
           log.debug("fetcher predump")
           mysqlMetaConnection = Option(preDump(mysqlConnection.get))
           mysqlConnection.get.connect
-          mysql2KafkaTaskInfoManager.mysqlDatabaseNameList =getSchemas(mysqlConnection.get)
           val startPosition = entryPosition.get
           try {
             if (StringUtils.isEmpty(startPosition.getJournalName) && Option(startPosition.getTimestamp).isEmpty) {
@@ -179,7 +178,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
             }
           } catch {
             case e: TableIdNotFoundException => {
-              entryPosition = Option(logPositionHandler.findStartPositionWithinTransaction(mysqlConnection.get)(errorCount > 0))
+              entryPosition = Option(logPositionHandler.findStartPositionWithinTransaction(mysqlConnection.get))
               self ! FetcherMessage("start")
             }
             case e: Exception => processError(e, FetcherMessage("fetch"))

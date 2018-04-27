@@ -8,7 +8,6 @@ import java.util.concurrent.atomic.{AtomicLong, AtomicReference}
 import akka.actor.ActorRef
 import com.alibaba.otter.canal.common.zookeeper.ZkClientx
 import com.alibaba.otter.canal.filter.aviater.AviaterRegexFilter
-import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection.{BinlogFormat, BinlogImage}
 import com.alibaba.otter.canal.parse.index.ZooKeeperLogPositionManager
 import com.alibaba.otter.canal.protocol.position.EntryPosition
@@ -17,6 +16,7 @@ import com.neighborhood.aka.laplace.estuary.bean.key.BinlogKey
 import com.neighborhood.aka.laplace.estuary.bean.task.Mysql2KafkaTaskInfoBean
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status.Status
 import com.neighborhood.aka.laplace.estuary.core.sink.KafkaSinkFunc
+import com.neighborhood.aka.laplace.estuary.core.source.MysqlConnection
 import com.neighborhood.aka.laplace.estuary.core.task.{RecourceManager, TaskManager}
 import org.apache.commons.lang.StringUtils
 
@@ -138,16 +138,21 @@ class Mysql2KafkaTaskInfoManager(taskInfoBean: Mysql2KafkaTaskInfoBean) extends 
   def buildMysqlConnection(
                             connectionCharsetNumber: Byte = taskInfo.connectionCharsetNumber, connectionCharset: Charset = taskInfo.connectionCharset, receiveBufferSize: Int = taskInfo.receiveBufferSize, sendBufferSize: Int = taskInfo.sendBufferSize, masterCredentialInfo: MysqlCredentialBean = taskInfo.master
                           ): MysqlConnection = {
-    val address = new InetSocketAddress(masterCredentialInfo.address, masterCredentialInfo.port)
-    val username = masterCredentialInfo.username
-    val password = masterCredentialInfo.password
-    val database = masterCredentialInfo.defaultDatabase
-    val conn = new MysqlConnection(address, username, password, connectionCharsetNumber, database)
-    conn.setCharset(connectionCharset)
-    conn.setSlaveId(slaveId)
-    conn.getConnector.setSendBufferSize(sendBufferSize)
-    conn.getConnector.setReceiveBufferSize(receiveBufferSize)
-    conn
+    val connectionAddress = new InetSocketAddress(masterCredentialInfo.address, masterCredentialInfo.port)
+    val connectionUsername = masterCredentialInfo.username
+    val connectionPassword = masterCredentialInfo.password
+    val connectionDatabase = masterCredentialInfo.defaultDatabase
+    new MysqlConnection(
+      connectionCharset,
+      connectionCharsetNumber,
+      username = connectionUsername,
+      password = connectionPassword,
+      database = connectionDatabase,
+      address = connectionAddress,
+      receiveBufferSize = receiveBufferSize,
+      sendBufferSize = sendBufferSize,
+      slaveId = this.slaveId
+    )
   }
 
   /**
@@ -179,7 +184,7 @@ class Mysql2KafkaTaskInfoManager(taskInfoBean: Mysql2KafkaTaskInfoBean) extends 
     val timeout = taskInfo.zookeeperTimeout
     val zkLogPositionManager = new ZooKeeperLogPositionManager
     zkLogPositionManager.setZkClientx(new ZkClientx(servers, timeout))
-    new LogPositionHandler(binlogParser, zkLogPositionManager, slaveId = this.slaveId, destination = this.taskInfo.syncTaskId, address = new InetSocketAddress(taskInfo.master.address, taskInfo.master.port), master = Option(startPosition))
+    new LogPositionHandler(zkLogPositionManager, slaveId = this.slaveId, destination = this.taskInfo.syncTaskId, address = new InetSocketAddress(taskInfo.master.address, taskInfo.master.port), master = Option(startPosition), binlogParser = binlogParser)
 
   }
 
