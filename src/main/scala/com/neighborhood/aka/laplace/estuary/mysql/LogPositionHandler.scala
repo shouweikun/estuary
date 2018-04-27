@@ -328,14 +328,14 @@ class LogPositionHandler(
     * 根据给定的时间戳，在指定的binlog中找到最接近于该时间戳(必须是小于时间戳)的一个事务起始位置。
     * 针对最后一个binlog会给定endPosition，避免无尽的查询
     *
-    * @todo test
+    * @todo 换成fetch4seek function
     */
   private[estuary] def findAsPerTimestampInSpecificLogFile(mysqlConnection: MysqlConnection, startTimestamp: Long, endPosition: EntryPosition, searchBinlogFile: String): EntryPosition = {
     lazy val position = Try {
       //重启一下
-      mysqlConnection.synchronized(mysqlConnection.reconnect)
+      mysqlConnection.reconnect
       // 开始遍历文件
-      mysqlConnection.seek(searchBinlogFile, 4L)(mysqlConnection)
+      MysqlConnection.seek(searchBinlogFile, 4L)(mysqlConnection)
       val fetcher: DirectLogFetcher = mysqlConnection.fetcher4Seek
       val decoder: LogDecoder = mysqlConnection.decoder4Seek
       val logContext: LogContext = mysqlConnection.logContext4Seek

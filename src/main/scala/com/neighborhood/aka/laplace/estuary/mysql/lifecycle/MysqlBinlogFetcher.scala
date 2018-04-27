@@ -133,7 +133,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
               throw new UnsupportedOperationException("unsupported operation: dump by timestamp is not supported yet")
             } else {
               log.info("start dump binlog")
-              MysqlConnection.dump(startPosition.getJournalName, startPosition.getPosition)
+              MysqlConnection.dump(startPosition.getJournalName, startPosition.getPosition)(mysqlConnection.get)
 
             }
             self ! FetcherMessage("fetch")
@@ -143,17 +143,10 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
         }
         case "fetch" => {
           val before = System.currentTimeMillis()
-          //如果12小时还不能拿到数据，发起重连
-          val flag = Await.result(Future(fetcher.fetch()), 12 hours)
           try {
-            if (flag) {
-              fetchOne(before)
-              val fetchDelay = mysql2KafkaTaskInfoManager.taskInfo.fetchDelay.get
-              context.system.scheduler.scheduleOnce(fetchDelay microseconds, self, FetcherMessage("fetch"))
-              //              println("after fetch")
-            } else {
-
-            }
+            fetchOne(before)
+            val fetchDelay = mysql2KafkaTaskInfoManager.taskInfo.fetchDelay.get
+            context.system.scheduler.scheduleOnce(fetchDelay microseconds, self, FetcherMessage("fetch"))
           } catch {
             case e: TableIdNotFoundException => {
               entryPosition = Option(logPositionHandler.findStartPositionWithinTransaction(mysqlConnection.get))
@@ -179,10 +172,8 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
   @deprecated("use `fetchOne`")
   @tailrec
   final def loopFetchAll: Unit = {
-    if (fetcher.fetch()) {
-      fetchOne()
-      loopFetchAll
-    }
+    fetchOne()
+    loopFetchAll
   }
 
   /**
@@ -191,25 +182,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
   def fetchOne(before: Long = System.currentTimeMillis()) = {
 
 
-    @tailrec
-    def fetchUntilSome: Option[CanalEntry.Entry] = {
-      lazy val event = decoder.decode(fetcher, logContext)
-      lazy val entry = try {
-        binlogParser.parse(Option(event))
-
-      } catch {
-        case e: CanalParseException => {
-
-          log.warning(s"$e,cause:${e.getCause}")
-          None
-        }
-      }
-      if (filterEntry(entry)) entry else if
-      (fetcher.fetch()) fetchUntilSome
-      else throw new Exception("impossible,unexpected end of stream")
-    }
-
-    lazy val entry = fetchUntilSome
+    lazy val entry = mysqlConnection.get.fetchUntilDefined(filterEntry(_))(binlogParser)
     if (entry.get.getHeader.getEventType == CanalEntry.EventType.ALTER) {
       log.info(s"fetch ddl:${CanalEntryJsonHelper.entryToJson(entry.get)}");
       Option(binlogDdlHandler).fold(log.warning("ddlHandler does not exist"))(x => x ! entry.get)
