@@ -311,14 +311,13 @@ object MysqlConnection {
     updateSettings(mysqlConnection)
     sendBinlogDump(binlogFileName, binlogPosition)(mysqlConnection)
     val connector = mysqlConnection.connector
-    mysqlConnection.fetcher4Seek = new DirectLogFetcher(connector.getReceiveBufferSize)
     if(!connector.isConnected)connector.connect()
-    mysqlConnection.fetcher = {
+    mysqlConnection.fetcher4Seek = {
       lazy val fetcher = new DirectLogFetcher()
       fetcher.start(connector.getChannel)
       fetcher
     }
-    mysqlConnection.decoder = {
+    mysqlConnection.decoder4Seek = {
       lazy val decoder = new LogDecoder
       List(
         LogEvent.ROTATE_EVENT,
