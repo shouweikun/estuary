@@ -87,15 +87,13 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
         }
         case "start" => {
           try {
-            mysqlConnection.map(_.connect())
-            entryPosition = Option(logPositionHandler.findStartPosition(mysqlConnection.get))
+            entryPosition = mysqlConnection.map(_.fork).map { conn => conn.connect(); logPositionHandler.findStartPosition(conn) }
             entryPosition.fold {
               log.error("fetcher find entryPosition is null")
               throw new Exception("entryPosition is null when find position")
             } {
               thePosition =>
-                //寻找完后必须reconnect一下
-                mysqlConnection.map(_.reconnect)
+                mysqlConnection.map(_.connect())
                 log.info(s"fetcher find start position,binlogFileName:${thePosition.getJournalName},${thePosition.getPosition}")
                 context.become(online)
                 log.info(s"fetcher switch to online")
