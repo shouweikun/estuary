@@ -355,7 +355,7 @@ class LogPositionHandler(
   private[estuary] def findAsPerTimestampInSpecificLogFile(mysqlConnection: MysqlConnection, startTimestamp: Long, endPosition: EntryPosition, searchBinlogFile: String): EntryPosition = {
     //重启一下
     Try(mysqlConnection.reconnect)
-    val position = Try {
+
       // 开始遍历文件
       MysqlConnection.seek(searchBinlogFile, 4L)(mysqlConnection)
       val fetcher: DirectLogFetcher = mysqlConnection.fetcher4Seek
@@ -363,16 +363,8 @@ class LogPositionHandler(
       val logContext: LogContext = mysqlConnection.logContext4Seek
       val re = loopFetchAndFindEntry(fetcher, decoder, logContext)(startTimestamp, endPosition)
       re
-    }
-    mysqlConnection.cleanSeekContext
-    val a = position.isFailure
-    position match {
-      case Failure(e) => {
-        e
-        println(e)
-      }
-    }
-    position.getOrElse(null)
+
+    
   }
 
   /**
