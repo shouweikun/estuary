@@ -90,7 +90,7 @@ class LogPositionHandler(
     */
   def findStartPositionInternal(connection: MysqlConnection): EntryPosition = {
     //第一步试图从zookeeper中拿到binlog position
-    lazy val logPositionFromZookeeper = Option(logPositionManager.getLatestIndexBy(destination))
+     val logPositionFromZookeeper = Option(logPositionManager.getLatestIndexBy(destination))
 
     def findBinlogPositionIfZkisEmptyOrInvaild = {
       //zookeeper未能拿到
@@ -161,9 +161,12 @@ class LogPositionHandler(
     Try {
       import scala.concurrent.duration._
       val fields = Await
-        .result(Future(mysqlConnection.query(s"show binlog events in '$journalName'").getFieldValues)(scala.concurrent.ExecutionContext.Implicits.global), 3 seconds)
+        .result(Future(mysqlConnection.query(s"show binlog events in '$journalName' limit 1").getFieldValues)(scala.concurrent.ExecutionContext.Implicits.global), 3 seconds)
       CollectionUtils.isEmpty(fields)
-    }.getOrElse(false)//throw new Exception("error when ensure binlog exists or not"))
+    }.getOrElse{
+      logger.warn(s"error when ensure binlog:$journalName exists or not,REGARDED AS NO zk logPosition")
+      true
+    }//throw new Exception("error when ensure binlog exists or not"))
   }
 
   /**
@@ -251,13 +254,13 @@ class LogPositionHandler(
     *                    从entry 构建成 LogPosition
     */
 
-  def buildLastPosition(journalName: String, offset: Long, address: InetSocketAddress = this.address) = {
+  def buildLastPosition(journalName: String, offset: Long, address: InetSocketAddress = this.address,slaveId:Long =this.slaveId) = {
     val logPosition = new LogPosition
     val position = new EntryPosition
     position.setJournalName(journalName)
     position.setPosition(offset)
     logPosition.setPostion(position)
-    val identity = new LogIdentity(address, -1L)
+    val identity = new LogIdentity(address, slaveId)
     logPosition.setIdentity(identity)
     logPosition
   }
