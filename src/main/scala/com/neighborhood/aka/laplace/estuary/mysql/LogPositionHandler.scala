@@ -17,7 +17,7 @@ import org.springframework.util.CollectionUtils
 
 import scala.annotation.tailrec
 import scala.concurrent.{Await, Future}
-import scala.util.Try
+import scala.util.{Failure, Try}
 
 /**
   * Created by john_liu on 2018/2/4.
@@ -95,7 +95,7 @@ class LogPositionHandler(
     */
   def findStartPositionInternal(connection: MysqlConnection): EntryPosition = {
     //第一步试图从zookeeper中拿到binlog position
-     val logPositionFromZookeeper = Option(logPositionManager.getLatestIndexBy(destination))
+    val logPositionFromZookeeper = Option(logPositionManager.getLatestIndexBy(destination))
 
     def findBinlogPositionIfZkisEmptyOrInvaild = {
       //zookeeper未能拿到
@@ -168,7 +168,7 @@ class LogPositionHandler(
         .result(Future(mysqlConnection.query(s"show binlog events in '$journalName' limit 1").getFieldValues)(scala.concurrent.ExecutionContext.Implicits.global), 3 seconds)
       CollectionUtils.isEmpty(fields)
     }.getOrElse {
-      logger.warn(s"error when ensure binlog:$journalName exists or not,REGARDED AS NO zk logPosition")
+      logger.warn(s"error when ensure binlog:$journalName exists or not,REGARDED AS NO ZK logPosition!")
       true
     } //throw new Exception("error when ensure binlog exists or not"))
   }
@@ -258,7 +258,7 @@ class LogPositionHandler(
     *                    从entry 构建成 LogPosition
     */
 
-  def buildLastPosition(journalName: String, offset: Long, address: InetSocketAddress = this.address,slaveId:Long =this.slaveId) = {
+  def buildLastPosition(journalName: String, offset: Long, address: InetSocketAddress = this.address, slaveId: Long = this.slaveId) = {
     val logPosition = new LogPosition
     val position = new EntryPosition
     position.setJournalName(journalName)
@@ -301,7 +301,17 @@ class LogPositionHandler(
               } else {
                 val nextBinlogSeqNum = binlogSeqNum - 1
                 val binlogFileNamePrefix = currentSearchBinlogFile.substring(0, currentSearchBinlogFile.indexOf(".") + 1)
-                val binlogFileNameSuffix = nextBinlogSeqNum.toString.formatted("%6d").toString
+                val binlogFileNameSuffix = {
+                  nextBinlogSeqNum match {
+                    case x if (x >= 100000) => s"$x"
+                    case x if (x >= 10000) => s"0$x"
+                    case x if (x >= 1000) => s"00$x"
+                    case x if (x >= 100) => s"000$x"
+                    case x if (x >= 10) => s"0000$x"
+                    case x if (x >= 1) => s"00000$x"
+                    case _ => throw new Exception("binlog name cannot lt 1!!")
+                  }
+                }
                 val nextSearchBinlogFile = binlogFileNamePrefix + binlogFileNameSuffix
                 loopSearch(nextSearchBinlogFile)
               }
@@ -343,20 +353,26 @@ class LogPositionHandler(
     * @todo 换成fetch4seek function
     */
   private[estuary] def findAsPerTimestampInSpecificLogFile(mysqlConnection: MysqlConnection, startTimestamp: Long, endPosition: EntryPosition, searchBinlogFile: String): EntryPosition = {
-    lazy val position = Try {
-      //重启一下
-      mysqlConnection.reconnect
+    //重启一下
+    Try(mysqlConnection.reconnect)
+    val position = Try {
       // 开始遍历文件
       MysqlConnection.seek(searchBinlogFile, 4L)(mysqlConnection)
       val fetcher: DirectLogFetcher = mysqlConnection.fetcher4Seek
       val decoder: LogDecoder = mysqlConnection.decoder4Seek
       val logContext: LogContext = mysqlConnection.logContext4Seek
-
-      loopFetchAndFindEntry(fetcher, decoder, logContext)(startTimestamp, endPosition)
+      val re = loopFetchAndFindEntry(fetcher, decoder, logContext)(startTimestamp, endPosition)
+      re
     }
-      .getOrElse(null)
     mysqlConnection.cleanSeekContext
-    position
+    val a = position.isFailure
+    position match {
+      case Failure(e) => {
+        e
+        println(e)
+      }
+    }
+    position.getOrElse(null)
   }
 
   /**
