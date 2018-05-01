@@ -74,7 +74,9 @@ class Mysql2KafkaTaskInfoManager(taskInfoBean: Mysql2KafkaTaskInfoBean) extends 
   /**
     * 同步任务开始entry
     */
-  var startPosition: EntryPosition = if (StringUtils.isEmpty(this.taskInfo.journalName)) null else new EntryPosition(this.taskInfo.journalName, this.taskInfo.position)
+  val startPosition: EntryPosition = if (StringUtils.isEmpty(this.taskInfo.journalName)) {
+    if (this.taskInfo.timestamp <= 0) null else new EntryPosition(this.taskInfo.timestamp)
+  } else new EntryPosition(this.taskInfo.journalName, this.taskInfo.position)
   /**
     * canal的mysqlConnection
     */
@@ -184,7 +186,7 @@ class Mysql2KafkaTaskInfoManager(taskInfoBean: Mysql2KafkaTaskInfoBean) extends 
     val timeout = taskInfo.zookeeperTimeout
     val zkLogPositionManager = new ZooKeeperLogPositionManager
     lazy val holdingZk = ZkClientx.getZkClient(servers)
-    lazy val zkClient = Option(holdingZk).fold(new ZkClientx(servers, timeout))(zk=>zk)
+    lazy val zkClient = Option(holdingZk).fold(new ZkClientx(servers, timeout))(zk => zk)
     zkLogPositionManager.setZkClientx(zkClient)
 
     new LogPositionHandler(zkLogPositionManager, slaveId = this.slaveId, destination = this.taskInfo.syncTaskId, address = new InetSocketAddress(taskInfo.master.address, taskInfo.master.port), master = Option(startPosition), binlogParser = binlogParser)

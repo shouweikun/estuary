@@ -63,7 +63,10 @@ class LogPositionHandler(
     *                   获取开始的position
     */
   def findStartPosition(connection: MysqlConnection): EntryPosition = {
-    findStartPositionInternal(connection)
+    if (!connection.isConnected) connection.connect()
+    val re = findStartPositionInternal(connection)
+    connection.disconnect()
+    re
   }
 
   /**
@@ -71,11 +74,13 @@ class LogPositionHandler(
     *                   主要是应对@TableIdNotFoundException 寻找事务开始的头
     */
   def findStartPositionWithinTransaction(connection: MysqlConnection): EntryPosition = {
+    if (!connection.isConnected) connection.connect()
     val startPosition = findStartPositionInternal(connection)
     val preTransactionStartPosition = findTransactionBeginPosition(connection, startPosition)
     if (!preTransactionStartPosition.equals(startPosition.getPosition)) {
       startPosition.setPosition(preTransactionStartPosition)
     }
+    connection.disconnect()
     startPosition
   }
 
@@ -107,9 +112,9 @@ class LogPositionHandler(
           //传入了logPosition的话
           thePosition =>
 
-            val journalName = thePosition.getJournalName
-            val binlogPosition = thePosition.getPosition
-            val timeStamp = thePosition.getTimestamp
+            lazy val journalName = thePosition.getJournalName
+            lazy val binlogPosition = thePosition.getPosition
+            lazy val timeStamp = thePosition.getTimestamp
             //jouralName是否定义
             val journalNameIsDefined = !StringUtils.isEmpty(thePosition.getJournalName)
             //时间戳是否定义
@@ -154,8 +159,7 @@ class LogPositionHandler(
     *
     * @param journalName
     * @return
-    *
-    *         @todo 有问题
+    * @todo 有问题
     */
   private def binlogIsRemoved(mysqlConnection: MysqlConnection, journalName: String): Boolean = {
     Try {
@@ -163,10 +167,10 @@ class LogPositionHandler(
       val fields = Await
         .result(Future(mysqlConnection.query(s"show binlog events in '$journalName' limit 1").getFieldValues)(scala.concurrent.ExecutionContext.Implicits.global), 3 seconds)
       CollectionUtils.isEmpty(fields)
-    }.getOrElse{
+    }.getOrElse {
       logger.warn(s"error when ensure binlog:$journalName exists or not,REGARDED AS NO zk logPosition")
       true
-    }//throw new Exception("error when ensure binlog exists or not"))
+    } //throw new Exception("error when ensure binlog exists or not"))
   }
 
   /**

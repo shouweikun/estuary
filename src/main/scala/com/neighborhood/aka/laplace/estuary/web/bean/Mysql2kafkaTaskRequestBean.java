@@ -11,7 +11,7 @@ public class Mysql2kafkaTaskRequestBean extends TaskRequestBean {
     private String syncTaskId;
     private String binlogJournalName;
     private long binlogPosition;
-    private long binlogTimeStamp;
+    private long binlogTimeStamp = 0;
     private boolean isCounting = true;
     private boolean isProfiling = true;
     private boolean isCosting = true;
