@@ -5,15 +5,16 @@ import java.util.concurrent.Executors
 import akka.actor.SupervisorStrategy.{Escalate, Restart}
 import akka.actor.{Actor, ActorLogging, AllForOneStrategy, OneForOneStrategy, Props}
 import akka.routing.RoundRobinPool
-import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
 import com.neighborhood.aka.laplace.estuary.bean.task.Mysql2KafkaTaskInfoBean
 import com.neighborhood.aka.laplace.estuary.core.akkaUtil.PowerAdapter
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{Status, _}
+import com.neighborhood.aka.laplace.estuary.core.source.MysqlConnection
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mysql.{Mysql2KafkaTaskInfoManager, SettingConstant}
 import com.neighborhood.aka.laplace.estuary.mysql.akkaUtil.DivideDDLRoundRobinRoutingGroup
+import org.I0Itec.zkclient.exception.ZkTimeoutException
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
@@ -78,6 +79,7 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
   }
 
   def online: Receive = {
+    case "start" => startAllWorkers
     case "restart" => throw new RuntimeException("重启")
     case ListenerMessage(msg) => {
       msg match {
@@ -365,6 +367,19 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
 
   override def supervisorStrategy = {
     AllForOneStrategy() {
+      case e: ZkTimeoutException => {
+        controllerChangeStatus(Status.ERROR)
+        Escalate
+      }
+      case e: Exception => {
+        controllerChangeStatus(Status.ERROR)
+        Escalate
+
+      }
+      case error: Error => {
+        controllerChangeStatus(Status.ERROR)
+        Escalate
+      }
       case _ => {
         controllerChangeStatus(Status.ERROR)
         Escalate

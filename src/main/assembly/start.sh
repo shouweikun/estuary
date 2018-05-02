@@ -3,6 +3,7 @@ cd `dirname $0`
 BIN_DIR=`pwd`
 cd ..
 DEPLOY_DIR=`pwd`
+echo $DEPLOY_DIR
 if [ -r "$DEPLOY_DIR"/bin/setenv.sh ]; then
     . "$DEPLOY_DIR"/bin/setenv.sh
 else

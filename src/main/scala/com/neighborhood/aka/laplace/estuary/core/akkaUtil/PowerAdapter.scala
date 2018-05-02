@@ -43,7 +43,7 @@ class PowerAdapter(taskManager: TaskManager) extends Actor with ActorLogging {
           // 如果拿不到数据，默认在时间上随机增加3-5倍
           fetchTimeArray(nextFetchTimeWriteIndex) = (2 * (math.random) + 3).toLong
           fetchTimeWriteIndex = nextFetchTimeWriteIndex
-//          if (System.currentTimeMillis() % 5 == 0) fetchTimeSum += 1
+        //          if (System.currentTimeMillis() % 5 == 0) fetchTimeSum += 1
         case _ => {
           val nextFetchTimeWriteIndex = (fetchTimeWriteIndex + 1) % size
           fetchTimeArray(nextFetchTimeWriteIndex) = value
@@ -125,8 +125,9 @@ class PowerAdapter(taskManager: TaskManager) extends Actor with ActorLogging {
           log.debug(s"delayDuration:$delayDuration")
 
           val finalDelayDuration: Long = ((fetchCount - sinkCount) / batchThreshold, fetchCost, batchCost, sinkCost) match {
+            case (_, x, _, _) if (x > 400) => math.max(150000, delayDuration)////150ms 休眠
             case (w, _, _, _) if (w < 1 * batcherNum) => 0 //0s 快速拉取数据
-            case (_, x, y, z) if (x >150 || y > 10000 || z > 800) => math.max(100000, delayDuration) //100ms 防止数据太大
+            case (_, x, y, z) if (x > 150 || y > 10000 || z > 800) => math.max(100000, delayDuration) //100ms 防止数据太大
             case (_, x, y, z) if (x > 100 || y > 8000 || z > 750) => math.max(80000, delayDuration) //80ms 防止数据太大
             case (_, x, y, z) if (x > 50 || y > 6000 || z > 700) => math.max(60000, delayDuration) //60ms 防止数据太大
             case (_, x, y, z) if (x > 30 || y > 4000 || z > 600) => math.max(40000, delayDuration) //40ms 防止数据太大

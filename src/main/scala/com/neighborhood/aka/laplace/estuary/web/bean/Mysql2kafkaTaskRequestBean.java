@@ -1,16 +1,17 @@
 package com.neighborhood.aka.laplace.estuary.web.bean;
 
+import java.util.List;
 import java.util.Map;
 
 /**
  * Created by john_liu on 2018/3/11.
  */
 
-public class Mysql2kafkaTaskRequestBean {
+public class Mysql2kafkaTaskRequestBean extends TaskRequestBean {
     private String syncTaskId;
     private String binlogJournalName;
     private long binlogPosition;
-    private long binlogTimeStamp;
+    private long binlogTimeStamp = 0;
     private boolean isCounting = true;
     private boolean isProfiling = true;
     private boolean isCosting = true;
@@ -44,6 +45,7 @@ public class Mysql2kafkaTaskRequestBean {
     private String mysqlUsername;
     private String mysqlPassword;
     private String mysqlDefaultDatabase;
+//    private List<String> mysqlDatabases;
     private int listenTimeout = 5000;
     private int listenRetrytime = 3;
     private String concernedDataBase = "";
