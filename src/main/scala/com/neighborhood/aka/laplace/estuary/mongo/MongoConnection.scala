@@ -1,23 +1,27 @@
 package com.neighborhood.aka.laplace.estuary.mongo
 
-import com.mongodb.{BasicDBObject, DBCollection, MongoCredential, ServerAddress}
+import com.mongodb._
 import com.mongodb.casbah.{MongoClient, MongoClientOptions, ReadPreference}
+import com.mongodb.client.model.DBCollectionFindOptions
 import com.neighborhood.aka.laplace.estuary.bean.credential.MongoCredentialBean
 import com.neighborhood.aka.laplace.estuary.bean.resource.MongoBean
 import com.neighborhood.aka.laplace.estuary.core.source.DataSourceConnection
 import org.bson.BsonTimestamp
+import org.slf4j.LoggerFactory
 
 /**
   * Created by john_liu on 2018/4/23.
+  *
   * @todo query 时间开始节点，无限getNext？
   *
   */
 class MongoConnection(
-                       val mongoBean: MongoBean,
-                       val startMongoOffset: MongoOffset
+                       val mongoBean: MongoBean, //mongo信息
+                       val startMongoOffset: MongoOffset //初始mongoOffset
                      )
   extends DataSourceConnection {
 
+  private val logger = LoggerFactory.getLogger(classOf[MongoConnection])
   private var connector: MongoClient = null
   private var oplogCollection: DBCollection = null
   private var connectFlag = false
@@ -25,6 +29,8 @@ class MongoConnection(
   override def connect(): Unit = {
     if (!connectFlag) {
       reconnect()
+    } else {
+      logger.warn(s"mongoClient:${mongoBean} cannot be connected twice")
     }
   }
 
@@ -37,6 +43,7 @@ class MongoConnection(
   override def disconnect(): Unit = {
     if (connectFlag) {
       connector.close()
+      logger.debug(s"mongoClient:${mongoBean} has been disconnected")
     }
     connector = null
     oplogCollection = null
@@ -49,9 +56,25 @@ class MongoConnection(
 
   def getConnector = this.connector
 
-  def buildOplogQuery = {
-    //todo
+  def QueryOplog(mongoOffset: MongoOffset = this.startMongoOffset) = {
+    if (!isConnected) connect()
+    lazy val findOptions = {
+      new DBCollectionFindOptions()
+        .cursorType(CursorType.TailableAwait)
+        .oplogReplay(true)
+        .noCursorTimeout(true)
+        .sort((new BasicDBObject("$natural", 1))).limit(if (mongoOffset.getMongoLimit() > 0) mongoOffset.getMongoLimit else Int.MaxValue)
+    }
+    buildOplogCollection
+      .find(prepareQuery(mongoOffset),findOptions)
+
   }
+
+  /**
+    * 创建Connector
+    *
+    * @return MongoClient
+    */
   private def buildConnector: MongoClient = {
     lazy val options = createMongoClientOptions
     lazy val hosts = createServerAddress()
@@ -61,6 +84,13 @@ class MongoConnection(
       .fold(MongoClient(hosts, options))(_ => MongoClient(hosts, credential, options))
   }
 
+  /**
+    *
+    * 根据初始信息构建mongoQuery
+    *
+    * @param startMongoOffset 开始的mongoOffset
+    * @return
+    */
   private def prepareQuery(startMongoOffset: MongoOffset = this.startMongoOffset): BasicDBObject = {
     lazy val ts = ("ts", new BasicDBObject("$gte", new BsonTimestamp(startMongoOffset.getMongoTsSecond(), startMongoOffset.getMongoTsInc())))
     lazy val op = ("op", new BasicDBObject("$in", Array("i", "u", "d")))
@@ -74,8 +104,18 @@ class MongoConnection(
     query
   }
 
+  /**
+    * oplog的collection集合
+    *
+    * @return
+    */
   private def buildOplogCollection = connector.getDB("local").getCollection("oplog.rs")
 
+  /**
+    * Mongo链接的设置
+    *
+    * @return
+    */
   private def createMongoClientOptions: com.mongodb.MongoClientOptions = MongoClientOptions.apply(
     readPreference = ReadPreference.Secondary,
     connectionsPerHost = 500,
@@ -84,10 +124,23 @@ class MongoConnection(
     socketTimeout = 50000
   )
 
+  /**
+    * 创建server address
+    *
+    * @param hosts
+    * @param port
+    * @return
+    */
   private def createServerAddress(hosts: List[String] = mongoBean.hosts, port: Int = mongoBean.port): List[ServerAddress] = {
     hosts.map(new ServerAddress(_, port))
   }
 
+  /**
+    * 创建加密Sha1验证
+    *
+    * @param list
+    * @return
+    */
   private def createScramSha1Credential(list: List[MongoCredentialBean] = mongoBean.mongoCredentials.getOrElse(List.empty)): List[MongoCredential] = {
     list
       .withFilter(
@@ -101,6 +154,12 @@ class MongoConnection(
     //.map(MongoCredential.createCredential())
   }
 
+  /**
+    * 创建CRC加密校验
+    *
+    * @param list
+    * @return
+    */
   private def createMongoCRCredential(list: List[MongoCredentialBean] = mongoBean.mongoCredentials.getOrElse(List.empty)): List[MongoCredential] = {
     list
       .withFilter(
