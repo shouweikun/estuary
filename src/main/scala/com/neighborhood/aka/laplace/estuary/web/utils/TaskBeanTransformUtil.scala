@@ -53,6 +53,7 @@ object TaskBeanTransformUtil {
       taskInfo.journalName = requestBody.getBinlogJournalName
       taskInfo.position = requestBody.getBinlogPosition
     }
+    taskInfo.timestamp = requestBody.getBinlogTimeStamp
     //模式设置
     taskInfo.isCosting = requestBody.isCosting
     taskInfo.isTransactional = requestBody.isTransactional

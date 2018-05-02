@@ -1,17 +1,13 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle
 
-import akka.actor.SupervisorStrategy.{Escalate, Restart}
+import akka.actor.SupervisorStrategy.Escalate
 import akka.actor.{Actor, ActorLogging, OneForOneStrategy, Props}
-import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.{HeartBeatListener, Status}
-import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
-import com.neighborhood.aka.laplace.estuary.mysql.Mysql2KafkaTaskInfoManager
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{HeartBeatListener, ListenerMessage, Status, SyncControllerMessage}
+import com.neighborhood.aka.laplace.estuary.core.source.MysqlConnection
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mysql.Mysql2KafkaTaskInfoManager
-import com.typesafe.config.Config
 
 import scala.util.Try
 
@@ -143,7 +139,6 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
   }
 
   override def postRestart(reason: Throwable): Unit = {
-    context.parent ! ListenerMessage("restart")
     super.postRestart(reason)
   }
 

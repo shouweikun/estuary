@@ -219,6 +219,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
     val callback = new Callback {
       val thisJournalName: String = scheduledSavedJournalName
       val thisOffset: Long = scheduledSavedOffset
+      val receiver = context.parent
 
       override def onCompletion(metadata: RecordMetadata, exception: Exception): Unit = {
         if (exception != null) {
@@ -229,7 +230,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
               log.error("Error when send :" + key + ", metadata:" + metadata + exception + "lastSavedPoint" + s" thisJournalName = $thisJournalName" + s" thisOffset = $thisOffset")
               logPositionHandler.persistLogPosition(destination, thisJournalName, thisOffset)
             }
-            context.parent ! SinkerMessage("error")
+            receiver ! SinkerMessage("error")
             log.info("send to recorder lastSavedPoint" + s"thisJournalName = $thisJournalName" + s"thisOffset = $thisOffset")
             //todo 做的不好 ，应该修改一下messge模型
 
