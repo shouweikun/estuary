@@ -68,6 +68,17 @@ object Mysql2KafkaService {
     s"mession:${mysql2KafkaTaskInfoBean.syncTaskId} submitted"
   }
 
+  def checkRunningTaskIds: String = {
+    import scala.collection.JavaConverters._
+    s"{runningTasks:[${
+      ActorRefHolder
+        .actorRefMap
+        .asScala
+        .map(kv => s"\"${kv._1}\"")
+        .mkString(",")
+    }]}"
+  }
+
   def checkTaskStatus(syncTaskId: String): String = {
     Option(Mysql2KafkaTaskInfoManager.taskStatusMap.get(syncTaskId))
     match {
