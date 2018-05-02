@@ -64,7 +64,7 @@ object Mysql2KafkaService {
     val prop = MysqlBinlogController.props(mysql2KafkaTaskInfoBean)
     ActorRefHolder.syncDaemon ! (prop, Option(mysql2KafkaTaskInfoBean.syncTaskId))
     //todo 持久化任务
-    mongoPersistence.save(mysql2kafkaTaskRequestBean)
+   // mongoPersistence.save(mysql2kafkaTaskRequestBean)
     s"mession:${mysql2KafkaTaskInfoBean.syncTaskId} submitted"
   }
 
@@ -74,7 +74,7 @@ object Mysql2KafkaService {
       ActorRefHolder
         .actorRefMap
         .asScala
-        .map(kv => s"\"${kv._1}\"")
+        .map(kv => s""""${kv._1}"""")
         .mkString(",")
     }]}"
   }
