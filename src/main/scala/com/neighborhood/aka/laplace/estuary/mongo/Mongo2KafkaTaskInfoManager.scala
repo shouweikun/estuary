@@ -12,6 +12,10 @@ class Mongo2KafkaTaskInfoManager(
                                   taskInfoBean: Mongo2KafkaTaskInfoBean
                                 )
   extends TaskManager with RecourceManager[String, MongoConnection, KafkaSinkFunc[String]] {
+  lazy val mongoOffsetHandler = buildMongoOffsetHandler
+  lazy val mongoConnection = buildSource
+  lazy val kafkaSink = buildSink
+
   /**
     * 任务类型
     * 由三部分组成
@@ -27,6 +31,6 @@ class Mongo2KafkaTaskInfoManager(
   override def buildSink: KafkaSinkFunc[String] = ???
 
   def buildMongoOffsetHandler: MongoOffsetHandler = {
-
+    ???
   }
 }

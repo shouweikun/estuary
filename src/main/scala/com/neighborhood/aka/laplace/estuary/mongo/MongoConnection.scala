@@ -17,7 +17,6 @@ import org.slf4j.LoggerFactory
   */
 class MongoConnection(
                        val mongoBean: MongoBean, //mongo信息
-                       val startMongoOffset: MongoOffset //初始mongoOffset
                      )
   extends DataSourceConnection {
 
@@ -52,11 +51,11 @@ class MongoConnection(
 
   override def isConnected: Boolean = connectFlag
 
-  override def fork: MongoConnection = new MongoConnection(mongoBean, startMongoOffset)
+  override def fork: MongoConnection = new MongoConnection(mongoBean)
 
   def getConnector = this.connector
 
-  def QueryOplog(mongoOffset: MongoOffset = this.startMongoOffset) = {
+  def QueryOplog(mongoOffset: MongoOffset) = {
     if (!isConnected) connect()
     lazy val findOptions = {
       new DBCollectionFindOptions()
@@ -91,7 +90,7 @@ class MongoConnection(
     * @param startMongoOffset 开始的mongoOffset
     * @return
     */
-  private def prepareQuery(startMongoOffset: MongoOffset = this.startMongoOffset): BasicDBObject = {
+  private def prepareQuery(startMongoOffset: MongoOffset): BasicDBObject = {
     lazy val ts = ("ts", new BasicDBObject("$gte", new BsonTimestamp(startMongoOffset.getMongoTsSecond(), startMongoOffset.getMongoTsInc())))
     lazy val op = ("op", new BasicDBObject("$in", Array("i", "u", "d")))
     lazy val fromMigrate = ("fromMigrate", new BasicDBObject("$exists", false))
