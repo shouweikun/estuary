@@ -19,9 +19,14 @@ class Mongo2KafkaTaskInfoManager(
     */
   override def taskType: String = s"${taskInfoBean.dataSourceType}-${taskInfoBean.dataSyncType}-${taskInfoBean.dataSinkType}"
 
-  override def buildSource: MongoConnection = {
 
+  override def buildSource: MongoConnection = {
+    new MongoConnection(taskInfoBean)
   }
 
   override def buildSink: KafkaSinkFunc[String] = ???
+
+  def buildMongoOffsetHandler: MongoOffsetHandler = {
+
+  }
 }

@@ -18,5 +18,6 @@ class Mongo2KafkaTaskInfoBean(
     */
   override var dataSyncType: String = SyncDataType.NORMAL.toString
 
+  val
 
 }
