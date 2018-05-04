@@ -10,5 +10,7 @@ trait PositionHandler[A] {
 
   def persistLogPosition(destination:String,logPosition:A):Unit
 
+  def getlatestIndexBy(destination:String):A
+
   def findStartPosition(conn:DataSourceConnection):A
 }

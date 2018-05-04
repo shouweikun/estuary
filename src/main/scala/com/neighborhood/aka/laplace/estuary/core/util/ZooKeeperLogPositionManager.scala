@@ -9,7 +9,7 @@ import org.springframework.util.Assert
 /**
   * Created by john_liu on 2018/5/3.
   */
-class ZooKeeperLogPositionManager {
+class ZooKeeperLogPositionManager[T] {
 
   private var zkClientx: ZkClientx = null
 
@@ -22,15 +22,15 @@ class ZooKeeperLogPositionManager {
 
   }
 
-  def getLatestIndexBy(destination: String): LogPosition = {
+  def getLatestIndexBy(destination: String): T = {
     val path = ZookeeperPathUtils.getParsePath(destination)
     val data: Array[Byte] = zkClientx.readData(path, true)
 
-    if (data == null || data.length == 0) return null
-    JsonUtils.unmarshalFromByte(data, classOf[LogPosition])
+    if (data == null || data.length == 0) null.asInstanceOf[T]
+    else JsonUtils.unmarshalFromByte(data, classOf[T])
   }
 
-  def persistLogPosition(destination: String, logPosition: Any): Unit = {
+  def persistLogPosition(destination: String, logPosition: T): Unit = {
     val path = ZookeeperPathUtils.getParsePath(destination)
     val data = JsonUtils.marshalToByte(logPosition)
     try
