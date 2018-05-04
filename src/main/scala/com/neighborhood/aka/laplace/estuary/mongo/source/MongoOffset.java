@@ -1,4 +1,4 @@
-package com.neighborhood.aka.laplace.estuary.mongo;
+package com.neighborhood.aka.laplace.estuary.mongo.source;
 
 /**
  * Created by z on 17-3-31.

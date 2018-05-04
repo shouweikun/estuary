@@ -1,4 +1,4 @@
-package com.neighborhood.aka.laplace.estuary.core.source
+package com.neighborhood.aka.laplace.estuary.mysql.source
 
 import java.io.IOException
 import java.net.InetSocketAddress
@@ -12,18 +12,16 @@ import com.alibaba.otter.canal.parse.driver.mysql.packets.server.ResultSetPacket
 import com.alibaba.otter.canal.parse.driver.mysql.utils.PacketManager
 import com.alibaba.otter.canal.parse.driver.mysql.{MysqlConnector, MysqlQueryExecutor, MysqlUpdateExecutor}
 import com.alibaba.otter.canal.parse.exception.CanalParseException
-import com.alibaba.otter.canal.parse.inbound.BinlogParser
-import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection.{BinlogFormat, BinlogImage}
 import com.alibaba.otter.canal.parse.inbound.mysql.dbsync.{DirectLogFetcher, TableMetaCache}
 import com.alibaba.otter.canal.protocol.CanalEntry
-import com.neighborhood.aka.laplace.estuary.mysql.MysqlBinlogParser
+import com.neighborhood.aka.laplace.estuary.core.source.DataSourceConnection
+import com.neighborhood.aka.laplace.estuary.mysql.utils.MysqlBinlogParser
 import com.taobao.tddl.dbsync.binlog.event.FormatDescriptionLogEvent
 import com.taobao.tddl.dbsync.binlog.{LogContext, LogDecoder, LogEvent, LogPosition}
 import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec
-import scala.util.Try
 
 /**
   * Created by john_liu on 2018/3/21.

@@ -1,7 +1,7 @@
 package com.neighborhood.aka.laplace.estuary.web.utils
 
 import com.neighborhood.aka.laplace.estuary.bean.credential.MysqlCredentialBean
-import com.neighborhood.aka.laplace.estuary.bean.task.Mysql2KafkaTaskInfoBean
+import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoBean
 import com.neighborhood.aka.laplace.estuary.web.bean.Mysql2kafkaTaskRequestBean
 import org.springframework.util.StringUtils
 

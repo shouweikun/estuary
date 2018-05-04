@@ -10,7 +10,7 @@ import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle._
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
-import com.neighborhood.aka.laplace.estuary.mysql.Mysql2KafkaTaskInfoManager
+import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManager
 import org.I0Itec.zkclient.exception.ZkTimeoutException
 import org.apache.kafka.clients.producer.{Callback, RecordMetadata}
 import org.springframework.util.StringUtils

@@ -1,6 +1,6 @@
 package com.neighborhood.aka.laplace.estuary
 
-import com.neighborhood.aka.laplace.estuary.mysql.CanalEntryJsonHelper
+import com.neighborhood.aka.laplace.estuary.mysql.utils.CanalEntryJsonHelper
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 
 /**

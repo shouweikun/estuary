@@ -1,15 +1,15 @@
-package com.neighborhood.aka.laplace.estuary.mongo
+package com.neighborhood.aka.laplace.estuary.mongo.task
 
-import com.neighborhood.aka.laplace.estuary.bean.task.Mongo2KafkaTaskInfoBean
 import com.neighborhood.aka.laplace.estuary.core.sink.KafkaSinkFunc
-import com.neighborhood.aka.laplace.estuary.core.source.MysqlConnection
 import com.neighborhood.aka.laplace.estuary.core.task.{RecourceManager, TaskManager}
+import com.neighborhood.aka.laplace.estuary.mongo.source.MongoConnection
+import com.neighborhood.aka.laplace.estuary.mongo.utils.MongoOffsetHandler
 
 /**
   * Created by john_liu on 2018/5/2.
   */
 class Mongo2KafkaTaskInfoManager(
-                                  taskInfoBean: Mongo2KafkaTaskInfoBean
+                                 val taskInfoBean: Mongo2KafkaTaskInfoBean
                                 )
   extends TaskManager with RecourceManager[String, MongoConnection, KafkaSinkFunc[String]] {
   lazy val mongoOffsetHandler = buildMongoOffsetHandler

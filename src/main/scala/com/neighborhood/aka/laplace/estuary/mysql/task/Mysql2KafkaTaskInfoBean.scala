@@ -1,12 +1,9 @@
-package com.neighborhood.aka.laplace.estuary.bean.task
+package com.neighborhood.aka.laplace.estuary.mysql.task
 
 import java.util.concurrent.atomic.AtomicLong
 
-import com.neighborhood.aka.laplace.estuary.bean.datasink.{DataSinkType, KafkaBean}
-import com.neighborhood.aka.laplace.estuary.bean.resource.MysqlBean
 import com.neighborhood.aka.laplace.estuary.bean.datasink.KafkaBean
-import com.neighborhood.aka.laplace.estuary.bean.identity.{BaseExtractBean, DataSyncType, SyncDataType}
-import com.neighborhood.aka.laplace.estuary.bean.identity.DataSyncType.DataSyncType
+import com.neighborhood.aka.laplace.estuary.bean.identity.{BaseExtractBean, SyncDataType}
 import com.neighborhood.aka.laplace.estuary.bean.resource.MysqlBean
 
 /**

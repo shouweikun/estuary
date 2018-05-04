@@ -1,4 +1,4 @@
-package com.neighborhood.aka.laplace.estuary.mongo
+package com.neighborhood.aka.laplace.estuary.mongo.source
 
 import com.mongodb._
 import com.mongodb.casbah.{MongoClient, MongoClientOptions, ReadPreference}
@@ -6,6 +6,7 @@ import com.mongodb.client.model.DBCollectionFindOptions
 import com.neighborhood.aka.laplace.estuary.bean.credential.MongoCredentialBean
 import com.neighborhood.aka.laplace.estuary.bean.resource.MongoBean
 import com.neighborhood.aka.laplace.estuary.core.source.DataSourceConnection
+import MongoOffset
 import org.bson.BsonTimestamp
 import org.slf4j.LoggerFactory
 

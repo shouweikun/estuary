@@ -1,8 +1,9 @@
-package com.neighborhood.aka.laplace.estuary.mongo
+package com.neighborhood.aka.laplace.estuary.mongo.utils
 
-import com.neighborhood.aka.laplace.estuary.core.util.ZooKeeperLogPositionManager
 import com.neighborhood.aka.laplace.estuary.core.source.DataSourceConnection
 import com.neighborhood.aka.laplace.estuary.core.task.PositionHandler
+import com.neighborhood.aka.laplace.estuary.core.util.ZooKeeperLogPositionManager
+import com.neighborhood.aka.laplace.estuary.mongo.source.MongoOffset
 import org.slf4j.LoggerFactory
 
 /**

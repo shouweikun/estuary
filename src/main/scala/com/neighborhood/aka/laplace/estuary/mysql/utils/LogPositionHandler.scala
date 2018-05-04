@@ -1,8 +1,7 @@
-package com.neighborhood.aka.laplace.estuary.mysql
+package com.neighborhood.aka.laplace.estuary.mysql.utils
 
 import java.io.IOException
 import java.net.InetSocketAddress
-import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong}
 
 import com.alibaba.otter.canal.parse.exception.CanalParseException
 import com.alibaba.otter.canal.parse.inbound.mysql.dbsync.DirectLogFetcher
@@ -11,7 +10,7 @@ import com.alibaba.otter.canal.protocol.CanalEntry
 import com.alibaba.otter.canal.protocol.position.{EntryPosition, LogIdentity, LogPosition}
 import com.neighborhood.aka.laplace.estuary.core.source.{DataSourceConnection, MysqlConnection}
 import com.neighborhood.aka.laplace.estuary.core.task.PositionHandler
-import com.neighborhood.aka.laplace.estuary.mongo.MongoOffset
+import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlConnection
 import com.taobao.tddl.dbsync.binlog.{LogContext, LogDecoder}
 import org.apache.commons.lang.StringUtils
 import org.slf4j.LoggerFactory
@@ -19,7 +18,7 @@ import org.springframework.util.CollectionUtils
 
 import scala.annotation.tailrec
 import scala.concurrent.{Await, Future}
-import scala.util.{Failure, Try}
+import scala.util.Try
 
 /**
   * Created by john_liu on 2018/2/4.
