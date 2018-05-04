@@ -121,7 +121,7 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
     * ********************* 状态变化 *******************
     */
   private def changeFunc(status:Status) =TaskManager.changeFunc(status,mysql2KafkaTaskInfoManager)
-  private def onChangeFunc = Mysql2KafkaTaskInfoManager.onChangeStatus(mysql2KafkaTaskInfoManager)
+  private def onChangeFunc = TaskManager.onChangeStatus(mysql2KafkaTaskInfoManager)
   private def listenerChangeStatus(status: Status) = TaskManager.changeStatus(status,changeFunc,onChangeFunc)
 
 

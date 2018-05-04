@@ -476,7 +476,7 @@ class BinlogEventBatcher(
     */
   private def changeFunc(status: Status) = TaskManager.changeFunc(status, mysql2KafkaTaskInfoManager)
 
-  private def onChangeFunc = Mysql2KafkaTaskInfoManager.onChangeStatus(mysql2KafkaTaskInfoManager)
+  private def onChangeFunc = TaskManager.onChangeStatus(mysql2KafkaTaskInfoManager)
 
   private def batcherChangeStatus(status: Status) = TaskManager.changeStatus(status, changeFunc, onChangeFunc)
 

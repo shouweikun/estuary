@@ -13,7 +13,7 @@ import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mysql.SettingConstant
 import com.neighborhood.aka.laplace.estuary.mysql.akkaUtil.DivideDDLRoundRobinRoutingGroup
 import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlConnection
-import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoBean
+import com.neighborhood.aka.laplace.estuary.mysql.task.{Mysql2KafkaTaskInfoBean, Mysql2KafkaTaskInfoManager}
 import org.I0Itec.zkclient.exception.ZkTimeoutException
 
 import scala.concurrent.ExecutionContext
@@ -310,7 +310,7 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
     */
   private def changeFunc(status: Status) = TaskManager.changeFunc(status, mysql2KafkaTaskInfoManager)
 
-  private def onChangeFunc = Mysql2KafkaTaskInfoManager.onChangeStatus(mysql2KafkaTaskInfoManager)
+  private def onChangeFunc = TaskManager.onChangeStatus(mysql2KafkaTaskInfoManager)
 
   private def controllerChangeStatus(status: Status) = TaskManager.changeStatus(status, changeFunc, onChangeFunc)
 

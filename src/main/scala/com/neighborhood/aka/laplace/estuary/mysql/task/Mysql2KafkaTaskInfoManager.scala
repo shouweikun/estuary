@@ -32,7 +32,10 @@ class Mysql2KafkaTaskInfoManager(taskInfoBean: Mysql2KafkaTaskInfoBean) extends 
     * 传入的任务配置bean
     */
   val taskInfo = taskInfoBean
-
+  /**
+    * 同步任务标识
+    */
+  override val syncTaskId: String = taskInfo.syncTaskId
   /**
     * 支持的binlogFormat
     */
@@ -89,6 +92,11 @@ class Mysql2KafkaTaskInfoManager(taskInfoBean: Mysql2KafkaTaskInfoBean) extends 
     */
   val kafkaDdlSink = kafkaSink.fork
   /**
+    * batcher数量
+    */
+  override val batcherNum = taskInfo.batcherNum
+
+  /**
     * MysqlBinlogParser
     */
   lazy val binlogParser: MysqlBinlogParser = buildParser
@@ -112,10 +120,6 @@ class Mysql2KafkaTaskInfoManager(taskInfoBean: Mysql2KafkaTaskInfoBean) extends 
     * 该mysql实例上所有的mysql库名
     */
   var mysqlDatabaseNameList: List[String] = _
-  /**
-    * batcher数量
-    */
-  batcherNum = taskInfo.batcherNum
 
   /**
     * 实现@trait ResourceManager
@@ -210,20 +214,7 @@ object Mysql2KafkaTaskInfoManager {
     manager
   }
 
-  /**
-    * 每当任务状态变化时，更新之
-    */
-  def onChangeStatus(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager): Unit = {
-    val syncTaskId = mysql2KafkaTaskInfoManager.taskInfo.syncTaskId
-    val syncControllerStatus = mysql2KafkaTaskInfoManager.syncControllerStatus.get
-    val fetcherStatus = mysql2KafkaTaskInfoManager.fetcherStatus.get
-    val sinkerStatus = mysql2KafkaTaskInfoManager.sinkerStatus.get
-    val batcherStatus = mysql2KafkaTaskInfoManager.batcherStatus.get
-    val listenerStatus = mysql2KafkaTaskInfoManager.heartBeatListenerStatus.get
-    val map = Map("syncControllerStatus" -> syncControllerStatus, "fetcherStatus" -> fetcherStatus, "sinkerStatus" -> sinkerStatus, "batcherStatus" -> batcherStatus, "listenerStatus" -> listenerStatus)
 
-    taskStatusMap.put(syncTaskId, map)
-  }
 
   def logCount(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager): Map[String, Long] = {
     lazy val fetchCount = mysql2KafkaTaskInfoManager.fetchCount.get()

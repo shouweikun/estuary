@@ -1,10 +1,14 @@
 package com.neighborhood.aka.laplace.estuary.mongo.lifecycle
 
+import java.util.concurrent.Executors
+
 import akka.actor.{Actor, ActorLogging}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.SourceDataFetcher
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.{SourceDataFetcher, SyncControllerMessage}
 import com.neighborhood.aka.laplace.estuary.mongo.source.MongoOffset
 import com.neighborhood.aka.laplace.estuary.mongo.task.Mongo2KafkaTaskInfoManager
+
+import scala.concurrent.ExecutionContext
 
 /**
   * Created by john_liu on 2018/4/26.
@@ -16,6 +20,8 @@ class OplogFetcher(
                     mongo2KafkaTaskInfoManager: Mongo2KafkaTaskInfoManager
                   )
   extends SourceDataFetcher with Actor with ActorLogging {
+
+  implicit val transTaskPool = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor())
   /**
     * 寻址处理器
     */
@@ -34,7 +40,13 @@ class OplogFetcher(
   var entryPosition: Option[MongoOffset] = None
 
   override def receive: Receive = {
-    case "" =>
+    case SyncControllerMessage(msg) => {
+      msg match {
+        case "start" => {
+
+        }
+      }
+    }
   }
 
 
