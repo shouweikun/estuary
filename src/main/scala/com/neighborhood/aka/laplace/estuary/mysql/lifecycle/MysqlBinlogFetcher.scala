@@ -227,11 +227,11 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
   /**
     * ********************* 状态变化 *******************
     */
-  private def changeFunc(status: Status) = TaskManager.changeFunc(status, mysql2KafkaTaskInfoManager)
+  private def changeFunc(status: Status):Unit = TaskManager.changeFunc(status, mysql2KafkaTaskInfoManager)
 
-  private def onChangeFunc = TaskManager.onChangeStatus(mysql2KafkaTaskInfoManager)
+  private def onChangeFunc:Unit = TaskManager.onChangeStatus(mysql2KafkaTaskInfoManager)
 
-  private def fetcherChangeStatus(status: Status) = TaskManager.changeStatus(status, changeFunc, onChangeFunc)
+  private def fetcherChangeStatus(status: Status):Unit = TaskManager.changeStatus(status, changeFunc, onChangeFunc)
 
   /**
     * ********************* Actor生命周期 *******************
