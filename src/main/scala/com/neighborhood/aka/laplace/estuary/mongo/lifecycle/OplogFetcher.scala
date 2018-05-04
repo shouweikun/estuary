@@ -93,7 +93,7 @@ class OplogFetcher(
         }
         case "prepareQuery" => {
           log.info(s"oplog fetcher id:$syncTaskId is Preparing Query ")
-          oplogIterator
+         oplogCursor
           self ! FetcherMessage("fetch")
         }
         case "fetch" => {

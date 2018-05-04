@@ -1,0 +1,222 @@
+package com.neighborhood.aka.laplace.estuary.mysql
+
+import java.util
+
+import akka.actor.ActorLogging
+import com.alibaba.fastjson.JSONObject
+import com.alibaba.otter.canal.protocol.CanalEntry
+import com.alibaba.otter.canal.protocol.CanalEntry.Column
+import com.google.protobuf.InvalidProtocolBufferException
+import com.googlecode.protobuf.format.JsonFormat
+import com.neighborhood.aka.laplace.estuary.bean.key.BinlogKey
+import com.neighborhood.aka.laplace.estuary.bean.support.KafkaMessage
+import com.neighborhood.aka.laplace.estuary.core.trans.MappingFormat
+
+import scala.util.{Failure, Success, Try}
+
+/**
+  * Created by john_liu on 2018/5/1.
+  */
+trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[CanalEntry.Entry, Array[KafkaMessage]] {
+  self:ActorLogging =>
+
+  /**
+    * 拼接json用
+    */
+  val START_JSON = "{"
+  val END_JSON = "}"
+  val START_ARRAY = "["
+  val END_ARRAY = "]"
+  val KEY_VALUE_SPLIT = ":"
+  val ELEMENT_SPLIT = ","
+  val STRING_CONTAINER = "\""
+  private val jsonFormat = new JsonFormat
+
+  override def transform(entry: CanalEntry.Entry): Array[KafkaMessage] = {
+
+    val entryType = entry.getEntryType
+    val header = entry.getHeader
+    val eventType = header.getEventType
+    val tempJsonKey = BinlogKey.buildBinlogKey(header)
+    ???
+  }
+
+  /**
+    * @param tempJsonKey   BinlogJsonKey
+    * @param entry         entry
+    * @param logfileName   binlog文件名
+    * @param logfileOffset binlog文件偏移量
+    * @param before        开始时间
+    *                      将DDL类型的CanalEntry 转换成Json
+    */
+  def transferDDltoJson(tempJsonKey: BinlogKey, entry: CanalEntry.Entry, logfileName: String, logfileOffset: Long, before: Long): KafkaMessage = {
+    ???
+    //让程序知道是DDL
+    tempJsonKey.setDbName("DDL")
+    log.info(s"batch ddl ${entryToJson(entry)}")
+    val re = new KafkaMessage(tempJsonKey,entryToJson(entry), logfileName, logfileOffset)
+    val theAfter = System.currentTimeMillis()
+    tempJsonKey.setMsgSyncEndTime(theAfter)
+    tempJsonKey.setMsgSyncUsedTime(theAfter - before)
+    re
+  }
+  /**
+    * @param entry       entry
+    * @param temp        binlogKey
+    * @param eventString 事件类型
+    *                    将DML类型的CanalEntry 转换成Json
+    */
+  def tranformDMLtoJson(entry: CanalEntry.Entry, temp: BinlogKey, eventString: String): Array[KafkaMessage] = {
+
+    val re = Try(CanalEntry.RowChange.parseFrom(entry.getStoreValue)) match {
+      case Success(rowChange) => {
+        val a = rowChange.getRowDatasCount
+        (0 until rowChange.getRowDatasCount)
+          .map {
+            index =>
+              val rowData = rowChange.getRowDatas(index)
+              val count = if (eventString.equals("DELETE")) rowData.getBeforeColumnsCount else rowData.getAfterColumnsCount
+              val jsonKeyColumnBuilder: Column.Builder
+              = CanalEntry.Column.newBuilder
+              jsonKeyColumnBuilder.setSqlType(12) //string 类型.
+              jsonKeyColumnBuilder.setName("syncJsonKey")
+              val jsonKey = temp.clone().asInstanceOf[BinlogKey]
+              //            todo
+              //  jsonKey.syncTaskSequence = addAndGetSyncTaskSequence
+              val kafkaMessage = new KafkaMessage
+              kafkaMessage.setBaseDataJsonKey(jsonKey)
+              jsonKeyColumnBuilder.setIndex(count)
+              jsonKeyColumnBuilder.setValue(JsonUtil.serialize(jsonKey))
+
+              /**
+                * 构造rowChange对应部分的json
+                */
+              def rowChangeStr = {
+                if (eventString.equals("DELETE")) s"${STRING_CONTAINER}beforeColumns$STRING_CONTAINER$KEY_VALUE_SPLIT$START_ARRAY${
+                  (0 until count)
+                    .map {
+                      columnIndex =>
+                        s"${getColumnToJSON(rowData.getBeforeColumns(columnIndex))}$ELEMENT_SPLIT"
+                    }
+                    .mkString
+                }$END_ARRAY" else {
+                  s"${STRING_CONTAINER}afterColumns$STRING_CONTAINER$KEY_VALUE_SPLIT$START_ARRAY${
+                    (0 until count)
+                      .map {
+                        columnIndex =>
+                          s"${getColumnToJSON(rowData.getAfterColumns(columnIndex))}$ELEMENT_SPLIT"
+                      }
+                      .mkString
+                  }"
+
+                } + s"${getColumnToJSON(jsonKeyColumnBuilder.build)}$END_ARRAY"
+              }
+
+              val finalDataString = s"${START_JSON}${STRING_CONTAINER}header${STRING_CONTAINER}${KEY_VALUE_SPLIT}${getEntryHeaderJson(entry.getHeader)}${ELEMENT_SPLIT}${STRING_CONTAINER}rowChange${STRING_CONTAINER}${KEY_VALUE_SPLIT}${START_JSON}${STRING_CONTAINER}rowDatas" +
+                s"${STRING_CONTAINER}${KEY_VALUE_SPLIT}$START_ARRAY${START_JSON}${rowChangeStr}${END_JSON}${END_ARRAY}${END_JSON}${END_JSON}"
+              kafkaMessage.setJsonValue(finalDataString)
+              kafkaMessage
+          }.toArray
+      }
+      case Failure(e) => {
+        log.error("Error when parse rowchange:" + entry, e)
+        throw new RuntimeException("Error when parse rowchange:" + entry, e)
+      }
+    }
+    val theAfter = System.currentTimeMillis()
+    temp.setMsgSyncEndTime(theAfter)
+    temp.setMsgSyncUsedTime(temp.getMsgSyncEndTime - temp.getSyncTaskStartTime)
+    //log.info(s"${temp.msgSyncStartTime},${temp.getMsgSyncEndTime-temp.getSyncTaskStartTime}")
+    re
+  }
+
+  /**
+    * @param column CanalEntry.Column
+    *               将column转化成Json
+    */
+  protected def getColumnToJSON(column: CanalEntry.Column) = {
+    val columnMap = new util.HashMap[String, AnyRef]
+    columnMap.put("index", column.getIndex.toString)
+    columnMap.put("sqlType", column.getSqlType.toString)
+    columnMap.put("name", column.getName)
+    columnMap.put("isKey", column.getIsKey.toString)
+    columnMap.put("updated", column.getUpdated.toString)
+    columnMap.put("isNull", column.getIsNull.toString)
+    val value = column.getValue
+    columnMap.put("value", value)
+    if (column.getIsNull) columnMap.put("value", null)
+    columnMap.put("mysqlType", column.getMysqlType)
+    val columnJSON = new JSONObject(columnMap)
+    columnJSON.toJSONString
+  }
+
+  /**
+    * @param header CanalEntryHeader
+    *               将entryHeader转换成Json
+    */
+  protected def getEntryHeaderJson(header: CanalEntry.Header): StringBuilder = {
+    val sb = new StringBuilder(512)
+    sb.append(START_JSON)
+    addKeyValue(sb, "version", header.getVersion, false)
+    addKeyValue(sb, "logfileName", header.getLogfileName, false)
+    addKeyValue(sb, "logfileOffset", header.getLogfileOffset, false)
+    addKeyValue(sb, "serverId", header.getServerId, false)
+    addKeyValue(sb, "serverenCode", header.getServerenCode, false)
+    addKeyValue(sb, "executeTime", header.getExecuteTime, false)
+    addKeyValue(sb, "sourceType", header.getSourceType, false)
+    addKeyValue(sb, "schemaName", header.getSchemaName, false)
+    addKeyValue(sb, "tableName", header.getTableName, false)
+    addKeyValue(sb, "eventLength", header.getEventLength, false)
+    addKeyValue(sb, "eventType", header.getEventType, true)
+    sb.append(END_JSON)
+    sb
+  }
+
+  /**
+    * @param sb    正在构建的Json
+    * @param key   key值
+    * @param isEnd 是否是结尾
+    *              增加key值
+    */
+  protected def addKeyValue(sb: StringBuilder, key: String, value: Any, isEnd: Boolean) = {
+    sb.append(STRING_CONTAINER).append(key).append(STRING_CONTAINER).append(KEY_VALUE_SPLIT)
+    if (value.isInstanceOf[String]) sb.append(STRING_CONTAINER).append(value.asInstanceOf[String].replaceAll("\"", "\\\\\"").replaceAll("[\r\n]+", "")).append(STRING_CONTAINER)
+    else if (value.isInstanceOf[Enum[_]]) sb.append(STRING_CONTAINER).append(value).append(STRING_CONTAINER)
+    else sb.append(value)
+    if (!isEnd) sb.append(ELEMENT_SPLIT)
+  }
+
+
+  def entryToJson(entry: CanalEntry.Entry): String = {
+    val sb = new StringBuilder(entry.getSerializedSize + 2048)
+    sb.append("{\"header\":")
+    sb.append(jsonFormat.printToString(entry.getHeader))
+    sb.append(",\"entryType\":\"")
+    sb.append(entry.getEntryType.name)
+    try {
+      val rowChange = CanalEntry.RowChange.parseFrom(entry.getStoreValue)
+      sb.append("\",\"rowChange\":")
+      sb.append(jsonFormat.printToString(rowChange))
+    } catch {
+      case e: InvalidProtocolBufferException =>
+      //todo log
+    }
+    sb.append("}")
+    sb.toString
+  }
+
+  def dummyKafkaMessage(dbName: String): KafkaMessage = {
+    val tableName = "daas_heartbeats_check"
+    lazy val jsonKey = new BinlogKey
+    lazy val time = System.currentTimeMillis()
+    val jsonValue =
+      s"""{"header": {"version": 1,"logfileName": "mysql-bin.000000","logfileOffset": 4,"serverId": 0,"serverenCode": "UTF-8","executeTime": $time,"sourceType": "MYSQL","schemaName": "$dbName","tableName": "$tableName",	"eventLength": 651,"eventType": "INSERT"	},"rowChange": {"rowDatas": [{"afterColumns": [{"sqlType": -5,"isNull": false,"mysqlType": "bigint(20) unsigned","name": "id","isKey": true,"index": 0,	"updated": true,"value": "${time}"}]}]}}
+         |
+       """.stripMargin
+    jsonKey.setDbName(dbName)
+    jsonKey.setTableName(tableName)
+    new KafkaMessage(jsonKey, jsonValue)
+  }
+
+  def headerToJson(obj: CanalEntry.Header): String = jsonFormat.printToString(obj)
+}
