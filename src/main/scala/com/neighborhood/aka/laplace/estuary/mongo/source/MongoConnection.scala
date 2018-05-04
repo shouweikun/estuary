@@ -56,7 +56,7 @@ class MongoConnection(
 
   def getConnector = this.connector
 
-  def QueryOplog(mongoOffset: MongoOffset) = {
+  def QueryOplog(mongoOffset: MongoOffset): DBCursor = {
     if (!isConnected) connect()
     lazy val findOptions = {
       new DBCollectionFindOptions()
@@ -66,7 +66,7 @@ class MongoConnection(
         .sort((new BasicDBObject("$natural", 1))).limit(if (mongoOffset.getMongoLimit() > 0) mongoOffset.getMongoLimit else Int.MaxValue)
     }
     buildOplogCollection
-      .find(prepareQuery(mongoOffset),findOptions)
+      .find(prepareQuery(mongoOffset), findOptions)
 
   }
 

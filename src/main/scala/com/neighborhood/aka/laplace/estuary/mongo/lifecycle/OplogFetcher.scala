@@ -3,7 +3,7 @@ package com.neighborhood.aka.laplace.estuary.mongo.lifecycle
 import java.util.concurrent.Executors
 
 import akka.actor.{Actor, ActorLogging, ActorRef}
-import com.mongodb.DBObject
+import com.mongodb.{DBCursor, DBObject}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{FetcherMessage, SourceDataFetcher, Status, SyncControllerMessage}
@@ -35,10 +35,9 @@ class OplogFetcher(
 
   lazy val mongoConnection: MongoConnection = mongo2KafkaTaskInfoManager.mongoConnection.fork
 
-  lazy val oplogIterator: java.util.Iterator[DBObject] = {
+  lazy val oplogCursor: DBCursor = {
     mongoOffset
       .fold(throw new Exception(s"connot find start mongoOffset when preparing query,id:$syncTaskId "))(mongoConnection.QueryOplog(_))
-      .iterator()
   }
   /**
     * 是否记录耗时
@@ -125,12 +124,12 @@ class OplogFetcher(
   }
 
   def fetch = {
-    if (oplogIterator.hasNext) {
-      val oplog = oplogIterator.next()
+    if (oplogCursor.hasNext) {
+      val oplog = oplogCursor.next()
       oplogBatcher ! oplog
       log.debug(s"fetcher fetchs oplog _id:${oplog.get("_id")},id:$syncTaskId")
     } else {
-//      oplogBatcher ! FetcherMessage("none")
+      //      oplogBatcher ! FetcherMessage("none")
       log.debug(s"fetcher fetchs no oplog,id:$syncTaskId")
     }
   }
