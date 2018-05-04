@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory
   *
   */
 class MongoConnection(
-                       val mongoBean: MongoBean, //mongo信息
+                       val mongoBean: MongoBean //mongo信息
                      )
   extends DataSourceConnection {
 

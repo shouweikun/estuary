@@ -12,15 +12,15 @@ import org.slf4j.LoggerFactory
 class MongoOffsetHandler(
                           val manager: ZooKeeperLogPositionManager[MongoOffset],
                           private val startMongoOffset: Option[MongoOffset] = None,
-                          val destination: String = ""
+                          val destination: String
                         ) extends PositionHandler[MongoOffset] {
   val logger = LoggerFactory.getLogger(classOf[MongoOffsetHandler])
 
-  override def persistLogPosition(destination: String, logPosition: MongoOffset): Unit = {
+  override def persistLogPosition(destination: String = this.destination, logPosition: MongoOffset): Unit = {
     manager.persistLogPosition(destination, logPosition)
   }
 
-  override def getlatestIndexBy(destination: String): MongoOffset = {
+  override def getlatestIndexBy(destination: String= this.destination): MongoOffset = {
     manager.getLatestIndexBy(destination)
   }
 

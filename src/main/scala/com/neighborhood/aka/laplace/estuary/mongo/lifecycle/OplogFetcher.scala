@@ -8,6 +8,9 @@ import com.neighborhood.aka.laplace.estuary.mongo.task.Mongo2KafkaTaskInfoManage
 
 /**
   * Created by john_liu on 2018/4/26.
+  *
+  * 1.首先寻找开始位点
+  * 2.开始拉取数据
   */
 class OplogFetcher(
                     mongo2KafkaTaskInfoManager: Mongo2KafkaTaskInfoManager
