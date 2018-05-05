@@ -11,7 +11,7 @@ class Oplog2KafkaPowerAdapter (
                               taskManager: TaskManager
                               ) extends Actor with ActorLogging with PowerAdapter{
   override def receive: Receive = {
-
+    case
   }
 
   override def computeCost: Unit = ???

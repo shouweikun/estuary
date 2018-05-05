@@ -1,4 +1,4 @@
-package com.neighborhood.aka.laplace.estuary.mysql.akkaUtil
+package com.neighborhood.aka.laplace.estuary.mysql.lifecycle
 
 import akka.actor.{Actor, ActorLogging, Props}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle._
@@ -12,23 +12,6 @@ class Mysql2KafkaPowerAdapter(
                                taskManager: TaskManager
                              ) extends Actor with ActorLogging with PowerAdapter {
 
-  val size: Int = 10
-  var fetchTimeArray: Array[Long] = new Array[Long](size)
-  var batchTimeArray: Array[Long] = new Array[Long](size)
-  var sinkTimeArray: Array[Long] = new Array[Long](size)
-
-  var fetchTimeWriteIndex: Int = 0
-  var batchTimeWriteIndex: Int = 0
-  var sinkTimeWriteIndex: Int = 0
-
-  var fetchTimeSum: Long = 0
-  var fetchCountSum: Long = 0
-
-  var batchTimeSum: Long = 0
-  var batchCountSum: Long = 0
-
-  var sinkTimeSum: Long = 0
-  var sinkCountSum: Long = 0
 
 
   override def receive: Receive = {
