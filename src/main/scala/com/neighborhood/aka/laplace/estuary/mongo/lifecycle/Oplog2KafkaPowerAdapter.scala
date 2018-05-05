@@ -1,7 +1,7 @@
 package com.neighborhood.aka.laplace.estuary.mongo.lifecycle
 
 import akka.actor.{Actor, ActorLogging}
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.{FetcherMessage, PowerAdapter}
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, FetcherMessage, PowerAdapter, SinkerMessage}
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 
 /**
@@ -15,12 +15,25 @@ class Oplog2KafkaPowerAdapter(
     case "cost" => computeCost
     case FetcherMessage(x) => {
       x match {
-        case timestamp:Long =>
+        case timestamp:Long => updateFetchTimeByTimestamp(timestamp)
       }
     }
+    case BatcherMessage(x) => {
+      x match {
+        case timeCost:Long => updateBatchTimeByTimeCost(timeCost)
+      }
+    }
+    case SinkerMessage(x) => {
+      x match {
+        case timeCost:Long => updateSinkTimeByTimeCost(timeCost)
+       }
+    }
+
   }
 
-  override def computeCost: Unit = ???
+  override def computeCost: Unit = {
+
+  }
 
   override def control: Unit = ???
 }

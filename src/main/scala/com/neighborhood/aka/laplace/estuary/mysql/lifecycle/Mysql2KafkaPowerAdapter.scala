@@ -41,7 +41,7 @@ class Mysql2KafkaPowerAdapter(
     /**
       * 记录batch耗时
       */
-    case BatcherMessage(x) => {
+    case BatcherMessage(x:String) => {
       val value = x.toLong
       val nextBatchTimeWriteIndex = (batchTimeWriteIndex + 1) % size
       batchTimeArray(nextBatchTimeWriteIndex) = value
@@ -53,7 +53,7 @@ class Mysql2KafkaPowerAdapter(
     /**
       * 记录sink耗时
       */
-    case SinkerMessage(x) => {
+    case SinkerMessage(x:String) => {
       val value = x.toLong
       val nextSinkTimeWriteIndex = (sinkTimeWriteIndex + 1) % size
       sinkTimeArray(nextSinkTimeWriteIndex) = value
