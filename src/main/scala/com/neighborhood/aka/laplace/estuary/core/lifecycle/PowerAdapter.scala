@@ -25,6 +25,78 @@ trait PowerAdapter {
   var sinkCountSum: Long = 0
 
   /**
+    * 通过时间戳方式更新fetch time
+    *
+    * @param timestamp
+    */
+  def updateFetchTimeByTimestamp(timestamp: Long) = {
+    val nextFetchTimeWriteIndex = (fetchTimeWriteIndex + 1) % size
+    // 如果拿不到数据，默认在时间上随机增加3-5倍
+    fetchTimeArray(nextFetchTimeWriteIndex) = timestamp
+    fetchTimeWriteIndex = nextFetchTimeWriteIndex
+  }
+
+  /**
+    * 通过记录耗时的方式更新fetch time
+    *
+    * @param timeCost
+    */
+  def updateFetchTimeByTimeCost(timeCost: Long) = {
+    val nextFetchTimeWriteIndex = (fetchTimeWriteIndex + 1) % size
+    // 如果拿不到数据，默认在时间上随机增加3-5倍
+    fetchTimeArray(nextFetchTimeWriteIndex) = timeCost
+    fetchTimeWriteIndex = nextFetchTimeWriteIndex
+  }
+
+  /**
+    * 通过时间戳方式更新Batch time
+    *
+    * @param timestamp
+    */
+  def updateSinkTimeByTimestamp(timestamp: Long) = {
+    val nextFetchTimeWriteIndex = (batchTimeWriteIndex + 1) % size
+    // 如果拿不到数据，默认在时间上随机增加3-5倍
+    batchTimeArray(nextFetchTimeWriteIndex) = timestamp
+    batchTimeWriteIndex = nextFetchTimeWriteIndex
+  }
+
+  /**
+    * 通过记录耗时的方式更新sink time
+    *
+    * @param timeCost
+    */
+  def updateSinkTimeByTimeCost(timeCost: Long) = {
+    val nextFetchTimeWriteIndex = (sinkTimeWriteIndex + 1) % size
+    // 如果拿不到数据，默认在时间上随机增加3-5倍
+    sinkTimeArray(nextFetchTimeWriteIndex) = timeCost
+    sinkTimeWriteIndex = nextFetchTimeWriteIndex
+  }
+
+  /**
+    * 通过时间戳方式更新Batch time
+    *
+    * @param timestamp
+    */
+  def updateBatchTimeByTimestamp(timestamp: Long) = {
+    val nextFetchTimeWriteIndex = (sinkTimeWriteIndex + 1) % size
+    // 如果拿不到数据，默认在时间上随机增加3-5倍
+    sinkTimeArray(nextFetchTimeWriteIndex) = timestamp
+    sinkTimeWriteIndex = nextFetchTimeWriteIndex
+  }
+
+  /**
+    * 通过记录耗时的方式更新batch time
+    *
+    * @param timeCost
+    */
+  def updateBatchTimeByTimeCost(timeCost: Long) = {
+    val nextFetchTimeWriteIndex = (batchTimeWriteIndex + 1) % size
+    // 如果拿不到数据，默认在时间上随机增加3-5倍
+    batchTimeArray(nextFetchTimeWriteIndex) = timeCost
+    batchTimeWriteIndex = nextFetchTimeWriteIndex
+  }
+
+  /**
     * 计算cost
     */
   def computeCost: Unit

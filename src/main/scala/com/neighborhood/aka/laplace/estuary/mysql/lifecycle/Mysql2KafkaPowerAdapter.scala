@@ -18,7 +18,7 @@ class Mysql2KafkaPowerAdapter(
     /**
       * 记录fetch耗时
       */
-    case FetcherMessage(x) => {
+    case FetcherMessage(x:String) => {
       val value = x.toLong
       value match {
         case -1 => val nextFetchTimeWriteIndex = (fetchTimeWriteIndex + 1) % size
