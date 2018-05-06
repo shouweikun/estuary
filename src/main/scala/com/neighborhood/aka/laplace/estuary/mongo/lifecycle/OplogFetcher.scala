@@ -9,6 +9,7 @@ import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{FetcherMessage, SourceDataFetcher, Status, SyncControllerMessage}
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.core.util.JavaCommonUtil
+import com.neighborhood.aka.laplace.estuary.mongo.SettingConstant
 import com.neighborhood.aka.laplace.estuary.mongo.source.{MongoConnection, MongoOffset}
 import com.neighborhood.aka.laplace.estuary.mongo.task.Mongo2KafkaTaskInfoManager
 import com.neighborhood.aka.laplace.estuary.mongo.utils.MongoOffsetHandler
@@ -39,6 +40,9 @@ class OplogFetcher(
     mongoOffset
       .fold(throw new Exception(s"connot find start mongoOffset when preparing query,id:$syncTaskId "))(mongoConnection.QueryOplog(_))
   }
+
+  lazy val powerAdapter = mongo2KafkaTaskInfoManager.powerAdapter
+  lazy val processingCounter = mongo2KafkaTaskInfoManager.processingCounter
   /**
     * 是否记录耗时
     */
@@ -104,8 +108,10 @@ class OplogFetcher(
           if (isFetching) fetch else {
             log.warning(s"downstream is too busy,suspend to fetch data id:$syncTaskId")
           }
+          import scala.concurrent.duration._
+          context.system.scheduler.scheduleOnce(fetchDelay microseconds, self, FetcherMessage("fetch"))(context.system.dispatchers.defaultGlobalDispatcher)
         }
-        case x => log.warning(s"oplog fetcher id:$syncTaskId offline unhandled message ${FetcherMessage(x)}")
+        case _ => log.warning(s"oplog fetcher id:$syncTaskId offline unhandled message ${FetcherMessage(msg)}")
       }
     }
     case SyncControllerMessage(msg) => {
@@ -130,18 +136,19 @@ class OplogFetcher(
   def fetch = {
     if (oplogCursor.hasNext) {
       import scala.collection.JavaConverters._
-      startFetchTimestamp = System.currentTimeMillis()
+      if (startFetchTimestamp == 0) startFetchTimestamp = System.currentTimeMillis()
       lazy val after = System.currentTimeMillis()
-      oplogCursor
+      lazy val oplogs = oplogCursor
         .iterator()
         .asScala
-        .foreach {
-          oplog =>
-            oplogBatcher ! oplog
-            log.debug(s"fetcher fetchs oplog _id:${oplog.get("_id")},id:$syncTaskId")
-            if (isCosting)
-        }
-
+      oplogs.foreach {
+        oplog =>
+          oplogBatcher ! oplog
+          log.debug(s"fetcher fetchs oplog _id:${oplog.get("_id")},id:$syncTaskId")
+          if (isCosting) powerAdapter.fold(log.warning(s"powerAdapter doesn't exist,id:$syncTaskId"))(ref => ref ! (after - startFetchTimestamp))
+      }
+      if (isCounting) processingCounter.fold(log.warning(s"processingCounter doesn't exist,id:$syncTaskId"))(ref => ref ! oplogs.length)
+      startFetchTimestamp = 0
     } else {
       //      oplogBatcher ! FetcherMessage("none")
       log.debug(s"fetcher fetchs no oplog,id:$syncTaskId")
@@ -170,4 +177,30 @@ class OplogFetcher(
   private def onChangeFunc: Unit = TaskManager.onChangeStatus(mongo2KafkaTaskInfoManager)
 
   private def fetcherChangeStatus(status: Status): Unit = TaskManager.changeStatus(status, changeFunc, onChangeFunc)
+
+  /**
+    * ********************* Actor生命周期 *******************
+    */
+  override def preStart(): Unit = {
+    if (mongoConnection != null && mongoConnection.isConnected)
+      mongoConnection.disconnect()
+    //状态置为offline
+    fetcherChangeStatus(Status.OFFLINE)
+  }
+
+  override def postRestart(reason: Throwable): Unit = {
+    super.postRestart(reason)
+    fetcherChangeStatus(Status.RESTARTING)
+    log.info(s"fetcher will restart in ${SettingConstant.TASK_RESTART_INTERVAL}s")
+  }
+
+  override def postStop(): Unit = {
+    if (mongoConnection != null && mongoConnection.isConnected)
+      mongoConnection.disconnect()
+  }
+
+  override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
+    fetcherChangeStatus(Status.ERROR)
+    super.preRestart(reason, message)
+  }
 }

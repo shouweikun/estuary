@@ -1,5 +1,6 @@
 package com.neighborhood.aka.laplace.estuary.mongo.task
 
+import akka.actor.ActorRef
 import com.neighborhood.aka.laplace.estuary.core.sink.KafkaSinkFunc
 import com.neighborhood.aka.laplace.estuary.core.task.{RecourceManager, TaskManager}
 import com.neighborhood.aka.laplace.estuary.mongo.source.MongoConnection
@@ -9,12 +10,20 @@ import com.neighborhood.aka.laplace.estuary.mongo.utils.MongoOffsetHandler
   * Created by john_liu on 2018/5/2.
   */
 class Mongo2KafkaTaskInfoManager(
-                                 val taskInfoBean: Mongo2KafkaTaskInfoBean
+                                  val taskInfoBean: Mongo2KafkaTaskInfoBean
                                 )
   extends TaskManager with RecourceManager[String, MongoConnection, KafkaSinkFunc[String]] {
   lazy val mongoOffsetHandler = buildMongoOffsetHandler
   lazy val mongoConnection = buildSource
   lazy val kafkaSink = buildSink
+  /**
+    * 功率控制器
+    */
+  var powerAdapter: Option[ActorRef] = None
+  /**
+    * 计数器
+    */
+  var processingCounter: Option[ActorRef] = None
 
   /**
     * 任务类型

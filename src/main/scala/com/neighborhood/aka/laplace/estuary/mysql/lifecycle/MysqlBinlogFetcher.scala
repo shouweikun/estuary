@@ -4,8 +4,7 @@ import java.util.concurrent.Executors
 
 import akka.actor.SupervisorStrategy.Restart
 import akka.actor.{Actor, ActorLogging, ActorRef, OneForOneStrategy, Props}
-import com.alibaba.otter.canal.parse.exception.{CanalParseException, TableIdNotFoundException}
-import com.alibaba.otter.canal.parse.inbound.mysql.dbsync.DirectLogFetcher
+import com.alibaba.otter.canal.parse.exception.TableIdNotFoundException
 import com.alibaba.otter.canal.protocol.CanalEntry
 import com.alibaba.otter.canal.protocol.position.EntryPosition
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status.Status
@@ -14,13 +13,12 @@ import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlConnection
 import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManager
 import com.neighborhood.aka.laplace.estuary.mysql.utils.{CanalEntryJsonHelper, MysqlBinlogParser}
-import com.taobao.tddl.dbsync.binlog.{LogContext, LogDecoder}
 import org.I0Itec.zkclient.exception.ZkTimeoutException
 import org.apache.commons.lang.StringUtils
 
 import scala.annotation.tailrec
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future}
 
 /**
   * Created by john_liu on 2018/2/5.
