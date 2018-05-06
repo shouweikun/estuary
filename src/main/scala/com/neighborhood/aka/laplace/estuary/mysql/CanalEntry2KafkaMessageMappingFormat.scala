@@ -11,6 +11,7 @@ import com.googlecode.protobuf.format.JsonFormat
 import com.neighborhood.aka.laplace.estuary.bean.key.BinlogKey
 import com.neighborhood.aka.laplace.estuary.bean.support.KafkaMessage
 import com.neighborhood.aka.laplace.estuary.core.trans.MappingFormat
+import com.neighborhood.aka.laplace.estuary.mysql.utils.JsonUtil
 
 import scala.util.{Failure, Success, Try}
 

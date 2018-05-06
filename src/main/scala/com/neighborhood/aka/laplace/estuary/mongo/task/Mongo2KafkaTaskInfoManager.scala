@@ -46,4 +46,9 @@ class Mongo2KafkaTaskInfoManager(
   def buildMongoOffsetHandler: MongoOffsetHandler = {
     ???
   }
+
+  /**
+    * 同步任务标识
+    */
+  override val syncTaskId: String = taskInfoBean.syncTaskId
 }

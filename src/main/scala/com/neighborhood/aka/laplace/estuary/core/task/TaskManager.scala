@@ -43,7 +43,7 @@ trait TaskManager {
   /**
     * 同步任务标识
     */
-  val syncTaskId: String = _
+  val syncTaskId: String
   /**
     * 数据条目记录
     */
@@ -84,7 +84,7 @@ trait TaskManager {
   /**
     * batcher的数量
     */
-  val batcherNum: Int = _
+  val batcherNum: Int = 0
 
   /**
     * 任务运行状态

@@ -6,14 +6,15 @@ import com.neighborhood.aka.laplace.estuary.bean.credential.MongoCredentialBean
   * Created by john_liu on 2018/4/25.
   */
 trait MongoBean extends DataSourceBase {
+  override val dataSourceType = SourceDataType.MONGO.toString
   val MONGODB_CR = "MONGODB-CR"
   val SCRAM_SHA_1 = "SCRAM-SHA-1";
-  override val dataSourceType: String = SourceDataType.MONGO.toString
+
   val mongoCredentials: Option[List[MongoCredentialBean]]
   val hosts: List[String]
   val port: Int
-  val concernedNs:Array[String] = _
-  val ignoredNs:Array[String] = _
+  val concernedNs: Array[String] = Array.empty
+  val ignoredNs: Array[String] = Array.empty
   /**
     * 读取数据时, 对于有replication set 复本集的collection是使用什么策略
     * primary,

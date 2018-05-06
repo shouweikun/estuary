@@ -6,8 +6,8 @@ package com.neighborhood.aka.laplace.estuary.core
 package object lifecycle {
 
   trait WorkerMessage {
-    val msg: String
-    val data: Option[Any] = None
+    val msg: Any
+//    val data: Option[Any] = None
   }
 
   case class SyncControllerMessage(msg: Any) extends WorkerMessage

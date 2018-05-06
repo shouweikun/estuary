@@ -8,7 +8,7 @@ import com.alibaba.otter.canal.parse.inbound.mysql.dbsync.DirectLogFetcher
 import com.alibaba.otter.canal.parse.index.ZooKeeperLogPositionManager
 import com.alibaba.otter.canal.protocol.CanalEntry
 import com.alibaba.otter.canal.protocol.position.{EntryPosition, LogIdentity, LogPosition}
-import com.neighborhood.aka.laplace.estuary.core.source.{DataSourceConnection, MysqlConnection}
+import com.neighborhood.aka.laplace.estuary.core.source.DataSourceConnection
 import com.neighborhood.aka.laplace.estuary.core.task.PositionHandler
 import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlConnection
 import com.taobao.tddl.dbsync.binlog.{LogContext, LogDecoder}
@@ -103,7 +103,7 @@ class LogPositionHandler(
     */
   def findStartPositionInternal(connection: MysqlConnection): EntryPosition = {
     //第一步试图从zookeeper中拿到binlog position
-    val logPositionFromZookeeper = Option(logPositionManager.getLatestIndexBy(destination))
+    val logPositionFromZookeeper = Option(this.getlatestIndexBy(destination))
 
     def findBinlogPositionIfZkisEmptyOrInvaild = {
       //zookeeper未能拿到
@@ -150,11 +150,11 @@ class LogPositionHandler(
         //如果传了
         theLogPosition =>
           //binlog 被移除的话
-          if (binlogIsRemoved(connection, theLogPosition.getPostion.getJournalName)) findBinlogPositionIfZkisEmptyOrInvaild else {
+          if (binlogIsRemoved(connection, theLogPosition.getJournalName)) findBinlogPositionIfZkisEmptyOrInvaild else {
             logger.debug(s"find logPosition by zk, id:$destination position:${
-              theLogPosition.getPostion.getJournalName
-            }:${theLogPosition.getPostion.getPosition}")
-            theLogPosition.getPostion
+              theLogPosition.getJournalName
+            }:${theLogPosition.getPosition}")
+            theLogPosition
           }
       }
 
@@ -437,6 +437,7 @@ class LogPositionHandler(
     } else throw new Exception("unexcepted end when find And Judge Entry ")
   }
 
+  override def getlatestIndexBy(destination: String): EntryPosition = manager.getLatestIndexBy(destination).getPostion
 }
 
 
