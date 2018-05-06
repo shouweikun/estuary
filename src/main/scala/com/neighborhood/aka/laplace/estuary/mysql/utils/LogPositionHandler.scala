@@ -437,7 +437,7 @@ class LogPositionHandler(
     } else throw new Exception("unexcepted end when find And Judge Entry ")
   }
 
-  override def getlatestIndexBy(destination: String): EntryPosition = manager.getLatestIndexBy(destination).getPostion
+  override def getlatestIndexBy(destination: String): EntryPosition = Option(manager.getLatestIndexBy(destination)).map(_.getPostion).getOrElse(null)
 }
 
 
