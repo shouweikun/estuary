@@ -24,6 +24,10 @@ class Mongo2KafkaTaskInfoManager(
     * 计数器
     */
   var processingCounter: Option[ActorRef] = None
+  /**
+    *
+    */
+  override val batcherNum: Int = taskInfoBean.batcherNum
 
   /**
     * 任务类型

@@ -234,7 +234,7 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
 
     //初始化powerAdapter
     log.info("initialize powerAdapter")
-    context.actorOf(PowerAdapter.props(mysql2KafkaTaskInfoManager), "powerAdapter")
+    context.actorOf(Mysql2KafkaPowerAdapter.props(mysql2KafkaTaskInfoManager), "powerAdapter")
     //初始化HeartBeatsListener
     log.info("initialize listener")
     context.actorOf(MysqlConnectionListener.props(mysql2KafkaTaskInfoManager).withDispatcher("akka.pinned-dispatcher"), "heartBeatsListener")

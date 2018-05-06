@@ -5,4 +5,6 @@ package com.neighborhood.aka.laplace.estuary.mongo
   */
 object SettingConstant {
   val TASK_RESTART_INTERVAL = 30 //30s
+  val BATCH_NUM = 19
+  val HASH_MAPPING_VIRTUAL_NODES_FACTOR = 5
 }

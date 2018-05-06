@@ -4,6 +4,7 @@ import com.neighborhood.aka.laplace.estuary.bean.credential.MongoCredentialBean
 import com.neighborhood.aka.laplace.estuary.bean.datasink.KafkaBean
 import com.neighborhood.aka.laplace.estuary.bean.identity.{BaseExtractBean, SyncDataType}
 import com.neighborhood.aka.laplace.estuary.bean.resource.MongoBean
+import com.neighborhood.aka.laplace.estuary.mongo.SettingConstant
 
 /**
   * Created by john_liu on 2018/4/25.
@@ -26,13 +27,14 @@ final class Mongo2KafkaTaskInfoBean(
                                      /**
                                        * 是否保留最新binlog位置
                                        */
-                                     val isProfiling: Boolean = false
+                                     val isProfiling: Boolean = false,
+
+                                     val batcherNum: Int = SettingConstant.BATCH_NUM
                                    ) extends MongoBean with KafkaBean with BaseExtractBean {
   /**
     * 数据同步形式
     */
   override var dataSyncType: String = SyncDataType.NORMAL.toString
-
 
 
 }

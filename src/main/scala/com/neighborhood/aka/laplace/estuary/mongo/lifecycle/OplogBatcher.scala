@@ -1,6 +1,6 @@
 package com.neighborhood.aka.laplace.estuary.mongo.lifecycle
 
-import akka.actor.{Actor, ActorLogging}
+import akka.actor.{Actor, ActorLogging, Props}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.SourceDataBatcher
 import com.neighborhood.aka.laplace.estuary.mongo.task.Mongo2KafkaTaskInfoManager
@@ -9,7 +9,8 @@ import com.neighborhood.aka.laplace.estuary.mongo.task.Mongo2KafkaTaskInfoManage
   * Created by john_liu on 2018/5/2.
   */
 class OplogBatcher(
-                    mongo2KafkaTaskInfoManager: Mongo2KafkaTaskInfoManager
+                    val mongo2KafkaTaskInfoManager: Mongo2KafkaTaskInfoManager,
+                    val num: Int
                   ) extends SourceDataBatcher with Actor with ActorLogging {
   override def receive: Receive = ???
 
@@ -36,4 +37,12 @@ class OplogBatcher(
     * 错误处理
     */
   override def processError(e: Throwable, message: lifecycle.WorkerMessage): Unit = ???
+}
+
+object OplogBatcher {
+  def prop(
+            mongo2KafkaTaskInfoManager: Mongo2KafkaTaskInfoManager,
+            num: Int
+          ): Props = Props(new OplogBatcher(mongo2KafkaTaskInfoManager, num
+  ))
 }
