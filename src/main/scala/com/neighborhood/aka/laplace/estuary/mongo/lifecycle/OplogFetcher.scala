@@ -61,6 +61,10 @@ class OplogFetcher(
     * 是否处于拉取数据状态
     */
   var isFetching: Boolean = true
+  /**
+    * 开始拉取数据的时间戳
+    */
+  var startFetchTimestamp: Long = 0
 
   override def receive: Receive = {
     case SyncControllerMessage(msg) => {
@@ -93,7 +97,7 @@ class OplogFetcher(
         }
         case "prepareQuery" => {
           log.info(s"oplog fetcher id:$syncTaskId is Preparing Query ")
-         oplogCursor
+          oplogCursor
           self ! FetcherMessage("fetch")
         }
         case "fetch" => {
@@ -106,7 +110,7 @@ class OplogFetcher(
     }
     case SyncControllerMessage(msg) => {
       msg match {
-        case x if (JavaCommonUtil.isInteger(x)) => fetchDelay = x.toInt
+        case x: Int => fetchDelay = x
         case "suspend" => {
           //未被使用
           isFetching = false
@@ -125,9 +129,19 @@ class OplogFetcher(
 
   def fetch = {
     if (oplogCursor.hasNext) {
-      val oplog = oplogCursor.next()
-      oplogBatcher ! oplog
-      log.debug(s"fetcher fetchs oplog _id:${oplog.get("_id")},id:$syncTaskId")
+      import scala.collection.JavaConverters._
+      startFetchTimestamp = System.currentTimeMillis()
+      lazy val after = System.currentTimeMillis()
+      oplogCursor
+        .iterator()
+        .asScala
+        .foreach {
+          oplog =>
+            oplogBatcher ! oplog
+            log.debug(s"fetcher fetchs oplog _id:${oplog.get("_id")},id:$syncTaskId")
+            if (isCosting)
+        }
+
     } else {
       //      oplogBatcher ! FetcherMessage("none")
       log.debug(s"fetcher fetchs no oplog,id:$syncTaskId")
