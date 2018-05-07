@@ -1,4 +1,4 @@
-package com.neighborhood.aka.laplace.estuary.mysql
+package com.neighborhood.aka.laplace.estuary.mysql.utils
 
 import com.alibaba.otter.canal.protocol.CanalEntry
 import com.google.protobuf.InvalidProtocolBufferException

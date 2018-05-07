@@ -5,6 +5,7 @@ import java.util.concurrent.atomic.{AtomicLong, AtomicReference}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.WorkerType.WorkerType
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{Status, WorkerType}
+import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManager.taskStatusMap
 
 /**
   * Created by john_liu on 2018/2/7.
@@ -39,7 +40,10 @@ trait TaskManager {
     * syncControllerStatus的状态
     */
   val syncControllerStatus: AtomicReference[Status] = new AtomicReference[Status](Status.OFFLINE)
-
+  /**
+    * 同步任务标识
+    */
+  val syncTaskId: String
   /**
     * 数据条目记录
     */
@@ -80,7 +84,7 @@ trait TaskManager {
   /**
     * batcher的数量
     */
-  var batcherNum: Int = _
+  val batcherNum: Int = 0
 
   /**
     * 任务运行状态
@@ -113,5 +117,20 @@ object TaskManager {
   def changeStatus(status: Status, changFunc: Status => Unit, onChangeFunc: => Unit): Unit = {
     changFunc(status)
     onChangeFunc
+  }
+
+  /**
+    * 每当任务状态变化时，更新之
+    */
+  def onChangeStatus(taskManager: TaskManager): Unit = {
+    val syncTaskId = taskManager.syncTaskId
+    val syncControllerStatus = taskManager.syncControllerStatus.get
+    val fetcherStatus = taskManager.fetcherStatus.get
+    val sinkerStatus = taskManager.sinkerStatus.get
+    val batcherStatus = taskManager.batcherStatus.get
+    val listenerStatus = taskManager.heartBeatListenerStatus.get
+    val map = Map("syncControllerStatus" -> syncControllerStatus, "fetcherStatus" -> fetcherStatus, "sinkerStatus" -> sinkerStatus, "batcherStatus" -> batcherStatus, "listenerStatus" -> listenerStatus)
+
+    taskStatusMap.put(syncTaskId, map)
   }
 }

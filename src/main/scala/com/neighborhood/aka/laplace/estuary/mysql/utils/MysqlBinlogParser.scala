@@ -1,4 +1,4 @@
-package com.neighborhood.aka.laplace.estuary.mysql
+package com.neighborhood.aka.laplace.estuary.mysql.utils
 
 import java.util.concurrent.atomic.AtomicLong
 

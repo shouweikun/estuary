@@ -1,4 +1,5 @@
 package com.neighborhood.aka.laplace.estuary.bean.key;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
@@ -7,6 +8,11 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class BaseDataJsonKey implements Cloneable {
+
+    /**
+     * 分区策略
+     */
+    public PartitionStrategy partitionStrategy = PartitionStrategy.MOD;
     /**
      * Application Server的名称
      */
@@ -253,28 +259,37 @@ public class BaseDataJsonKey implements Cloneable {
         this.dbEffectTime = dbEffectTime;
     }
 
+    public PartitionStrategy getPartitionStrategy() {
+        return partitionStrategy;
+    }
+
+    public void setPartitionStrategy(PartitionStrategy partitionStrategy) {
+        this.partitionStrategy = partitionStrategy;
+    }
+
     @Override
     public String toString() {
         return "BaseDataJsonKey{" +
-            "appName='" + appName + '\'' +
-            ", appServerIp='" + appServerIp + '\'' +
-            ", appServerPort=" + appServerPort +
-            ", syncTaskId='" + syncTaskId + '\'' +
-            ", syncTaskStartTime=" + syncTaskStartTime +
-            ", syncTaskSequence=" + syncTaskSequence +
-            ", sourceType='" + sourceType + '\'' +
-            ", dbName='" + dbName + '\'' +
-            ", tableName='" + tableName + '\'' +
-            ", msgUuid='" + msgUuid + '\'' +
-            ", msgSyncStartTime=" + msgSyncStartTime +
-            ", msgSyncEndTime=" + msgSyncEndTime +
-            ", dbEffectTime=" + dbEffectTime +
-            ", msgSyncUsedTime=" + msgSyncUsedTime +
-            ", msgSize=" + msgSize +
-            ", kafkaTopic='" + kafkaTopic + '\'' +
-            ", kafkaPartition=" + kafkaPartition +
-            ", kafkaOffset=" + kafkaOffset +
-            ", eventType='" + eventType + '\'' +
-            '}';
+                "partitionStrategy='" + partitionStrategy + '\'' +
+                "appName='" + appName + '\'' +
+                ", appServerIp='" + appServerIp + '\'' +
+                ", appServerPort=" + appServerPort +
+                ", syncTaskId='" + syncTaskId + '\'' +
+                ", syncTaskStartTime=" + syncTaskStartTime +
+                ", syncTaskSequence=" + syncTaskSequence +
+                ", sourceType='" + sourceType + '\'' +
+                ", dbName='" + dbName + '\'' +
+                ", tableName='" + tableName + '\'' +
+                ", msgUuid='" + msgUuid + '\'' +
+                ", msgSyncStartTime=" + msgSyncStartTime +
+                ", msgSyncEndTime=" + msgSyncEndTime +
+                ", dbEffectTime=" + dbEffectTime +
+                ", msgSyncUsedTime=" + msgSyncUsedTime +
+                ", msgSize=" + msgSize +
+                ", kafkaTopic='" + kafkaTopic + '\'' +
+                ", kafkaPartition=" + kafkaPartition +
+                ", kafkaOffset=" + kafkaOffset +
+                ", eventType='" + eventType + '\'' +
+                '}';
     }
 }

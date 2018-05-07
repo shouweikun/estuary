@@ -1,9 +1,9 @@
-package com.neighborhood.aka.laplace.estuary.mysql
+package com.neighborhood.aka.laplace.estuary.mysql.task
 
 import java.net.InetSocketAddress
 import java.nio.charset.Charset
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.{AtomicLong, AtomicReference}
+import java.util.concurrent.atomic.AtomicLong
 
 import akka.actor.ActorRef
 import com.alibaba.otter.canal.common.zookeeper.ZkClientx
@@ -12,12 +12,11 @@ import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection.{BinlogFormat
 import com.alibaba.otter.canal.parse.index.ZooKeeperLogPositionManager
 import com.alibaba.otter.canal.protocol.position.EntryPosition
 import com.neighborhood.aka.laplace.estuary.bean.credential.MysqlCredentialBean
-import com.neighborhood.aka.laplace.estuary.bean.key.BinlogKey
-import com.neighborhood.aka.laplace.estuary.bean.task.Mysql2KafkaTaskInfoBean
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status.Status
 import com.neighborhood.aka.laplace.estuary.core.sink.KafkaSinkFunc
-import com.neighborhood.aka.laplace.estuary.core.source.MysqlConnection
 import com.neighborhood.aka.laplace.estuary.core.task.{RecourceManager, TaskManager}
+import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlConnection
+import com.neighborhood.aka.laplace.estuary.mysql.utils.{LogPositionHandler, MysqlBinlogParser}
 import org.apache.commons.lang.StringUtils
 
 /**
@@ -33,7 +32,10 @@ class Mysql2KafkaTaskInfoManager(taskInfoBean: Mysql2KafkaTaskInfoBean) extends 
     * 传入的任务配置bean
     */
   val taskInfo = taskInfoBean
-
+  /**
+    * 同步任务标识
+    */
+  override val syncTaskId: String = taskInfo.syncTaskId
   /**
     * 支持的binlogFormat
     */
@@ -90,6 +92,11 @@ class Mysql2KafkaTaskInfoManager(taskInfoBean: Mysql2KafkaTaskInfoBean) extends 
     */
   val kafkaDdlSink = kafkaSink.fork
   /**
+    * batcher数量
+    */
+  override val batcherNum = taskInfo.batcherNum
+
+  /**
     * MysqlBinlogParser
     */
   lazy val binlogParser: MysqlBinlogParser = buildParser
@@ -113,10 +120,6 @@ class Mysql2KafkaTaskInfoManager(taskInfoBean: Mysql2KafkaTaskInfoBean) extends 
     * 该mysql实例上所有的mysql库名
     */
   var mysqlDatabaseNameList: List[String] = _
-  /**
-    * batcher数量
-    */
-  batcherNum = taskInfo.batcherNum
 
   /**
     * 实现@trait ResourceManager
@@ -211,20 +214,7 @@ object Mysql2KafkaTaskInfoManager {
     manager
   }
 
-  /**
-    * 每当任务状态变化时，更新之
-    */
-  def onChangeStatus(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager): Unit = {
-    val syncTaskId = mysql2KafkaTaskInfoManager.taskInfo.syncTaskId
-    val syncControllerStatus = mysql2KafkaTaskInfoManager.syncControllerStatus.get
-    val fetcherStatus = mysql2KafkaTaskInfoManager.fetcherStatus.get
-    val sinkerStatus = mysql2KafkaTaskInfoManager.sinkerStatus.get
-    val batcherStatus = mysql2KafkaTaskInfoManager.batcherStatus.get
-    val listenerStatus = mysql2KafkaTaskInfoManager.heartBeatListenerStatus.get
-    val map = Map("syncControllerStatus" -> syncControllerStatus, "fetcherStatus" -> fetcherStatus, "sinkerStatus" -> sinkerStatus, "batcherStatus" -> batcherStatus, "listenerStatus" -> listenerStatus)
 
-    taskStatusMap.put(syncTaskId, map)
-  }
 
   def logCount(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager): Map[String, Long] = {
     lazy val fetchCount = mysql2KafkaTaskInfoManager.fetchCount.get()

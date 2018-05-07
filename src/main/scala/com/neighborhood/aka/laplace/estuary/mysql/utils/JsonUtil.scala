@@ -1,10 +1,11 @@
-package com.neighborhood.aka.laplace.estuary.mysql
+package com.neighborhood.aka.laplace.estuary.mysql.utils
 
 import java.io._
 import java.util
 
 import com.alibaba.fastjson.JSON
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.neighborhood.aka.laplace.estuary.mysql.utils
 
 /**
   * Created by john_liu on 2018/2/26.

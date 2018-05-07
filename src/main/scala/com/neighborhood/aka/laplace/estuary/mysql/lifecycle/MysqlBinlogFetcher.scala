@@ -4,22 +4,21 @@ import java.util.concurrent.Executors
 
 import akka.actor.SupervisorStrategy.Restart
 import akka.actor.{Actor, ActorLogging, ActorRef, OneForOneStrategy, Props}
-import com.alibaba.otter.canal.parse.exception.{CanalParseException, TableIdNotFoundException}
-import com.alibaba.otter.canal.parse.inbound.mysql.dbsync.DirectLogFetcher
+import com.alibaba.otter.canal.parse.exception.TableIdNotFoundException
 import com.alibaba.otter.canal.protocol.CanalEntry
 import com.alibaba.otter.canal.protocol.position.EntryPosition
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{SourceDataFetcher, Status, _}
-import com.neighborhood.aka.laplace.estuary.core.source.MysqlConnection
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
-import com.neighborhood.aka.laplace.estuary.mysql.{CanalEntryJsonHelper, Mysql2KafkaTaskInfoManager, MysqlBinlogParser}
-import com.taobao.tddl.dbsync.binlog.{LogContext, LogDecoder}
+import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlConnection
+import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManager
+import com.neighborhood.aka.laplace.estuary.mysql.utils.{CanalEntryJsonHelper, MysqlBinlogParser}
 import org.I0Itec.zkclient.exception.ZkTimeoutException
 import org.apache.commons.lang.StringUtils
 
 import scala.annotation.tailrec
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future}
 
 /**
   * Created by john_liu on 2018/2/5.
@@ -32,6 +31,11 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
     * binlogParser 解析binlog
     */
   lazy val binlogParser: MysqlBinlogParser = mysql2KafkaTaskInfoManager.binlogParser
+
+  /**
+    * 任务id
+    */
+  val syncTaskId = mysql2KafkaTaskInfoManager.syncTaskId
   /**
     * 重试机制
     */
@@ -178,8 +182,6 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
     * 从连接中取数据
     */
   def fetchOne(before: Long = System.currentTimeMillis()) = {
-
-
     lazy val entry = mysqlConnection.get.fetchUntilDefined(filterEntry(_))(binlogParser)
     if (entry.get.getHeader.getEventType == CanalEntry.EventType.ALTER) {
       log.info(s"fetch ddl:${CanalEntryJsonHelper.entryToJson(entry.get)}");
@@ -210,14 +212,14 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
     * 错误处理
     */
   override def processError(e: Throwable, message: WorkerMessage): Unit = {
-    log.warning(s"fetcher throws exception $e")
+    log.warning(s"fetcher throws exception $e,cause:${e.getCause},id:$syncTaskId")
     errorCount += 1
     if (isCrashed) {
       fetcherChangeStatus(Status.ERROR)
       errorCount = 0
       println(message.msg)
       e.printStackTrace()
-      throw new Exception("fetching data failure for 3 times")
+      throw new Exception(s"fetching data failure for 3 times,id:$syncTaskId")
     } else {
       self ! message
     }
@@ -226,11 +228,11 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
   /**
     * ********************* 状态变化 *******************
     */
-  private def changeFunc(status: Status) = TaskManager.changeFunc(status, mysql2KafkaTaskInfoManager)
+  private def changeFunc(status: Status): Unit = TaskManager.changeFunc(status, mysql2KafkaTaskInfoManager)
 
-  private def onChangeFunc = Mysql2KafkaTaskInfoManager.onChangeStatus(mysql2KafkaTaskInfoManager)
+  private def onChangeFunc: Unit = TaskManager.onChangeStatus(mysql2KafkaTaskInfoManager)
 
-  private def fetcherChangeStatus(status: Status) = TaskManager.changeStatus(status, changeFunc, onChangeFunc)
+  private def fetcherChangeStatus(status: Status): Unit = TaskManager.changeStatus(status, changeFunc, onChangeFunc)
 
   /**
     * ********************* Actor生命周期 *******************

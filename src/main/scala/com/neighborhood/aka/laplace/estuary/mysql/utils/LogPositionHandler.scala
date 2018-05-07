@@ -1,15 +1,16 @@
-package com.neighborhood.aka.laplace.estuary.mysql
+package com.neighborhood.aka.laplace.estuary.mysql.utils
 
 import java.io.IOException
 import java.net.InetSocketAddress
-import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong}
 
 import com.alibaba.otter.canal.parse.exception.CanalParseException
 import com.alibaba.otter.canal.parse.inbound.mysql.dbsync.DirectLogFetcher
 import com.alibaba.otter.canal.parse.index.ZooKeeperLogPositionManager
 import com.alibaba.otter.canal.protocol.CanalEntry
 import com.alibaba.otter.canal.protocol.position.{EntryPosition, LogIdentity, LogPosition}
-import com.neighborhood.aka.laplace.estuary.core.source.MysqlConnection
+import com.neighborhood.aka.laplace.estuary.core.source.DataSourceConnection
+import com.neighborhood.aka.laplace.estuary.core.task.PositionHandler
+import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlConnection
 import com.taobao.tddl.dbsync.binlog.{LogContext, LogDecoder}
 import org.apache.commons.lang.StringUtils
 import org.slf4j.LoggerFactory
@@ -17,7 +18,7 @@ import org.springframework.util.CollectionUtils
 
 import scala.annotation.tailrec
 import scala.concurrent.{Await, Future}
-import scala.util.{Failure, Try}
+import scala.util.Try
 
 /**
   * Created by john_liu on 2018/2/4.
@@ -32,7 +33,7 @@ class LogPositionHandler(
                           val address: InetSocketAddress,
                           implicit val binlogParser: MysqlBinlogParser
 
-                        ) {
+                        ) extends PositionHandler[EntryPosition] {
   val logger = LoggerFactory.getLogger(classOf[LogPositionHandler])
   val logPositionManager = manager
 
@@ -58,13 +59,20 @@ class LogPositionHandler(
     logger.info(s"binlog Position Saved id:$destination")
   }
 
+  override def persistLogPosition(destination: String, logPosition: EntryPosition): Unit = {
+    val theLogPosition = buildLastPosition(logPosition.getJournalName, logPosition.getPosition)
+    manager.persistLogPosition(destination, theLogPosition)
+    logger.info(s"binlog Position Saved id:$destination")
+  }
+
+
   /**
     * @param connection mysqlConnection
     *                   获取开始的position
     */
-  def findStartPosition(connection: MysqlConnection): EntryPosition = {
+  override def findStartPosition(connection: DataSourceConnection): EntryPosition = {
     if (!connection.isConnected) connection.connect()
-    val re = findStartPositionInternal(connection)
+    val re = findStartPositionInternal(connection.asInstanceOf[MysqlConnection])
     connection.disconnect()
     re
   }
@@ -95,7 +103,7 @@ class LogPositionHandler(
     */
   def findStartPositionInternal(connection: MysqlConnection): EntryPosition = {
     //第一步试图从zookeeper中拿到binlog position
-    val logPositionFromZookeeper = Option(logPositionManager.getLatestIndexBy(destination))
+    val logPositionFromZookeeper = Option(this.getlatestIndexBy(destination))
 
     def findBinlogPositionIfZkisEmptyOrInvaild = {
       //zookeeper未能拿到
@@ -142,11 +150,11 @@ class LogPositionHandler(
         //如果传了
         theLogPosition =>
           //binlog 被移除的话
-          if (binlogIsRemoved(connection, theLogPosition.getPostion.getJournalName)) findBinlogPositionIfZkisEmptyOrInvaild else {
+          if (binlogIsRemoved(connection, theLogPosition.getJournalName)) findBinlogPositionIfZkisEmptyOrInvaild else {
             logger.debug(s"find logPosition by zk, id:$destination position:${
-              theLogPosition.getPostion.getJournalName
-            }:${theLogPosition.getPostion.getPosition}")
-            theLogPosition.getPostion
+              theLogPosition.getJournalName
+            }:${theLogPosition.getPosition}")
+            theLogPosition
           }
       }
 
@@ -356,15 +364,15 @@ class LogPositionHandler(
     //重启一下
     Try(mysqlConnection.reconnect)
 
-      // 开始遍历文件
-      MysqlConnection.seek(searchBinlogFile, 4L)(mysqlConnection)
-      val fetcher: DirectLogFetcher = mysqlConnection.fetcher4Seek
-      val decoder: LogDecoder = mysqlConnection.decoder4Seek
-      val logContext: LogContext = mysqlConnection.logContext4Seek
-      val re = loopFetchAndFindEntry(fetcher, decoder, logContext)(startTimestamp, endPosition)
-      re
+    // 开始遍历文件
+    MysqlConnection.seek(searchBinlogFile, 4L)(mysqlConnection)
+    val fetcher: DirectLogFetcher = mysqlConnection.fetcher4Seek
+    val decoder: LogDecoder = mysqlConnection.decoder4Seek
+    val logContext: LogContext = mysqlConnection.logContext4Seek
+    val re = loopFetchAndFindEntry(fetcher, decoder, logContext)(startTimestamp, endPosition)
+    re
 
-    
+
   }
 
   /**
@@ -429,6 +437,7 @@ class LogPositionHandler(
     } else throw new Exception("unexcepted end when find And Judge Entry ")
   }
 
+  override def getlatestIndexBy(destination: String): EntryPosition = Option(manager.getLatestIndexBy(destination)).map(_.getPostion).getOrElse(null)
 }
 
 
