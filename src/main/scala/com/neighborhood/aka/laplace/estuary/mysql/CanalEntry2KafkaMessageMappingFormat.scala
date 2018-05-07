@@ -19,18 +19,9 @@ import scala.util.{Failure, Success, Try}
   * Created by john_liu on 2018/5/1.
   */
 trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[CanalEntry.Entry, Array[KafkaMessage]] {
-  self:ActorLogging =>
+  self: ActorLogging =>
 
-  /**
-    * 拼接json用
-    */
-  val START_JSON = "{"
-  val END_JSON = "}"
-  val START_ARRAY = "["
-  val END_ARRAY = "]"
-  val KEY_VALUE_SPLIT = ":"
-  val ELEMENT_SPLIT = ","
-  val STRING_CONTAINER = "\""
+
   private val jsonFormat = new JsonFormat
 
   override def transform(entry: CanalEntry.Entry): Array[KafkaMessage] = {
@@ -45,22 +36,21 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[CanalEntry.Entr
   /**
     * @param tempJsonKey   BinlogJsonKey
     * @param entry         entry
-    * @param logfileName   binlog文件名
-    * @param logfileOffset binlog文件偏移量
     * @param before        开始时间
     *                      将DDL类型的CanalEntry 转换成Json
     */
-  def transferDDltoJson(tempJsonKey: BinlogKey, entry: CanalEntry.Entry, logfileName: String, logfileOffset: Long, before: Long): KafkaMessage = {
+  def transferDDltoJson(tempJsonKey: BinlogKey, entry: CanalEntry.Entry, before: Long): KafkaMessage = {
     ???
     //让程序知道是DDL
     tempJsonKey.setDbName("DDL")
     log.info(s"batch ddl ${entryToJson(entry)}")
-    val re = new KafkaMessage(tempJsonKey,entryToJson(entry), logfileName, logfileOffset)
+    val re = new KafkaMessage(tempJsonKey, entryToJson(entry))
     val theAfter = System.currentTimeMillis()
     tempJsonKey.setMsgSyncEndTime(theAfter)
     tempJsonKey.setMsgSyncUsedTime(theAfter - before)
     re
   }
+
   /**
     * @param entry       entry
     * @param temp        binlogKey

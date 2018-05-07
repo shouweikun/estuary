@@ -11,16 +11,6 @@ import com.neighborhood.aka.laplace.estuary.core.trans.MappingFormat
 trait BinlogMappingFormat extends MappingFormat[CanalEntry.Entry, Array[KafkaMessage]] {
 
 
-  /**
-    * 拼接json用
-    */
-  val START_JSON = "{"
-  val END_JSON = "}"
-  val START_ARRAY = "["
-  val END_ARRAY = "]"
-  val KEY_VALUE_SPLIT = ":"
-  val ELEMENT_SPLIT = ","
-  val STRING_CONTAINER = "\""
 
   override def transform(entry: CanalEntry.Entry): Array[KafkaMessage] = {
 
@@ -44,7 +34,7 @@ trait BinlogMappingFormat extends MappingFormat[CanalEntry.Entry, Array[KafkaMes
     //让程序知道是DDL
     tempJsonKey.setDbName("DDL")
     //log.info(s"batch ddl ${CanalEntryJsonHelper.entryToJson(entry)}")
-    val re = new KafkaMessage(tempJsonKey, CanalEntryJsonHelper.entryToJson(entry), logfileName, logfileOffset)
+    val re = new KafkaMessage(tempJsonKey, CanalEntryJsonHelper.entryToJson(entry))
     val theAfter = System.currentTimeMillis()
     tempJsonKey.setMsgSyncEndTime(theAfter)
     tempJsonKey.setMsgSyncUsedTime(theAfter - before)

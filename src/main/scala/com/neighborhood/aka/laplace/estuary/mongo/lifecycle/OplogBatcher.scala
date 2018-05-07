@@ -1,8 +1,8 @@
 package com.neighborhood.aka.laplace.estuary.mongo.lifecycle
 
-import akka.actor.{Actor, ActorLogging, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.SourceDataBatcher
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, SourceDataBatcher}
 import com.neighborhood.aka.laplace.estuary.mongo.task.Mongo2KafkaTaskInfoManager
 
 /**
@@ -10,12 +10,14 @@ import com.neighborhood.aka.laplace.estuary.mongo.task.Mongo2KafkaTaskInfoManage
   */
 class OplogBatcher(
                     val mongo2KafkaTaskInfoManager: Mongo2KafkaTaskInfoManager,
-                    val num: Int
+                    val num: Int,
+                    val sinker: ActorRef
                   ) extends SourceDataBatcher with Actor with ActorLogging {
-  override def receive: Receive = ???
+
 
   lazy val powerAdapter = mongo2KafkaTaskInfoManager.powerAdapter
   lazy val processingCounter = mongo2KafkaTaskInfoManager.processingCounter
+  val syncTaskId = mongo2KafkaTaskInfoManager.syncTaskId
   /**
     * 是否记录耗时
     */
@@ -24,6 +26,20 @@ class OplogBatcher(
     * 是否计数
     */
   val isCounting: Boolean = mongo2KafkaTaskInfoManager.taskInfoBean.isCounting
+
+
+  override def receive: Receive = {
+    //todo
+    case _ => {
+      val before = System.currentTimeMillis()
+
+
+      //性能分析
+      if (isCounting) processingCounter.fold(log.warning(s"cannot find processingCounter,id:$syncTaskId"))(ref => ref ! BatcherMessage(1))
+      if (isCosting) powerAdapter.fold(log.warning(s"cannot find powerAdapter,id:$syncTaskId"))(ref => ref ! BatcherMessage(System.currentTimeMillis() - before))
+    }
+  }
+
   /**
     * 错位次数阈值
     */
@@ -42,7 +58,8 @@ class OplogBatcher(
 object OplogBatcher {
   def prop(
             mongo2KafkaTaskInfoManager: Mongo2KafkaTaskInfoManager,
-            num: Int
-          ): Props = Props(new OplogBatcher(mongo2KafkaTaskInfoManager, num
+            num: Int,
+            sinker: ActorRef
+          ): Props = Props(new OplogBatcher(mongo2KafkaTaskInfoManager, num, sinker
   ))
 }

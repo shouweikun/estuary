@@ -18,9 +18,10 @@ class sJsonKeyPartitioner extends Partitioner {
   private def partitionByDbAndTable(db: String, tb: String)(implicit partitions: Int): Int = s"$db-$tb".hashCode % partitions
 
   override def partition(topic: String, key: Any, keyBytes: Array[Byte], value: Any, valueBytes: Array[Byte], cluster: Cluster): Int = {
-    implicit val partitions = cluster.partitionCountForTopic(topic)
+    implicit val partitions:Int = cluster.partitionCountForTopic(topic)
     key match {
       case x: BinlogKey => {
+
         x.getPartitionStrategy match {
           case PartitionStrategy.MOD => partitionByMod(x.getSyncTaskSequence)
           case _ => ???
