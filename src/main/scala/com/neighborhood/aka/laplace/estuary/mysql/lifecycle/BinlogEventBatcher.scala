@@ -66,6 +66,10 @@ class BinlogEventBatcher(
     */
   val batchThreshold: AtomicLong = if (isDdlHandler) new AtomicLong(1) else mysql2KafkaTaskInfoManager.taskInfo.batchThreshold
   /**
+    * syncTaskId
+    */
+  val syncTaskId = mysql2KafkaTaskInfoManager.syncTaskId
+  /**
     * 该mysql实例所有的db
     */
   lazy val mysqlDatabaseNameList = MysqlConnection.getSchemas(mysql2KafkaTaskInfoManager.mysqlConnection.fork)
@@ -117,7 +121,7 @@ class BinlogEventBatcher(
     }
     case x => {
 
-      log.info(s"BinlogBatcher unhandled Message : $x")
+      log.info(s"BinlogBatcher unhandled Message : $x,id:$syncTaskId")
     }
   }
 
@@ -244,7 +248,7 @@ class BinlogEventBatcher(
         if (isCounting) mysql2KafkaTaskInfoManager.batchCount.getAndAdd(size)
         if (isCosting) mysql2KafkaTaskInfoManager.powerAdapter match {
           case Some(x) => x ! BatcherMessage(s"${after - before}")
-          case _ => log.warning("powerAdapter not exist")
+          case _ => log.warning(s"powerAdapter not exist,id:$syncTaskId")
         }
         re
       }
@@ -252,7 +256,7 @@ class BinlogEventBatcher(
       if (isDdlHandler) binlogEventSinker ! flushData else Future(flushData).pipeTo(binlogEventSinker)
       entryBatch = List.empty
     } else if (isDdlHandler) {
-      log.info(s"ddlHandler is sending heartbeats at time:${System.currentTimeMillis}")
+      log.info(s"ddlHandler is sending heartbeats at time:${System.currentTimeMillis},id:$syncTaskId")
       val concernedDbName = mysql2KafkaTaskInfoManager.taskInfo.concernedDatabase
       val ignoredDbName = mysql2KafkaTaskInfoManager.taskInfo.ignoredDatabase
 
@@ -309,11 +313,11 @@ class BinlogEventBatcher(
       }
       //concurrent模式
       case (true, false) => {
-        log.info(s"${entry.get.getHeader.getLogfileName}-${entry.get.getHeader.getLogfileOffset} send to sinker with concurrent mode")
+        log.info(s"${entry.get.getHeader.getLogfileName}-${entry.get.getHeader.getLogfileOffset} send to sinker with concurrent mode,id:$syncTaskId")
         batchAndFlush(entry.get)()
       }
       case (false, _) => {
-        log.warning(s"${event} cannot be resolved")
+        log.warning(s"${event} cannot be resolved,id:$syncTaskId")
       }
     }
   }
@@ -497,13 +501,13 @@ class BinlogEventBatcher(
   }
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
-    log.info("batcher process preRestart")
+    log.info(s"batcher process preRestart,id:$syncTaskId")
     batcherChangeStatus(Status.RESTARTING)
     super.preRestart(reason, message)
   }
 
   override def postRestart(reason: Throwable): Unit = {
-    log.info("batcher process postRestart")
+    log.info(s"batcher process postRestart,id:$syncTaskId")
     super.postRestart(reason)
   }
 

@@ -12,13 +12,13 @@ class Mysql2KafkaPowerAdapter(
                                taskManager: TaskManager
                              ) extends Actor with ActorLogging with PowerAdapter {
 
-
+  val syncTaskId = taskManager.syncTaskId
 
   override def receive: Receive = {
     /**
       * 记录fetch耗时
       */
-    case FetcherMessage(x:String) => {
+    case FetcherMessage(x: String) => {
       val value = x.toLong
       value match {
         case -1 => val nextFetchTimeWriteIndex = (fetchTimeWriteIndex + 1) % size
@@ -41,7 +41,7 @@ class Mysql2KafkaPowerAdapter(
     /**
       * 记录batch耗时
       */
-    case BatcherMessage(x:String) => {
+    case BatcherMessage(x: String) => {
       val value = x.toLong
       val nextBatchTimeWriteIndex = (batchTimeWriteIndex + 1) % size
       batchTimeArray(nextBatchTimeWriteIndex) = value
@@ -53,7 +53,7 @@ class Mysql2KafkaPowerAdapter(
     /**
       * 记录sink耗时
       */
-    case SinkerMessage(x:String) => {
+    case SinkerMessage(x: String) => {
       val value = x.toLong
       val nextSinkTimeWriteIndex = (sinkTimeWriteIndex + 1) % size
       sinkTimeArray(nextSinkTimeWriteIndex) = value
@@ -103,13 +103,13 @@ class Mysql2KafkaPowerAdapter(
       val left = (adjustedSinkCost * 1000 / batchThreshold - adjustedFetchCost * 1000 + 1) * 70 / 100
       val limitRatio = batcherNum * 3
       val right = 1000 * adjustedBatchCost / limitRatio / batchThreshold
-      log.debug(s"adjustedFetchCost:$adjustedFetchCost,adjustedBatchCost:$adjustedBatchCost,adjustedSinkCost:$adjustedSinkCost,left:$left,right:$right,limitRatio:$limitRatio")
+      log.debug(s"adjustedFetchCost:$adjustedFetchCost,adjustedBatchCost:$adjustedBatchCost,adjustedSinkCost:$adjustedSinkCost,left:$left,right:$right,limitRatio:$limitRatio,id:$syncTaskId")
       math.max(left, right)
     } else {
       //sink速度比batch速度快的慢
       math.max((adjustedSinkCost * 1000 / batchThreshold - adjustedFetchCost * 1000 + 1) * 70 / 100, 0)
     }
-    log.debug(s"delayDuration:$delayDuration")
+    log.debug(s"delayDuration:$delayDuration,id:$syncTaskId")
 
     val finalDelayDuration: Long = ((fetchCount - sinkCount) / batchThreshold, fetchCost, batchCost, sinkCost) match {
       case (_, x, _, _) if (x > 400) => math.max(150000, delayDuration) ////150ms 休眠
@@ -135,11 +135,11 @@ class Mysql2KafkaPowerAdapter(
       case _ => math.max(delayDuration, 3000000) //3s
 
     }
-    log.info(s"${(fetchCount - sinkCount) / batchThreshold},$fetchCost,$batchCost,$sinkCost,finalDelayDuration:$finalDelayDuration")
+    log.info(s"${(fetchCount - sinkCount) / batchThreshold},$fetchCost,$batchCost,$sinkCost,finalDelayDuration:$finalDelayDuration,id:$syncTaskId")
     taskManager.fetchDelay.set(finalDelayDuration)
   }
 
- override def computeCost = {
+  override def computeCost = {
     val batchThrehold = taskManager.batchThreshold.get()
     val fetchCost = (fetchTimeArray.fold(0L)(_ + _))./(size)
     val batchCost = (batchTimeArray.fold(0L)(_ + _))./(size)
