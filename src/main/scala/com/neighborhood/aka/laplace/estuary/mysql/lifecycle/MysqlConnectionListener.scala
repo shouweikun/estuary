@@ -15,8 +15,10 @@ import scala.util.Try
   * Created by john_liu on 2018/2/1.
   */
 class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager) extends Actor with HeartBeatListener with ActorLogging {
-
-
+  /**
+    * syncTaskId
+    */
+  val syncTaskId = mysql2KafkaTaskInfoManager.syncTaskId
   /**
     * 数据库连接
     */
@@ -92,6 +94,7 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
           context.become(receive)
           listenerChangeStatus(Status.OFFLINE)
         }
+        case _ => log.warning(s"listener online unhandled message:$msg,id:$syncTaskId")
       }
     }
   }
@@ -105,7 +108,7 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
 
           retryTimes = retryTimes - 1
           if (retryTimes <= 0) {
-           throw new RuntimeException("listener connot listen!")
+            throw new RuntimeException(s"listener connot listen!,id:$syncTaskId")
           }
         } else {
 
@@ -120,9 +123,11 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
   /**
     * ********************* 状态变化 *******************
     */
-  private def changeFunc(status:Status) =TaskManager.changeFunc(status,mysql2KafkaTaskInfoManager)
+  private def changeFunc(status: Status) = TaskManager.changeFunc(status, mysql2KafkaTaskInfoManager)
+
   private def onChangeFunc = TaskManager.onChangeStatus(mysql2KafkaTaskInfoManager)
-  private def listenerChangeStatus(status: Status) = TaskManager.changeStatus(status,changeFunc,onChangeFunc)
+
+  private def listenerChangeStatus(status: Status) = TaskManager.changeStatus(status, changeFunc, onChangeFunc)
 
 
   /**
