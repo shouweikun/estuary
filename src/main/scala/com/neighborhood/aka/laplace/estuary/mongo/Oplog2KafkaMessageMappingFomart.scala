@@ -8,8 +8,7 @@ import com.neighborhood.aka.laplace.estuary.core.trans.MappingFormat
 /**
   * Created by john_liu on 2018/5/7.
   */
-trait Oplog2KafkaMessageMappingFomart
-//  extends MappingFormat[, Array[KafkaMessage]] {
+trait Oplog2KafkaMessageMappingFomart extends MappingFormat[oplog,KafkaMessage] {
 //  self: ActorLogging =>
 //
 //}

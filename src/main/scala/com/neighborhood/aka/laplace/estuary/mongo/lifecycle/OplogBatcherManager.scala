@@ -16,7 +16,8 @@ import com.neighborhood.aka.laplace.estuary.mongo.task.Mongo2KafkaTaskInfoManage
   * Created by john_liu on 2018/5/2.
   */
 class OplogBatcherManager(
-                           mongo2KafkaTaskInfoManager: Mongo2KafkaTaskInfoManager
+                           val mongo2KafkaTaskInfoManager: Mongo2KafkaTaskInfoManager,
+                           val sinker: ActorRef
                          )
   extends SourceDataBatcher with Actor with ActorLogging {
 
@@ -47,7 +48,7 @@ class OplogBatcherManager(
         .map {
           index =>
             context
-              .actorOf(OplogBatcher.prop(mongo2KafkaTaskInfoManager, index), s"batcher$index")
+              .actorOf(OplogBatcher.prop(mongo2KafkaTaskInfoManager, index,sinker), s"batcher$index")
               .path
               .toString
         }
