@@ -2,7 +2,7 @@ package com.neighborhood.aka.laplace.estuary.mysql.utils
 
 import java.util
 
-import akka.actor.ActorLogging
+import akka.actor.{Actor, ActorLogging}
 import com.alibaba.fastjson.JSONObject
 import com.alibaba.otter.canal.protocol.CanalEntry
 import com.alibaba.otter.canal.protocol.CanalEntry.Column
@@ -18,10 +18,14 @@ import scala.util.{Failure, Success, Try}
   * Created by john_liu on 2018/5/1.
   */
 trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[CanalEntry.Entry, Array[KafkaMessage]] {
-  self: ActorLogging =>
+  self: Actor with ActorLogging =>
 
-
+  val syncTaskId: String
+  val config = context.system.settings.config
   private val jsonFormat = new JsonFormat
+  lazy val appName = if (config.hasPath("app.name")) config.getString("app.name") else ""
+  lazy val appServerIp = if (config.hasPath("app.server.ip")) config.getString("app.server.ip") else ""
+  lazy val appServerPort = if (config.hasPath("app.server.port")) config.getInt("app.server.port") else -1
 
   override def transform(entry: CanalEntry.Entry): Array[KafkaMessage] = {
 
@@ -29,14 +33,17 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[CanalEntry.Entr
     val header = entry.getHeader
     val eventType = header.getEventType
     val tempJsonKey = BinlogKey.buildBinlogKey(header)
+    tempJsonKey.setAppName(appName)
+    tempJsonKey.setAppServerIp(appServerIp)
+    tempJsonKey.setAppServerPort(appServerPort)
     ???
   }
 
   /**
-    * @param tempJsonKey   BinlogJsonKey
-    * @param entry         entry
-    * @param before        开始时间
-    *                      将DDL类型的CanalEntry 转换成Json
+    * @param tempJsonKey BinlogJsonKey
+    * @param entry       entry
+    * @param before      开始时间
+    *                    将DDL类型的CanalEntry 转换成Json
     */
   def transferDDltoJson(tempJsonKey: BinlogKey, entry: CanalEntry.Entry, before: Long): KafkaMessage = {
     ???
