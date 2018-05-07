@@ -330,7 +330,7 @@ class BinlogEventBatcher(
     //让程序知道是DDL
     tempJsonKey.setDbName("DDL")
     log.info(s"batch ddl ${CanalEntryJsonHelper.entryToJson(entry)}")
-    val re = new KafkaMessage(tempJsonKey, CanalEntryJsonHelper.entryToJson(entry), logfileName, logfileOffset)
+    val re = new KafkaMessage(tempJsonKey, CanalEntryJsonHelper.entryToJson(entry))
     val theAfter = System.currentTimeMillis()
     tempJsonKey.setMsgSyncEndTime(theAfter)
     tempJsonKey.setMsgSyncUsedTime(theAfter - before)
