@@ -36,6 +36,8 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[CanalEntry.Entr
     tempJsonKey.setAppName(appName)
     tempJsonKey.setAppServerIp(appServerIp)
     tempJsonKey.setAppServerPort(appServerPort)
+    tempJsonKey.setSyncTaskId(syncTaskId)
+
     ???
   }
 
@@ -48,8 +50,8 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[CanalEntry.Entr
   def transferDDltoJson(tempJsonKey: BinlogKey, entry: CanalEntry.Entry, before: Long): KafkaMessage = {
     ???
     //让程序知道是DDL
-    tempJsonKey.setDbName("DDL")
-    log.info(s"batch ddl ${entryToJson(entry)}")
+    tempJsonKey.setDdl(true)
+    log.info(s"batch ddl ${entryToJson(entry)},id:$syncTaskId")
     val re = new KafkaMessage(tempJsonKey, entryToJson(entry))
     val theAfter = System.currentTimeMillis()
     tempJsonKey.setMsgSyncEndTime(theAfter)
@@ -72,12 +74,14 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[CanalEntry.Entr
           .map {
             index =>
               val rowData = rowChange.getRowDatas(index)
+
               val count = if (eventString.equals("DELETE")) rowData.getBeforeColumnsCount else rowData.getAfterColumnsCount
               val jsonKeyColumnBuilder: Column.Builder
               = CanalEntry.Column.newBuilder
               jsonKeyColumnBuilder.setSqlType(12) //string 类型.
               jsonKeyColumnBuilder.setName("syncJsonKey")
               val jsonKey = temp.clone().asInstanceOf[BinlogKey]
+
               //            todo
               //  jsonKey.syncTaskSequence = addAndGetSyncTaskSequence
               val kafkaMessage = new KafkaMessage
@@ -89,11 +93,14 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[CanalEntry.Entr
                 * 构造rowChange对应部分的json
                 */
               def rowChangeStr = {
+
                 if (eventString.equals("DELETE")) s"${STRING_CONTAINER}beforeColumns$STRING_CONTAINER$KEY_VALUE_SPLIT$START_ARRAY${
                   (0 until count)
                     .map {
                       columnIndex =>
-                        s"${getColumnToJSON(rowData.getBeforeColumns(columnIndex))}$ELEMENT_SPLIT"
+                        val column = rowData.getBeforeColumns(columnIndex)
+//                        if (column.getIsKey) temp.ke = primaryKey + column.getValue
+                        s"${getColumnToJSON(column)}$ELEMENT_SPLIT"
                     }
                     .mkString
                 }$END_ARRAY" else {
