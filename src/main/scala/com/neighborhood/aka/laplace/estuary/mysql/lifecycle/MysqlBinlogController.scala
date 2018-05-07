@@ -28,6 +28,7 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
   val mysql2KafkaTaskInfoManager = resourceManager
   //canal的mysqlConnection
   val mysqlConnection: MysqlConnection = resourceManager.mysqlConnection
+  val syncTaskId = taskInfoBean.syncTaskId
   implicit val scheduleTaskPool = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor())
 
   override var errorCountThreshold: Int = 3
@@ -48,13 +49,13 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
       controllerChangeStatus(Status.ONLINE)
       startAllWorkers
 
-      log.info("controller switched to online,start all workers")
+      log.info(s"controller switched to online,start all workers,id:$syncTaskId")
     }
     case "restart" => {
       context.become(online)
       controllerChangeStatus(Status.ONLINE)
       startAllWorkers
-      log.info("controller switched to online,restart all workers")
+      log.info(s"controller switched to online,restart all workers,id:$syncTaskId")
     }
     case ListenerMessage(msg) => {
       msg match {
@@ -79,7 +80,7 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
 
   def online: Receive = {
     case "start" => startAllWorkers
-    case "restart" => throw new RuntimeException("重启")
+    case "restart" => throw new RuntimeException(s"重启,id:$syncTaskId")
     case ListenerMessage(msg) => {
       msg match {
         //        case "restart" => {
@@ -94,14 +95,14 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
         //
         //        }
         case x => {
-          log.warning(s"syncController online unhandled message:$x")
+          log.warning(s"syncController online unhandled message:$x,id:$syncTaskId")
         }
       }
     }
     case SinkerMessage(msg) => {
       msg match {
         case "error" => {
-          throw new RuntimeException("sinker went wrong when sending data")
+          throw new RuntimeException(s"sinker went wrong when sending data,id:$syncTaskId")
         }
         case "flush" => {
           context
@@ -233,26 +234,26 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
   def initWorkers: Unit = {
 
     //初始化powerAdapter
-    log.info("initialize powerAdapter")
+    log.info(s"initialize powerAdapter,id:$syncTaskId")
     context.actorOf(Mysql2KafkaPowerAdapter.props(mysql2KafkaTaskInfoManager), "powerAdapter")
     //初始化HeartBeatsListener
-    log.info("initialize listener")
+    log.info(s"initialize listener,id:$syncTaskId")
     context.actorOf(MysqlConnectionListener.props(mysql2KafkaTaskInfoManager).withDispatcher("akka.pinned-dispatcher"), "heartBeatsListener")
     //初始化binlogPositionRecorder
     //    log.info("initialize Recorder")
     //    val recorder = context.actorOf(MysqlBinlogPositionRecorder.props(mysql2KafkaTaskInfoManager), "binlogPositionRecorder")
     //初始化binlogSinker
     //如果并行打开使用并行sinker
-    log.info("initialize sinker")
+    log.info(s"initialize sinker,id:$syncTaskId")
     val binlogSinker = if (resourceManager.taskInfo.isTransactional) {
-      log.info("initialize sinker with mode transactional ")
+      log.info(s"initialize sinker with mode transactional,id:$syncTaskId ")
       //使用transaction式
       context.actorOf(Props(classOf[BinlogTransactionBufferSinker], resourceManager), "binlogSinker")
     } else {
-      log.info("initialize sinker with mode concurrent ")
+      log.info(s"initialize sinker with mode concurrent,id:$syncTaskId ")
       context.actorOf(ConcurrentBinlogSinker.prop(resourceManager), "binlogSinker")
     }
-    log.info("initialize batcher")
+    log.info(s"initialize batcher,id:$syncTaskId")
 
     //    def initBatchersAndRouter:List[String] = {
     //      //batcher数量
@@ -281,7 +282,7 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
       .withRouter(new RoundRobinPool(taskInfoBean.batcherNum).withDispatcher("akka.batcher-dispatcher").withSupervisorStrategy(OneForOneStrategy() {
         case _ => Escalate
       })), "binlogBatcher")
-    log.info("initialize fetcher")
+    log.info(s"initialize fetcher,id:$syncTaskId")
     //初始化binlogFetcher
     context.actorOf(MysqlBinlogFetcher.props(resourceManager, binlogEventBatcher, binlogDdlHandler).withDispatcher("akka.pinned-dispatcher"), "binlogFetcher")
 
@@ -328,7 +329,7 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
   override def preStart(): Unit
   = {
     controllerChangeStatus(Status.OFFLINE)
-    log.info("start init all workers")
+    log.info(s"start init all workers,id:$syncTaskId")
     initWorkers
     mysql2KafkaTaskInfoManager.powerAdapter = context.child("powerAdapter")
   }
@@ -337,7 +338,7 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
   override def postStop(): Unit
 
   = {
-    log.info("syncController processing postStop ")
+    log.info(s"syncController processing postStop ,id:$syncTaskId")
 
     //    mysqlConnection.disconnect()
   }
@@ -345,7 +346,7 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
   override def preRestart(reason: Throwable, message: Option[Any]): Unit
 
   = {
-    log.info("syncController processing preRestart")
+    log.info(s"syncController processing preRestart,id:$syncTaskId")
     //默认的话是会调用postStop，preRestart可以保存当前状态s
     controllerChangeStatus(Status.RESTARTING)
     context.become(receive)
@@ -355,8 +356,8 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
   override def postRestart(reason: Throwable): Unit
 
   = {
-    log.info("syncController processing postRestart")
-    log.info(s"syncController will restart in ${SettingConstant.TASK_RESTART_DELAY} seconds")
+    log.info(s"syncController processing postRestart,id:$syncTaskId")
+    log.info(s"syncController will restart in ${SettingConstant.TASK_RESTART_DELAY} seconds,id:$syncTaskId")
 
     context.system.scheduler.scheduleOnce(SettingConstant.TASK_RESTART_DELAY seconds, self, SyncControllerMessage("restart"))
     //可以恢复之前的状态，默认会调用

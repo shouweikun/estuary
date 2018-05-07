@@ -22,15 +22,9 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
 
   implicit val sinkTaskPool = new collection.parallel.ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(mysql2KafkaTaskInfoManager.taskInfo.batchThreshold.get().toInt))
   /**
-    * 拼接json用
+    * syncId
     */
-  private val START_JSON = "{"
-  private val END_JSON = "}"
-  private val START_ARRAY = "["
-  private val END_ARRAY = "]"
-  private val KEY_VALUE_SPLIT = ":"
-  private val ELEMENT_SPLIT = ","
-  private val STRING_CONTAINER = "\""
+  val syncTaskId = mysql2KafkaTaskInfoManager.syncTaskId
   /**
     * kafkaSinker
     */
@@ -111,12 +105,12 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
       msg match {
         case "start" => {
           //online模式
-          log.info("sinker swtich to online")
+          log.info(s"sinker swtich to online,id:$syncTaskId")
           context.become(online)
           sinkerChangeStatus(Status.ONLINE)
         }
         case x => {
-          log.warning(s"sinker offline unhandled message:$x")
+          log.warning(s"sinker offline unhandled message:$x,id:$syncTaskId")
         }
       }
     }
@@ -149,7 +143,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
                 savedJournalName = journalName
                 savedOffset = offset
               }
-              case x => log.warning(s"sinker unhandled message:$x")
+              case x => log.warning(s"sinker unhandled message:$x,id:$syncTaskId")
             }
         }
 
@@ -161,7 +155,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
       if (isCounting) mysql2KafkaTaskInfoManager.sinkCount.addAndGet(count)
       if (isCosting) mysql2KafkaTaskInfoManager.powerAdapter match {
         case Some(x) => x ! SinkerMessage(s"${after - before}")
-        case _ => log.warning("powerAdapter not exist")
+        case _ => log.warning(s"powerAdapter not exist,id:$syncTaskId")
       }
       //保存这次任务的binlog
       //判断的原因是如果本次写入没有事务offset就不记录
@@ -169,7 +163,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
         this.lastSavedJournalName = savedJournalName
         this.lastSavedOffset = savedOffset
         // log.info(s"JournalName update to $savedJournalName,offset update to $savedOffset")
-        if (isProfiling) mysql2KafkaTaskInfoManager.sinkerLogPosition.set(s"latest binlog:{$savedJournalName:$savedOffset},save point:{$schedulingSavedJournalName:$schedulingSavedOffset},lastSavedPoint:{$scheduledSavedJournalName:$scheduledSavedOffset}")
+        if (isProfiling) mysql2KafkaTaskInfoManager.sinkerLogPosition.set(s"latest binlog:{$savedJournalName:$savedOffset},save point:{$schedulingSavedJournalName:$schedulingSavedOffset},lastSavedPoint:{$scheduledSavedJournalName:$scheduledSavedOffset},id:$syncTaskId")
       }
 
 
@@ -179,7 +173,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
       //如果JournalName
       if (!StringUtils.isEmpty(schedulingSavedJournalName)) {
         logPositionHandler.persistLogPosition(destination, schedulingSavedJournalName, schedulingSavedOffset)
-        log.info(s"save logPosition $schedulingSavedJournalName:$schedulingSavedOffset")
+        log.info(s"save logPosition $schedulingSavedJournalName:$schedulingSavedOffset,id:$syncTaskId")
       }
       scheduledSavedJournalName = schedulingSavedJournalName
       scheduledSavedOffset = schedulingSavedOffset
@@ -189,15 +183,15 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
     case SyncControllerMessage("checkSend") => {
       context.parent ! SinkerMessage("flushDdl")
       val timeInterval = (System.currentTimeMillis() - lastSinkTimestamp)
-      log.info(s"sinker checkSend timeInterval:$timeInterval")
+      log.info(s"sinker checkSend timeInterval:$timeInterval,id:$syncTaskId")
       if (timeInterval > (1000 * 20)) {
         context.parent ! SinkerMessage("flush")
-        log.info(s"sinker checkSend trigger to flush")
+        log.info(s"sinker checkSend trigger to flush,id:$syncTaskId")
       }
 
     }
     case x => {
-      log.warning(s"sinker online unhandled message $x")
+      log.warning(s"sinker online unhandled message $x,id:$syncTaskId")
 
     }
   }
@@ -227,11 +221,11 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
 
           if (isAbnormal.compareAndSet(false, true)) {
             if (!StringUtils.isEmpty(thisJournalName)) {
-              log.error("Error when send :" + key + ", metadata:" + metadata + exception + "lastSavedPoint" + s" thisJournalName = $thisJournalName" + s" thisOffset = $thisOffset")
+              log.error("Error when send :" + key + ", metadata:" + metadata + exception + "lastSavedPoint" + s" thisJournalName = $thisJournalName" + s" thisOffset = $thisOffset,id:$syncTaskId")
               logPositionHandler.persistLogPosition(destination, thisJournalName, thisOffset)
             }
             receiver ! SinkerMessage("error")
-            log.info("send to recorder lastSavedPoint" + s"thisJournalName = $thisJournalName" + s"thisOffset = $thisOffset")
+            log.info("send to recorder lastSavedPoint" + s"thisJournalName = $thisJournalName" + s"thisOffset = $thisOffset,id:$syncTaskId")
             //todo 做的不好 ，应该修改一下messge模型
 
           }
@@ -315,7 +309,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
 
       case e: ZkTimeoutException => {
         sinkerChangeStatus(Status.ERROR)
-        log.error("can not connect to zookeeper server")
+        log.error(s"can not connect to zookeeper server,id:$syncTaskId")
         Escalate
       }
       case e: Exception => {
