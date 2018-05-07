@@ -31,6 +31,11 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
     * binlogParser 解析binlog
     */
   lazy val binlogParser: MysqlBinlogParser = mysql2KafkaTaskInfoManager.binlogParser
+
+  /**
+    * 任务id
+    */
+  val syncTaskId = mysql2KafkaTaskInfoManager.syncTaskId
   /**
     * 重试机制
     */
@@ -177,8 +182,6 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
     * 从连接中取数据
     */
   def fetchOne(before: Long = System.currentTimeMillis()) = {
-
-
     lazy val entry = mysqlConnection.get.fetchUntilDefined(filterEntry(_))(binlogParser)
     if (entry.get.getHeader.getEventType == CanalEntry.EventType.ALTER) {
       log.info(s"fetch ddl:${CanalEntryJsonHelper.entryToJson(entry.get)}");
@@ -209,14 +212,14 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
     * 错误处理
     */
   override def processError(e: Throwable, message: WorkerMessage): Unit = {
-    log.warning(s"fetcher throws exception $e")
+    log.warning(s"fetcher throws exception $e,cause:${e.getCause},id:$syncTaskId")
     errorCount += 1
     if (isCrashed) {
       fetcherChangeStatus(Status.ERROR)
       errorCount = 0
       println(message.msg)
       e.printStackTrace()
-      throw new Exception("fetching data failure for 3 times")
+      throw new Exception(s"fetching data failure for 3 times,id:$syncTaskId")
     } else {
       self ! message
     }
@@ -225,11 +228,11 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
   /**
     * ********************* 状态变化 *******************
     */
-  private def changeFunc(status: Status):Unit = TaskManager.changeFunc(status, mysql2KafkaTaskInfoManager)
+  private def changeFunc(status: Status): Unit = TaskManager.changeFunc(status, mysql2KafkaTaskInfoManager)
 
-  private def onChangeFunc:Unit = TaskManager.onChangeStatus(mysql2KafkaTaskInfoManager)
+  private def onChangeFunc: Unit = TaskManager.onChangeStatus(mysql2KafkaTaskInfoManager)
 
-  private def fetcherChangeStatus(status: Status):Unit = TaskManager.changeStatus(status, changeFunc, onChangeFunc)
+  private def fetcherChangeStatus(status: Status): Unit = TaskManager.changeStatus(status, changeFunc, onChangeFunc)
 
   /**
     * ********************* Actor生命周期 *******************

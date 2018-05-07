@@ -11,4 +11,5 @@ import com.neighborhood.aka.laplace.estuary.core.trans.MappingFormat
 trait Oplog2KafkaMessageMappingFomart extends MappingFormat[oplog,KafkaMessage] {
 //  self: ActorLogging =>
 //
-//}
+//
+// }

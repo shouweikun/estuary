@@ -187,9 +187,11 @@ class MysqlConnection(
 
     } catch {
       case e: CanalParseException => {
+        e.getCause match {
+          case IllegalArgumentException => throw new CanalParseException("fuck IllegalArgumentException when parse,id:", e.getCause)
+          case _ => logger.warn(s"$e,cause:${e.getCause}"); None
+        }
 
-        logger.warn(s"$e,cause:${e.getCause}")
-        None
       }
     }
     if (filterEntry(entry)) entry else if
@@ -309,7 +311,7 @@ object MysqlConnection {
     updateSettings(mysqlConnection)
     sendBinlogDump(binlogFileName, binlogPosition)(mysqlConnection)
     val connector = mysqlConnection.connector
-    if(!connector.isConnected)connector.connect()
+    if (!connector.isConnected) connector.connect()
     mysqlConnection.fetcher4Seek = {
       lazy val fetcher = new DirectLogFetcher()
       fetcher.start(connector.getChannel)
