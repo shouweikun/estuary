@@ -112,6 +112,9 @@ class Mysql2KafkaPowerAdapter(
     log.debug(s"delayDuration:$delayDuration,id:$syncTaskId")
 
     val finalDelayDuration: Long = ((fetchCount - sinkCount) / batchThreshold, fetchCost, batchCost, sinkCost) match {
+      case (_, x, _, _) if (x > 2000) => math.max(1000000, delayDuration) //1s 休眠
+      case (_, x, _, _) if (x > 1500) => math.max(700000, delayDuration) //700ms 休眠
+      case (_, x, _, _) if (x > 1000) => math.max(500000, delayDuration) ////500ms 休眠
       case (_, x, _, _) if (x > 400) => math.max(150000, delayDuration) ////150ms 休眠
       case (w, _, _, _) if (w < 1 * batcherNum) => 0 //0s 快速拉取数据
       case (_, x, y, z) if (x > 150 || y > 10000 || z > 800) => math.max(100000, delayDuration) //100ms 防止数据太大
