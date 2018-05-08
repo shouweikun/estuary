@@ -1,12 +1,15 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder
 
-import akka.actor.{Actor, ActorLogging, ActorRef}
+import akka.actor.SupervisorStrategy.Escalate
+import akka.actor.{Actor, ActorLogging, ActorRef, AllForOneStrategy}
 import akka.routing.ConsistentHashingRouter.{ConsistentHashMapping, ConsistentHashable}
 import com.alibaba.otter.canal.parse.inbound.mysql.dbsync.TableMetaCache
 import com.alibaba.otter.canal.protocol.CanalEntry
 import com.alibaba.otter.canal.protocol.CanalEntry.{RowChange, RowData}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.{SourceDataBatcher, SyncControllerMessage}
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status.Status
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.{SourceDataBatcher, Status, SyncControllerMessage}
+import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder.MysqlBinlogInOrderBatcherManager.IdClassifier
 import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlConnection
 import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManager
@@ -24,8 +27,12 @@ class MysqlBinlogInOrderBatcherManager(
   val syncTaskId = mysql2KafkaTaskInfoManager.syncTaskId
   //  val mysqlMetaConnection = mysql2KafkaTaskInfoManager.mysqlConnection.fork
   //  var tableMetaCache = buildTableMeta
+  /**
+    * 处理ddl语句
+    */
   lazy val ddlHandler = context.child("ddlHandler")
   lazy val router = context.child("router")
+
 
   override def receive: Receive = {
     case SyncControllerMessage(msg) => {
@@ -56,6 +63,11 @@ class MysqlBinlogInOrderBatcherManager(
 
 
     }
+    case SyncControllerMessage("check") => ddlHandler.fold(log.error(s"ddlHandler cannot be found,id:$syncTaskId"))(ref => ref ! "check")
+  }
+
+  def initBatchers = {
+
   }
 
   @deprecated
@@ -65,6 +77,49 @@ class MysqlBinlogInOrderBatcherManager(
     val tableMetaCache = new TableMetaCache(mysqlMetaConnection.toCanalMysqlConnection)
     canalMysqlConnection.disconnect()
     tableMetaCache
+  }
+
+  /**
+    * ********************* 状态变化 *******************
+    */
+  private def changeFunc(status: Status) = TaskManager.changeFunc(status, mysql2KafkaTaskInfoManager)
+
+  private def onChangeFunc = TaskManager.onChangeStatus(mysql2KafkaTaskInfoManager)
+
+  private def batcherChangeStatus(status: Status) = TaskManager.changeStatus(status, changeFunc, onChangeFunc)
+
+  /**
+    * ********************* Actor生命周期 *******************
+    */
+  override def preStart(): Unit = {
+    //状态置为offline
+    batcherChangeStatus(Status.OFFLINE)
+    initBatchers
+    log.info(s"switch batcher to offline,id:$syncTaskId")
+  }
+
+  override def postStop(): Unit = {
+
+  }
+
+  override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
+    log.info(s"batcher process preRestart,id:$syncTaskId")
+    batcherChangeStatus(Status.RESTARTING)
+    super.preRestart(reason, message)
+  }
+
+  override def postRestart(reason: Throwable): Unit = {
+    log.info(s"batcher process postRestart,id:$syncTaskId")
+    super.postRestart(reason)
+  }
+
+  override def supervisorStrategy = {
+    AllForOneStrategy() {
+      case _ => {
+        batcherChangeStatus(Status.ERROR)
+        Escalate
+      }
+    }
   }
 
   /**
