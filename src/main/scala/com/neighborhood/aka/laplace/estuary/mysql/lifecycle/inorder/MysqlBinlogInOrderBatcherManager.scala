@@ -54,7 +54,7 @@ class MysqlBinlogInOrderBatcherManager(
       }
 
       val rowChange = Try(CanalEntry.RowChange.parseFrom(entry.getStoreValue)).toOption.getOrElse(parseError)
-      if (rowChange.getIsDdl) ddlHandler.fold(log.error(s"ddlHandler cannot be found,id:$syncTaskId"))(ref => ref ! entry)
+      if (rowChange.getIsDdl) ddlHandler.fold(log.error(s"ddlHandler cannot be found,id:$syncTaskId"))(ref => ref ! IdClassifier(entry, null))//只会用到entry
       else {
         rowChange.getRowDatasList.asScala.foreach {
           data => router.fold(log.error(s"batcher router cannot be found,id:$syncTaskId"))(ref => ref ! IdClassifier(entry, data))
@@ -139,7 +139,7 @@ class MysqlBinlogInOrderBatcherManager(
 
 object MysqlBinlogInOrderBatcherManager {
 
-  sealed case class IdClassifier(entry: CanalEntry.Entry, rowData: RowData) extends ConsistentHashable {
+  case class IdClassifier(entry: CanalEntry.Entry, rowData: RowData) extends ConsistentHashable {
 
     import scala.collection.JavaConverters._
 

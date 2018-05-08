@@ -109,6 +109,10 @@ class Mysql2KafkaTaskInfoManager(taskInfoBean: Mysql2KafkaTaskInfoBean) extends 
     */
   override lazy val fetchDelay: AtomicLong = taskInfo.fetchDelay
   /**
+    * 计数器
+    */
+  var processingCounter: Option[ActorRef] = None
+  /**
     * 功率控制器
     */
   var powerAdapter: Option[ActorRef] = None

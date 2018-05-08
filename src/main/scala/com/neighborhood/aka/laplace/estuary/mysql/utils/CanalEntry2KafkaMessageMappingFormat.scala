@@ -5,19 +5,20 @@ import java.util
 import akka.actor.{Actor, ActorLogging}
 import com.alibaba.fastjson.JSONObject
 import com.alibaba.otter.canal.protocol.CanalEntry
-import com.alibaba.otter.canal.protocol.CanalEntry.Column
+import com.alibaba.otter.canal.protocol.CanalEntry.{Column, RowData}
 import com.google.protobuf.InvalidProtocolBufferException
 import com.googlecode.protobuf.format.JsonFormat
 import com.neighborhood.aka.laplace.estuary.bean.key.BinlogKey
 import com.neighborhood.aka.laplace.estuary.bean.support.KafkaMessage
 import com.neighborhood.aka.laplace.estuary.core.trans.MappingFormat
+import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder.MysqlBinlogInOrderBatcherManager.IdClassifier
 
 import scala.util.{Failure, Success, Try}
 
 /**
   * Created by john_liu on 2018/5/1.
   */
-trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[CanalEntry.Entry, Array[KafkaMessage]] {
+trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[IdClassifier, KafkaMessage] {
   self: Actor with ActorLogging =>
 
   val syncTaskId: String
@@ -27,10 +28,12 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[CanalEntry.Entr
   lazy val appServerIp = if (config.hasPath("app.server.ip")) config.getString("app.server.ip") else ""
   lazy val appServerPort = if (config.hasPath("app.server.port")) config.getInt("app.server.port") else -1
 
-  override def transform(entry: CanalEntry.Entry): Array[KafkaMessage] = {
+  override def transform(idClassifier: IdClassifier): KafkaMessage = {
     lazy val before = System.currentTimeMillis()
-    val header = entry.getHeader
-    val eventType = header.getEventType
+    lazy val entry = idClassifier.entry
+    lazy val rowData = idClassifier.rowData
+    lazy val header = entry.getHeader
+    lazy val eventType = header.getEventType
     val tempJsonKey = BinlogKey.buildBinlogKey(header)
     tempJsonKey.setAppName(appName)
     tempJsonKey.setAppServerIp(appServerIp)
@@ -38,13 +41,12 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[CanalEntry.Entr
     tempJsonKey.setSyncTaskId(syncTaskId)
     tempJsonKey.setMsgSyncStartTime(before)
     eventType match {
-      case CanalEntry.EventType.DELETE => tranformDMLtoJson(entry, tempJsonKey, "DELETE")
-      case CanalEntry.EventType.INSERT => tranformDMLtoJson(entry, tempJsonKey, "INSERT")
-      case CanalEntry.EventType.UPDATE => tranformDMLtoJson(entry, tempJsonKey, "UPDATE")
+      case CanalEntry.EventType.DELETE => tranformDMLtoJson(header, rowData, tempJsonKey, "DELETE")
+      case CanalEntry.EventType.INSERT => tranformDMLtoJson(header, rowData, tempJsonKey, "INSERT")
+      case CanalEntry.EventType.UPDATE => tranformDMLtoJson(header, rowData, tempJsonKey, "UPDATE")
       //DDL操作直接将entry变为json,目前只处理Alter
-      case CanalEntry.EventType.ALTER => {
-        Array(transferDDltoJson(tempJsonKey, entry))
-      }
+      case CanalEntry.EventType.ALTER => transferDDltoJson(tempJsonKey, entry)
+
     }
   }
 
@@ -54,7 +56,6 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[CanalEntry.Entr
     *                    将DDL类型的CanalEntry 转换成Json
     */
   def transferDDltoJson(tempJsonKey: BinlogKey, entry: CanalEntry.Entry): KafkaMessage = {
-    ???
     //让程序知道是DDL
     tempJsonKey.setDdl(true)
     log.info(s"batch ddl ${entryToJson(entry)},id:$syncTaskId")
@@ -66,82 +67,70 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[CanalEntry.Entr
   }
 
   /**
-    * @param entry       entry
+    *
+    * @param header
+    * @param rowData
     * @param temp        binlogKey
     * @param eventString 事件类型
     *                    将DML类型的CanalEntry 转换成Json
+    * @return
     */
-  def tranformDMLtoJson(entry: CanalEntry.Entry, temp: BinlogKey, eventString: String): Array[KafkaMessage] = {
+  def tranformDMLtoJson(header: CanalEntry.Header, rowData: RowData, temp: BinlogKey, eventString: String): KafkaMessage = {
 
-    val re = Try(CanalEntry.RowChange.parseFrom(entry.getStoreValue)) match {
-      case Success(rowChange) => {
-        val a = rowChange.getRowDatasCount
-        (0 until rowChange.getRowDatasCount)
+
+    val count = if (eventString.equals("DELETE")) rowData.getBeforeColumnsCount else rowData.getAfterColumnsCount
+    val jsonKeyColumnBuilder: Column.Builder
+    = CanalEntry.Column.newBuilder
+    jsonKeyColumnBuilder.setSqlType(12) //string 类型.
+    jsonKeyColumnBuilder.setName("syncJsonKey")
+    val jsonKey = temp.clone().asInstanceOf[BinlogKey]
+
+    //            todo
+    //  jsonKey.syncTaskSequence = addAndGetSyncTaskSequence
+    val kafkaMessage = new KafkaMessage
+    kafkaMessage.setBaseDataJsonKey(jsonKey)
+    jsonKeyColumnBuilder.setIndex(count)
+    jsonKeyColumnBuilder.setValue(JsonUtil.serialize(jsonKey))
+
+    /**
+      * 构造rowChange对应部分的json
+      * 同时将主键值保存下来
+      *
+      */
+    def rowChangeStr = {
+
+      if (eventString.equals("DELETE")) s"${STRING_CONTAINER}beforeColumns$STRING_CONTAINER$KEY_VALUE_SPLIT$START_ARRAY${
+        (0 until count)
           .map {
-            index =>
-              val rowData = rowChange.getRowDatas(index)
+            columnIndex =>
+              val column = rowData.getBeforeColumns(columnIndex)
+              //在这里保存下主键的值
+              if (column.getIsKey) temp.setPrimaryKeyValue(temp.getPrimaryKeyValue + "_" + column.getValue)
+              s"${getColumnToJSON(column)}$ELEMENT_SPLIT"
+          }
+          .mkString
+      }$END_ARRAY" else {
+        s"${STRING_CONTAINER}afterColumns$STRING_CONTAINER$KEY_VALUE_SPLIT$START_ARRAY${
+          (0 until count)
+            .map {
+              columnIndex =>
+                s"${getColumnToJSON(rowData.getAfterColumns(columnIndex))}$ELEMENT_SPLIT"
+            }
+            .mkString
+        }"
 
-              val count = if (eventString.equals("DELETE")) rowData.getBeforeColumnsCount else rowData.getAfterColumnsCount
-              val jsonKeyColumnBuilder: Column.Builder
-              = CanalEntry.Column.newBuilder
-              jsonKeyColumnBuilder.setSqlType(12) //string 类型.
-              jsonKeyColumnBuilder.setName("syncJsonKey")
-              val jsonKey = temp.clone().asInstanceOf[BinlogKey]
-
-              //            todo
-              //  jsonKey.syncTaskSequence = addAndGetSyncTaskSequence
-              val kafkaMessage = new KafkaMessage
-              kafkaMessage.setBaseDataJsonKey(jsonKey)
-              jsonKeyColumnBuilder.setIndex(count)
-              jsonKeyColumnBuilder.setValue(JsonUtil.serialize(jsonKey))
-
-              /**
-                * 构造rowChange对应部分的json
-                * 同时将主键值保存下来
-                *
-                */
-              def rowChangeStr = {
-
-                if (eventString.equals("DELETE")) s"${STRING_CONTAINER}beforeColumns$STRING_CONTAINER$KEY_VALUE_SPLIT$START_ARRAY${
-                  (0 until count)
-                    .map {
-                      columnIndex =>
-                        val column = rowData.getBeforeColumns(columnIndex)
-                        //在这里保存下主键的值
-                        if (column.getIsKey) temp.setPrimaryKeyValue(temp.getPrimaryKeyValue + "_" + column.getValue)
-                        s"${getColumnToJSON(column)}$ELEMENT_SPLIT"
-                    }
-                    .mkString
-                }$END_ARRAY" else {
-                  s"${STRING_CONTAINER}afterColumns$STRING_CONTAINER$KEY_VALUE_SPLIT$START_ARRAY${
-                    (0 until count)
-                      .map {
-                        columnIndex =>
-                          s"${getColumnToJSON(rowData.getAfterColumns(columnIndex))}$ELEMENT_SPLIT"
-                      }
-                      .mkString
-                  }"
-
-                } + s"${getColumnToJSON(jsonKeyColumnBuilder.build)}$END_ARRAY"
-              }
-
-              val finalDataString = s"${START_JSON}${STRING_CONTAINER}header${STRING_CONTAINER}${KEY_VALUE_SPLIT}${getEntryHeaderJson(entry.getHeader)}${ELEMENT_SPLIT}${STRING_CONTAINER}rowChange${STRING_CONTAINER}${KEY_VALUE_SPLIT}${START_JSON}${STRING_CONTAINER}rowDatas" +
-                s"${STRING_CONTAINER}${KEY_VALUE_SPLIT}$START_ARRAY${START_JSON}${rowChangeStr}${END_JSON}${END_ARRAY}${END_JSON}${END_JSON}"
-              kafkaMessage.setJsonValue(finalDataString)
-              kafkaMessage
-          }.toArray
-      }
-      case Failure(e) => {
-        log.error("Error when parse rowchange:" + entry, e)
-        throw new RuntimeException("Error when parse rowchange:" + entry, e)
-      }
+      } + s"${getColumnToJSON(jsonKeyColumnBuilder.build)}$END_ARRAY"
     }
+
+    val finalDataString = s"${START_JSON}${STRING_CONTAINER}header${STRING_CONTAINER}${KEY_VALUE_SPLIT}${getEntryHeaderJson(header)}${ELEMENT_SPLIT}${STRING_CONTAINER}rowChange${STRING_CONTAINER}${KEY_VALUE_SPLIT}${START_JSON}${STRING_CONTAINER}rowDatas" +
+      s"${STRING_CONTAINER}${KEY_VALUE_SPLIT}$START_ARRAY${START_JSON}${rowChangeStr}${END_JSON}${END_ARRAY}${END_JSON}${END_JSON}"
+    kafkaMessage.setJsonValue(finalDataString)
     val theAfter = System.currentTimeMillis()
     temp.setMsgSyncEndTime(theAfter)
     temp.setMsgSyncUsedTime(temp.getMsgSyncEndTime - temp.getSyncTaskStartTime)
-    //log.info(s"${temp.msgSyncStartTime},${temp.getMsgSyncEndTime-temp.getSyncTaskStartTime}")
-    re
+    kafkaMessage
   }
+
 
   /**
     * @param column CanalEntry.Column
@@ -229,7 +218,9 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[CanalEntry.Entr
     lazy val jsonKey = new BinlogKey
     lazy val time = System.currentTimeMillis()
     val jsonValue =
-      s"""{"header": {"version": 1,"logfileName": "mysql-bin.000000","logfileOffset": 4,"serverId": 0,"serverenCode": "UTF-8","executeTime": $time,"sourceType": "MYSQL","schemaName": "$dbName","tableName": "$tableName",	"eventLength": 651,"eventType": "INSERT"	},"rowChange": {"rowDatas": [{"afterColumns": [{"sqlType": -5,"isNull": false,"mysqlType": "bigint(20) unsigned","name": "id","isKey": true,"index": 0,	"updated": true,"value": "${time}"}]}]}}
+      s"""{"header": {"version": 1,"logfileName": "mysql-bin.000000","logfileOffset": 4,"serverId": 0,"serverenCode": "UTF-8","executeTime": $time,"sourceType": "MYSQL","schemaName": "$dbName","tableName": "$tableName",	"eventLength": 651,"eventType": "INSERT"	},"rowChange": {"rowDatas": [{"afterColumns": [{"sqlType": -5,"isNull": false,"mysqlType": "bigint(20) unsigned","name": "id","isKey": true,"index": 0,	"updated": true,"value": "${
+        time
+      }"}]}]}}
          |
        """.stripMargin
     jsonKey.setDbName(dbName)
