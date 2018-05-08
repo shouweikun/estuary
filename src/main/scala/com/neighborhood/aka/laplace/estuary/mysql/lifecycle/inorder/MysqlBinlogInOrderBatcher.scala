@@ -14,23 +14,27 @@ import org.springframework.util.StringUtils
   * Created by john_liu on 2018/5/8.
   */
 class MysqlBinlogInOrderBatcher(
-                                 mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
-                                 sinker: ActorRef,
-                                 isDdlHandler: Boolean = false
+                                 val mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
+                                 val sinker: ActorRef,
+                                 val num: Int = -1,
+                                 val isDdlHandler: Boolean = false
                                ) extends Actor with SourceDataBatcher with ActorLogging with CanalEntry2KafkaMessageMappingFormat {
 
 
   override val syncTaskId: String = mysql2KafkaTaskInfoManager.syncTaskId
   lazy val powerAdapter = mysql2KafkaTaskInfoManager.powerAdapter
   lazy val processingCounter = mysql2KafkaTaskInfoManager.processingCounter
+
   /**
     * 该mysql实例所有的db
     */
   lazy val mysqlDatabaseNameList = MysqlConnection.getSchemas(mysql2KafkaTaskInfoManager.mysqlConnection.fork)
+
   /**
     * 是否计数
     */
   val isCounting = mysql2KafkaTaskInfoManager.taskInfo.isCounting
+
   /**
     * 是否计时
     */
@@ -41,9 +45,12 @@ class MysqlBinlogInOrderBatcher(
   override def receive: Receive = {
 
     case x: IdClassifier => {
+//      implicit val num = this.num
       val kafkaMessage = transform(x)
       sinker ! kafkaMessage
-      log.debug(s"batch primaryKey:${x.consistentHashKey},id:$syncTaskId")
+      log.debug(s"batch primaryKey:${
+        x.consistentHashKey
+      },id:$syncTaskId")
 
       //性能分析
       if (isCosting) powerAdapter.fold(log.warning(s"cannot find processCounter,id:$syncTaskId"))(ref => ref ! BatcherMessage(kafkaMessage.getBaseDataJsonKey.msgSyncUsedTime))
@@ -80,13 +87,15 @@ class MysqlBinlogInOrderBatcher(
       case (_, true) => buildAndSendDummyKafkaMessage(mysqlDatabaseNameList.diff(ignoredDbNames))(sinker)
       case (_, false) => buildAndSendDummyKafkaMessage(mysqlDatabaseNameList)(sinker)
     }
-
+    //补充计数
+    if (isCounting) processingCounter.fold(log.warning(s"cannot find powerAdapter,id:$syncTaskId"))(ref => ref ! BatcherMessage(size))
   }
 
   /**
     * 错位次数阈值
     */
   override var errorCountThreshold: Int = _
+
   /**
     * 错位次数
     */

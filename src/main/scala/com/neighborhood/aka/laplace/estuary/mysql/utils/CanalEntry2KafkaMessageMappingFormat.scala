@@ -8,7 +8,7 @@ import com.alibaba.otter.canal.protocol.CanalEntry
 import com.alibaba.otter.canal.protocol.CanalEntry.{Column, RowData}
 import com.google.protobuf.InvalidProtocolBufferException
 import com.googlecode.protobuf.format.JsonFormat
-import com.neighborhood.aka.laplace.estuary.bean.key.BinlogKey
+import com.neighborhood.aka.laplace.estuary.bean.key.{BinlogKey, PartitionStrategy}
 import com.neighborhood.aka.laplace.estuary.bean.support.KafkaMessage
 import com.neighborhood.aka.laplace.estuary.core.trans.MappingFormat
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder.MysqlBinlogInOrderBatcherManager.IdClassifier
@@ -34,12 +34,15 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[IdClassifier, K
     lazy val rowData = idClassifier.rowData
     lazy val header = entry.getHeader
     lazy val eventType = header.getEventType
+    lazy val primaryKey = idClassifier.consistentHashKey.toString
     val tempJsonKey = BinlogKey.buildBinlogKey(header)
     tempJsonKey.setAppName(appName)
     tempJsonKey.setAppServerIp(appServerIp)
     tempJsonKey.setAppServerPort(appServerPort)
     tempJsonKey.setSyncTaskId(syncTaskId)
     tempJsonKey.setMsgSyncStartTime(before)
+    tempJsonKey.setPrimaryKeyValue(primaryKey)
+    tempJsonKey.setPartitionStrategy(PartitionStrategy.PRIMARY_KEY)
     eventType match {
       case CanalEntry.EventType.DELETE => tranformDMLtoJson(header, rowData, tempJsonKey, "DELETE")
       case CanalEntry.EventType.INSERT => tranformDMLtoJson(header, rowData, tempJsonKey, "INSERT")
@@ -105,7 +108,6 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[IdClassifier, K
             columnIndex =>
               val column = rowData.getBeforeColumns(columnIndex)
               //在这里保存下主键的值
-              if (column.getIsKey) temp.setPrimaryKeyValue(temp.getPrimaryKeyValue + "_" + column.getValue)
               s"${getColumnToJSON(column)}$ELEMENT_SPLIT"
           }
           .mkString
