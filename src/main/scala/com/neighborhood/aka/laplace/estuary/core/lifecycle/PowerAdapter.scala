@@ -30,6 +30,10 @@ trait PowerAdapter {
   var sinkTimestamp: Long = 0
   var sinkCountSum: Long = 0
 
+  var fetchActualTimeCost: Long = 0
+  var batchActualTimeCost: Long = 0
+  var sinkActualTimeCost: Long = 0l
+
   /**
     * 通过时间戳方式更新fetch time
     *
@@ -109,12 +113,27 @@ trait PowerAdapter {
 
   /**
     *
-    * @param sum          计算的耗时 ms
+    * @param costSum      计算的耗时 ms
     * @param timeInterVal 时间间隔 s
     * @return
     */
-  protected def computeCostPercentage(sum: Long, timeInterVal: Long) = sum / timeInterVal / 10
-  protected def
+  protected def computeCostPercentage(costSum: Long, timeInterVal: Long) = costSum / timeInterVal / 10
+
+  /**
+    *
+    * @param countSum     总数
+    * @param timeInterVal 时间间隔 s
+    * @return
+    */
+  protected def computeQuantityPerSecond(countSum: Long, timeInterVal: Long) = countSum / timeInterVal
+
+  protected def computeActualCost = {
+    //实时耗时
+    fetchActualTimeCost = computeCostByTimeCost(fetchTimeArray)
+    batchActualTimeCost = computeCostByTimeCost(batchTimeArray)
+    sinkActualTimeCost = computeCostByTimeCost(sinkTimeArray)
+  }
+
   /**
     * 计算cost
     */
