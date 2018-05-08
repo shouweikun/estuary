@@ -90,7 +90,7 @@ class Mysql2KafkaTaskInfoManager(taskInfoBean: Mysql2KafkaTaskInfoBean) extends 
   /**
     * kafka客户端,专门处理DDL
     */
-  val kafkaDdlSink = kafkaSink.fork
+  lazy val kafkaDdlSink = kafkaSink.fork
   /**
     * batcher数量
     */
@@ -98,7 +98,7 @@ class Mysql2KafkaTaskInfoManager(taskInfoBean: Mysql2KafkaTaskInfoBean) extends 
   /**
     * sinker数量，在InOrder模式下需要使用
     */
-  lazy val sinkerNum = batcherNum
+  lazy val sinkerNum = batcherNum+1
   /**
     * MysqlBinlogParser
     */

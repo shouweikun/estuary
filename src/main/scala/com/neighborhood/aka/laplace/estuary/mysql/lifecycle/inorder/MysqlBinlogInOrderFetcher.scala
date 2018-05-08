@@ -193,9 +193,9 @@ class MysqlBinlogInOrderFetcher(
     */
   def fetchOne(before: Long = System.currentTimeMillis()) = {
     lazy val entry = mysqlConnection.get.fetchUntilDefined(filterEntry(_))(binlogParser)
-     binlogEventBatcher ! entry.get
+    binlogEventBatcher ! entry.get
     lazy val cost = System.currentTimeMillis() - before
-    if (isCounting) processingCounter.fold(log.warning(s"processingCounter not exist,id:$syncTaskId"))(ref=>ref ! FetcherMessage(1))
+    if (isCounting) processingCounter.fold(log.warning(s"processingCounter not exist,id:$syncTaskId"))(ref => ref ! FetcherMessage(1))
     if (isCosting) mysql2KafkaTaskInfoManager.powerAdapter.fold(log.warning(s"powerAdapter not exist,id:$syncTaskId"))(x => x ! FetcherMessage(s"$cost"))
 
   }

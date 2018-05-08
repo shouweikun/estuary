@@ -1,6 +1,7 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder
 
 import akka.actor.{Actor, ActorLogging}
+import com.neighborhood.aka.laplace.estuary.bean.support.KafkaMessage
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{SourceDataSinker, SyncControllerMessage}
 import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManager
@@ -14,16 +15,17 @@ class MysqlBinlogInOrderSinker(
                               ) extends Actor with SourceDataSinker with ActorLogging {
 
   val syncTaskId = mysql2KafkaTaskInfoManager.syncTaskId
+  val kafkaSinkFunc = mysql2KafkaTaskInfoManager.kafkaSink.fork
+  val isSyncWrite = true
   lazy val powerAdapter = mysql2KafkaTaskInfoManager.powerAdapter
   lazy val processingCounter = mysql2KafkaTaskInfoManager.processingCounter
 
   override def receive: Receive = {
-    case SyncControllerMessage(msg) => {
-      msg match {
-        case "start" => {
-
-        }
-      }
+    case message:KafkaMessage => {
+      val tableName = message.getBaseDataJsonKey.tableName
+      val dbName = message.getBaseDataJsonKey.dbName
+      val topic = kafkaSinkFunc.findTopic("")
+      kafkaSinkFunc.sink()
     }
   }
 

@@ -61,6 +61,7 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[IdClassifier, K
   def transferDDltoJson(tempJsonKey: BinlogKey, entry: CanalEntry.Entry): KafkaMessage = {
     //让程序知道是DDL
     tempJsonKey.setDdl(true)
+    tempJsonKey.setSyncTaskSequence(0)
     log.info(s"batch ddl ${entryToJson(entry)},id:$syncTaskId")
     val re = new KafkaMessage(tempJsonKey, entryToJson(entry))
     val theAfter = System.currentTimeMillis()
