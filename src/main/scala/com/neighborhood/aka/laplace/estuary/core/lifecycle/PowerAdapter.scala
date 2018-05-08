@@ -48,7 +48,6 @@ trait PowerAdapter {
     */
   def updateFetchTimeByTimeCost(timeCost: Long) = {
     val nextFetchTimeWriteIndex = (fetchTimeWriteIndex + 1) % size
-    // 如果拿不到数据，默认在时间上随机增加3-5倍
     fetchTimeArray(nextFetchTimeWriteIndex) = timeCost
     fetchTimeWriteIndex = nextFetchTimeWriteIndex
   }
@@ -96,7 +95,6 @@ trait PowerAdapter {
     */
   def updateBatchTimeByTimeCost(timeCost: Long) = {
     val nextFetchTimeWriteIndex = (batchTimeWriteIndex + 1) % size
-    // 如果拿不到数据，默认在时间上随机增加3-5倍
     batchTimeArray(nextFetchTimeWriteIndex) = timeCost
     batchTimeWriteIndex = nextFetchTimeWriteIndex
   }
@@ -109,6 +107,14 @@ trait PowerAdapter {
     timeArray(index) - timeArray((index + 1) % size) / size
   }
 
+  /**
+    *
+    * @param sum          计算的耗时 ms
+    * @param timeInterVal 时间间隔 s
+    * @return
+    */
+  protected def computeCostPercentage(sum: Long, timeInterVal: Long) = sum / timeInterVal / 10
+  protected def
   /**
     * 计算cost
     */

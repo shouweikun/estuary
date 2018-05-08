@@ -11,6 +11,7 @@ class MysqlInOrderProcessingCounter(
                                      override val taskManager: TaskManager
                                    ) extends ProcessingCounter with Actor with ActorLogging {
   val syncTaskId = taskManager.syncTaskId
+
   override def receive: Receive = {
     case FetcherMessage(x: Long) => addFetchCount(x)
     case FetcherMessage(x: Int) => addFetchCount(x)
@@ -20,7 +21,7 @@ class MysqlInOrderProcessingCounter(
     case SinkerMessage(x: Int) => addSinkCount(x)
     case "count" => {
       updateRecord
-      log.debug(s"set fetch count $fetchCount,batch count $batchCount,sink count $sinkCount")
+      log.debug(s"set fetch count $fetchCount,batch count $batchCount,sink count $sinkCount,id:$syncTaskId")
     }
   }
 

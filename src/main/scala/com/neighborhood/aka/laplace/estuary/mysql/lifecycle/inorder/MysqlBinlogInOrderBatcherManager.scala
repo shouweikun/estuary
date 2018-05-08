@@ -54,7 +54,7 @@ class MysqlBinlogInOrderBatcherManager(
       }
 
       val rowChange = Try(CanalEntry.RowChange.parseFrom(entry.getStoreValue)).toOption.getOrElse(parseError)
-      if (rowChange.getIsDdl) ddlHandler.fold(log.error(s"ddlHandler cannot be found,id:$syncTaskId"))(ref => ref ! IdClassifier(entry, null))//只会用到entry
+      if (rowChange.getIsDdl) ddlHandler.fold(log.error(s"ddlHandler cannot be found,id:$syncTaskId"))(ref => ref ! IdClassifier(entry, null)) //只会用到entry
       else {
         rowChange.getRowDatasList.asScala.foreach {
           data => router.fold(log.error(s"batcher router cannot be found,id:$syncTaskId"))(ref => ref ! IdClassifier(entry, data))
@@ -144,9 +144,9 @@ object MysqlBinlogInOrderBatcherManager {
     import scala.collection.JavaConverters._
 
     override def consistentHashKey: Any = {
-
-      val key = if (entry.getHeader.getEventType.equals(CanalEntry.EventType.DELETE)) rowData.getBeforeColumnsList.asScala.filter(_.getIsKey).mkString("_") else rowData.getAfterColumnsList.asScala.filter(_.getIsKey).mkString("_")
-      key
+      lazy val prefix = s"${entry.getHeader.getSchemaName}-${entry.getHeader.getTableName}-"
+      lazy val key = if (entry.getHeader.getEventType.equals(CanalEntry.EventType.DELETE)) rowData.getBeforeColumnsList.asScala.filter(_.getIsKey).mkString("_") else rowData.getAfterColumnsList.asScala.filter(_.getIsKey).mkString("_")
+      prefix + key
     }
   }
 
