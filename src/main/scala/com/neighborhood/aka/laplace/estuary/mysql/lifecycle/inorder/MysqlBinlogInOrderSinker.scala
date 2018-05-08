@@ -19,7 +19,11 @@ class MysqlBinlogInOrderSinker(
 
   override def receive: Receive = {
     case SyncControllerMessage(msg) => {
+      msg match {
+        case "start" => {
 
+        }
+      }
     }
   }
 

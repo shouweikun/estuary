@@ -12,6 +12,7 @@ import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{SourceDataBatcher, Status, SyncControllerMessage}
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mysql.SettingConstant
+import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.BinlogPositionInfo
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder.MysqlBinlogInOrderBatcherManager.IdClassifier
 import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlConnection
 import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManager
@@ -48,6 +49,7 @@ class MysqlBinlogInOrderBatcherManager(
   }
 
   def online: Receive = {
+    case entry: CanalEntry.Entry if (entry.getEntryType.equals(CanalEntry.EntryType.TRANSACTIONEND)) => BinlogPositionInfo(entry.getHeader.getLogfileName, entry.getHeader.getLogfileOffset)
     case entry: CanalEntry.Entry => {
 
       import scala.collection.JavaConverters._
