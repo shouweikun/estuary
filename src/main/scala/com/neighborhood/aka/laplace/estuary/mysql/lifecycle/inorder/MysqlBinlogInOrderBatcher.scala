@@ -1,6 +1,6 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder
 
-import akka.actor.{Actor, ActorLogging, ActorRef}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import com.alibaba.otter.canal.protocol.CanalEntry
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, SourceDataBatcher}
@@ -45,7 +45,7 @@ class MysqlBinlogInOrderBatcher(
   override def receive: Receive = {
 
     case x: IdClassifier => {
-//      implicit val num = this.num
+      //      implicit val num = this.num
       val kafkaMessage = transform(x)
       sinker ! kafkaMessage
       log.debug(s"batch primaryKey:${
@@ -105,4 +105,13 @@ class MysqlBinlogInOrderBatcher(
     * 错误处理
     */
   override def processError(e: Throwable, message: lifecycle.WorkerMessage): Unit = ???
+}
+
+object MysqlBinlogInOrderBatcher {
+  def props(
+             mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
+             sinker: ActorRef,
+             num: Int = -1,
+             isDdlHandler: Boolean = false
+           ): Props = Props(new MysqlBinlogInOrderBatcher(mysql2KafkaTaskInfoManager, sinker, num, isDdlHandler))
 }

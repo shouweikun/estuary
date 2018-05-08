@@ -1,4 +1,4 @@
-package com.neighborhood.aka.laplace.estuary.mysql.lifecycle
+package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.concurrent
 
 import akka.actor.SupervisorStrategy.Escalate
 import akka.actor.{Actor, OneForOneStrategy, Props}

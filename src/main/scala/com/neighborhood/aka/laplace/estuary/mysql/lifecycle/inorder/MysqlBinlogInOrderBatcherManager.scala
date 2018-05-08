@@ -2,14 +2,16 @@ package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder
 
 import akka.actor.SupervisorStrategy.Escalate
 import akka.actor.{Actor, ActorLogging, ActorRef, AllForOneStrategy}
-import akka.routing.ConsistentHashingRouter.{ConsistentHashMapping, ConsistentHashable}
+import akka.routing.ConsistentHashingGroup
+import akka.routing.ConsistentHashingRouter.ConsistentHashable
 import com.alibaba.otter.canal.parse.inbound.mysql.dbsync.TableMetaCache
 import com.alibaba.otter.canal.protocol.CanalEntry
-import com.alibaba.otter.canal.protocol.CanalEntry.{RowChange, RowData}
+import com.alibaba.otter.canal.protocol.CanalEntry.RowData
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{SourceDataBatcher, Status, SyncControllerMessage}
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
+import com.neighborhood.aka.laplace.estuary.mysql.SettingConstant
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder.MysqlBinlogInOrderBatcherManager.IdClassifier
 import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlConnection
 import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManager
@@ -27,6 +29,7 @@ class MysqlBinlogInOrderBatcherManager(
   val syncTaskId = mysql2KafkaTaskInfoManager.syncTaskId
   //  val mysqlMetaConnection = mysql2KafkaTaskInfoManager.mysqlConnection.fork
   //  var tableMetaCache = buildTableMeta
+  val batcherNum = mysql2KafkaTaskInfoManager.batcherNum
   /**
     * 处理ddl语句
     */
@@ -67,7 +70,10 @@ class MysqlBinlogInOrderBatcherManager(
   }
 
   def initBatchers = {
-
+    context.actorOf(MysqlBinlogInOrderBatcher.props(mysql2KafkaTaskInfoManager, sinker, -1, true), "ddlHandler")
+    lazy val paths = (1 to batcherNum)
+      .map(index => context.actorOf(MysqlBinlogInOrderBatcher.props(mysql2KafkaTaskInfoManager, sinker, index), s"batcher$index").path.toString)
+    context.actorOf(new ConsistentHashingGroup(paths, virtualNodesFactor = SettingConstant.HASH_MAPPING_VIRTUAL_NODES_FACTOR).props(), "router")
   }
 
   @deprecated

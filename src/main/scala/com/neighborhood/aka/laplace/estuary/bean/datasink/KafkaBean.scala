@@ -3,7 +3,7 @@ package com.neighborhood.aka.laplace.estuary.bean.datasink
 import java.util
 
 import com.neighborhood.aka.laplace.estuary.bean.datasink.DataSinkType.DataSinkType
-import com.neighborhood.aka.laplace.estuary.bean.key.{JsonKeyPartitioner, JsonKeySerializer}
+import com.neighborhood.aka.laplace.estuary.bean.key.{JsonKeyPartitioner, JsonKeySerializer, MultipleJsonKeyPartitioner}
 import org.apache.kafka.common.serialization.StringSerializer
 
 /**
@@ -50,7 +50,7 @@ trait KafkaBean extends DataSinkBean {
   /**
     * key Serializer类
     */
-  var keySerializer: String = classOf[JsonKeySerializer].getName
+  var keySerializer: String = classOf[MultipleJsonKeyPartitioner].getName
   /**
     * value Serializer类
     */

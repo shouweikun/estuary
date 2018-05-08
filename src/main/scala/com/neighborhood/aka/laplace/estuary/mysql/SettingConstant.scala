@@ -14,6 +14,5 @@ object SettingConstant {
   val POWER_CONTROL_CONSTANT = 3
   val LISTEN_QUERY_TIMEOUT = 5
   val TASK_RESTART_DELAY = 30
-
-
+  val HASH_MAPPING_VIRTUAL_NODES_FACTOR = 5
 }
