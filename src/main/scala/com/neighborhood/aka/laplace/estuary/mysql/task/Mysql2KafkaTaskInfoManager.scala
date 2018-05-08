@@ -95,7 +95,10 @@ class Mysql2KafkaTaskInfoManager(taskInfoBean: Mysql2KafkaTaskInfoBean) extends 
     * batcher数量
     */
   override val batcherNum = taskInfo.batcherNum
-
+  /**
+    * sinker数量，在InOrder模式下需要使用
+    */
+  lazy val sinkerNum = batcherNum
   /**
     * MysqlBinlogParser
     */
@@ -217,7 +220,6 @@ object Mysql2KafkaTaskInfoManager {
     Mysql2KafkaTaskInfoManager.taskManagerMap.put(syncTaskId, manager)
     manager
   }
-
 
 
   def logCount(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager): Map[String, Long] = {

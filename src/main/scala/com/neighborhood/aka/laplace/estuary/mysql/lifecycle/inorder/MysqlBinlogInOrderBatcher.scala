@@ -47,6 +47,7 @@ class MysqlBinlogInOrderBatcher(
     case x: IdClassifier => {
       //      implicit val num = this.num
       val kafkaMessage = transform(x)
+      kafkaMessage.getBaseDataJsonKey.setSyncTaskSequence(num)
       sinker ! kafkaMessage
       log.debug(s"batch primaryKey:${
         x.consistentHashKey
