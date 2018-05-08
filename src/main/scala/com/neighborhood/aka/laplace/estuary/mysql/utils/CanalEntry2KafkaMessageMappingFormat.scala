@@ -28,8 +28,7 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[CanalEntry.Entr
   lazy val appServerPort = if (config.hasPath("app.server.port")) config.getInt("app.server.port") else -1
 
   override def transform(entry: CanalEntry.Entry): Array[KafkaMessage] = {
-
-    val entryType = entry.getEntryType
+    lazy val before = System.currentTimeMillis()
     val header = entry.getHeader
     val eventType = header.getEventType
     val tempJsonKey = BinlogKey.buildBinlogKey(header)
@@ -37,17 +36,24 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[CanalEntry.Entr
     tempJsonKey.setAppServerIp(appServerIp)
     tempJsonKey.setAppServerPort(appServerPort)
     tempJsonKey.setSyncTaskId(syncTaskId)
-
-    ???
+    tempJsonKey.setMsgSyncStartTime(before)
+    eventType match {
+      case CanalEntry.EventType.DELETE => tranformDMLtoJson(entry, tempJsonKey, "DELETE")
+      case CanalEntry.EventType.INSERT => tranformDMLtoJson(entry, tempJsonKey, "INSERT")
+      case CanalEntry.EventType.UPDATE => tranformDMLtoJson(entry, tempJsonKey, "UPDATE")
+      //DDL操作直接将entry变为json,目前只处理Alter
+      case CanalEntry.EventType.ALTER => {
+        Array(transferDDltoJson(tempJsonKey, entry))
+      }
+    }
   }
 
   /**
     * @param tempJsonKey BinlogJsonKey
     * @param entry       entry
-    * @param before      开始时间
     *                    将DDL类型的CanalEntry 转换成Json
     */
-  def transferDDltoJson(tempJsonKey: BinlogKey, entry: CanalEntry.Entry, before: Long): KafkaMessage = {
+  def transferDDltoJson(tempJsonKey: BinlogKey, entry: CanalEntry.Entry): KafkaMessage = {
     ???
     //让程序知道是DDL
     tempJsonKey.setDdl(true)
@@ -55,7 +61,7 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[CanalEntry.Entr
     val re = new KafkaMessage(tempJsonKey, entryToJson(entry))
     val theAfter = System.currentTimeMillis()
     tempJsonKey.setMsgSyncEndTime(theAfter)
-    tempJsonKey.setMsgSyncUsedTime(theAfter - before)
+    tempJsonKey.setMsgSyncUsedTime(theAfter - tempJsonKey.getMsgSyncStartTime)
     re
   }
 
@@ -91,6 +97,8 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[CanalEntry.Entr
 
               /**
                 * 构造rowChange对应部分的json
+                * 同时将主键值保存下来
+                *
                 */
               def rowChangeStr = {
 
@@ -99,7 +107,8 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[CanalEntry.Entr
                     .map {
                       columnIndex =>
                         val column = rowData.getBeforeColumns(columnIndex)
-//                        if (column.getIsKey) temp.ke = primaryKey + column.getValue
+                        //在这里保存下主键的值
+                        if (column.getIsKey) temp.setPrimaryKeyValue(temp.getPrimaryKeyValue + "_" + column.getValue)
                         s"${getColumnToJSON(column)}$ELEMENT_SPLIT"
                     }
                     .mkString
@@ -138,7 +147,9 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[CanalEntry.Entr
     * @param column CanalEntry.Column
     *               将column转化成Json
     */
-  protected def getColumnToJSON(column: CanalEntry.Column) = {
+  protected def getColumnToJSON(column: CanalEntry.Column): String
+
+  = {
     val columnMap = new util.HashMap[String, AnyRef]
     columnMap.put("index", column.getIndex.toString)
     columnMap.put("sqlType", column.getSqlType.toString)
@@ -158,7 +169,9 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[CanalEntry.Entr
     * @param header CanalEntryHeader
     *               将entryHeader转换成Json
     */
-  protected def getEntryHeaderJson(header: CanalEntry.Header): StringBuilder = {
+  protected def getEntryHeaderJson(header: CanalEntry.Header): StringBuilder
+
+  = {
     val sb = new StringBuilder(512)
     sb.append(START_JSON)
     addKeyValue(sb, "version", header.getVersion, false)
@@ -182,7 +195,9 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[CanalEntry.Entr
     * @param isEnd 是否是结尾
     *              增加key值
     */
-  protected def addKeyValue(sb: StringBuilder, key: String, value: Any, isEnd: Boolean) = {
+  protected def addKeyValue(sb: StringBuilder, key: String, value: Any, isEnd: Boolean)
+
+  = {
     sb.append(STRING_CONTAINER).append(key).append(STRING_CONTAINER).append(KEY_VALUE_SPLIT)
     if (value.isInstanceOf[String]) sb.append(STRING_CONTAINER).append(value.asInstanceOf[String].replaceAll("\"", "\\\\\"").replaceAll("[\r\n]+", "")).append(STRING_CONTAINER)
     else if (value.isInstanceOf[Enum[_]]) sb.append(STRING_CONTAINER).append(value).append(STRING_CONTAINER)

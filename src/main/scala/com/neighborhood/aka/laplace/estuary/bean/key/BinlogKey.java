@@ -27,6 +27,18 @@ public class BinlogKey extends BaseDataJsonKey {
      * 保存在zk中的偏移量, 会与本身数据的offset不一致, 比当前数据的offset靠前.
      */
     private long savedOffset;
+    /**
+     * 主键值
+     */
+    private String primaryKeyValue = "";
+
+    public String getPrimaryKeyValue() {
+        return primaryKeyValue;
+    }
+
+    public void setPrimaryKeyValue(String primaryKeyValue) {
+        this.primaryKeyValue = primaryKeyValue;
+    }
 
     public boolean isDdl() {
         return isDdl;
