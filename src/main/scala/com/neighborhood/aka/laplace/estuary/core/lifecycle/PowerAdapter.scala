@@ -98,8 +98,9 @@ trait PowerAdapter {
     * @param timeCost
     */
   def updateBatchTimeByTimeCost(timeCost: Long) = {
+    val theTimeCost = if (timeCost <= 0) 1 else timeCost
     val nextFetchTimeWriteIndex = (batchTimeWriteIndex + 1) % size
-    batchTimeArray(nextFetchTimeWriteIndex) = timeCost
+    batchTimeArray(nextFetchTimeWriteIndex) = theTimeCost
     batchTimeWriteIndex = nextFetchTimeWriteIndex
   }
 

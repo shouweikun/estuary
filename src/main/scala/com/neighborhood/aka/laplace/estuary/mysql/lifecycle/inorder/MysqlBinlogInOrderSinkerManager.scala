@@ -22,6 +22,7 @@ class MysqlBinlogInOrderSinkerManager(
   val syncTaskId = mysql2KafkaTaskInfoManager.syncTaskId
   lazy val sinkList = context.children.toList
   val sinkerNum = mysql2KafkaTaskInfoManager.sinkerNum
+  lazy val processingCounter = mysql2KafkaTaskInfoManager.processingCounter
   /**
     * 是否计数
     */
@@ -83,7 +84,7 @@ class MysqlBinlogInOrderSinkerManager(
     * 是否出现异常
     */
   var isAbnormal: Boolean = false
-
+  var count = 0
 
   override def receive: Receive = {
     case SyncControllerMessage(msg) => {
@@ -104,6 +105,7 @@ class MysqlBinlogInOrderSinkerManager(
 
   def online: Receive = {
     case kafkaMessage: KafkaMessage => {
+      count = count + 1
       val ogIndex = kafkaMessage.getBaseDataJsonKey.syncTaskSequence
       val index: Int = if (ogIndex <= 0) 0 else ogIndex.toInt
       sinkList(index) ! kafkaMessage
@@ -111,8 +113,10 @@ class MysqlBinlogInOrderSinkerManager(
     case BinlogPositionInfo(journalName, offset) => {
       this.lastSavedJournalName = journalName
       this.lastSavedOffset = offset
+      count = count + 1
       // log.info(s"JournalName update to $savedJournalName,offset update to $savedOffset")
       if (isProfiling) mysql2KafkaTaskInfoManager.sinkerLogPosition.set(s"latest binlog:{$journalName:$offset},save point:{$schedulingSavedJournalName:$schedulingSavedOffset},lastSavedPoint:{$scheduledSavedJournalName:$scheduledSavedOffset},id:$syncTaskId")
+      if (isCounting) processingCounter.fold(log.error(s"processingCounter cannot be null,id:$syncTaskId"))(ref => ref ! SinkerMessage(1))
     }
     case SyncControllerMessage("save") => {
       if (schedulingSavedJournalName != null && schedulingSavedJournalName.trim != "") {
@@ -176,6 +180,7 @@ class MysqlBinlogInOrderSinkerManager(
     */
   override def preStart(): Unit = {
     sinkerChangeStatus(Status.OFFLINE)
+    initSinkers
     if (isProfiling) mysql2KafkaTaskInfoManager.sinkerLogPosition.set(s"$lastSavedJournalName:$lastSavedOffset")
     log.info(s"switch sinker to offline,id:$syncTaskId")
 

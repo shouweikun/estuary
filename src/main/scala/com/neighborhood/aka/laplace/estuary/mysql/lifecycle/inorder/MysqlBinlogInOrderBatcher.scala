@@ -3,7 +3,8 @@ package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import com.alibaba.otter.canal.protocol.CanalEntry
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, SourceDataBatcher, Status}
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, SourceDataBatcher, Status, SyncControllerMessage}
+import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.BinlogPositionInfo
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder.MysqlBinlogInOrderBatcherManager.IdClassifier
 import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlConnection
 import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManager
@@ -42,11 +43,15 @@ class MysqlBinlogInOrderBatcher(
   val concernedDbName = mysql2KafkaTaskInfoManager.taskInfo.concernedDatabase
   val ignoredDbName = mysql2KafkaTaskInfoManager.taskInfo.ignoredDatabase
 
+
   override def receive: Receive = {
 
     case x: IdClassifier => {
       //      implicit val num = this.num
+//      val before = System.currentTimeMillis()
       val kafkaMessage = transform(x)
+//      val after = System.currentTimeMillis()
+//      val a = after - before
       kafkaMessage.getBaseDataJsonKey.setSyncTaskSequence(num)
       sinker ! kafkaMessage
       log.debug(s"batch primaryKey:${
@@ -57,7 +62,14 @@ class MysqlBinlogInOrderBatcher(
       if (isCosting) powerAdapter.fold(log.warning(s"cannot find processCounter,id:$syncTaskId"))(ref => ref ! BatcherMessage(kafkaMessage.getBaseDataJsonKey.msgSyncUsedTime))
       if (isCounting) processingCounter.fold(log.warning(s"cannot find powerAdapter,id:$syncTaskId"))(ref => ref ! BatcherMessage(1))
     }
-    case "check" => sendHeartBeats
+    case info:BinlogPositionInfo => {
+      sinker ! info
+      if (isCounting) processingCounter.fold(log.warning(s"cannot find powerAdapter,id:$syncTaskId"))(ref => ref ! BatcherMessage(1))
+    }
+    case SyncControllerMessage("check") => sendHeartBeats
+    case x => {
+      log.warning(s" batcher unhandled message，$x,$syncTaskId")
+    }
   }
 
   def sendHeartBeats = {

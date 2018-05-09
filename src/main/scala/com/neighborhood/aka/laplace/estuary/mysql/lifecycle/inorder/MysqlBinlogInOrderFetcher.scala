@@ -76,7 +76,8 @@ class MysqlBinlogInOrderFetcher(
     * 暂存的entryPosition
     */
   var entryPosition: Option[EntryPosition] = None
-  var fetchDelay: Long = 0
+  var fetchDelay: Long = mysql2KafkaTaskInfoManager.fetchDelay.get()
+  var count = 0
 
   //offline
   override def receive: Receive = {
@@ -194,11 +195,13 @@ class MysqlBinlogInOrderFetcher(
     * 从连接中取数据
     */
   def fetchOne(before: Long = System.currentTimeMillis()) = {
-    lazy val entry = mysqlConnection.get.fetchUntilDefined(filterEntry(_))(binlogParser)
+    val entry = mysqlConnection.get.fetchUntilDefined(filterEntry(_))(binlogParser)
     binlogEventBatcher ! entry.get
+//    println(entry.get.getEntryType)
+    count = count + 1
     lazy val cost = System.currentTimeMillis() - before
     if (isCounting) processingCounter.fold(log.warning(s"processingCounter not exist,id:$syncTaskId"))(ref => ref ! FetcherMessage(1))
-    if (isCosting) mysql2KafkaTaskInfoManager.powerAdapter.fold(log.warning(s"powerAdapter not exist,id:$syncTaskId"))(x => x ! FetcherMessage(s"$cost"))
+    if (isCosting) powerAdapter.fold(log.warning(s"powerAdapter not exist,id:$syncTaskId"))(x => x ! FetcherMessage(cost))
 
   }
 

@@ -77,7 +77,7 @@ class MysqlConnectionInOrderListener(
     case ListenerMessage(msg) => {
       msg match {
         case "listen" => {
-          log.info(s"heartBeatListener is listening to the heartbeats,$syncTaskId")
+          log.debug(s"heartBeatListener is listening to the heartbeats,$syncTaskId")
           listenHeartBeats
         }
         case "stop" => {

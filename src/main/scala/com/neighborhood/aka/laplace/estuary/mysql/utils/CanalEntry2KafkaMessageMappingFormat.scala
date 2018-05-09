@@ -29,7 +29,7 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[IdClassifier, K
   lazy val appServerPort = if (config.hasPath("app.server.port")) config.getInt("app.server.port") else -1
 
   override def transform(idClassifier: IdClassifier): KafkaMessage = {
-    lazy val before = System.currentTimeMillis()
+    val before = System.currentTimeMillis()
     lazy val entry = idClassifier.entry
     lazy val rowData = idClassifier.rowData
     lazy val header = entry.getHeader

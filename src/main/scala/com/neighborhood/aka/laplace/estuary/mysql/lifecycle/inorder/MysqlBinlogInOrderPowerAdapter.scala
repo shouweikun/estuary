@@ -1,7 +1,7 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder
 
 import akka.actor.{Actor, ActorLogging, Props}
-import com.neighborhood.aka.laplace.estuary.core.lifecycle._
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.{SyncControllerMessage, _}
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mysql.SettingConstant
 import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManager
@@ -16,24 +16,27 @@ class MysqlBinlogInOrderPowerAdapter(
   val syncTaskId = taskManager.syncTaskId
 
   override def receive: Receive = {
-    case "control" => control
-    case "cost" => computeCost
+
     case FetcherMessage(x) => {
       x match {
         case timeCost: Long => updateFetchTimeByTimeCost(timeCost)
+        case timeCost: Int => updateFetchTimeByTimeCost(timeCost)
       }
     }
     case BatcherMessage(x) => {
       x match {
         case timeCost: Long => updateBatchTimeByTimeCost(timeCost)
+        case timeCost: Int => updateBatchTimeByTimeCost(timeCost)
       }
     }
     case SinkerMessage(x) => {
       x match {
         case timeCost: Long => updateSinkTimeByTimeCost(timeCost)
+        case timeCost: Int => updateSinkTimeByTimeCost(timeCost)
       }
     }
-
+    case SyncControllerMessage("control") => control
+    case SyncControllerMessage("cost") => computeCost
   }
 
   override def computeCost: Unit = {
@@ -48,9 +51,9 @@ class MysqlBinlogInOrderPowerAdapter(
     //实时耗时
     computeActualCost
 
-    taskManager.fetchCount.set(fetchActualTimeCost)
-    taskManager.batchCount.set(batchActualTimeCost)
-    taskManager.sinkCount.set(sinkActualTimeCost)
+    taskManager.fetchCost.set(fetchActualTimeCost)
+    taskManager.batchCost.set(batchActualTimeCost)
+    taskManager.sinkCost.set(sinkActualTimeCost)
   }
 
   override def control: Unit = {

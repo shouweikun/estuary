@@ -36,7 +36,7 @@ class MysqlBinlogInOrderBatcherManager(
     */
   lazy val ddlHandler = context.child("ddlHandler")
   lazy val router = context.child("router")
-
+  var count = 0
 
   override def receive: Receive = {
     case SyncControllerMessage(msg) => {
@@ -44,14 +44,18 @@ class MysqlBinlogInOrderBatcherManager(
         case "start" => {
           context.become(online)
         }
+        case x => log.warning(s"batcher offline unhandled message$x,id:$syncTaskId")
       }
     }
   }
 
   def online: Receive = {
-    case entry: CanalEntry.Entry if (entry.getEntryType.equals(CanalEntry.EntryType.TRANSACTIONEND)) => BinlogPositionInfo(entry.getHeader.getLogfileName, entry.getHeader.getLogfileOffset)
-    case entry: CanalEntry.Entry => {
+    case entry: CanalEntry.Entry if (entry.getEntryType.equals(CanalEntry.EntryType.TRANSACTIONEND)) => {
+      ddlHandler.fold()(ref => ref ! BinlogPositionInfo(entry.getHeader.getLogfileName, entry.getHeader.getLogfileOffset))
 
+    }
+    case entry: CanalEntry.Entry => {
+      count = count + 1
       import scala.collection.JavaConverters._
       def parseError = {
         log.error(s"parse row data error,id:${syncTaskId}");
@@ -68,7 +72,7 @@ class MysqlBinlogInOrderBatcherManager(
 
 
     }
-    case SyncControllerMessage("check") => ddlHandler.fold(log.error(s"ddlHandler cannot be found,id:$syncTaskId"))(ref => ref ! "check")
+    case SyncControllerMessage("check") => ddlHandler.fold(log.error(s"ddlHandler cannot be found,id:$syncTaskId"))(ref => ref ! SyncControllerMessage("check"))
   }
 
   def initBatchers = {

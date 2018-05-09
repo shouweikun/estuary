@@ -17,7 +17,7 @@ public class Mysql2kafkaTaskRequestBean extends TaskRequestBean {
     private boolean isCosting = true;
     private boolean isTransactional = false;
     private boolean isPowerAdapted = true;
-    private int batcherCount = 10;
+    private int batcherCount = 19;
     private long batchThreshold = 50;
     private long fetchDelay = 0;
     private String filterPattern;

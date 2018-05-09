@@ -139,8 +139,8 @@ class MysqlBinlogInOrderController(
         throw new Exception(s"binlogBatcher is null,id:$syncTaskId")
       } {
         ref =>
-          context.system.scheduler.scheduleOnce(SettingConstant.BATCHER_START_DELAY second, ref, akka.routing.Broadcast(SyncControllerMessage("start")))
-          context.system.scheduler.schedule(SettingConstant.CHECKSEND_CONSTANT seconds, SettingConstant.CHECKSEND_CONSTANT seconds, ref, SyncControllerMessage("check"))
+          context.system.scheduler.scheduleOnce(SettingConstant.BATCHER_START_DELAY second, ref, SyncControllerMessage("start"))
+          context.system.scheduler.schedule(SettingConstant.COMPUTE_FIRST_DELAY seconds, SettingConstant.CHECKSEND_CONSTANT seconds, ref, SyncControllerMessage("check"))
       }
     //启动fetcher
     context
@@ -174,7 +174,7 @@ class MysqlBinlogInOrderController(
           context
             .system
             .scheduler
-            .schedule(SettingConstant.COMPUTE_COST_CONSTANT seconds, SettingConstant.COMPUTE_COST_CONSTANT seconds, ref, SyncControllerMessage("cost")));
+            .schedule(SettingConstant.COMPUTE_FIRST_DELAY seconds, SettingConstant.COMPUTE_COST_CONSTANT seconds, ref, SyncControllerMessage("cost")));
     log.info(s"cost compute ON,id:$syncTaskId")
     if (isCounting)
       context
@@ -187,7 +187,7 @@ class MysqlBinlogInOrderController(
             context
               .system
               .scheduler
-              .schedule(SettingConstant.COMPUTE_COST_CONSTANT seconds, SettingConstant.COMPUTE_COST_CONSTANT seconds, ref, SyncControllerMessage("count"));
+              .schedule(SettingConstant.COMPUTE_FIRST_DELAY seconds, SettingConstant.COMPUTE_COST_CONSTANT seconds, ref, SyncControllerMessage("count"));
             log.info(s"count compute ON,id:$syncTaskId")
         }
     if (isPowerAdapted) context
@@ -199,14 +199,14 @@ class MysqlBinlogInOrderController(
         context.
           system
           .scheduler
-          .schedule(SettingConstant.POWER_CONTROL_CONSTANT seconds, SettingConstant.POWER_CONTROL_CONSTANT seconds, ref, SyncControllerMessage("control")));
+          .schedule(SettingConstant.COMPUTE_FIRST_DELAY seconds, SettingConstant.POWER_CONTROL_CONSTANT seconds, ref, SyncControllerMessage("control")));
     log.info(s"power Control ON,id:$syncTaskId")
   }
 
   def initWorkers: Unit = {
     //初始化processingCounter
     log.info(s"initialize processingCounter,id:$syncTaskId")
-    context.actorOf(MysqlInOrderProcessingCounter.props(mysql2KafkaTaskInfoManager),"processingCounter")
+    context.actorOf(MysqlInOrderProcessingCounter.props(mysql2KafkaTaskInfoManager), "processingCounter")
     //初始化powerAdapter
     log.info(s"initialize powerAdapter,id:$syncTaskId")
     context.actorOf(MysqlBinlogInOrderPowerAdapter.props(mysql2KafkaTaskInfoManager), "powerAdapter")
@@ -225,7 +225,7 @@ class MysqlBinlogInOrderController(
 
     log.info(s"initialize batcher,id:$syncTaskId")
     val binlogEventBatcher = context.actorOf(MysqlBinlogInOrderBatcherManager
-      .props(resourceManager, binlogSinker),"binlogBatcher")
+      .props(resourceManager, binlogSinker), "binlogBatcher")
     log.info(s"initialize fetcher,id:$syncTaskId")
     //初始化binlogFetcher
     context.actorOf(MysqlBinlogInOrderFetcher.props(resourceManager, binlogEventBatcher).withDispatcher("akka.pinned-dispatcher"), "binlogFetcher")
@@ -276,6 +276,7 @@ class MysqlBinlogInOrderController(
     log.info(s"start init all workers,id:$syncTaskId")
     initWorkers
     mysql2KafkaTaskInfoManager.powerAdapter = context.child("powerAdapter")
+    mysql2KafkaTaskInfoManager.processingCounter = context.child("processingCounter")
   }
 
   //正常关闭时会调用，关闭资源

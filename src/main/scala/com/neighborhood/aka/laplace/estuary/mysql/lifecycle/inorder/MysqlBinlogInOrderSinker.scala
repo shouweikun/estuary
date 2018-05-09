@@ -38,13 +38,13 @@ class MysqlBinlogInOrderSinker(
 
     if (isSync) {
       //同步写
-      kafkaSinkFunc.sink(message.getBaseDataJsonKey, message.getJsonValue)(topic)
+      //kafkaSinkFunc.sink(message.getBaseDataJsonKey, message.getJsonValue)(topic)
     } else {
       log.error(s"暂时不支持异步写模式,id:$syncTaskId")
       throw new UnsupportedOperationException(s"暂时不支持异步写模式,id:$syncTaskId")
     }
-    if (isCounting) powerAdapter.fold {}(ref => ref ! SinkerMessage(1))
-    if (isCosting) processingCounter.fold {}(ref => ref ! SinkerMessage(after - before))
+    if (isCounting) processingCounter.fold {log.error(s"processingCounter cannot be null,id:$syncTaskId")}(ref => ref ! SinkerMessage(1))
+    if (isCosting) powerAdapter.fold {log.error(s"powerAdapter cannot be null,id:$syncTaskId")}(ref => ref ! SinkerMessage(after - before))
     //todo 日志中增加操作类型
     log.debug(s"sink primaryKey:${message.getBaseDataJsonKey.msgSyncUsedTime},id:$syncTaskId")
   }
@@ -89,5 +89,5 @@ class MysqlBinlogInOrderSinker(
 
 object MysqlBinlogInOrderSinker {
   def props(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
-            num: Int = -1): Props = Props(new MysqlBinlogInOrderSinker(mysql2KafkaTaskInfoManager))
+            num: Int = -1): Props = Props(new MysqlBinlogInOrderSinker(mysql2KafkaTaskInfoManager, num))
 }
