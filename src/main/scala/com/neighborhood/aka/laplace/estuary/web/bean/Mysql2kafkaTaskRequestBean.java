@@ -50,6 +50,8 @@ public class Mysql2kafkaTaskRequestBean extends TaskRequestBean {
     private int listenRetrytime = 3;
     private String concernedDataBase = "";
     private String ignoredDataBase = "";
+    private int taskType;
+
     // 支持的binlogImage
     // binlog.images = ""
     //支持的binlogFormat
@@ -58,6 +60,14 @@ public class Mysql2kafkaTaskRequestBean extends TaskRequestBean {
     private String zookeeperServers;
     // zookeeper 链接超时设置,单位毫秒
     private int zookeeperTimeout = 10000;
+
+    public int getTaskType() {
+        return taskType;
+    }
+
+    public void setTaskType(int taskType) {
+        this.taskType = taskType;
+    }
 
     public String getIgnoredDataBase() {
         return ignoredDataBase;

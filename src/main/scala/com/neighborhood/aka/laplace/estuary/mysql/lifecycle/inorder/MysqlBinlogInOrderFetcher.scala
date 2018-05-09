@@ -76,7 +76,7 @@ class MysqlBinlogInOrderFetcher(
     * 暂存的entryPosition
     */
   var entryPosition: Option[EntryPosition] = None
-
+  var fetchDelay: Long = 0
 
   //offline
   override def receive: Receive = {
@@ -160,8 +160,8 @@ class MysqlBinlogInOrderFetcher(
           val before = System.currentTimeMillis()
           try {
             fetchOne(before)
-            val fetchDelay = mysql2KafkaTaskInfoManager.taskInfo.fetchDelay.get
-            context.system.scheduler.scheduleOnce(fetchDelay microseconds, self, FetcherMessage("fetch"))
+            val theFetchDelay = this.fetchDelay
+            context.system.scheduler.scheduleOnce(theFetchDelay microseconds, self, FetcherMessage("fetch"))
           } catch {
             case e: TableIdNotFoundException => {
               entryPosition = Option(logPositionHandler.findStartPositionWithinTransaction(mysqlConnection.get))
@@ -179,9 +179,8 @@ class MysqlBinlogInOrderFetcher(
         }
       }
     }
-    case SyncControllerMessage(msg) => {
-
-    }
+    case SyncControllerMessage(x: Long) => fetchDelay = x
+    case SyncControllerMessage(x: Int) => fetchDelay = x
   }
 
   @deprecated("use `fetchOne`")

@@ -73,6 +73,7 @@ class MysqlBinlogInOrderBatcherManager(
 
   def initBatchers = {
     context.actorOf(MysqlBinlogInOrderBatcher.props(mysql2KafkaTaskInfoManager, sinker, -1, true), "ddlHandler")
+    //编号从1 开始
     lazy val paths = (1 to batcherNum)
       .map(index => context.actorOf(MysqlBinlogInOrderBatcher.props(mysql2KafkaTaskInfoManager, sinker, index), s"batcher$index").path.toString)
     context.actorOf(new ConsistentHashingGroup(paths, virtualNodesFactor = SettingConstant.HASH_MAPPING_VIRTUAL_NODES_FACTOR).props(), "router")

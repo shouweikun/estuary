@@ -3,7 +3,7 @@ package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder
 import java.util.concurrent.Executors
 
 import akka.actor.SupervisorStrategy.{Escalate, Restart}
-import akka.actor.{Actor, ActorLogging, AllForOneStrategy, OneForOneStrategy, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, AllForOneStrategy, OneForOneStrategy, Props}
 import akka.routing.RoundRobinPool
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status.Status
@@ -30,7 +30,10 @@ class MysqlBinlogInOrderController(
   //canal的mysqlConnection
   val mysqlConnection: MysqlConnection = resourceManager.mysqlConnection
   val syncTaskId = taskInfoBean.syncTaskId
-  implicit val scheduleTaskPool = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor())
+  val isCounting = taskInfoBean.isCounting
+  val isCosting = taskInfoBean.isCosting
+  val isPowerAdapted = taskInfoBean.isPowerAdapted
+  implicit val scheduleTaskPool = context.dispatcher
 
   override var errorCountThreshold: Int = 3
   override var errorCount: Int = 0
@@ -113,6 +116,7 @@ class MysqlBinlogInOrderController(
           }
         }
         case x: Int => context.child("binlogFetcher").fold(throw new Exception(s"fetcher cannot be null,id:$syncTaskId"))(ref => ref ! SyncControllerMessage(x))
+        case x: Long => context.child("binlogFetcher").fold(throw new Exception(s"fetcher cannot be null,id:$syncTaskId"))(ref => ref ! SyncControllerMessage(x))
         case _ => {}
       }
     }
@@ -123,56 +127,84 @@ class MysqlBinlogInOrderController(
     //启动sinker
     context
       .child("binlogSinker")
-      .map {
+      .fold {
+        log.error(s"binlogSinker is null,id:$syncTaskId");
+        throw new Exception(s"binlogSinker is null,id:$syncTaskId")
+      } {
         ref =>
           ref ! SyncControllerMessage("start")
           context.system.scheduler.schedule(SettingConstant.OFFSET_SAVE_CONSTANT seconds, SettingConstant.OFFSET_SAVE_CONSTANT seconds, ref, SyncControllerMessage("save"))
-          context.system.scheduler.schedule(SettingConstant.CHECKSEND_CONSTANT seconds, SettingConstant.CHECKSEND_CONSTANT seconds, ref, SyncControllerMessage("checkSend"))
       }
     //启动batcher
     context
       .child("binlogBatcher")
-      .map {
-        ref => context.system.scheduler.scheduleOnce(SettingConstant.BATCHER_START_DELAY second, ref, akka.routing.Broadcast(SyncControllerMessage("start")))
-      }
-    context.child("ddlHandler")
-      .map {
-        ref => context.system.scheduler.scheduleOnce(SettingConstant.BATCHER_START_DELAY second, ref, (SyncControllerMessage("start")))
-
+      .fold {
+        log.error(s"binlogBatcher is null,id:$syncTaskId");
+        throw new Exception(s"binlogBatcher is null,id:$syncTaskId")
+      } {
+        ref =>
+          context.system.scheduler.scheduleOnce(SettingConstant.BATCHER_START_DELAY second, ref, akka.routing.Broadcast(SyncControllerMessage("start")))
+          context.system.scheduler.schedule(SettingConstant.CHECKSEND_CONSTANT seconds, SettingConstant.CHECKSEND_CONSTANT seconds, ref, SyncControllerMessage("check"))
       }
     //启动fetcher
     context
       .child("binlogFetcher")
-      .map {
+      .fold {
+        log.error(s"binlogFetcher is null,id:$syncTaskId");
+        throw new Exception(s"binlogFetcher is null,id:$syncTaskId")
+      } {
         ref => context.system.scheduler.scheduleOnce(SettingConstant.FETCHER_START_DELAY second, ref, SyncControllerMessage("start"))
       }
     //启动listener
     context
       .child("heartBeatsListener")
-      .map {
+      .fold {
+        log.error(s"heartBeatsListener is null,id:$syncTaskId");
+        throw new Exception(s"heartBeatsListener is null,id:$syncTaskId")
+      } {
         ref =>
           ref ! SyncControllerMessage("start")
           //开始之后每`queryTimeOut`毫秒一次
           context.system.scheduler.schedule(SettingConstant.LISTEN_QUERY_TIMEOUT seconds, SettingConstant.LISTEN_QUERY_TIMEOUT seconds, ref, ListenerMessage("listen"))
       }
 
-    if (taskInfoBean.isCosting)
+    if (isCosting)
       context
         .child("powerAdapter")
-        .map(ref =>
+        .fold {
+          log.error(s"powerAdapter is null,id:$syncTaskId");
+          throw new Exception(s"powerAdapter is null,id:$syncTaskId")
+        }(ref =>
           context
             .system
             .scheduler
             .schedule(SettingConstant.COMPUTE_COST_CONSTANT seconds, SettingConstant.COMPUTE_COST_CONSTANT seconds, ref, SyncControllerMessage("cost")));
-    log.info("cost compute ON")
-    if (taskInfoBean.isPowerAdapted) context
+    log.info(s"cost compute ON,id:$syncTaskId")
+    if (isCounting)
+      context
+        .child("processingCounter")
+        .fold {
+          log.error(s"processingCounter is null,id:$syncTaskId");
+          throw new Exception(s"processingCounter is null,id:$syncTaskId")
+        } {
+          ref =>
+            context
+              .system
+              .scheduler
+              .schedule(SettingConstant.COMPUTE_COST_CONSTANT seconds, SettingConstant.COMPUTE_COST_CONSTANT seconds, ref, SyncControllerMessage("count"));
+            log.info(s"count compute ON,id:$syncTaskId")
+        }
+    if (isPowerAdapted) context
       .child("powerAdapter")
-      .map(ref =>
+      .fold {
+        log.error(s"powerAdapter is null,id:$syncTaskId");
+        throw new Exception(s"powerAdapter is null,id:$syncTaskId")
+      }(ref =>
         context.
           system
           .scheduler
           .schedule(SettingConstant.POWER_CONTROL_CONSTANT seconds, SettingConstant.POWER_CONTROL_CONSTANT seconds, ref, SyncControllerMessage("control")));
-    log.info("power Control ON")
+    log.info(s"power Control ON,id:$syncTaskId")
   }
 
   def initWorkers: Unit = {

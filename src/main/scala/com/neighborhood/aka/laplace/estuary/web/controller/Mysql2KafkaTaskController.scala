@@ -54,6 +54,7 @@ class Mysql2KafkaTaskController {
     ValidationUtils.notblank(requestBody.getSyncTaskId, "SyncTaskId cannot be null")
     ValidationUtils.notNull(requestBody.getZookeeperServers, "ZookeeperServers cannot be null")
     ValidationUtils.notblank(requestBody.getZookeeperServers, "ZookeeperServers cannot be blank")
+    ValidationUtils.notZero(requestBody.getTaskType,"TaskType cannot be zero")
     /** *****************************************************/
 
 

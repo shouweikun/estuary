@@ -1,7 +1,7 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder
 
 import akka.actor.{Actor, ActorLogging, Props}
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, FetcherMessage, ProcessingCounter, SinkerMessage}
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.{SyncControllerMessage, _}
 import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManager
 
 /**
@@ -19,7 +19,7 @@ class MysqlInOrderProcessingCounter(
     case BatcherMessage(x: Int) => addBatchCount(x)
     case SinkerMessage(x: Long) => addSinkCount(x)
     case SinkerMessage(x: Int) => addSinkCount(x)
-    case "count" => {
+    case SyncControllerMessage("count") => {
       updateRecord
       log.debug(s"set fetch count $fetchCount,batch count $batchCount,sink count $sinkCount,id:$syncTaskId")
     }
