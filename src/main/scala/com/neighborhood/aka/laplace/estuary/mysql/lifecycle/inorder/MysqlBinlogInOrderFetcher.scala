@@ -39,9 +39,9 @@ class MysqlBinlogInOrderFetcher(
     */
   lazy val powerAdapter = mysql2KafkaTaskInfoManager.powerAdapter
   /**
-    * 计数器
+    * fetcher专用counter
     */
-  lazy val processingCounter = mysql2KafkaTaskInfoManager.processingCounter
+  lazy val fetcherCounter = context.child("counter")
   /**
     * 任务id
     */
@@ -198,9 +198,9 @@ class MysqlBinlogInOrderFetcher(
     val entry = mysqlConnection.get.fetchUntilDefined(filterEntry(_))(binlogParser)
     binlogEventBatcher ! entry.get
 //    println(entry.get.getEntryType)
-    count = count + 1
+//    count = count + 1
     lazy val cost = System.currentTimeMillis() - before
-    if (isCounting) processingCounter.fold(log.warning(s"processingCounter not exist,id:$syncTaskId"))(ref => ref ! FetcherMessage(1))
+    if (isCounting) fetcherCounter.fold(log.warning(s"fetcherCounter not exist,id:$syncTaskId"))(ref => ref ! entry.get)
     if (isCosting) powerAdapter.fold(log.warning(s"powerAdapter not exist,id:$syncTaskId"))(x => x ! FetcherMessage(cost))
 
   }
@@ -252,6 +252,7 @@ class MysqlBinlogInOrderFetcher(
   override def preStart(): Unit = {
     log.info(s"fetcher switch to offline,id:$syncTaskId")
     if (mysqlConnection.isDefined && mysqlConnection.get.isConnected) mysqlConnection.get.disconnect()
+    context.actorOf(MysqlBinlogInOrderFetcherCounter.props(syncTaskId,mysql2KafkaTaskInfoManager.processingCounter.get),"counter")
     //状态置为offline
     fetcherChangeStatus(Status.OFFLINE)
   }
