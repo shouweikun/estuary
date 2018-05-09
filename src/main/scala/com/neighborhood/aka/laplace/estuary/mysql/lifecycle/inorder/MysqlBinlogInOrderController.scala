@@ -224,7 +224,7 @@ class MysqlBinlogInOrderController(
     val binlogSinker = context.actorOf(MysqlBinlogInOrderSinkerManager.props(resourceManager), "binlogSinker")
 
     log.info(s"initialize batcher,id:$syncTaskId")
-    val binlogEventBatcher = context.actorOf(MysqlBinlogInOrderBatcherPrimaryKeyManager
+    val binlogEventBatcher = context.actorOf(MysqlBinlogInOrderBatcherManager
       .props(resourceManager, binlogSinker), "binlogBatcher")
     log.info(s"initialize fetcher,id:$syncTaskId")
     //初始化binlogFetcher

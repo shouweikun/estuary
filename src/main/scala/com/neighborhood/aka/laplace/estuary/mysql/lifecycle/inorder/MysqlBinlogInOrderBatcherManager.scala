@@ -1,7 +1,7 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder
 
 import akka.actor.SupervisorStrategy.Escalate
-import akka.actor.{Actor, ActorLogging, ActorRef, AllForOneStrategy}
+import akka.actor.{Actor, ActorLogging, ActorRef, AllForOneStrategy, Props}
 import akka.routing.ConsistentHashingGroup
 import com.alibaba.otter.canal.parse.inbound.mysql.dbsync.TableMetaCache
 import com.alibaba.otter.canal.protocol.CanalEntry
@@ -138,4 +138,8 @@ class MysqlBinlogInOrderBatcherManager(
     */
   override def processError(e: Throwable, message: lifecycle.WorkerMessage): Unit = ???
 }
-
+object MysqlBinlogInOrderBatcherManager{
+  def props(
+             mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
+            sinker: ActorRef):Props = Props(new MysqlBinlogInOrderBatcherManager(mysql2KafkaTaskInfoManager,sinker))
+}
