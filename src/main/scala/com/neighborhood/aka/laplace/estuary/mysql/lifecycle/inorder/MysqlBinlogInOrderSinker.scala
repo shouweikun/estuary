@@ -3,9 +3,8 @@ package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder
 import akka.actor.{Actor, ActorLogging, Props}
 import com.neighborhood.aka.laplace.estuary.bean.support.KafkaMessage
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.{SourceDataSinker, Status, SyncControllerMessage}
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.SourceDataSinker
 import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManager
-import org.springframework.util.StringUtils
 
 /**
   * Created by john_liu on 2018/5/8.

@@ -45,12 +45,12 @@ public class Mysql2kafkaTaskRequestBean extends TaskRequestBean {
     private String mysqlUsername;
     private String mysqlPassword;
     private String mysqlDefaultDatabase;
-//    private List<String> mysqlDatabases;
+    //    private List<String> mysqlDatabases;
     private int listenTimeout = 5000;
     private int listenRetrytime = 3;
     private String concernedDataBase = "";
     private String ignoredDataBase = "";
-    private int taskType;
+    private int taskType = 1;
 
     // 支持的binlogImage
     // binlog.images = ""

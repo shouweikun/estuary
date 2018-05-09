@@ -1,10 +1,7 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder
 
-import java.util.concurrent.Executors
-
-import akka.actor.SupervisorStrategy.{Escalate, Restart}
-import akka.actor.{Actor, ActorLogging, ActorRef, AllForOneStrategy, OneForOneStrategy, Props}
-import akka.routing.RoundRobinPool
+import akka.actor.SupervisorStrategy.Escalate
+import akka.actor.{Actor, ActorLogging, AllForOneStrategy}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{Status, _}
@@ -14,7 +11,6 @@ import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlConnection
 import com.neighborhood.aka.laplace.estuary.mysql.task.{Mysql2KafkaTaskInfoBean, Mysql2KafkaTaskInfoManager}
 import org.I0Itec.zkclient.exception.ZkTimeoutException
 
-import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 /**
