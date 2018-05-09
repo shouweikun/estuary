@@ -134,7 +134,15 @@ class MysqlBinlogInOrderSinkerManager(
   }
 
   def initSinkers = {
-    //    context.actorOf()
+    //0号作为ddl处理器
+    log.info(s"init sinkers,id:$syncTaskId")
+    (0 to sinkerNum)
+      .map {
+        index =>
+          context.actorOf(MysqlBinlogInOrderSinker.props(mysql2KafkaTaskInfoManager, index).withDispatcher("akka.sinker-dispatcher"), s"sinker$index")
+
+      }
+
   }
 
   /**

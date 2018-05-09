@@ -98,7 +98,7 @@ class Mysql2KafkaTaskInfoManager(taskInfoBean: Mysql2KafkaTaskInfoBean) extends 
   /**
     * sinker数量，在InOrder模式下需要使用
     */
-  lazy val sinkerNum = batcherNum+1
+  lazy val sinkerNum = batcherNum
   /**
     * MysqlBinlogParser
     */

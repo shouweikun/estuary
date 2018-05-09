@@ -1,7 +1,7 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder
 
 import akka.actor.SupervisorStrategy.Escalate
-import akka.actor.{Actor, ActorLogging, AllForOneStrategy}
+import akka.actor.{Actor, ActorLogging, AllForOneStrategy, Props}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{Status, _}
@@ -206,7 +206,7 @@ class MysqlBinlogInOrderController(
   def initWorkers: Unit = {
     //初始化processingCounter
     log.info(s"initialize processingCounter,id:$syncTaskId")
-    context.actorOf(MysqlInOrderProcessingCounter.props(mysql2KafkaTaskInfoManager))
+    context.actorOf(MysqlInOrderProcessingCounter.props(mysql2KafkaTaskInfoManager),"processingCounter")
     //初始化powerAdapter
     log.info(s"initialize powerAdapter,id:$syncTaskId")
     context.actorOf(MysqlBinlogInOrderPowerAdapter.props(mysql2KafkaTaskInfoManager), "powerAdapter")
@@ -225,7 +225,7 @@ class MysqlBinlogInOrderController(
 
     log.info(s"initialize batcher,id:$syncTaskId")
     val binlogEventBatcher = context.actorOf(MysqlBinlogInOrderBatcherManager
-      .props(resourceManager, binlogSinker))
+      .props(resourceManager, binlogSinker),"binlogBatcher")
     log.info(s"initialize fetcher,id:$syncTaskId")
     //初始化binlogFetcher
     context.actorOf(MysqlBinlogInOrderFetcher.props(resourceManager, binlogEventBatcher).withDispatcher("akka.pinned-dispatcher"), "binlogFetcher")
@@ -331,6 +331,10 @@ class MysqlBinlogInOrderController(
     }
   }
 
+}
+
+object MysqlBinlogInOrderController {
+  def props(taskInfoBean: Mysql2KafkaTaskInfoBean): Props = Props(new MysqlBinlogInOrderController(taskInfoBean))
 }
 
 
