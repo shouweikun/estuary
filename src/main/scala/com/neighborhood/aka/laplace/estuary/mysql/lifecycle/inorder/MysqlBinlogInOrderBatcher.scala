@@ -1,11 +1,9 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import com.alibaba.otter.canal.protocol.CanalEntry
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, SourceDataBatcher, Status, SyncControllerMessage}
-import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.BinlogPositionInfo
-import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder.MysqlBinlogInOrderBatcherManager.IdClassifier
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, SourceDataBatcher, SyncControllerMessage}
+import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.{BinlogPositionInfo, IdClassifier}
 import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlConnection
 import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManager
 import com.neighborhood.aka.laplace.estuary.mysql.utils.{CanalEntry2KafkaMessageMappingFormat, CanalEntryJsonHelper}

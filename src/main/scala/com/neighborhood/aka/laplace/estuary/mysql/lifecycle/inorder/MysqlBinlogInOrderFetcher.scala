@@ -184,12 +184,7 @@ class MysqlBinlogInOrderFetcher(
     case SyncControllerMessage(x: Int) => fetchDelay = x
   }
 
-  @deprecated("use `fetchOne`")
-  @tailrec
-  final def loopFetchAll: Unit = {
-    fetchOne()
-    loopFetchAll
-  }
+
 
   /**
     * 从连接中取数据
