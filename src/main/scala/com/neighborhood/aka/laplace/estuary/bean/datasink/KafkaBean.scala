@@ -50,7 +50,7 @@ trait KafkaBean extends DataSinkBean {
   /**
     * key Serializer类
     */
-  var keySerializer: String = classOf[MultipleJsonKeyPartitioner].getName
+  var keySerializer: String = classOf[JsonKeySerializer].getName
   /**
     * value Serializer类
     */
