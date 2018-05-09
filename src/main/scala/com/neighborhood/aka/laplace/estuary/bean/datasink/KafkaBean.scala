@@ -26,7 +26,7 @@ trait KafkaBean extends DataSinkBean {
   /**
     * 分区类
     */
-  var partitionerClass: String = classOf[JsonKeyPartitioner].getName
+  var partitionerClass: String = classOf[MultipleJsonKeyPartitioner].getName
   /**
     * defaultTopic
     */
