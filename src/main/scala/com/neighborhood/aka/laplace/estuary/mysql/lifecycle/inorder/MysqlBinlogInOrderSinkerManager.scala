@@ -181,7 +181,7 @@ class MysqlBinlogInOrderSinkerManager(
   override def preStart(): Unit = {
     sinkerChangeStatus(Status.OFFLINE)
     initSinkers
-    if (isProfiling) mysql2KafkaTaskInfoManager.sinkerLogPosition.set(s"$lastSavedJournalName:$lastSavedOffset")
+    if (isProfiling) mysql2KafkaTaskInfoManager.sinkerLogPosition.set(s"latest binlog:{[]:[]},save point:{$schedulingSavedJournalName:$schedulingSavedOffset},lastSavedPoint:{$scheduledSavedJournalName:$scheduledSavedOffset},id:$syncTaskId")
     log.info(s"switch sinker to offline,id:$syncTaskId")
 
   }
@@ -193,7 +193,7 @@ class MysqlBinlogInOrderSinkerManager(
       val theOffset = this.scheduledSavedOffset
       logPositionHandler.persistLogPosition(destination, theJournalName, theOffset)
       log.info(s"记录binlog $theJournalName:$theOffset,id:$syncTaskId")
-      if (isProfiling) mysql2KafkaTaskInfoManager.sinkerLogPosition.set(s"$theJournalName:$theOffset")
+      if (isProfiling) mysql2KafkaTaskInfoManager.sinkerLogPosition.set(s"latest binlog:{[]:[]},save point:{$theJournalName:$theOffset},lastSavedPoint:{$scheduledSavedJournalName:$scheduledSavedOffset},id:$syncTaskId")
     }
     //    kafkaSinker.kafkaProducer.close()
     //    sinkTaskPool.environment.shutdown()
