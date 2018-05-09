@@ -3,7 +3,7 @@ package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder
 import akka.actor.{Actor, ActorLogging, Props}
 import com.neighborhood.aka.laplace.estuary.bean.support.KafkaMessage
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.SourceDataSinker
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.{SinkerMessage, SourceDataSinker}
 import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManager
 
 /**
@@ -19,12 +19,16 @@ class MysqlBinlogInOrderSinker(
   val isSyncWrite = mysql2KafkaTaskInfoManager.taskInfo.isSync
   lazy val powerAdapter = mysql2KafkaTaskInfoManager.powerAdapter
   lazy val processingCounter = mysql2KafkaTaskInfoManager.processingCounter
+  val isCounting = mysql2KafkaTaskInfoManager.taskInfo.isCounting
+  val isCosting = mysql2KafkaTaskInfoManager.taskInfo.isCounting
 
   override def receive: Receive = {
     case message: KafkaMessage => handleSinkTask(message)
   }
 
   def handleSinkTask(message: KafkaMessage, isSync: Boolean = this.isSyncWrite): Unit = {
+    val before = System.currentTimeMillis()
+    lazy val after = System.currentTimeMillis()
     val seq = message.getBaseDataJsonKey.syncTaskSequence
     val tableName = message.getBaseDataJsonKey.tableName
     val dbName = message.getBaseDataJsonKey.dbName
@@ -39,6 +43,10 @@ class MysqlBinlogInOrderSinker(
       log.error(s"暂时不支持异步写模式,id:$syncTaskId")
       throw new UnsupportedOperationException(s"暂时不支持异步写模式,id:$syncTaskId")
     }
+    if (isCounting) powerAdapter.fold {}(ref => ref ! SinkerMessage(1))
+    if (isCosting) processingCounter.fold {}(ref => ref ! SinkerMessage(after - before))
+    //todo 日志中增加操作类型
+    log.debug(s"sink primaryKey:${message.getBaseDataJsonKey.msgSyncUsedTime},id:$syncTaskId")
   }
 
   override def preStart(): Unit = {
