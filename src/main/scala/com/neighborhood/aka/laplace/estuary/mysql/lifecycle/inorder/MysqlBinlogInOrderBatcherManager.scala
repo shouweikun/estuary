@@ -1,7 +1,7 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder
 
 import akka.actor.SupervisorStrategy.Escalate
-import akka.actor.{Actor, ActorLogging, ActorRef, AllForOneStrategy}
+import akka.actor.{Actor, ActorLogging, ActorRef, AllForOneStrategy, Props}
 import akka.routing.ConsistentHashingGroup
 import akka.routing.ConsistentHashingRouter.ConsistentHashable
 import com.alibaba.otter.canal.parse.inbound.mysql.dbsync.TableMetaCache
@@ -146,13 +146,23 @@ class MysqlBinlogInOrderBatcherManager(
 }
 
 object MysqlBinlogInOrderBatcherManager {
+  def props(
+             mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
+             sinker: ActorRef
+           ): Props = Props(new MysqlBinlogInOrderBatcherManager(mysql2KafkaTaskInfoManager, sinker))
 
   case class IdClassifier(entry: CanalEntry.Entry, rowData: RowData) extends ConsistentHashable {
 
     import scala.collection.JavaConverters._
 
+    lazy val theKey: Any = generateKey
+
     override def consistentHashKey: Any = {
-      lazy val prefix = s"${entry.getHeader.getSchemaName}-${entry.getHeader.getTableName}-"
+      theKey
+    }
+
+    def generateKey: String = {
+      lazy val prefix = s"${entry.getHeader.getSchemaName}@${entry.getHeader.getTableName}@"
       lazy val key = if (entry.getHeader.getEventType.equals(CanalEntry.EventType.DELETE)) rowData.getBeforeColumnsList.asScala.filter(_.getIsKey).mkString("_") else rowData.getAfterColumnsList.asScala.filter(_.getIsKey).mkString("_")
       prefix + key
     }

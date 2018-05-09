@@ -3,7 +3,7 @@ package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder
 import java.util.concurrent.Executors
 
 import akka.actor.SupervisorStrategy.Restart
-import akka.actor.{Actor, ActorLogging, ActorRef, OneForOneStrategy}
+import akka.actor.{Actor, ActorLogging, ActorRef, OneForOneStrategy, Props}
 import com.alibaba.otter.canal.parse.exception.TableIdNotFoundException
 import com.alibaba.otter.canal.protocol.CanalEntry
 import com.alibaba.otter.canal.protocol.position.EntryPosition
@@ -84,11 +84,11 @@ class MysqlBinlogInOrderFetcher(
     case FetcherMessage(msg) => {
       msg match {
         case "restart" => {
-          log.info("fetcher restarting")
+          log.info(s"fetcher restarting,id:$syncTaskId")
           self ! SyncControllerMessage("start")
         }
         case str: String => {
-          log.warning(s"fetcher offline  unhandled message:$str")
+          log.warning(s"fetcher offline  unhandled message:$str,id:$syncTaskId")
         }
       }
 
@@ -132,9 +132,12 @@ class MysqlBinlogInOrderFetcher(
         }
         case "predump" => {
 
-          mysqlConnection.map {
+          mysqlConnection.fold {
+            log.error(s"fetcher mysqlConnection cannot be null,id:$syncTaskId");
+            throw new Exception(s"fetcher mysqlConnection cannot be null,id:$syncTaskId")
+          } {
             conn =>
-              log.debug("fetcher predump")
+              log.debug(s"fetcher predump,id:$syncTaskId")
               MysqlConnection.preDump(conn)(binlogParser);
               conn.connect()
           }
@@ -245,49 +248,37 @@ class MysqlBinlogInOrderFetcher(
     * ********************* Actor生命周期 *******************
     */
   override def preStart(): Unit = {
+    log.info(s"fetcher switch to offline,id:$syncTaskId")
     if (mysqlConnection.isDefined && mysqlConnection.get.isConnected) mysqlConnection.get.disconnect()
     //状态置为offline
     fetcherChangeStatus(Status.OFFLINE)
   }
 
   override def postRestart(reason: Throwable): Unit = {
+    log.info(s"fetcher processing postRestart,id:$syncTaskId")
     super.postRestart(reason)
 
-    log.info("fetcher will restart in 1 min")
   }
 
   override def postStop(): Unit = {
+    log.info(s"fetcher processing postStop,id:$syncTaskId")
     mysqlConnection.get.disconnect()
   }
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
-
+    log.info(s"fetcher processing preRestart,id:$syncTaskId")
     context.become(receive)
     fetcherChangeStatus(Status.RESTARTING)
     super.preRestart(reason, message)
   }
 
-  override def supervisorStrategy = {
-    OneForOneStrategy() {
-      case e: ZkTimeoutException => {
-        fetcherChangeStatus(Status.ERROR)
-        Restart
-      }
-      case e: Exception => {
-        fetcherChangeStatus(Status.ERROR)
-        Restart
-      }
-      case error: Error => {
-        fetcherChangeStatus(Status.ERROR)
-        Restart
-      }
-      case _ => {
-        fetcherChangeStatus(Status.ERROR)
-        Restart
-      }
-    }
-  }
 
 }
 
+object MysqlBinlogInOrderFetcher {
+  def props(
+             mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
+             binlogEventBatcher: ActorRef
+           ): Props = Props(new MysqlBinlogInOrderFetcher(mysql2KafkaTaskInfoManager, binlogEventBatcher))
+}
 

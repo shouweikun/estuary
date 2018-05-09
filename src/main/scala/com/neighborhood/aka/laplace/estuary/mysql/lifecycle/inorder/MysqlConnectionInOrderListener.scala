@@ -1,7 +1,7 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder
 
 import akka.actor.SupervisorStrategy.Escalate
-import akka.actor.{Actor, ActorLogging, OneForOneStrategy}
+import akka.actor.{Actor, ActorLogging, OneForOneStrategy, Props}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{HeartBeatListener, ListenerMessage, Status, SyncControllerMessage}
@@ -14,7 +14,9 @@ import scala.util.Try
 /**
   * Created by john_liu on 2018/2/1.
   */
-class MysqlConnectionInOrderListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager) extends Actor with HeartBeatListener with ActorLogging {
+class MysqlConnectionInOrderListener(
+                                      mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager
+                                    ) extends Actor with HeartBeatListener with ActorLogging {
   /**
     * syncTaskId
     */
@@ -169,5 +171,8 @@ class MysqlConnectionInOrderListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTask
 
 }
 
+object MysqlConnectionInOrderListener {
+  def props(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager): Props = Props(new MysqlConnectionInOrderListener(mysql2KafkaTaskInfoManager))
+}
 
 

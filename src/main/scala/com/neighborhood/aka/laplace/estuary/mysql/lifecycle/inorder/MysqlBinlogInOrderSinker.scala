@@ -1,6 +1,6 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder
 
-import akka.actor.{Actor, ActorLogging}
+import akka.actor.{Actor, ActorLogging, Props}
 import com.neighborhood.aka.laplace.estuary.bean.support.KafkaMessage
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{SourceDataSinker, Status, SyncControllerMessage}
@@ -78,4 +78,9 @@ class MysqlBinlogInOrderSinker(
     * 错误处理
     */
   override def processError(e: Throwable, message: lifecycle.WorkerMessage): Unit = ???
+}
+
+object MysqlBinlogInOrderSinker {
+  def props(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
+            num: Int = -1): Props = Props(new MysqlBinlogInOrderSinker(mysql2KafkaTaskInfoManager))
 }

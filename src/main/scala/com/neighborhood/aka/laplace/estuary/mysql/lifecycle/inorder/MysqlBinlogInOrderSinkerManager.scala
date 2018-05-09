@@ -1,7 +1,7 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder
 
 import akka.actor.SupervisorStrategy.Escalate
-import akka.actor.{Actor, ActorLogging, OneForOneStrategy}
+import akka.actor.{Actor, ActorLogging, OneForOneStrategy, Props}
 import com.neighborhood.aka.laplace.estuary.bean.key.BinlogKey
 import com.neighborhood.aka.laplace.estuary.bean.support.KafkaMessage
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
@@ -224,4 +224,8 @@ class MysqlBinlogInOrderSinkerManager(
       }
     }
   }
+}
+
+object MysqlBinlogInOrderSinkerManager {
+  def props(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager): Props = Props(new MysqlBinlogInOrderSinkerManager(mysql2KafkaTaskInfoManager))
 }

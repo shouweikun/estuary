@@ -1,15 +1,16 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder
 
-import akka.actor.{Actor, ActorLogging}
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, FetcherMessage, PowerAdapter, SinkerMessage}
+import akka.actor.{Actor, ActorLogging, Props}
+import com.neighborhood.aka.laplace.estuary.core.lifecycle._
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mysql.SettingConstant
+import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManager
 
 /**
   * Created by john_liu on 2018/5/5.
   */
 class MysqlBinlogInOrderPowerAdapter(
-                                      taskManager: TaskManager
+                                      taskManager: Mysql2KafkaTaskInfoManager
                                     ) extends Actor with ActorLogging with PowerAdapter {
 
   val syncTaskId = taskManager.syncTaskId
@@ -75,7 +76,7 @@ class MysqlBinlogInOrderPowerAdapter(
       math.max(left, right)
     } else {
       //sink速度比batch速度快的慢
-      math.max((adjustedSinkCost * 1000  - adjustedFetchCost * 1000 + 1) * 70 / 100, 0)
+      math.max((adjustedSinkCost * 1000 - adjustedFetchCost * 1000 + 1) * 70 / 100, 0)
     }
     log.debug(s"delayDuration:$delayDuration,id:$syncTaskId")
 
@@ -107,6 +108,12 @@ class MysqlBinlogInOrderPowerAdapter(
 
     }
     log.info(s"${(fetchCount - sinkCount)},$fetchCost,$batchCost,$sinkCost,finalDelayDuration:$finalDelayDuration,id:$syncTaskId")
+    context.parent ! SyncControllerMessage(finalDelayDuration)
     taskManager.fetchDelay.set(finalDelayDuration)
+
   }
+}
+
+object MysqlBinlogInOrderPowerAdapter {
+  def props(taskManager: Mysql2KafkaTaskInfoManager): Props = Props(new MysqlBinlogInOrderPowerAdapter(taskManager))
 }

@@ -1,14 +1,14 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder
 
-import akka.actor.{Actor, ActorLogging}
+import akka.actor.{Actor, ActorLogging, Props}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, FetcherMessage, ProcessingCounter, SinkerMessage}
-import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
+import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManager
 
 /**
   * Created by john_liu on 2018/5/8.
   */
 class MysqlInOrderProcessingCounter(
-                                     override val taskManager: TaskManager
+                                     override val taskManager: Mysql2KafkaTaskInfoManager
                                    ) extends ProcessingCounter with Actor with ActorLogging {
   val syncTaskId = taskManager.syncTaskId
 
@@ -26,4 +26,8 @@ class MysqlInOrderProcessingCounter(
   }
 
 
+}
+
+object MysqlInOrderProcessingCounter {
+  def props(taskManager: Mysql2KafkaTaskInfoManager): Props = Props(new MysqlInOrderProcessingCounter(taskManager))
 }
