@@ -132,9 +132,11 @@ class MysqlBinlogInOrderSinkerManager(
       throw new Exception(s"error when sink data,cause:$e,message:${e.getMessage},id:$syncTaskId")
     }
   }
+
   def initSinkers = {
-//    context.actorOf()
+    //    context.actorOf()
   }
+
   /**
     * 错位次数阈值
     */
@@ -167,15 +169,17 @@ class MysqlBinlogInOrderSinkerManager(
   override def preStart(): Unit = {
     sinkerChangeStatus(Status.OFFLINE)
     if (isProfiling) mysql2KafkaTaskInfoManager.sinkerLogPosition.set(s"$lastSavedJournalName:$lastSavedOffset")
+    log.info(s"switch sinker to offline,id:$syncTaskId")
 
   }
 
   override def postStop(): Unit = {
+    log.info(s"sinker processing postStop,id:$syncTaskId")
     if (isAbnormal && !StringUtils.isEmpty(scheduledSavedJournalName)) {
       val theJournalName = this.scheduledSavedJournalName
       val theOffset = this.scheduledSavedOffset
       logPositionHandler.persistLogPosition(destination, theJournalName, theOffset)
-      log.info(s"记录binlog $theJournalName,$theOffset")
+      log.info(s"记录binlog $theJournalName:$theOffset,id:$syncTaskId")
       if (isProfiling) mysql2KafkaTaskInfoManager.sinkerLogPosition.set(s"$theJournalName:$theOffset")
     }
     //    kafkaSinker.kafkaProducer.close()
@@ -184,22 +188,19 @@ class MysqlBinlogInOrderSinkerManager(
   }
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
-    sinkerChangeStatus(Status.RESTARTING)
+    log.info(s"sinker processing preRestart,id:$syncTaskId")
+    sinkerChangeStatus(Status.ERROR)
     context.become(receive)
   }
 
   override def postRestart(reason: Throwable): Unit = {
-
+    log.info(s"sinker processing preRestart,id:$syncTaskId")
+    sinkerChangeStatus(Status.RESTARTING)
     super.postRestart(reason)
   }
 
   override def supervisorStrategy = {
     OneForOneStrategy() {
-      case e: StackOverflowError => {
-        sinkerChangeStatus(Status.ERROR)
-        log.error("stackOverFlow")
-        Escalate
-      }
 
       case e: ZkTimeoutException => {
         sinkerChangeStatus(Status.ERROR)
@@ -208,13 +209,16 @@ class MysqlBinlogInOrderSinkerManager(
       }
       case e: Exception => {
         sinkerChangeStatus(Status.ERROR)
+        log.error(s"sinker crashed,exception:$e,cause:${e.getCause},processing SupervisorStrategy,id:$syncTaskId")
         Escalate
       }
       case error: Error => {
         sinkerChangeStatus(Status.ERROR)
+        log.error(s"sinker crashed,error:$error,cause:${error.getCause},processing SupervisorStrategy,id:$syncTaskId")
         Escalate
       }
-      case _ => {
+      case e => {
+        log.error(s"sinker crashed,throwable:$e,cause:${e.getCause},processing SupervisorStrategy,id:$syncTaskId")
         sinkerChangeStatus(Status.ERROR)
         Escalate
       }

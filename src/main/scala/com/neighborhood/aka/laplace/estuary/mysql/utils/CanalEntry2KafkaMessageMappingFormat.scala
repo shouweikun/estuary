@@ -42,6 +42,7 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[IdClassifier, K
     tempJsonKey.setSyncTaskId(syncTaskId)
     tempJsonKey.setMsgSyncStartTime(before)
     tempJsonKey.setPrimaryKeyValue(primaryKey)
+    tempJsonKey.setMsgUuid(primaryKey)
     tempJsonKey.setPartitionStrategy(PartitionStrategy.PRIMARY_KEY)
     eventType match {
       case CanalEntry.EventType.DELETE => tranformDMLtoJson(header, rowData, tempJsonKey, "DELETE")

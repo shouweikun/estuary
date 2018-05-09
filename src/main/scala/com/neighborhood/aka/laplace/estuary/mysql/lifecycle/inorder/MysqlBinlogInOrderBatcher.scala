@@ -3,7 +3,7 @@ package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import com.alibaba.otter.canal.protocol.CanalEntry
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, SourceDataBatcher}
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, SourceDataBatcher, Status}
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder.MysqlBinlogInOrderBatcherManager.IdClassifier
 import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlConnection
 import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManager
@@ -106,6 +106,25 @@ class MysqlBinlogInOrderBatcher(
     * 错误处理
     */
   override def processError(e: Throwable, message: lifecycle.WorkerMessage): Unit = ???
+
+  override def preStart(): Unit = {
+    log.info(s"init batcher$num,id:$syncTaskId")
+    if (isDdlHandler) log.info(s"batcher0 is ddlHandler,id:$syncTaskId")
+  }
+
+  override def postStop(): Unit = {
+
+  }
+
+  override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
+    log.info(s"batcher$num process preRestart,id:$syncTaskId")
+    super.preRestart(reason, message)
+  }
+
+  override def postRestart(reason: Throwable): Unit = {
+    log.info(s"batcher$num process postRestart,id:$syncTaskId")
+    super.postRestart(reason)
+  }
 }
 
 object MysqlBinlogInOrderBatcher {

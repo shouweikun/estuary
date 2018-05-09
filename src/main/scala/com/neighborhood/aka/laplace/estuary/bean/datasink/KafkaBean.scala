@@ -59,6 +59,10 @@ trait KafkaBean extends DataSinkBean {
     * 压缩格式
     */
   var compressionType: String = "snappy"
+  /**
+    * 是否是同步写
+    */
+  var isSync = true
 
 }
 
