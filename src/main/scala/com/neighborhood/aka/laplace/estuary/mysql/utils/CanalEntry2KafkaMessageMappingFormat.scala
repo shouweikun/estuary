@@ -21,6 +21,7 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[IdClassifier, K
 
   val syncTaskId: String
   val config = context.system.settings.config
+  val syncStartTime = System.currentTimeMillis()
   private val jsonFormat = new JsonFormat
   lazy val appName = if (config.hasPath("app.name")) config.getString("app.name") else ""
   lazy val appServerIp = if (config.hasPath("app.server.ip")) config.getString("app.server.ip") else ""
@@ -38,6 +39,7 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[IdClassifier, K
     tempJsonKey.setAppServerIp(appServerIp)
     tempJsonKey.setAppServerPort(appServerPort)
     tempJsonKey.setSyncTaskId(syncTaskId)
+    tempJsonKey.setSyncTaskStartTime(syncStartTime)
     tempJsonKey.setMsgSyncStartTime(before)
     tempJsonKey.setPrimaryKeyValue(primaryKey)
     tempJsonKey.setMsgUuid(primaryKey)
@@ -91,8 +93,7 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[IdClassifier, K
     jsonKey.setEventType(eventString)
     val kafkaMessage = new KafkaMessage
     kafkaMessage.setBaseDataJsonKey(jsonKey)
-    jsonKeyColumnBuilder.setIndex(count)
-    jsonKeyColumnBuilder.setValue(JsonUtil.serialize(jsonKey))
+
 
     /**
       * 构造rowChange对应部分的json
@@ -101,7 +102,7 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[IdClassifier, K
       */
     def rowChangeStr = {
 
-      if (eventString.equals("DELETE")) s"${STRING_CONTAINER}beforeColumns$STRING_CONTAINER$KEY_VALUE_SPLIT$START_ARRAY${
+      lazy val str = if (eventString.equals("DELETE")) s"${STRING_CONTAINER}beforeColumns$STRING_CONTAINER$KEY_VALUE_SPLIT$START_ARRAY${
         (0 until count)
           .map {
             columnIndex =>
@@ -121,14 +122,17 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[IdClassifier, K
         }"
 
       } + s"${getColumnToJSON(jsonKeyColumnBuilder.build)}$END_ARRAY"
+      jsonKeyColumnBuilder.setIndex(count)
+      val theAfter = System.currentTimeMillis()
+      temp.setMsgSyncEndTime(theAfter)
+      temp.setMsgSyncUsedTime(temp.getMsgSyncEndTime - temp.getSyncTaskStartTime)
+      jsonKeyColumnBuilder.setValue(JsonUtil.serialize(jsonKey))
+      str
     }
 
     val finalDataString = s"${START_JSON}${STRING_CONTAINER}header${STRING_CONTAINER}${KEY_VALUE_SPLIT}${getEntryHeaderJson(header)}${ELEMENT_SPLIT}${STRING_CONTAINER}rowChange${STRING_CONTAINER}${KEY_VALUE_SPLIT}${START_JSON}${STRING_CONTAINER}rowDatas" +
       s"${STRING_CONTAINER}${KEY_VALUE_SPLIT}$START_ARRAY${START_JSON}${rowChangeStr}${END_JSON}${END_ARRAY}${END_JSON}${END_JSON}"
     kafkaMessage.setJsonValue(finalDataString)
-    val theAfter = System.currentTimeMillis()
-    temp.setMsgSyncEndTime(theAfter)
-    temp.setMsgSyncUsedTime(temp.getMsgSyncEndTime - temp.getSyncTaskStartTime)
     kafkaMessage
   }
 
