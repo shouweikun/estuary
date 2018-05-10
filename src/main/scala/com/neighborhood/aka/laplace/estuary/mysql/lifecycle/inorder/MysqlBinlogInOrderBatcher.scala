@@ -54,7 +54,7 @@ class MysqlBinlogInOrderBatcher(
       sinker ! kafkaMessage
       log.debug(s"batch primaryKey:${
         x.consistentHashKey
-      },id:$syncTaskId")
+      },eventType:${x.entry.getHeader.getEventType},id:$syncTaskId")
 
       //性能分析
       if (isCosting) powerAdapter.fold(log.warning(s"cannot find processCounter,id:$syncTaskId"))(ref => ref ! BatcherMessage(kafkaMessage.getBaseDataJsonKey.msgSyncUsedTime))
@@ -71,7 +71,6 @@ class MysqlBinlogInOrderBatcher(
   }
 
   def sendHeartBeats = {
-
 
     val concernedDbNames = if (StringUtils.isEmpty(concernedDbName)) Array.empty[String] else concernedDbName.split(",")
     val ignoredDbNames = if (StringUtils.isEmpty(ignoredDbName)) Array.empty[String] else ignoredDbName.split(",")
@@ -96,7 +95,7 @@ class MysqlBinlogInOrderBatcher(
       case (_, false) => buildAndSendDummyKafkaMessage(mysqlDatabaseNameList)(sinker)
     }
     //补充计数
-    if (isCounting) processingCounter.fold(log.warning(s"cannot find powerAdapter,id:$syncTaskId")){ ref => ref ! BatcherMessage(size); ref ! FetcherMessage(size) }
+    if (isCounting) processingCounter.fold(log.warning(s"cannot find powerAdapter,id:$syncTaskId")) { ref => ref ! BatcherMessage(size); ref ! FetcherMessage(size) }
   }
 
   /**

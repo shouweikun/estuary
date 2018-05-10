@@ -87,9 +87,8 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[IdClassifier, K
     jsonKeyColumnBuilder.setSqlType(12) //string 类型.
     jsonKeyColumnBuilder.setName("syncJsonKey")
     val jsonKey = temp.clone().asInstanceOf[BinlogKey]
-
-    //            todo
-    //  jsonKey.syncTaskSequence = addAndGetSyncTaskSequence
+    //增加event type
+    jsonKey.setEventType(eventString)
     val kafkaMessage = new KafkaMessage
     kafkaMessage.setBaseDataJsonKey(jsonKey)
     jsonKeyColumnBuilder.setIndex(count)

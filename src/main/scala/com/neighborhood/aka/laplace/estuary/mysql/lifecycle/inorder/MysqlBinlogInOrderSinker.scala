@@ -32,21 +32,25 @@ class MysqlBinlogInOrderSinker(
     val seq = message.getBaseDataJsonKey.syncTaskSequence
     val tableName = message.getBaseDataJsonKey.tableName
     val dbName = message.getBaseDataJsonKey.dbName
+    //通过syncSequence判断是不是DDL
     val key = if (seq <= 0) "DDL" else s"$dbName.$tableName"
     val topic = kafkaSinkFunc.findTopic(key)
     message.getBaseDataJsonKey.setKafkaTopic(topic)
 
     if (isSync) {
       //同步写
-      //kafkaSinkFunc.sink(message.getBaseDataJsonKey, message.getJsonValue)(topic)
+      kafkaSinkFunc.sink(message.getBaseDataJsonKey, message.getJsonValue)(topic)
     } else {
       log.error(s"暂时不支持异步写模式,id:$syncTaskId")
       throw new UnsupportedOperationException(s"暂时不支持异步写模式,id:$syncTaskId")
     }
-    if (isCounting) processingCounter.fold {log.error(s"processingCounter cannot be null,id:$syncTaskId")}(ref => ref ! SinkerMessage(1))
-    if (isCosting) powerAdapter.fold {log.error(s"powerAdapter cannot be null,id:$syncTaskId")}(ref => ref ! SinkerMessage(after - before))
-    //todo 日志中增加操作类型
-    log.debug(s"sink primaryKey:${message.getBaseDataJsonKey.msgSyncUsedTime},id:$syncTaskId")
+    if (isCounting) processingCounter.fold {
+      log.error(s"processingCounter cannot be null,id:$syncTaskId")
+    }(ref => ref ! SinkerMessage(1))
+    if (isCosting) powerAdapter.fold {
+      log.error(s"powerAdapter cannot be null,id:$syncTaskId")
+    }(ref => ref ! SinkerMessage(after - before))
+    log.debug(s"sink primaryKey:${message.getBaseDataJsonKey.msgSyncUsedTime},evnetType:${message.getBaseDataJsonKey.getEventType},id:$syncTaskId")
   }
 
   override def preStart(): Unit = {
