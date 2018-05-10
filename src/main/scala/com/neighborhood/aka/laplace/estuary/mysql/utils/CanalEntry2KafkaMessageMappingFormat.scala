@@ -20,6 +20,7 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[IdClassifier, K
   self: Actor with ActorLogging =>
 
   val syncTaskId: String
+  val num: Int
   val config = context.system.settings.config
   val syncStartTime = System.currentTimeMillis()
   private val jsonFormat = new JsonFormat
@@ -28,10 +29,12 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[IdClassifier, K
   lazy val appServerPort = if (config.hasPath("app.server.port")) config.getInt("app.server.port") else -1
 
   override def transform(idClassifier: IdClassifier): KafkaMessage = {
+    //todo 可以优化
     val before = System.currentTimeMillis()
     lazy val entry = idClassifier.entry
     lazy val rowData = idClassifier.rowData
     lazy val header = entry.getHeader
+
     lazy val eventType = header.getEventType
     lazy val primaryKey = idClassifier.consistentHashKey.toString
     val tempJsonKey = BinlogKey.buildBinlogKey(header)
@@ -40,6 +43,7 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[IdClassifier, K
     tempJsonKey.setAppServerPort(appServerPort)
     tempJsonKey.setSyncTaskId(syncTaskId)
     tempJsonKey.setSyncTaskStartTime(syncStartTime)
+    tempJsonKey.setSyncTaskSequence(num)
     tempJsonKey.setMsgSyncStartTime(before)
     tempJsonKey.setPrimaryKeyValue(primaryKey)
     tempJsonKey.setMsgUuid(primaryKey)
@@ -91,9 +95,7 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[IdClassifier, K
     val jsonKey = temp.clone().asInstanceOf[BinlogKey]
     //增加event type
     jsonKey.setEventType(eventString)
-    val kafkaMessage = new KafkaMessage
-    kafkaMessage.setBaseDataJsonKey(jsonKey)
-
+    lazy val kafkaMessage = new KafkaMessage
 
     /**
       * 构造rowChange对应部分的json
@@ -124,14 +126,15 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[IdClassifier, K
       } + s"${getColumnToJSON(jsonKeyColumnBuilder.build)}$END_ARRAY"
       jsonKeyColumnBuilder.setIndex(count)
       val theAfter = System.currentTimeMillis()
-      temp.setMsgSyncEndTime(theAfter)
-      temp.setMsgSyncUsedTime(temp.getMsgSyncEndTime - temp.getSyncTaskStartTime)
+      jsonKey.setMsgSyncEndTime(theAfter)
+      jsonKey.setMsgSyncUsedTime(jsonKey.getMsgSyncEndTime - jsonKey.getMsgSyncStartTime)
       jsonKeyColumnBuilder.setValue(JsonUtil.serialize(jsonKey))
       str
     }
 
     val finalDataString = s"${START_JSON}${STRING_CONTAINER}header${STRING_CONTAINER}${KEY_VALUE_SPLIT}${getEntryHeaderJson(header)}${ELEMENT_SPLIT}${STRING_CONTAINER}rowChange${STRING_CONTAINER}${KEY_VALUE_SPLIT}${START_JSON}${STRING_CONTAINER}rowDatas" +
       s"${STRING_CONTAINER}${KEY_VALUE_SPLIT}$START_ARRAY${START_JSON}${rowChangeStr}${END_JSON}${END_ARRAY}${END_JSON}${END_JSON}"
+    kafkaMessage.setBaseDataJsonKey(jsonKey)
     kafkaMessage.setJsonValue(finalDataString)
     kafkaMessage
   }

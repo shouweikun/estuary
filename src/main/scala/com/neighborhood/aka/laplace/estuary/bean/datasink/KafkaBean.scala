@@ -3,7 +3,7 @@ package com.neighborhood.aka.laplace.estuary.bean.datasink
 import java.util
 
 import com.neighborhood.aka.laplace.estuary.bean.datasink.DataSinkType.DataSinkType
-import com.neighborhood.aka.laplace.estuary.bean.key.{JsonKeyPartitioner, JsonKeySerializer, MultipleJsonKeyPartitioner}
+import com.neighborhood.aka.laplace.estuary.bean.key.{JsonKeyPartitioner, JsonKeySerializer, MultipleJsonKeyPartitioner, MultipleJsonKeyPartitionerJava}
 import org.apache.kafka.common.serialization.StringSerializer
 
 /**

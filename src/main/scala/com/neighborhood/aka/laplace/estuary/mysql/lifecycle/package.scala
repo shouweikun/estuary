@@ -28,11 +28,13 @@ package object lifecycle {
 
     def generateKey: String = {
       lazy val prefix = s"${entry.getHeader.getSchemaName}@${entry.getHeader.getTableName}@"
-      lazy val key = if (entry.getHeader.getEventType.equals(CanalEntry.EventType.DELETE)) rowData.getBeforeColumnsList.asScala.filter(_.getIsKey).mkString("_") else rowData.getAfterColumnsList.asScala.filter(_.getIsKey).mkString("_")
+      lazy val key = if (entry.getHeader.getEventType.equals(CanalEntry.EventType.DELETE)) rowData.getBeforeColumnsList.asScala.filter(_.getIsKey).mkString("_") else rowData.getAfterColumnsList.asScala.withFilter(_.getIsKey).map(_.getValue).mkString("_")
       prefix + key
     }
   }
+
   case class DatabaseAndTableNameClassifier(entry: CanalEntry.Entry) extends ConsistentHashable {
     override def consistentHashKey: Any = s"${entry.getHeader.getSchemaName}@${entry.getHeader.getTableName}"
   }
+
 }

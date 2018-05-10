@@ -12,7 +12,9 @@ import org.apache.kafka.common.Cluster
   */
 class MultipleJsonKeyPartitioner extends Partitioner {
 
-  private def partitionByPrimaryKey(key: Any)(implicit partitions: Int): Int = key.hashCode() % partitions
+  private def partitionByPrimaryKey(key: Any)(implicit partitions: Int): Int = {
+   key.hashCode() % partitions
+  }
 
   private def partitionByMod(mod: Long)(implicit partitions: Int): Int = (mod % partitions) toInt
 
@@ -23,14 +25,14 @@ class MultipleJsonKeyPartitioner extends Partitioner {
     key match {
       case x: BinlogKey => {
         x.getPartitionStrategy match {
-          case PartitionStrategy.MOD => partitionByMod(x.getSyncTaskSequence)
-          case PartitionStrategy.PRIMARY_KEY => partitionByPrimaryKey(x.getPrimaryKeyValue)
+          case PartitionStrategy.MOD => math.abs(partitionByMod(x.getSyncTaskSequence))
+          case PartitionStrategy.PRIMARY_KEY => math.abs(partitionByPrimaryKey(x.getPrimaryKeyValue))
           case _ => ???
         }
       }
       case x: OplogKey => {
         x.getPartitionStrategy match {
-          case PartitionStrategy.PRIMARY_KEY => partitionByPrimaryKey(x.getMongoOpsUuid)
+          case PartitionStrategy.PRIMARY_KEY => math.abs(partitionByPrimaryKey(x.getMongoOpsUuid))
           case _ => ???
         }
       }
