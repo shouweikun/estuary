@@ -4,6 +4,7 @@ import java.util
 
 import org.apache.kafka.clients.producer.Partitioner
 import org.apache.kafka.common.Cluster
+import org.slf4j.LoggerFactory
 
 /**
   * Created by john_liu on 2018/5/6.
@@ -11,9 +12,10 @@ import org.apache.kafka.common.Cluster
   * @todo
   */
 class MultipleJsonKeyPartitioner extends Partitioner {
+  val logger = LoggerFactory.getLogger(classOf[MultipleJsonKeyPartitioner])
 
   private def partitionByPrimaryKey(key: Any)(implicit partitions: Int): Int = {
-   key.hashCode() % partitions
+    key.hashCode() % partitions
   }
 
   private def partitionByMod(mod: Long)(implicit partitions: Int): Int = (mod % partitions) toInt
