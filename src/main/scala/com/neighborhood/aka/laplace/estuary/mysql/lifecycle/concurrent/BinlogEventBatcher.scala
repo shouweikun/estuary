@@ -241,6 +241,7 @@ class BinlogEventBatcher(
                   case CanalEntry.EntryType.ROWDATA => {
                     tranferEntry2JsonByEventType
                   }
+                  case _ => log.warning(s"unsupported type $entryType,$syncTaskId")
                 }
 
             }

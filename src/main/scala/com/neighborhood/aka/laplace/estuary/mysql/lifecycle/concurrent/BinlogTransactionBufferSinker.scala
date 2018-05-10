@@ -70,6 +70,7 @@ class BinlogTransactionBufferSinker(sinkFunc: SinkFunc) extends Actor with Actor
       case EntryType.ROWDATA => {
         put(entry)
       }
+      case _ =>
     }
   }
 

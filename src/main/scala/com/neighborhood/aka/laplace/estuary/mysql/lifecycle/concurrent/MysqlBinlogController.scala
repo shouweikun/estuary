@@ -298,10 +298,8 @@ class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncC
       controllerChangeStatus(Status.ERROR)
       errorCount = 0
       throw new Exception("syncController error for 3 times")
-    } else {
-      message
-      self ! message
-    }
+    } else self ! message
+
   }
 
   /**

@@ -11,9 +11,7 @@ import com.googlecode.protobuf.format.JsonFormat
 import com.neighborhood.aka.laplace.estuary.bean.key.{BinlogKey, PartitionStrategy}
 import com.neighborhood.aka.laplace.estuary.bean.support.KafkaMessage
 import com.neighborhood.aka.laplace.estuary.core.trans.MappingFormat
-import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder.MysqlBinlogInOrderBatcherPrimaryKeyManager.IdClassifier
-
-import scala.util.{Failure, Success, Try}
+import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.IdClassifier
 
 /**
   * Created by john_liu on 2018/5/1.
@@ -50,7 +48,7 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[IdClassifier, K
       case CanalEntry.EventType.UPDATE => tranformDMLtoJson(header, rowData, tempJsonKey, "UPDATE")
       //DDL操作直接将entry变为json,目前只处理Alter
       case CanalEntry.EventType.ALTER => transferDDltoJson(tempJsonKey, entry)
-
+      case _ => throw new Exception(s"unsupported event type:$eventType,$syncTaskId")
     }
   }
 
