@@ -2,7 +2,7 @@ package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, SourceDataBatcher, SyncControllerMessage}
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, FetcherMessage, SourceDataBatcher, SyncControllerMessage}
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.{BinlogPositionInfo, IdClassifier}
 import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlConnection
 import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManager
@@ -46,10 +46,10 @@ class MysqlBinlogInOrderBatcher(
 
     case x: IdClassifier => {
       //      implicit val num = this.num
-//      val before = System.currentTimeMillis()
+      //      val before = System.currentTimeMillis()
       val kafkaMessage = transform(x)
-//      val after = System.currentTimeMillis()
-//      val a = after - before
+      //      val after = System.currentTimeMillis()
+      //      val a = after - before
       kafkaMessage.getBaseDataJsonKey.setSyncTaskSequence(num)
       sinker ! kafkaMessage
       log.debug(s"batch primaryKey:${
@@ -60,7 +60,7 @@ class MysqlBinlogInOrderBatcher(
       if (isCosting) powerAdapter.fold(log.warning(s"cannot find processCounter,id:$syncTaskId"))(ref => ref ! BatcherMessage(kafkaMessage.getBaseDataJsonKey.msgSyncUsedTime))
       if (isCounting) processingCounter.fold(log.warning(s"cannot find powerAdapter,id:$syncTaskId"))(ref => ref ! BatcherMessage(1))
     }
-    case info:BinlogPositionInfo => {
+    case info: BinlogPositionInfo => {
       sinker ! info
       if (isCounting) processingCounter.fold(log.warning(s"cannot find powerAdapter,id:$syncTaskId"))(ref => ref ! BatcherMessage(1))
     }
@@ -84,12 +84,9 @@ class MysqlBinlogInOrderBatcher(
       */
     def buildAndSendDummyKafkaMessage(dbNameList: Iterable[String])(sinker: ActorRef): Int = {
 
-      val kafkaMessageList: List[Any] = dbNameList
-        .map {
-          dbName =>
-            CanalEntryJsonHelper.dummyKafkaMessage(dbName)
-        }.toList
-      sinker ! kafkaMessageList
+      val kafkaMessageList = dbNameList
+        .map { dbName => CanalEntryJsonHelper.dummyKafkaMessage(dbName) }
+        .map { message => sinker ! message }
       dbNameList.size
     }
 
@@ -99,7 +96,7 @@ class MysqlBinlogInOrderBatcher(
       case (_, false) => buildAndSendDummyKafkaMessage(mysqlDatabaseNameList)(sinker)
     }
     //补充计数
-    if (isCounting) processingCounter.fold(log.warning(s"cannot find powerAdapter,id:$syncTaskId"))(ref => ref ! BatcherMessage(size))
+    if (isCounting) processingCounter.fold(log.warning(s"cannot find powerAdapter,id:$syncTaskId")){ ref => ref ! BatcherMessage(size); ref ! FetcherMessage(size) }
   }
 
   /**

@@ -88,13 +88,13 @@ class MysqlBinlogInOrderPowerAdapter(
       case (_, x, _, _) if (x > 1500) => math.max(700000, delayDuration) //700ms 休眠
       case (_, x, _, _) if (x > 1000) => math.max(500000, delayDuration) ////500ms 休眠
       case (_, x, _, _) if (x > 400) => math.max(150000, delayDuration) ////150ms 休眠
-      case (w, _, _, _) if (w < 1 * batcherNum) => 0 //0s 快速拉取数据
+      case (w, _, _, _) if (w < 10 * batcherNum) => 0 //0s 快速拉取数据
       case (_, x, y, z) if (x > 150 || y > 10000 || z > 800) => math.max(100000, delayDuration) //100ms 防止数据太大
       case (_, x, y, z) if (x > 100 || y > 8000 || z > 750) => math.max(80000, delayDuration) //80ms 防止数据太大
       case (_, x, y, z) if (x > 50 || y > 6000 || z > 700) => math.max(60000, delayDuration) //60ms 防止数据太大
       case (_, x, y, z) if (x > 30 || y > 4000 || z > 600) => math.max(40000, delayDuration) //40ms 防止数据太大
       case (_, x, y, z) if (x > 25 || y > 2500 || z > 450) => math.max(35000, delayDuration) //40ms
-      case (w, _, _, _) if (w < 8 * batcherNum) => 0 //0s 快速拉取数据
+      case (w, _, _, _) if (w < 15 * batcherNum) => 0 //0s 快速拉取数据
       case (_, x, y, z) if (x > 20 || y > 2000 || z > 400) => math.max(25000, delayDuration) //25ms
       case (_, x, y, z) if (x > 15 || y > 1800 || z > 300) => math.max(20000, delayDuration) //20ms
       case (_, x, y, z) if (x > 12 || y > 1700 || z > 250) => math.max(10000, delayDuration) //10ms

@@ -105,7 +105,7 @@ trait PowerAdapter {
   }
 
   protected def computeCostByTimeCost(timeArray: Array[Long]): Long = {
-    (fetchTimeArray.fold(0L)(_ + _))./(size)
+    (timeArray.fold(0L)(_ + _))./(size)
   }
 
   protected def computeCostByTimestamp(timeArray: Array[Long], index: Int): Long = {
