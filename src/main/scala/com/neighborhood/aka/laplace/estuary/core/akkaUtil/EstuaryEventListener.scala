@@ -11,13 +11,13 @@ import scala.collection.mutable
 
 class EstuaryEventListener extends Actor with ActorLogging {
 
-  val TIME_INTERVAL = 3 * 60 * 1000 //3min 以ms为单位
+  val TIME_INTERVAL = 1 * 60 * 1000 //1min 以ms为单位
   val config = ConfigFactory.load()
   val url = config.getString("error.monitor.url")
   val mobilelist = List(config.getString("error.monitor.mobiles"))
   val restTemplate = new RestTemplate
   val headers = new HttpHeaders
-  val informedSyncTaskMap: mutable.HashMap[String, Long] = new mutable.HashMap[String, Long]()
+  var lastSendTime = 0l
 
   override def receive = {
     case InitializeLogger(_) => sender() ! LoggerInitialized
@@ -42,9 +42,9 @@ class EstuaryEventListener extends Actor with ActorLogging {
 
       val taskMark = logSource.substring(0, logSource.lastIndexOf("/"))
       lazy val now = System.currentTimeMillis()
-      if (!informedSyncTaskMap.contains(taskMark) || now - informedSyncTaskMap.get(taskMark).getOrElse(1L) > TIME_INTERVAL) {
+      if (now - lastSendTime > TIME_INTERVAL) {
         buildandSendErrorMessage
-        informedSyncTaskMap.put(taskMark, now)
+        lastSendTime = now
       }
 
     }
