@@ -1,4 +1,4 @@
-package com.neighborhood.aka.laplace.estuary.mysql.lifecycle
+package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.concurrent
 
 import java.util.concurrent.atomic.AtomicLong
 
@@ -70,6 +70,7 @@ class BinlogTransactionBufferSinker(sinkFunc: SinkFunc) extends Actor with Actor
       case EntryType.ROWDATA => {
         put(entry)
       }
+      case _ =>
     }
   }
 

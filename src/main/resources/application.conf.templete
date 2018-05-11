@@ -12,24 +12,43 @@ akka {
   }
 
   batcher-dispatcher {
-    # Dispatcher is the name of the event-based dispatcher
-    type = Dispatcher
-    # What kind of ExecutionService to use
-    executor = "fork-join-executor"
-    # Configuration for the fork join pool
-    fork-join-executor {
-      # Min number of threads to cap factor-based parallelism number to
-      parallelism-min = 2
-      # Parallelism (threads) ... ceil(available processors * factor)
-      parallelism-factor = 2.0
-      # Max number of threads to cap factor-based parallelism number to
-      parallelism-max = 12
+      # Dispatcher is the name of the event-based dispatcher
+      type = Dispatcher
+      # What kind of ExecutionService to use
+      executor = "fork-join-executor"
+      # Configuration for the fork join pool
+      fork-join-executor {
+        # Min number of threads to cap factor-based parallelism number to
+        parallelism-min =9
+        # Parallelism (threads) ... ceil(available processors * factor)
+        parallelism-factor =7
+        # Max number of threads to cap factor-based parallelism number to
+        parallelism-max = 50
+      }
+      # Throughput defines the maximum number of messages to be
+      # processed per actor before the thread jumps to the next actor.
+      # Set to 1 for as fair as possible.
+      throughput = 1
     }
-    # Throughput defines the maximum number of messages to be
-    # processed per actor before the thread jumps to the next actor.
-    # Set to 1 for as fair as possible.
-    throughput = 50
-  }
+    sinker-dispatcher {
+      # Dispatcher is the name of the event-based dispatcher
+      type = Dispatcher
+      # What kind of ExecutionService to use
+      executor = "fork-join-executor"
+      # Configuration for the fork join pool
+      fork-join-executor {
+        # Min number of threads to cap factor-based parallelism number to
+        parallelism-min = 19
+        # Parallelism (threads) ... ceil(available processors * factor)
+        parallelism-factor = 8
+        # Max number of threads to cap factor-based parallelism number to
+        parallelism-max = 50
+      }
+      # Throughput defines the maximum number of messages to be
+      # processed per actor before the thread jumps to the next actor.
+      # Set to 1 for as fair as possible.
+      throughput = 1
+    }
 
   kafka.producer {
     # Tuning parameter of how many sends that can run in parallel.
@@ -53,12 +72,19 @@ akka {
 
 }
 mongodb{
-  url="mongodb://admin:instrum@localhost:27017/?authSource=admin&authMechanism=SCRAM-SHA-1"
-  dbName="testAdmin"
+   url="mongodb://admin:instrum@10.10.154.7:27017/?authSource=admin&authMechanism=SCRAM-SHA-1"
+   dbName="testAdmin"
 }
 error.monitor{
    url=""
    mobiles=""
+}
+app{
+name ="local"
+server{
+ ip="localhost"
+ port=8889
+}
 }
 
 

@@ -17,7 +17,7 @@ public class Mysql2kafkaTaskRequestBean extends TaskRequestBean {
     private boolean isCosting = true;
     private boolean isTransactional = false;
     private boolean isPowerAdapted = true;
-    private int batcherCount = 10;
+    private int batcherCount = 19;
     private long batchThreshold = 50;
     private long fetchDelay = 0;
     private String filterPattern;
@@ -45,11 +45,13 @@ public class Mysql2kafkaTaskRequestBean extends TaskRequestBean {
     private String mysqlUsername;
     private String mysqlPassword;
     private String mysqlDefaultDatabase;
-//    private List<String> mysqlDatabases;
+    //    private List<String> mysqlDatabases;
     private int listenTimeout = 5000;
     private int listenRetrytime = 3;
     private String concernedDataBase = "";
     private String ignoredDataBase = "";
+    private int taskType = 1;
+
     // 支持的binlogImage
     // binlog.images = ""
     //支持的binlogFormat
@@ -58,6 +60,14 @@ public class Mysql2kafkaTaskRequestBean extends TaskRequestBean {
     private String zookeeperServers;
     // zookeeper 链接超时设置,单位毫秒
     private int zookeeperTimeout = 10000;
+
+    public int getTaskType() {
+        return taskType;
+    }
+
+    public void setTaskType(int taskType) {
+        this.taskType = taskType;
+    }
 
     public String getIgnoredDataBase() {
         return ignoredDataBase;

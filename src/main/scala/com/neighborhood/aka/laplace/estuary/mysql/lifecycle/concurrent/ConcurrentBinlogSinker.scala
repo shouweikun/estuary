@@ -1,4 +1,4 @@
-package com.neighborhood.aka.laplace.estuary.mysql.lifecycle
+package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.concurrent
 
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -10,6 +10,7 @@ import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle._
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
+import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.BinlogPositionInfo
 import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManager
 import org.I0Itec.zkclient.exception.ZkTimeoutException
 import org.apache.kafka.clients.producer.{Callback, RecordMetadata}

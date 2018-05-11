@@ -30,6 +30,10 @@ trait PowerAdapter {
   var sinkTimestamp: Long = 0
   var sinkCountSum: Long = 0
 
+  var fetchActualTimeCost: Long = 0
+  var batchActualTimeCost: Long = 0
+  var sinkActualTimeCost: Long = 0l
+
   /**
     * 通过时间戳方式更新fetch time
     *
@@ -48,7 +52,6 @@ trait PowerAdapter {
     */
   def updateFetchTimeByTimeCost(timeCost: Long) = {
     val nextFetchTimeWriteIndex = (fetchTimeWriteIndex + 1) % size
-    // 如果拿不到数据，默认在时间上随机增加3-5倍
     fetchTimeArray(nextFetchTimeWriteIndex) = timeCost
     fetchTimeWriteIndex = nextFetchTimeWriteIndex
   }
@@ -95,18 +98,41 @@ trait PowerAdapter {
     * @param timeCost
     */
   def updateBatchTimeByTimeCost(timeCost: Long) = {
+    val theTimeCost = if (timeCost <= 0) 1 else timeCost
     val nextFetchTimeWriteIndex = (batchTimeWriteIndex + 1) % size
-    // 如果拿不到数据，默认在时间上随机增加3-5倍
-    batchTimeArray(nextFetchTimeWriteIndex) = timeCost
+    batchTimeArray(nextFetchTimeWriteIndex) = theTimeCost
     batchTimeWriteIndex = nextFetchTimeWriteIndex
   }
 
   protected def computeCostByTimeCost(timeArray: Array[Long]): Long = {
-    (fetchTimeArray.fold(0L)(_ + _))./(size)
+    (timeArray.fold(0L)(_ + _))./(size)
   }
 
   protected def computeCostByTimestamp(timeArray: Array[Long], index: Int): Long = {
     timeArray(index) - timeArray((index + 1) % size) / size
+  }
+
+  /**
+    *
+    * @param costSum      计算的耗时 ms
+    * @param timeInterVal 时间间隔 s
+    * @return
+    */
+  protected def computeCostPercentage(costSum: Long, timeInterVal: Long) = costSum / timeInterVal / 10
+
+  /**
+    *
+    * @param countSum     总数
+    * @param timeInterVal 时间间隔 s
+    * @return
+    */
+  protected def computeQuantityPerSecond(countSum: Long, timeInterVal: Long) = countSum / timeInterVal
+
+  protected def computeActualCost = {
+    //实时耗时
+    fetchActualTimeCost = computeCostByTimeCost(fetchTimeArray)
+    batchActualTimeCost = computeCostByTimeCost(batchTimeArray)
+    sinkActualTimeCost = computeCostByTimeCost(sinkTimeArray)
   }
 
   /**

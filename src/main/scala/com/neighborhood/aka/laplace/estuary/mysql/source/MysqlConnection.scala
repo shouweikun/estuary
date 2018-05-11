@@ -45,6 +45,7 @@ class MysqlConnection(
 
 
   val logger = LoggerFactory.getLogger(classOf[MysqlConnection])
+
   /**
     * Canal 的Connector 主要是用于建立tcp连接，拉取数据
     */
@@ -179,6 +180,17 @@ class MysqlConnection(
 
   def getConnector = this.connector
 
+  private var lastWarningTime: Long = 0
+
+  private def sendWarningOrNot(e: Throwable): Unit = {
+    lazy val currentTime = System.currentTimeMillis()
+    //10s 一发送
+    if (currentTime - lastWarningTime > 10 * 1000) {
+      logger.warn(s"$e,cause:${e.getCause}")
+      lastWarningTime = currentTime
+    }
+  }
+
   @tailrec
   final def fetchUntilDefined(filterEntry: Option[CanalEntry.Entry] => Boolean)(implicit binlogParser: MysqlBinlogParser): Option[CanalEntry.Entry] = {
     lazy val event = decoder.decode(fetcher, logContext)
@@ -188,8 +200,8 @@ class MysqlConnection(
     } catch {
       case e: CanalParseException => {
         e.getCause match {
-          case ex:IllegalArgumentException => throw new CanalParseException("fuck IllegalArgumentException when parse,id:", e.getCause)
-          case _ => logger.warn(s"$e,cause:${e.getCause}"); None
+          case ex: IllegalArgumentException => throw new CanalParseException("fuck IllegalArgumentException when parse,id:", e.getCause)
+          case _ => sendWarningOrNot(e); None
         }
 
       }

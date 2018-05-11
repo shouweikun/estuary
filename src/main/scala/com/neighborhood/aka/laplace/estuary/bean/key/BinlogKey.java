@@ -9,6 +9,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class BinlogKey extends BaseDataJsonKey {
+
+    private boolean isDdl = false;
     /**
      * 要同步的数据库的信息
      */
@@ -25,6 +27,26 @@ public class BinlogKey extends BaseDataJsonKey {
      * 保存在zk中的偏移量, 会与本身数据的offset不一致, 比当前数据的offset靠前.
      */
     private long savedOffset;
+    /**
+     * 主键值
+     */
+    private String primaryKeyValue = "";
+
+    public String getPrimaryKeyValue() {
+        return primaryKeyValue;
+    }
+
+    public void setPrimaryKeyValue(String primaryKeyValue) {
+        this.primaryKeyValue = primaryKeyValue;
+    }
+
+    public boolean isDdl() {
+        return isDdl;
+    }
+
+    public void setDdl(boolean ddl) {
+        isDdl = ddl;
+    }
 
     public String getDbResId() {
         return dbResId;
@@ -85,13 +107,13 @@ public class BinlogKey extends BaseDataJsonKey {
     @Override
     public String toString() {
         return "BinlogKey{" +
-            "dbResId='" + dbResId + '\'' +
-            ", mysqlJournalName='" + mysqlJournalName + '\'' +
-            ", mysqlPosition=" + mysqlPosition +
-            ", mysqlTimestamp=" + mysqlTimestamp +
-            ", serverId=" + serverId +
-            ", savedJournalName='" + savedJournalName + '\'' +
-            ", savedOffset=" + savedOffset +
+                "dbResId='" + dbResId + '\'' +
+                ", mysqlJournalName='" + mysqlJournalName + '\'' +
+                ", mysqlPosition=" + mysqlPosition +
+                ", mysqlTimestamp=" + mysqlTimestamp +
+                ", serverId=" + serverId +
+                ", savedJournalName='" + savedJournalName + '\'' +
+                ", savedOffset=" + savedOffset +
                 "appName='" + appName + '\'' +
                 ", appServerIp='" + appServerIp + '\'' +
                 ", appServerPort=" + appServerPort +
@@ -111,7 +133,7 @@ public class BinlogKey extends BaseDataJsonKey {
                 ", kafkaPartition=" + kafkaPartition +
                 ", kafkaOffset=" + kafkaOffset +
                 ", eventType='" + eventType + '\'' +
-            '}';
+                '}';
     }
 
     public static BinlogKey buildBinlogKey(CanalEntry.Header header) {
@@ -122,10 +144,10 @@ public class BinlogKey extends BaseDataJsonKey {
         key.sourceType = "binlog";
         key.msgUuid = header.getLogfileName() + header.getLogfileOffset();
 
-        key.setServerId( header.getServerId());
+        key.setServerId(header.getServerId());
         key.setMysqlPosition(header.getLogfileOffset());
         key.setMysqlJournalName(header.getLogfileName());
-        key.setMysqlTimestamp( header.getExecuteTime());
+        key.setMysqlTimestamp(header.getExecuteTime());
 
         key.eventType = header.getEventType().name();
 

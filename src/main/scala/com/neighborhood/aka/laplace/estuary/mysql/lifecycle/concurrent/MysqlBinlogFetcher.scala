@@ -1,4 +1,4 @@
-package com.neighborhood.aka.laplace.estuary.mysql.lifecycle
+package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.concurrent
 
 import java.util.concurrent.Executors
 
@@ -93,14 +93,14 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
           try {
             entryPosition = mysqlConnection.map(_.fork).map { conn => conn.connect(); logPositionHandler.findStartPosition(conn) }
             entryPosition.fold {
-              log.error("fetcher find entryPosition is null")
-              throw new Exception("entryPosition is null when find position")
+              log.error(s"fetcher find entryPosition is null,id:$syncTaskId")
+              throw new Exception(s"entryPosition is null when find position,id:$syncTaskId")
             } {
               thePosition =>
                 mysqlConnection.map(_.connect())
-                log.info(s"fetcher find start position,binlogFileName:${thePosition.getJournalName},${thePosition.getPosition}")
+                log.info(s"fetcher find start position,binlogFileName:${thePosition.getJournalName},${thePosition.getPosition},id:$syncTaskId")
                 context.become(online)
-                log.info(s"fetcher switch to online")
+                log.info(s"fetcher switch to online,id:$syncTaskId")
                 self ! FetcherMessage("start")
             }
           }
@@ -131,10 +131,10 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
           val startPosition = entryPosition.get
           try {
             if (StringUtils.isEmpty(startPosition.getJournalName) && Option(startPosition.getTimestamp).isEmpty) {
-              log.error("unsupported operation: dump by timestamp is not supported yet")
-              throw new UnsupportedOperationException("unsupported operation: dump by timestamp is not supported yet")
+              log.error(s"unsupported operation: dump by timestamp is not supported yet,id:$syncTaskId")
+              throw new UnsupportedOperationException(s"unsupported operation: dump by timestamp is not supported yet,id:$syncTaskId")
             } else {
-              log.info("start dump binlog")
+              log.info(s"start dump binlog,id:$syncTaskId")
               MysqlConnection.dump(startPosition.getJournalName, startPosition.getPosition)(mysqlConnection.get)
 
             }
@@ -162,7 +162,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
           self ! FetcherMessage("restart")
         }
         case str: String => {
-          println(s"fetcher online unhandled command:$str")
+          println(s"fetcher online unhandled command:$str,id:$syncTaskId")
         }
       }
     }
@@ -184,12 +184,12 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
   def fetchOne(before: Long = System.currentTimeMillis()) = {
     lazy val entry = mysqlConnection.get.fetchUntilDefined(filterEntry(_))(binlogParser)
     if (entry.get.getHeader.getEventType == CanalEntry.EventType.ALTER) {
-      log.info(s"fetch ddl:${CanalEntryJsonHelper.entryToJson(entry.get)}");
-      Option(binlogDdlHandler).fold(log.warning("ddlHandler does not exist"))(x => x ! entry.get)
+      log.info(s"fetch ddl:${CanalEntryJsonHelper.entryToJson(entry.get)},id:$syncTaskId");
+      Option(binlogDdlHandler).fold(log.warning(s"ddlHandler does not exist,id:$syncTaskId"))(x => x ! entry.get)
     } else binlogEventBatcher ! entry.get
     lazy val cost = System.currentTimeMillis() - before
     if (isCounting) mysql2KafkaTaskInfoManager.fetchCount.incrementAndGet()
-    if (isCosting) mysql2KafkaTaskInfoManager.powerAdapter.fold(log.warning("powerAdapter not exist"))(x => x ! FetcherMessage(s"$cost"))
+    if (isCosting) mysql2KafkaTaskInfoManager.powerAdapter.fold(log.warning(s"powerAdapter not exist,id:$syncTaskId"))(x => x ! FetcherMessage(s"$cost"))
 
   }
 

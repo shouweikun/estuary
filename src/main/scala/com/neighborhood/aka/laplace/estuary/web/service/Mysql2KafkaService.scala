@@ -1,6 +1,8 @@
 package com.neighborhood.aka.laplace.estuary.web.service
 
-import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.MysqlBinlogController
+import com.neighborhood.aka.laplace.estuary.core.task.{Mysql2KafkaInOrderTask, Mysql2KafkaTask}
+import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.concurrent.MysqlBinlogController
+import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder.MysqlBinlogInOrderController
 import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManager
 import com.neighborhood.aka.laplace.estuary.web.akkaUtil.ActorRefHolder
 import com.neighborhood.aka.laplace.estuary.web.akkaUtil.ActorRefHolder.actorRefMap
@@ -58,13 +60,34 @@ object Mysql2KafkaService {
     s"mession:${mysql2KafkaTaskInfoBean.syncTaskId} submitted"
   }
 
+  /**
+    * 任务类型对应：
+    *          1. mysql2kafka
+    *          2. mysql2kafkaInOrder
+    *
+    * @param mysql2kafkaTaskRequestBean
+    * @return
+    */
   def startNewOneTask(mysql2kafkaTaskRequestBean: Mysql2kafkaTaskRequestBean): String = {
     val mysql2KafkaTaskInfoBean = TaskBeanTransformUtil.transform2Mysql2KafkaTaskInfoBean(
       mysql2kafkaTaskRequestBean)
-    val prop = MysqlBinlogController.props(mysql2KafkaTaskInfoBean)
-    ActorRefHolder.syncDaemon ! (prop, Option(mysql2KafkaTaskInfoBean.syncTaskId))
+    val taskType = mysql2kafkaTaskRequestBean.getTaskType
+    lazy val prop = {
+      taskType match {
+        case 1 => MysqlBinlogController.props(mysql2KafkaTaskInfoBean)
+        case 2 => MysqlBinlogInOrderController.props(mysql2KafkaTaskInfoBean)
+      }
+
+    }
+    taskType match {
+      case 1 => ActorRefHolder.syncDaemon ! Mysql2KafkaTask(prop, Option(mysql2KafkaTaskInfoBean.syncTaskId))
+      case 2 => ActorRefHolder.syncDaemon ! Mysql2KafkaInOrderTask(prop, Option(mysql2KafkaTaskInfoBean.syncTaskId))
+      case x => throw new IllegalArgumentException(s"不支持的任务类型,$x,id:${Option(mysql2KafkaTaskInfoBean.syncTaskId).getOrElse("None,pls do not let it none")}")
+    }
+
+
     //todo 持久化任务
-   // mongoPersistence.save(mysql2kafkaTaskRequestBean)
+    // mongoPersistence.save(mysql2kafkaTaskRequestBean)
     s"mession:${mysql2KafkaTaskInfoBean.syncTaskId} submitted"
   }
 

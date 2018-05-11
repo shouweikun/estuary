@@ -90,12 +90,15 @@ class Mysql2KafkaTaskInfoManager(taskInfoBean: Mysql2KafkaTaskInfoBean) extends 
   /**
     * kafka客户端,专门处理DDL
     */
-  val kafkaDdlSink = kafkaSink.fork
+  lazy val kafkaDdlSink = kafkaSink.fork
   /**
     * batcher数量
     */
   override val batcherNum = taskInfo.batcherNum
-
+  /**
+    * sinker数量，在InOrder模式下需要使用
+    */
+  lazy val sinkerNum = batcherNum
   /**
     * MysqlBinlogParser
     */
@@ -108,6 +111,10 @@ class Mysql2KafkaTaskInfoManager(taskInfoBean: Mysql2KafkaTaskInfoBean) extends 
     * 拉取数据的延迟
     */
   override lazy val fetchDelay: AtomicLong = taskInfo.fetchDelay
+  /**
+    * 计数器
+    */
+  var processingCounter: Option[ActorRef] = None
   /**
     * 功率控制器
     */
@@ -213,7 +220,6 @@ object Mysql2KafkaTaskInfoManager {
     Mysql2KafkaTaskInfoManager.taskManagerMap.put(syncTaskId, manager)
     manager
   }
-
 
 
   def logCount(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager): Map[String, Long] = {

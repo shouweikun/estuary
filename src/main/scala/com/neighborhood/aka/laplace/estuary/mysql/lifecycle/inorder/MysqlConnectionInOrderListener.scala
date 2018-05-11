@@ -1,4 +1,4 @@
-package com.neighborhood.aka.laplace.estuary.mysql.lifecycle
+package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder
 
 import akka.actor.SupervisorStrategy.Escalate
 import akka.actor.{Actor, ActorLogging, OneForOneStrategy, Props}
@@ -14,7 +14,9 @@ import scala.util.Try
 /**
   * Created by john_liu on 2018/2/1.
   */
-class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager) extends Actor with HeartBeatListener with ActorLogging {
+class MysqlConnectionInOrderListener(
+                                      mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager
+                                    ) extends Actor with HeartBeatListener with ActorLogging {
   /**
     * syncTaskId
     */
@@ -45,25 +47,24 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
         case "start" => {
 
           //变为online状态
-          log.info("heartBeatListener swtich to online")
+          log.info(s"heartBeatListener swtich to online,id:$syncTaskId")
           context.become(onlineState)
-          connection.get.connect()
+          connection.fold {
+            log.error(s"heartBeatListener connection cannot be null,id:$syncTaskId");
+            throw new Exception(s"listener connection cannot be null,id:$syncTaskId")
+          }(conn => conn.connect())
           listenerChangeStatus(Status.ONLINE)
-        }
-        case "stop" => {
-          //doNothing
         }
         case str => {
           if (str == "listen") self ! SyncControllerMessage("start")
-          log.warning(s"listener offline  unhandled message:$str")
+          log.warning(s"heartBeatListener offline  unhandled message:$str,id:$syncTaskId")
         }
       }
     }
     case ListenerMessage(msg) => {
       msg match {
         case str => {
-
-          log.warning(s"listener offline  unhandled message:$str")
+          log.warning(s"heartBeatListener offline  unhandled message:$str,id:$syncTaskId")
         }
       }
 
@@ -76,21 +77,22 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
     case ListenerMessage(msg) => {
       msg match {
         case "listen" => {
-          log.info(s"is listening to the heartbeats")
+          log.debug(s"heartBeatListener is listening to the heartbeats,$syncTaskId")
           listenHeartBeats
-
         }
         case "stop" => {
           //变为offline状态
+          //未使用
           context.become(receive)
           listenerChangeStatus(Status.OFFLINE)
         }
       }
     }
-    case SyncControllerMessage(msg: String) => {
+    case SyncControllerMessage(msg) => {
       msg match {
         case "stop" => {
           //变为offline状态
+          //未使用
           context.become(receive)
           listenerChangeStatus(Status.OFFLINE)
         }
@@ -108,7 +110,7 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
 
           retryTimes = retryTimes - 1
           if (retryTimes <= 0) {
-            throw new RuntimeException(s"listener connot listen!,id:$syncTaskId")
+            throw new RuntimeException(s"heartBeatListener connot listen!,id:$syncTaskId")
           }
         } else {
 
@@ -134,34 +136,25 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
     * **************** Actor生命周期 *******************
     */
   override def preStart(): Unit = {
+    log.info(s"switch heartBeatListener to offline,id:$syncTaskId")
     listenerChangeStatus(Status.OFFLINE)
   }
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
+    log.info(s"heartBeatListener process preRestart,id:$syncTaskId")
     context.become(receive)
     listenerChangeStatus(Status.RESTARTING)
     super.preRestart(reason, message)
   }
 
   override def postRestart(reason: Throwable): Unit = {
+    log.info(s"heartBeatListener process postRestart id:$syncTaskId")
     super.postRestart(reason)
   }
 
   override def postStop(): Unit = {
+    log.info(s"heartBeatListener process postStop id:$syncTaskId")
     connection.get.disconnect()
-  }
-
-  override def supervisorStrategy = {
-    OneForOneStrategy() {
-      case e: Exception => {
-        listenerChangeStatus(Status.ERROR)
-        Escalate
-      }
-      case _ => {
-        listenerChangeStatus(Status.ERROR)
-        Escalate
-      }
-    }
   }
 
 
@@ -178,9 +171,8 @@ class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMan
 
 }
 
-object MysqlConnectionListener {
-  def props(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager): Props = {
-    Props(new MysqlConnectionListener(mysql2KafkaTaskInfoManager))
-  }
+object MysqlConnectionInOrderListener {
+  def props(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager): Props = Props(new MysqlConnectionInOrderListener(mysql2KafkaTaskInfoManager))
 }
+
 

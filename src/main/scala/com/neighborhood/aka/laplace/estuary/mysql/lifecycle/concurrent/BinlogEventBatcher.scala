@@ -1,4 +1,4 @@
-package com.neighborhood.aka.laplace.estuary.mysql.lifecycle
+package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.concurrent
 
 import java.util
 import java.util.concurrent.atomic.AtomicLong
@@ -16,6 +16,7 @@ import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{SourceDataBatcher, Status, _}
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
+import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.BinlogPositionInfo
 import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlConnection
 import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManager
 import com.neighborhood.aka.laplace.estuary.mysql.utils.{CanalEntryJsonHelper, JsonUtil, MysqlBinlogParser}
@@ -240,6 +241,7 @@ class BinlogEventBatcher(
                   case CanalEntry.EntryType.ROWDATA => {
                     tranferEntry2JsonByEventType
                   }
+                  case _ => log.warning(s"unsupported type $entryType,$syncTaskId")
                 }
 
             }
@@ -351,11 +353,12 @@ class BinlogEventBatcher(
 
     val re = Try(CanalEntry.RowChange.parseFrom(entry.getStoreValue)) match {
       case Success(rowChange) => {
-        val a = rowChange.getRowDatasCount
+
         (0 until rowChange.getRowDatasCount)
           .map {
             index =>
               val rowData = rowChange.getRowDatas(index)
+
               val count = if (eventString.equals("DELETE")) rowData.getBeforeColumnsCount else rowData.getAfterColumnsCount
               val jsonKeyColumnBuilder: Column.Builder
               = CanalEntry.Column.newBuilder
