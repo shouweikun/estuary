@@ -219,7 +219,7 @@ class MysqlBinlogFetcher(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
       errorCount = 0
       println(message.msg)
       e.printStackTrace()
-      throw new Exception(s"fetching data failure for 3 times,id:$syncTaskId")
+      throw new Exception(s"fetching data failure for 3 times,id:$syncTaskId",e)
     } else {
       self ! message
     }
