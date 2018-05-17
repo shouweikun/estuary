@@ -225,7 +225,7 @@ class MysqlBinlogInOrderController(
 
     log.info(s"initialize batcher,id:$syncTaskId")
     val binlogEventBatcher = context.actorOf(MysqlBinlogInOrderBatcherManager
-      .props(resourceManager, binlogSinker), "binlogBatcher")
+      .props(resourceManager, binlogSinker).withDispatcher("akka.batcher-dispatcher"), "binlogBatcher")
     log.info(s"initialize fetcher,id:$syncTaskId")
     //初始化binlogFetcher
     context.actorOf(MysqlBinlogInOrderFetcher.props(resourceManager, binlogEventBatcher).withDispatcher("akka.pinned-dispatcher"), "binlogFetcher")
