@@ -12,6 +12,8 @@ import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection.{BinlogFormat
 import com.alibaba.otter.canal.parse.index.ZooKeeperLogPositionManager
 import com.alibaba.otter.canal.protocol.position.EntryPosition
 import com.neighborhood.aka.laplace.estuary.bean.credential.MysqlCredentialBean
+import com.neighborhood.aka.laplace.estuary.bean.datasink.DataSinkBean
+import com.neighborhood.aka.laplace.estuary.bean.resource.DataSourceBase
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status.Status
 import com.neighborhood.aka.laplace.estuary.core.sink.KafkaSinkFunc
 import com.neighborhood.aka.laplace.estuary.core.task.{RecourceManager, TaskManager}
@@ -22,8 +24,11 @@ import org.apache.commons.lang.StringUtils
 /**
   * Created by john_liu on 2018/2/7.
   */
-class Mysql2KafkaTaskInfoManager(taskInfoBean: Mysql2KafkaTaskInfoBean) extends TaskManager with RecourceManager[String, MysqlConnection, KafkaSinkFunc[String]] {
+class Mysql2KafkaTaskInfoManager(
+                                  override val taskInfoBean: Mysql2KafkaTaskInfoBean) extends TaskManager with RecourceManager[String, MysqlConnection, KafkaSinkFunc[String]] {
 
+  override val sinkBean: DataSinkBean = taskInfoBean
+  override val sourceBean: DataSourceBase = taskInfoBean
   /**
     * 同步任务控制器的ActorRef
     */

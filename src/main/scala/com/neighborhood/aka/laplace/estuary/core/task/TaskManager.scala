@@ -2,6 +2,7 @@ package com.neighborhood.aka.laplace.estuary.core.task
 
 import java.util.concurrent.atomic.{AtomicLong, AtomicReference}
 
+import com.neighborhood.aka.laplace.estuary.bean.identity.BaseExtractBean
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.WorkerType.WorkerType
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{Status, WorkerType}
@@ -12,6 +13,11 @@ import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManage
   * 负责管理资源和任务
   */
 trait TaskManager {
+  /**
+    * 任务信息bean
+    */
+  val taskInfoBean: BaseExtractBean
+
   /**
     * 任务类型
     * 由三部分组成
@@ -43,7 +49,7 @@ trait TaskManager {
   /**
     * 同步任务标识
     */
-  val syncTaskId: String
+  val syncTaskId: String = taskInfoBean.syncTaskId
   /**
     * 数据条目记录
     */
