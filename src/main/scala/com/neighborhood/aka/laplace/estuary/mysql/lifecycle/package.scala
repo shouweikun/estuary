@@ -4,9 +4,9 @@ import akka.routing.ConsistentHashingRouter.ConsistentHashable
 import com.alibaba.otter.canal.protocol.CanalEntry
 import com.alibaba.otter.canal.protocol.CanalEntry.RowData
 import com.neighborhood.aka.laplace.estuary.bean.support.KafkaMessage
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status.Status
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.WorkerType
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.WorkerType.WorkerType
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.WorkerType
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 
 /**

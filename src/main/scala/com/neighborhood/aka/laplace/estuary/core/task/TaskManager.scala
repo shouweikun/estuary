@@ -3,9 +3,10 @@ package com.neighborhood.aka.laplace.estuary.core.task
 import java.util.concurrent.atomic.{AtomicLong, AtomicReference}
 
 import com.neighborhood.aka.laplace.estuary.bean.identity.BaseExtractBean
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status.Status
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.WorkerType.WorkerType
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.{Status, WorkerType}
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status.Status
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.WorkerType.WorkerType
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.WorkerType
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.{Status, WorkerType}
 import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManager.taskStatusMap
 
 /**

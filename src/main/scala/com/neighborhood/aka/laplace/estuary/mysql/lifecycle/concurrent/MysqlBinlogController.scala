@@ -6,8 +6,9 @@ import akka.actor.SupervisorStrategy.{Escalate, Restart}
 import akka.actor.{Actor, ActorLogging, AllForOneStrategy, OneForOneStrategy, Props}
 import akka.routing.RoundRobinPool
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status.Status
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.{Status, _}
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status.Status
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.{Status, SyncController}
+import com.neighborhood.aka.laplace.estuary.core.lifecycle._
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mysql.SettingConstant
 import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlConnection

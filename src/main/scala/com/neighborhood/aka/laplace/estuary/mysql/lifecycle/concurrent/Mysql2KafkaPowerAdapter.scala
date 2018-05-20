@@ -2,6 +2,7 @@ package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.concurrent
 
 import akka.actor.{Actor, ActorLogging, Props}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle._
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.PowerAdapter
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mysql.SettingConstant
 

@@ -7,8 +7,9 @@ import akka.actor.{Actor, ActorLogging, OneForOneStrategy, Props}
 import com.neighborhood.aka.laplace.estuary.bean.key.BinlogKey
 import com.neighborhood.aka.laplace.estuary.bean.support.KafkaMessage
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status.Status
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle._
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.{SourceDataSinker, Status}
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.BinlogPositionInfo
 import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManager

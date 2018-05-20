@@ -1,6 +1,7 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder
 
 import akka.actor.{Actor, ActorLogging, Props}
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.PowerAdapter
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{SyncControllerMessage, _}
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mysql.SettingConstant
