@@ -16,6 +16,14 @@ class Mongo2KafkaTaskInfoManager(
                                 )
   extends TaskManager with RecourceManager[String, MongoConnection, KafkaSinkFunc[String]] {
 
+  /**
+    * 监听心跳用的语句
+    */
+  override val delectingCommand: String = ""
+  /**
+    * 监听重试次数标准值
+    */
+  override val listeningRetryTimeThreshold: Int = 3
   override val sinkBean: DataSinkBean = taskInfoBean
   override val sourceBean: DataSourceBase = taskInfoBean
 

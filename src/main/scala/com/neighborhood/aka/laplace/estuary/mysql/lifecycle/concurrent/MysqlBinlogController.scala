@@ -21,7 +21,7 @@ import scala.concurrent.duration._
 /**
   * Created by john_liu on 2018/2/1.
   */
-
+@deprecated
 class MysqlBinlogController(taskInfoBean: Mysql2KafkaTaskInfoBean) extends SyncController with Actor with ActorLogging {
   //资源管理器，一次同步任务所有的resource都由resourceManager负责
   val resourceManager = Mysql2KafkaTaskInfoManager.buildManager(taskInfoBean)

@@ -15,6 +15,7 @@ import scala.util.Try
 /**
   * Created by john_liu on 2018/2/1.
   */
+@deprecated
 class MysqlConnectionListener(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager) extends Actor with HeartBeatListener with ActorLogging {
   /**
     * syncTaskId

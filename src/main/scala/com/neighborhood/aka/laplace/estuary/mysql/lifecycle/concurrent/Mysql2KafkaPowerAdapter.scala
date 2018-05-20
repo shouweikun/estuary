@@ -9,6 +9,7 @@ import com.neighborhood.aka.laplace.estuary.mysql.SettingConstant
 /**
   * Created by john_liu on 2018/3/15.
   */
+@deprecated
 class Mysql2KafkaPowerAdapter(
                                taskManager: TaskManager
                              ) extends Actor with ActorLogging with PowerAdapter {

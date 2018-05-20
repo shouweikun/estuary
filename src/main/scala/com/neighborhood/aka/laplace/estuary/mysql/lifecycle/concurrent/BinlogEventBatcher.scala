@@ -13,6 +13,7 @@ import com.alibaba.otter.canal.protocol.CanalEntry.Column
 import com.neighborhood.aka.laplace.estuary.bean.key.BinlogKey
 import com.neighborhood.aka.laplace.estuary.bean.support.KafkaMessage
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, SyncControllerMessage}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.{SourceDataBatcher, Status}
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
@@ -36,6 +37,7 @@ import scala.util.{Failure, Success, Try}
   * @param mysql2KafkaTaskInfoManager
   * @param isDdlHandler      是否是处理DDL标识
   */
+@deprecated
 class BinlogEventBatcher(
                           binlogEventSinker: ActorRef,
                           mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,

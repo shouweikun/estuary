@@ -29,6 +29,15 @@ class Mysql2KafkaTaskInfoManager(
 
   override val sinkBean: DataSinkBean = taskInfoBean
   override val sourceBean: DataSourceBase = taskInfoBean
+
+  /**
+    * 监听心跳用的语句
+    */
+  override val delectingCommand: String = taskInfoBean.detectingSql
+  /**
+    * 监听重试次数标准值
+    */
+  override val listeningRetryTimeThreshold: Int = taskInfoBean.listenRetrytime
   /**
     * 同步任务控制器的ActorRef
     */
@@ -87,11 +96,11 @@ class Mysql2KafkaTaskInfoManager(
   /**
     * canal的mysqlConnection
     */
-  val mysqlConnection = buildSource
+  val mysqlConnection = source
   /**
     * kafka客户端
     */
-  val kafkaSink = buildSink
+  val kafkaSink = sink
   /**
     * kafka客户端,专门处理DDL
     */

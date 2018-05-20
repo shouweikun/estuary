@@ -5,7 +5,6 @@ import java.util.concurrent.atomic.{AtomicLong, AtomicReference}
 import com.neighborhood.aka.laplace.estuary.bean.identity.BaseExtractBean
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.WorkerType.WorkerType
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.WorkerType
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.{Status, WorkerType}
 import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManager.taskStatusMap
 
@@ -18,6 +17,21 @@ trait TaskManager {
     * 任务信息bean
     */
   val taskInfoBean: BaseExtractBean
+
+
+
+
+  /**
+    * 监听心跳用的语句
+    */
+  val delectingCommand: String
+  /**
+    * 监听重试次数标准值
+    */
+  val listeningRetryTimeThreshold:Int
+
+
+
 
   /**
     * 任务类型
