@@ -186,10 +186,11 @@ class Mysql2KafkaTaskInfoManager(
     */
   def buildParser: MysqlBinlogParser = {
     val convert = new MysqlBinlogParser
-    val eventFilter = if (!StringUtils.isEmpty(taskInfo.filterPattern)) new AviaterRegexFilter(taskInfo.filterPattern) else null
-    val eventBlackFilter = if (!StringUtils.isEmpty(taskInfo.filterBlackPattern)) new AviaterRegexFilter(taskInfo.filterBlackPattern) else null
-    if (eventFilter != null && eventFilter.isInstanceOf[AviaterRegexFilter]) convert.setNameFilter(eventFilter.asInstanceOf[AviaterRegexFilter])
-    if (eventBlackFilter != null && eventBlackFilter.isInstanceOf[AviaterRegexFilter]) convert.setNameBlackFilter(eventBlackFilter.asInstanceOf[AviaterRegexFilter])
+    val eventFilter:AviaterRegexFilter = if (!StringUtils.isEmpty(taskInfo.filterPattern)) new AviaterRegexFilter(taskInfo.filterPattern) else null
+    val eventBlackFilter:AviaterRegexFilter = if (!StringUtils.isEmpty(taskInfo.filterBlackPattern)) new AviaterRegexFilter(taskInfo.filterBlackPattern) else null
+    if (eventFilter != null) convert.setNameFilter(eventFilter)
+    if (eventBlackFilter != null) convert.setNameBlackFilter(eventBlackFilter)
+
 
     convert.setCharset(taskInfo.connectionCharset)
     convert.setFilterQueryDcl(taskInfo.filterQueryDcl)

@@ -9,7 +9,7 @@ import com.neighborhood.aka.laplace.estuary.core.task.{RecourceManager, TaskMana
 /**
   * Created by john_liu on 2018/5/20.
   */
-trait HeartBeatListenerPrototype[source<:DataSourceConnection] extends ActorPrototype with HeartBeatListener {
+trait HeartBeatListenerPrototype[source <: DataSourceConnection] extends ActorPrototype with HeartBeatListener {
   /**
     * 任务信息管理器
     */
@@ -17,23 +17,25 @@ trait HeartBeatListenerPrototype[source<:DataSourceConnection] extends ActorProt
   /**
     * 资源管理器
     */
-  val recourceManager: RecourceManager[_,source,_]
+  val recourceManager: RecourceManager[_, source, _]
   /**
     * 同步任务id
     */
   val syncTaskId = taskManager.syncTaskId
-
-  lazy val connection = recourceManager.source
+  /**
+    * 数据源链接
+    */
+  lazy val connection = recourceManager.source.fork
 
 
   /**
     * ********************* 状态变化 *******************
     */
-  private def changeFunc(status: Status) = TaskManager.changeFunc(status, taskManager)
+  protected def changeFunc(status: Status) = TaskManager.changeFunc(status, taskManager)
 
-  private def onChangeFunc = TaskManager.onChangeStatus(taskManager)
+  protected def onChangeFunc = TaskManager.onChangeStatus(taskManager)
 
-  private def listenerChangeStatus(status: Status) = TaskManager.changeStatus(status, changeFunc, onChangeFunc)
+  protected def listenerChangeStatus(status: Status) = TaskManager.changeStatus(status, changeFunc, onChangeFunc)
 
 
   /**
