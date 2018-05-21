@@ -1,12 +1,12 @@
 package com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype
 
-import akka.actor.{Actor, ActorLogging}
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.ProcessingCounter
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 
 /**
-  * Created by john_liu on 2018/5/20.
+  * Created by john_liu on 2018/5/21.
   */
-trait ActorPrototype extends Actor with ActorLogging {
+trait ProcessingCounterPrototype extends ActorPrototype with ProcessingCounter{
   /**
     * 任务信息管理器
     */
@@ -15,5 +15,5 @@ trait ActorPrototype extends Actor with ActorLogging {
   /**
     * 同步任务id
     */
-  val syncTaskId = taskManager.syncTaskId
+  override val syncTaskId = taskManager.syncTaskId
 }

@@ -19,6 +19,22 @@ trait TaskManager {
   val taskInfoBean: BaseExtractBean
 
 
+  /**
+    * 是否计数，默认不计数
+    */
+  val isCounting: Boolean
+  /**
+    * 是否计算每条数据的时间，默认不计时
+    */
+  val isCosting: Boolean
+  /**
+    * 是否保留最新binlog位置
+    */
+  val isProfiling: Boolean
+  /**
+    * 是否打开功率调节器
+    */
+  val isPowerAdapted: Boolean
 
 
   /**
@@ -28,9 +44,7 @@ trait TaskManager {
   /**
     * 监听重试次数标准值
     */
-  val listeningRetryTimeThreshold:Int
-
-
+  val listeningRetryTimeThreshold: Int
 
 
   /**
@@ -105,8 +119,11 @@ trait TaskManager {
   /**
     * batcher的数量
     */
-  val batcherNum: Int = 0
-
+  val batcherNum: Int
+  /**
+    * sinker的数量
+    */
+  val sinkerNum:Int
   /**
     * 任务运行状态
     * 此trait的实现类可以扩展此方法返回具体部件的状态

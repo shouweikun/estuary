@@ -27,9 +27,32 @@ import org.apache.commons.lang.StringUtils
 class Mysql2KafkaTaskInfoManager(
                                   override val taskInfoBean: Mysql2KafkaTaskInfoBean) extends TaskManager with RecourceManager[String, MysqlConnection, KafkaSinkFunc[String]] {
 
-  override val sinkBean: DataSinkBean = taskInfoBean
-  override val sourceBean: DataSourceBase = taskInfoBean
 
+
+  /**
+    * 是否计数，默认不计数
+    */
+  override val isCounting: Boolean = taskInfoBean.isCounting
+  /**
+    * 是否计算每条数据的时间，默认不计时
+    */
+  override val isCosting: Boolean = taskInfoBean.isCosting
+  /**
+    * 是否保留最新binlog位置
+    */
+  override val isProfiling: Boolean = taskInfoBean.isProfiling
+  /**
+    * 是否打开功率调节器
+    */
+  override val isPowerAdapted: Boolean = taskInfoBean.isPowerAdapted
+  /**
+    * 数据汇bean
+    */
+  override val sinkBean: DataSinkBean = taskInfoBean
+  /**
+    * 数据源bean
+    */
+  override val sourceBean: DataSourceBase = taskInfoBean
   /**
     * 监听心跳用的语句
     */

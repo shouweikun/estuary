@@ -9,8 +9,13 @@ import com.neighborhood.aka.laplace.estuary.core.source.DataSourceConnection
   * Created by john_liu on 2018/2/7.
   */
 trait RecourceManager[sink, source <: DataSourceConnection, Sink <: SinkFunc] {
-
+  /**
+    * 数据汇bean
+    */
   val sinkBean: DataSinkBean
+  /**
+    * 数据源bean
+    */
   val sourceBean: DataSourceBase
   /**
     * 数据源
