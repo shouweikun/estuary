@@ -5,6 +5,8 @@ import com.neighborhood.aka.laplace.estuary.bean.support.KafkaMessage
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{SinkerMessage, SourceDataSinker}
 import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManager
+import org.apache.kafka.clients.producer.{Callback, RecordMetadata}
+import org.springframework.util.StringUtils
 
 /**
   * Created by john_liu on 2018/5/8.
@@ -21,6 +23,7 @@ class MysqlBinlogInOrderSinker(
   lazy val processingCounter = mysql2KafkaTaskInfoManager.processingCounter
   val isCounting = mysql2KafkaTaskInfoManager.taskInfo.isCounting
   val isCosting = mysql2KafkaTaskInfoManager.taskInfo.isCounting
+
 
   override def receive: Receive = {
     case message: KafkaMessage => handleSinkTask(message)
@@ -41,9 +44,27 @@ class MysqlBinlogInOrderSinker(
       //同步写
       kafkaSinkFunc.sink(message.getBaseDataJsonKey, message.getJsonValue)(topic)
     } else {
-      log.error(s"暂时不支持异步写模式,id:$syncTaskId")
-      throw new UnsupportedOperationException(s"暂时不支持异步写模式,id:$syncTaskId")
+
+      /**
+        * 注意，开启异步写，程序将不能保证完全的顺序，只能说"大致有序"
+        */
+      val callback = new Callback {
+        //接受错误消息，发给上级sinkerManager
+        val receiver = context.parent
+        val theKey = key
+        val theValue = message.getJsonValue
+
+        override def onCompletion(metadata: RecordMetadata, exception: Exception): Unit = {
+          if (exception != null) {
+            receiver ! exception;
+            log.error(s"error when sending data:$theValue,e:$exception,message:${exception.getCause},id:$syncTaskId,sinker num:$num")
+          }
+        }
+      }
+      //      log.error(s"暂时不支持异步写模式,id:$syncTaskId")
+      //      throw new UnsupportedOperationException(s"暂时不支持异步写模式,id:$syncTaskId")
     }
+
     if (isCounting) processingCounter.fold {
       log.error(s"processingCounter cannot be null,id:$syncTaskId")
     }(ref => ref ! SinkerMessage(1))
