@@ -8,8 +8,7 @@ import com.neighborhood.aka.laplace.estuary.bean.key.BaseDataJsonKey
  class KafkaMessage {
   protected var baseDataJsonKey:BaseDataJsonKey = null
   protected var jsonValue:String = null
-  private var journalName:String = null
-  private var offset:Long = 0L
+
 
 
   def getBaseDataJsonKey: BaseDataJsonKey = baseDataJsonKey
@@ -21,29 +20,12 @@ import com.neighborhood.aka.laplace.estuary.bean.key.BaseDataJsonKey
     this.jsonValue = jsonValue
   }
 
-  def this(baseDataJsonKey: BaseDataJsonKey, jsonValue: String, journalName: String, offset: Long) {
-    this()
-    this.baseDataJsonKey = baseDataJsonKey
-    this.jsonValue = jsonValue
-    this.journalName = journalName
-    this.offset = offset
-  }
+
 
   def setBaseDataJsonKey(baseDataJsonKey: BaseDataJsonKey): Unit = {
     this.baseDataJsonKey = baseDataJsonKey
   }
 
-  def getJournalName: String = journalName
-
-  def setJournalName(journalName: String): Unit = {
-    this.journalName = journalName
-  }
-
-  def getOffset: Long = offset
-
-  def setOffset(offset: Long): Unit = {
-    this.offset = offset
-  }
 
   def getJsonValue: String = jsonValue
 

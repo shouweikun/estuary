@@ -73,7 +73,7 @@ class KafkaSinkFunc[V](kafkaBean: KafkaBean) extends SinkFunc {
 
   }
 
-  def fork: KafkaSinkFunc[V] = {
+  override def fork: KafkaSinkFunc[V] = {
     new KafkaSinkFunc[V](this.kafkaBean)
   }
 

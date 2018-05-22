@@ -3,14 +3,15 @@ package com.neighborhood.aka.laplace.estuary.bean.datasink
 import java.util
 
 import com.neighborhood.aka.laplace.estuary.bean.datasink.DataSinkType.DataSinkType
-import com.neighborhood.aka.laplace.estuary.bean.key.{JsonKeyPartitioner, JsonKeySerializer}
+import com.neighborhood.aka.laplace.estuary.bean.key.{JsonKeyPartitioner, JsonKeySerializer, MultipleJsonKeyPartitioner, MultipleJsonKeyPartitionerJava}
 import org.apache.kafka.common.serialization.StringSerializer
 
 /**
   * Created by john_liu on 2018/2/7.
   */
 trait KafkaBean extends DataSinkBean {
-  override var dataSinkType: DataSinkType = DataSinkType.KAFKA
+  //  override var dataSinkType: DataSinkType = DataSinkType.KAFKA
+  override var dataSinkType: String = SinkDataType.KAFKA.toString
   /**
     * broker地址
     */
@@ -25,7 +26,7 @@ trait KafkaBean extends DataSinkBean {
   /**
     * 分区类
     */
-  var partitionerClass: String = classOf[JsonKeyPartitioner].getName
+  var partitionerClass: String = classOf[MultipleJsonKeyPartitioner].getName
   /**
     * defaultTopic
     */
@@ -58,6 +59,10 @@ trait KafkaBean extends DataSinkBean {
     * 压缩格式
     */
   var compressionType: String = "snappy"
+  /**
+    * 是否是同步写
+    */
+  var isSync = true
 
 }
 

@@ -4,8 +4,8 @@ import java.io.File
 
 import com.alibaba.otter.canal.protocol.position.EntryPosition
 import com.neighborhood.aka.laplace.estuary.bean.credential.MysqlCredentialBean
-import com.neighborhood.aka.laplace.estuary.bean.task.Mysql2KafkaTaskInfoBean
-import com.neighborhood.aka.laplace.estuary.mysql.JsonUtil
+import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoBean
+import com.neighborhood.aka.laplace.estuary.mysql.utils.JsonUtil
 import com.typesafe.config.ConfigFactory
 import org.scalamock.scalatest.MockFactory
 

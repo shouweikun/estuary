@@ -21,10 +21,12 @@ public class ValidationUtils {
     }
 
     public static void notblank(String obj, String message) {
-        Assert.isTrue(obj.trim() != "");
+        Assert.isTrue(obj.trim() != "",message);
     }
-
+    public static void notZero(int num,String message) {
+        Assert.isTrue(num != 0,message);
+    }
     public static void notEmpty(List obj, String message) {
-        Assert.isTrue(!obj.isEmpty());
+        Assert.isTrue(!obj.isEmpty(),message);
     }
 }
