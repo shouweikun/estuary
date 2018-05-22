@@ -30,7 +30,7 @@ class EstuaryEventListener extends Actor with ActorLogging {
         headers.setContentType(MediaType.APPLICATION_JSON)
         import scala.collection.JavaConversions._
         //      信息内容
-        lazy val contents = List(s"cause:${cause},logSource:$logSource,logClass:$logClass,message $message")
+        lazy val contents = List(s"exception:${cause},cause:${cause.getCause},logSource:$logSource,logClass:$logClass,message $message")
         messageBody.setMessageContents(contents)
         //      手机号码列表
         messageBody.setMobiles(mobilelist)

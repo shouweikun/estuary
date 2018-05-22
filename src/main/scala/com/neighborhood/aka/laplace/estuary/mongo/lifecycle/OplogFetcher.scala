@@ -5,8 +5,9 @@ import java.util.concurrent.Executors
 import akka.actor.{Actor, ActorLogging, ActorRef}
 import com.mongodb.{DBCursor, DBObject}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status.Status
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.{FetcherMessage, SourceDataFetcher, Status, SyncControllerMessage}
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status.Status
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.{SourceDataFetcher, Status}
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.{FetcherMessage, SyncControllerMessage}
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.core.util.JavaCommonUtil
 import com.neighborhood.aka.laplace.estuary.mongo.SettingConstant

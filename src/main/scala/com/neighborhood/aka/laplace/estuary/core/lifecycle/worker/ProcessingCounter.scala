@@ -1,4 +1,4 @@
-package com.neighborhood.aka.laplace.estuary.core.lifecycle
+package com.neighborhood.aka.laplace.estuary.core.lifecycle.worker
 
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 

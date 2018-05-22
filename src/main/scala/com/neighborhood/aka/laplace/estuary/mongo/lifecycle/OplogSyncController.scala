@@ -2,7 +2,7 @@ package com.neighborhood.aka.laplace.estuary.mongo.lifecycle
 
 import akka.actor.{Actor, ActorLogging}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.SyncController
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.SyncController
 
 /**
   * Created by john_liu on 2018/5/4.

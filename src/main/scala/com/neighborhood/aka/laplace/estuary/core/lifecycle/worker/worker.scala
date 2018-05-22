@@ -1,4 +1,6 @@
-package com.neighborhood.aka.laplace.estuary.core.lifecycle
+package com.neighborhood.aka.laplace.estuary.core.lifecycle.worker
+
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.WorkerMessage
 
 /**
   * Created by john_liu on 2018/2/8.

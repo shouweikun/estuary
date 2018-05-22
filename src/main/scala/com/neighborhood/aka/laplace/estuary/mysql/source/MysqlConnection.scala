@@ -200,7 +200,7 @@ class MysqlConnection(
     } catch {
       case e: CanalParseException => {
         e.getCause match {
-          case ex: IllegalArgumentException => throw new CanalParseException("fuck IllegalArgumentException when parse,id:", e.getCause)
+          case ex: IllegalArgumentException => throw new CanalParseException("fuck IllegalArgumentException when parse", e.getCause)
           case _ => sendWarningOrNot(e); None
         }
 

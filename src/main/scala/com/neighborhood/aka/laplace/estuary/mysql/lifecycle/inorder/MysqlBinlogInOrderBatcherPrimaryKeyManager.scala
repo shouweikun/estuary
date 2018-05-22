@@ -5,7 +5,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef, AllForOneStrategy, Props}
 import akka.routing.ConsistentHashingGroup
 import com.alibaba.otter.canal.protocol.CanalEntry
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.SourceDataBatcher
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.SourceDataBatcher
 import com.neighborhood.aka.laplace.estuary.mysql.SettingConstant
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.{DatabaseAndTableNameClassifier, IdClassifier}
 import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManager

@@ -12,7 +12,9 @@ import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection.{BinlogFormat
 import com.alibaba.otter.canal.parse.index.ZooKeeperLogPositionManager
 import com.alibaba.otter.canal.protocol.position.EntryPosition
 import com.neighborhood.aka.laplace.estuary.bean.credential.MysqlCredentialBean
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status.Status
+import com.neighborhood.aka.laplace.estuary.bean.datasink.DataSinkBean
+import com.neighborhood.aka.laplace.estuary.bean.resource.DataSourceBase
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status.Status
 import com.neighborhood.aka.laplace.estuary.core.sink.KafkaSinkFunc
 import com.neighborhood.aka.laplace.estuary.core.task.{RecourceManager, TaskManager}
 import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlConnection
@@ -22,8 +24,43 @@ import org.apache.commons.lang.StringUtils
 /**
   * Created by john_liu on 2018/2/7.
   */
-class Mysql2KafkaTaskInfoManager(taskInfoBean: Mysql2KafkaTaskInfoBean) extends TaskManager with RecourceManager[String, MysqlConnection, KafkaSinkFunc[String]] {
+class Mysql2KafkaTaskInfoManager(
+                                  override val taskInfoBean: Mysql2KafkaTaskInfoBean) extends TaskManager with RecourceManager[String, MysqlConnection, KafkaSinkFunc[String]] {
 
+
+
+  /**
+    * 是否计数，默认不计数
+    */
+  override val isCounting: Boolean = taskInfoBean.isCounting
+  /**
+    * 是否计算每条数据的时间，默认不计时
+    */
+  override val isCosting: Boolean = taskInfoBean.isCosting
+  /**
+    * 是否保留最新binlog位置
+    */
+  override val isProfiling: Boolean = taskInfoBean.isProfiling
+  /**
+    * 是否打开功率调节器
+    */
+  override val isPowerAdapted: Boolean = taskInfoBean.isPowerAdapted
+  /**
+    * 数据汇bean
+    */
+  override val sinkBean: DataSinkBean = taskInfoBean
+  /**
+    * 数据源bean
+    */
+  override val sourceBean: DataSourceBase = taskInfoBean
+  /**
+    * 监听心跳用的语句
+    */
+  override val delectingCommand: String = taskInfoBean.detectingSql
+  /**
+    * 监听重试次数标准值
+    */
+  override val listeningRetryTimeThreshold: Int = taskInfoBean.listenRetrytime
   /**
     * 同步任务控制器的ActorRef
     */
@@ -82,11 +119,11 @@ class Mysql2KafkaTaskInfoManager(taskInfoBean: Mysql2KafkaTaskInfoBean) extends 
   /**
     * canal的mysqlConnection
     */
-  val mysqlConnection = buildSource
+  val mysqlConnection = source
   /**
     * kafka客户端
     */
-  val kafkaSink = buildSink
+  val kafkaSink = sink
   /**
     * kafka客户端,专门处理DDL
     */
@@ -172,10 +209,11 @@ class Mysql2KafkaTaskInfoManager(taskInfoBean: Mysql2KafkaTaskInfoBean) extends 
     */
   def buildParser: MysqlBinlogParser = {
     val convert = new MysqlBinlogParser
-    val eventFilter = if (!StringUtils.isEmpty(taskInfo.filterPattern)) new AviaterRegexFilter(taskInfo.filterPattern) else null
-    val eventBlackFilter = if (!StringUtils.isEmpty(taskInfo.filterBlackPattern)) new AviaterRegexFilter(taskInfo.filterBlackPattern) else null
-    if (eventFilter != null && eventFilter.isInstanceOf[AviaterRegexFilter]) convert.setNameFilter(eventFilter.asInstanceOf[AviaterRegexFilter])
-    if (eventBlackFilter != null && eventBlackFilter.isInstanceOf[AviaterRegexFilter]) convert.setNameBlackFilter(eventBlackFilter.asInstanceOf[AviaterRegexFilter])
+    val eventFilter:AviaterRegexFilter = if (!StringUtils.isEmpty(taskInfo.filterPattern)) new AviaterRegexFilter(taskInfo.filterPattern) else null
+    val eventBlackFilter:AviaterRegexFilter = if (!StringUtils.isEmpty(taskInfo.filterBlackPattern)) new AviaterRegexFilter(taskInfo.filterBlackPattern) else null
+    if (eventFilter != null) convert.setNameFilter(eventFilter)
+    if (eventBlackFilter != null) convert.setNameBlackFilter(eventBlackFilter)
+
 
     convert.setCharset(taskInfo.connectionCharset)
     convert.setFilterQueryDcl(taskInfo.filterQueryDcl)

@@ -2,7 +2,8 @@ package com.neighborhood.aka.laplace.estuary.mongo.lifecycle
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, SourceDataBatcher}
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.BatcherMessage
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.SourceDataBatcher
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.OplogBatcherManager.Classifer
 import com.neighborhood.aka.laplace.estuary.mongo.task.Mongo2KafkaTaskInfoManager
 
