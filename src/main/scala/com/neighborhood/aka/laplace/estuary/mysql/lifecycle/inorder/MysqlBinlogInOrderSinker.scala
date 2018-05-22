@@ -3,7 +3,8 @@ package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder
 import akka.actor.{Actor, ActorLogging, Props}
 import com.neighborhood.aka.laplace.estuary.bean.support.KafkaMessage
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.{SinkerMessage, SourceDataSinker}
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.SinkerMessage
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.SourceDataSinker
 import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManager
 import org.apache.kafka.clients.producer.{Callback, RecordMetadata}
 import org.springframework.util.StringUtils

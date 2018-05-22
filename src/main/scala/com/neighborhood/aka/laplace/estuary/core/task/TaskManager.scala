@@ -2,9 +2,10 @@ package com.neighborhood.aka.laplace.estuary.core.task
 
 import java.util.concurrent.atomic.{AtomicLong, AtomicReference}
 
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status.Status
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.WorkerType.WorkerType
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.{Status, WorkerType}
+import com.neighborhood.aka.laplace.estuary.bean.identity.BaseExtractBean
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status.Status
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.WorkerType.WorkerType
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.{Status, WorkerType}
 import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManager.taskStatusMap
 
 /**
@@ -12,6 +13,40 @@ import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManage
   * 负责管理资源和任务
   */
 trait TaskManager {
+  /**
+    * 任务信息bean
+    */
+  val taskInfoBean: BaseExtractBean
+
+
+  /**
+    * 是否计数，默认不计数
+    */
+  val isCounting: Boolean
+  /**
+    * 是否计算每条数据的时间，默认不计时
+    */
+  val isCosting: Boolean
+  /**
+    * 是否保留最新binlog位置
+    */
+  val isProfiling: Boolean
+  /**
+    * 是否打开功率调节器
+    */
+  val isPowerAdapted: Boolean
+
+
+  /**
+    * 监听心跳用的语句
+    */
+  val delectingCommand: String
+  /**
+    * 监听重试次数标准值
+    */
+  val listeningRetryTimeThreshold: Int
+
+
   /**
     * 任务类型
     * 由三部分组成
@@ -43,7 +78,7 @@ trait TaskManager {
   /**
     * 同步任务标识
     */
-  val syncTaskId: String
+  val syncTaskId: String = taskInfoBean.syncTaskId
   /**
     * 数据条目记录
     */
@@ -84,8 +119,11 @@ trait TaskManager {
   /**
     * batcher的数量
     */
-  val batcherNum: Int = 0
-
+  val batcherNum: Int
+  /**
+    * sinker的数量
+    */
+  val sinkerNum:Int
   /**
     * 任务运行状态
     * 此trait的实现类可以扩展此方法返回具体部件的状态

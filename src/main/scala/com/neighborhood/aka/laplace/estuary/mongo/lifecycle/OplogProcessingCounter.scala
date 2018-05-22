@@ -1,7 +1,8 @@
 package com.neighborhood.aka.laplace.estuary.mongo.lifecycle
 
 import akka.actor.{Actor, ActorLogging}
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, FetcherMessage, ProcessingCounter, SinkerMessage}
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.ProcessingCounter
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, FetcherMessage, SinkerMessage}
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 
 /**

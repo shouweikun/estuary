@@ -6,8 +6,8 @@ import akka.routing.{ConsistentHashingGroup, ConsistentHashingPool}
 import akka.routing.ConsistentHashingRouter.ConsistentHashable
 import com.mongodb.DBObject
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.Status.Status
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.{SourceDataBatcher, Status}
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status.Status
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.{SourceDataBatcher, Status}
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mongo.SettingConstant
 import com.neighborhood.aka.laplace.estuary.mongo.task.Mongo2KafkaTaskInfoManager
