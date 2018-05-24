@@ -54,6 +54,8 @@ trait PowerAdapter {
     val nextFetchTimeWriteIndex = (fetchTimeWriteIndex + 1) % size
     fetchTimeArray(nextFetchTimeWriteIndex) = timeCost
     fetchTimeWriteIndex = nextFetchTimeWriteIndex
+    fetchCountSum +=1
+    fetchTimeSum +=timeCost
   }
 
   /**
@@ -66,6 +68,7 @@ trait PowerAdapter {
     // 如果拿不到数据，默认在时间上随机增加3-5倍
     batchTimeArray(nextFetchTimeWriteIndex) = timestamp
     batchTimeWriteIndex = nextFetchTimeWriteIndex
+
   }
 
   /**
@@ -78,6 +81,8 @@ trait PowerAdapter {
     // 如果拿不到数据，默认在时间上随机增加3-5倍
     sinkTimeArray(nextFetchTimeWriteIndex) = timeCost
     sinkTimeWriteIndex = nextFetchTimeWriteIndex
+    sinkCountSum +=1
+    sinkTimeSum +=timeCost
   }
 
   /**
@@ -102,6 +107,8 @@ trait PowerAdapter {
     val nextFetchTimeWriteIndex = (batchTimeWriteIndex + 1) % size
     batchTimeArray(nextFetchTimeWriteIndex) = theTimeCost
     batchTimeWriteIndex = nextFetchTimeWriteIndex
+    batchCountSum +=1
+    batchTimeSum +=timeCost
   }
 
   protected def computeCostByTimeCost(timeArray: Array[Long]): Long = {

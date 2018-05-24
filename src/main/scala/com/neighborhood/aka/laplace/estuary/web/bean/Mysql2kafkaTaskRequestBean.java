@@ -17,6 +17,7 @@ public class Mysql2kafkaTaskRequestBean extends TaskRequestBean {
     private boolean isCosting = true;
     private boolean isTransactional = false;
     private boolean isPowerAdapted = true;
+    private boolean isSync = false;
     private int batcherCount = 19;
     private long batchThreshold = 50;
     private long fetchDelay = 0;
@@ -60,6 +61,14 @@ public class Mysql2kafkaTaskRequestBean extends TaskRequestBean {
     private String zookeeperServers;
     // zookeeper 链接超时设置,单位毫秒
     private int zookeeperTimeout = 10000;
+
+    public boolean isSync() {
+        return isSync;
+    }
+
+    public void setSync(boolean sync) {
+        isSync = sync;
+    }
 
     public int getTaskType() {
         return taskType;

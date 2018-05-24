@@ -29,7 +29,8 @@ package object lifecycle {
   }
 
   case class DatabaseAndTableNameClassifier(entry: CanalEntry.Entry) extends ConsistentHashable {
-    override def consistentHashKey: Any = s"${entry.getHeader.getSchemaName}@${entry.getHeader.getTableName}"
+    lazy val key = s"${entry.getHeader.getSchemaName}@${entry.getHeader.getTableName}"
+    override def consistentHashKey: Any = key
   }
 
 }

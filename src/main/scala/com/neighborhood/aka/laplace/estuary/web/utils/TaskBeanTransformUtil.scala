@@ -59,6 +59,7 @@ object TaskBeanTransformUtil {
     taskInfo.isTransactional = requestBody.isTransactional
     taskInfo.isCounting = requestBody.isCounting
     taskInfo.isProfiling = requestBody.isProfiling
+    taskInfo.isSync = requestBody.isSync
     List(requestBody.isCosting, requestBody.isCounting, requestBody.isProfiling).forall(x => x) match {
       case true => taskInfo.isPowerAdapted = requestBody.isPowerAdapted
       case _ => {}

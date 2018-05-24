@@ -190,10 +190,10 @@ class MysqlBinlogInOrderFetcher(
     * 从连接中取数据
     */
   def fetchOne(before: Long = System.currentTimeMillis()) = {
-    val entry = mysqlConnection.get.fetchUntilDefined(filterEntry(_))(binlogParser)
+    val entry = mysqlConnection.get.fetchUntilDefined(filterEntry(_))(binlogParser).get
 
-    if (isCounting) fetcherCounter.fold(log.warning(s"fetcherCounter not exist,id:$syncTaskId"))(ref => ref ! entry.get)
-    binlogEventBatcher ! entry.get
+    if (isCounting) fetcherCounter.fold(log.warning(s"fetcherCounter not exist,id:$syncTaskId"))(ref => ref ! entry)
+    binlogEventBatcher ! entry
     //    println(entry.get.getEntryType)
     //    count = count + 1
     lazy val cost = System.currentTimeMillis() - before

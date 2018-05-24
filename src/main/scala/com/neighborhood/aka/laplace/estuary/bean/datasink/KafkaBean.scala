@@ -21,7 +21,7 @@ trait KafkaBean extends DataSinkBean {
     */
   var maxBlockMs: String = "5000"
   var ack: String = "1"
-  var lingerMs: String = "0"
+  var lingerMs: String = "200"
   var kafkaRetries: String = "3"
   /**
     * 分区类
@@ -46,7 +46,7 @@ trait KafkaBean extends DataSinkBean {
   /**
     * request延迟
     */
-  var requestTimeoutMs = "30000"
+  var requestTimeoutMs = "3000"
   /**
     * key Serializer类
     */
@@ -62,7 +62,7 @@ trait KafkaBean extends DataSinkBean {
   /**
     * 是否是同步写
     */
-  var isSync = true
+  var isSync = false
 
 }
 

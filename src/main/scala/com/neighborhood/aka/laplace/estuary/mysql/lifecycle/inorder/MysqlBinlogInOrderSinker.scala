@@ -49,7 +49,7 @@ class MysqlBinlogInOrderSinker(
       /**
         * 注意，开启异步写，程序将不能保证完全的顺序，只能说"大致有序"
         */
-      val callback = new Callback {
+      val callBack = new Callback {
         //接受错误消息，发给上级sinkerManager
         val receiver = context.parent
         val theKey = key
@@ -62,8 +62,10 @@ class MysqlBinlogInOrderSinker(
           }
         }
       }
+
       //      log.error(s"暂时不支持异步写模式,id:$syncTaskId")
       //      throw new UnsupportedOperationException(s"暂时不支持异步写模式,id:$syncTaskId")
+//      kafkaSinkFunc.ayncSink(message.getBaseDataJsonKey, message.getJsonValue)(topic)(callBack)
     }
 
     if (isCounting) processingCounter.fold {
