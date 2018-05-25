@@ -118,7 +118,7 @@ class Mysql2KafkaPowerAdapter(
       case (_, x, _, _) if (x > 1500) => math.max(2000000, delayDuration) //2s 休眠
       case (_, x, _, _) if (x > 1000) => math.max(1000000, delayDuration) ////500ms 休眠
       case (_, x, _, _) if (x > 400) => math.max(150000, delayDuration) ////150ms 休眠
-      case (w, _, _, _) if (w < 1 * batcherNum) => 0 //0s 快速拉取数据
+      case (w, _, _, _) if (w < 5) => 0 //0s 快速拉取数据
       case (_, x, y, z) if (x > 150 || y > 10000 || z > 800) => math.max(100000, delayDuration) //100ms 防止数据太大
       case (_, x, y, z) if (x > 100 || y > 8000 || z > 750) => math.max(80000, delayDuration) //80ms 防止数据太大
       case (_, x, y, z) if (x > 50 || y > 6000 || z > 700) => math.max(60000, delayDuration) //60ms 防止数据太大
@@ -130,7 +130,8 @@ class Mysql2KafkaPowerAdapter(
       case (_, x, y, z) if (x > 12 || y > 1700 || z > 250) => math.max(10000, delayDuration) //10ms
       case (_, x, y, z) if (x > 10 || y > 1300 || z > 200) => math.max(7000, delayDuration) //7ms
       case (_, x, y, z) if (x > 8 || y > 950 || z > 180) => math.max(2000, delayDuration) //2ms
-      case (_, x, y, z) if (x > 5 || y > 700 || z > 160) => math.max(1500, delayDuration) //1.5ms
+      case (_, x, y, z) if (x > 5 || y > 200 || z > 160) => math.max(1500, delayDuration) //1.5ms
+      case (_,x,y,z)if(x>3||y>100||z>20) => math.max(1200,delayDuration) //1.2ms
       case (w, _, _, _) if (w < 20 * batcherNum) => delayDuration
       case (w, _, _, _) if (w < 15 * batcherNum) => delayDuration * 15 / 10
       case (w, _, _, _) if (w < 30 * batcherNum) => delayDuration * 7
