@@ -54,7 +54,6 @@ trait PowerAdapter {
     val nextFetchTimeWriteIndex = (fetchTimeWriteIndex + 1) % size
     fetchTimeArray(nextFetchTimeWriteIndex) = timeCost
     fetchTimeWriteIndex = nextFetchTimeWriteIndex
-    fetchCountSum +=1
     fetchTimeSum +=timeCost
   }
 

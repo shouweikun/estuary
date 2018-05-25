@@ -7,6 +7,8 @@ import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mysql.SettingConstant
 import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManager
 
+import scala.util.Try
+
 /**
   * Created by john_liu on 2018/5/5.
   */
@@ -24,6 +26,7 @@ class MysqlBinlogInOrderPowerAdapter(
       x match {
         case timeCost: Long => updateFetchTimeByTimeCost(timeCost)
         case timeCost: Int => updateFetchTimeByTimeCost(timeCost)
+        case timeCount: String => lazy val cost = Try(timeCount.toInt).getOrElse(0); fetchCountSum + cost
       }
     }
     case BatcherMessage(x) => {
@@ -97,7 +100,7 @@ class MysqlBinlogInOrderPowerAdapter(
     log.debug(s"delayDuration:$delayDuration,id:$syncTaskId")
 
     val finalDelayDuration: Long = ((fetchCount - sinkCount), fetchCost, batchCost, sinkCost) match {
-//      case _ => 10000  //做实验用
+      //      case _ => 10000  //做实验用
       case (_, x, _, _) if (x > 2000) => math.max(3000000, delayDuration) //3s 休眠
       case (_, x, _, _) if (x > 1500) => math.max(2000000, delayDuration) //2s 休眠
       case (_, x, _, _) if (x > 1000) => math.max(1000000, delayDuration) //1s 休眠
