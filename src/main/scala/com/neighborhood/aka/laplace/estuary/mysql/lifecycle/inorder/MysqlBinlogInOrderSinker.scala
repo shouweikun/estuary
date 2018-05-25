@@ -65,7 +65,7 @@ class MysqlBinlogInOrderSinker(
 
       //      log.error(s"暂时不支持异步写模式,id:$syncTaskId")
       //      throw new UnsupportedOperationException(s"暂时不支持异步写模式,id:$syncTaskId")
-//      kafkaSinkFunc.ayncSink(message.getBaseDataJsonKey, message.getJsonValue)(topic)(callBack)
+      kafkaSinkFunc.ayncSink(message.getBaseDataJsonKey, message.getJsonValue)(topic)(callBack)
     }
 
     if (isCounting) processingCounter.fold {

@@ -22,7 +22,7 @@ trait KafkaBean extends DataSinkBean {
   var maxBlockMs: String = "5000"
   var ack: String = "1"
   var lingerMs: String = "200"
-  var kafkaRetries: String = "3"
+  var kafkaRetries: String = "7"
   /**
     * 分区类
     */
@@ -63,6 +63,8 @@ trait KafkaBean extends DataSinkBean {
     * 批大小
     */
   var batchSize: String = "3000"
+
+  var retryBackoffMs:String = "300"
   /**
     * 是否是同步写
     */
@@ -85,6 +87,7 @@ object KafkaBean {
     config.put("partitioner.class", kafkaBean.partitionerClass)
     config.put("compression.type", kafkaBean.compressionType)
     config.put("batch.size", kafkaBean.batchSize)
+    config.put("retry.backoff.ms",kafkaBean.retryBackoffMs)
     config
   }
 }

@@ -97,7 +97,7 @@ class MysqlBinlogInOrderPowerAdapter(
     log.debug(s"delayDuration:$delayDuration,id:$syncTaskId")
 
     val finalDelayDuration: Long = ((fetchCount - sinkCount), fetchCost, batchCost, sinkCost) match {
-      case _ => 10000  //做实验用
+//      case _ => 10000  //做实验用
       case (_, x, _, _) if (x > 2000) => math.max(3000000, delayDuration) //3s 休眠
       case (_, x, _, _) if (x > 1500) => math.max(2000000, delayDuration) //2s 休眠
       case (_, x, _, _) if (x > 1000) => math.max(1000000, delayDuration) //1s 休眠
