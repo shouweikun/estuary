@@ -131,10 +131,12 @@ class MysqlBinlogInOrderSinkerManager(
     }
     case SinkerMessage(e: Throwable) => {
       sinkerChangeStatus(Status.ERROR)
-      isAbnormal = true
-      log.error(s"error when sink data,cause:$e,message:${e.getMessage},id:$syncTaskId");
-      //向上传递
-      throw new Exception(s"error when sink data,cause:$e,message:${e.getMessage},id:$syncTaskId")
+      if(!isAbnormal){
+        isAbnormal = true
+        log.error(s"error when sink data,cause:$e,message:${e.getMessage},id:$syncTaskId");
+        //向上传递
+        throw new Exception(s"error when sink data,cause:$e,message:${e.getMessage},id:$syncTaskId")
+      }
     }
   }
 

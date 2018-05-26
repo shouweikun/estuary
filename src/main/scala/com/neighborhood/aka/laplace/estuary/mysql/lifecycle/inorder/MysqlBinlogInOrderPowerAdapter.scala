@@ -26,7 +26,8 @@ class MysqlBinlogInOrderPowerAdapter(
       x match {
         case timeCost: Long => updateFetchTimeByTimeCost(timeCost)
         case timeCost: Int => updateFetchTimeByTimeCost(timeCost)
-        case timeCount: String => lazy val cost = Try(timeCount.toInt).getOrElse(0); fetchCountSum + cost
+        //针对fetchCounter特化的
+        case count: String => lazy val cost = Try(count.toInt).getOrElse(0); fetchCountSum += cost
       }
     }
     case BatcherMessage(x) => {

@@ -15,7 +15,8 @@ class MysqlBinlogInOrderFetcherCounter(
                                       ) extends Actor with ActorLogging {
   val syncTaskId: String = taskInfoManager.syncTaskId
   lazy val counter: Option[ActorRef] = taskInfoManager.processingCounter
-  lazy val powerAdapter = taskInfoManager.powerAdapter
+  lazy val powerAdapter:Option[ActorRef] = taskInfoManager.powerAdapter
+
   override def receive: Receive = {
 
     case entry: CanalEntry.Entry => {
@@ -24,11 +25,12 @@ class MysqlBinlogInOrderFetcherCounter(
         throw new Exception(s"parse row data error,id:${syncTaskId}")
       }
 
-      val rowCount = Try(CanalEntry.RowChange.parseFrom(entry.getStoreValue)).toOption.getOrElse(parseError).getRowDatasCount
-      val actRowCount = if (rowCount <= 0) 1 else rowCount
+      lazy val rowCount = Try(CanalEntry.RowChange.parseFrom(entry.getStoreValue)).toOption.getOrElse(parseError).getRowDatasCount
+      val actRowCount = if (entry.getEntryType == CanalEntry.EntryType.TRANSACTIONEND) 1 else rowCount
+      if(actRowCount<=0) log.info(s"Oops,Actual Row Count:$actRowCount,eventType:${entry.getHeader.getEventType},$syncTaskId")
       counter.fold(log.error("processingManager cannot be null")) { ref => ref ! FetcherMessage(actRowCount) }
       powerAdapter.fold(log.warning(s"powerAdapter cannot be null ,id $syncTaskId"))(ref => ref ! FetcherMessage(s"$actRowCount"))
-      }
+    }
   }
 
   override def preStart(): Unit = log.info(s"init fetcherSpecializedCounter,id:$syncTaskId ")

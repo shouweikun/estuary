@@ -57,7 +57,7 @@ class MysqlBinlogInOrderSinker(
 
         override def onCompletion(metadata: RecordMetadata, exception: Exception): Unit = {
           if (exception != null) {
-            receiver ! exception;
+            receiver ! SinkerMessage(exception);
             log.error(s"error when sending data:$theValue,e:$exception,message:${exception.getCause},id:$syncTaskId,sinker num:$num")
           }
         }

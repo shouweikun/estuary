@@ -2,7 +2,7 @@ package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder
 
 import akka.actor.SupervisorStrategy.Escalate
 import akka.actor.{Actor, ActorLogging, ActorRef, AllForOneStrategy, Props}
-import akka.routing.ConsistentHashingGroup
+import akka.routing.{ConsistentHashingGroup, RoundRobinGroup}
 import com.alibaba.otter.canal.parse.inbound.mysql.dbsync.TableMetaCache
 import com.alibaba.otter.canal.protocol.CanalEntry
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
@@ -70,7 +70,8 @@ class MysqlBinlogInOrderBatcherManager(
     //todo 暂时就19ge
     lazy val paths = (1 to 19)
       .map(index => context.actorOf(MysqlBinlogInOrderBatcherPrimaryKeyManager.props(mysql2KafkaTaskInfoManager, sinker, index), s"batcher$index").path.toString)
-    context.actorOf(new ConsistentHashingGroup(paths, virtualNodesFactor = SettingConstant.HASH_MAPPING_VIRTUAL_NODES_FACTOR).props().withDispatcher("akka.batcher-dispatcher"), "router")
+//    context.actorOf(new ConsistentHashingGroup(paths, virtualNodesFactor = SettingConstant.HASH_MAPPING_VIRTUAL_NODES_FACTOR).props().withDispatcher("akka.batcher-dispatcher"), "router")
+    context.actorOf(new RoundRobinGroup(paths).props().withDispatcher("akka.batcher-dispatcher"), "router")
   }
 
   @deprecated
