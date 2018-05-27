@@ -16,5 +16,5 @@ trait MappingFormat[A, B] {
   val ELEMENT_SPLIT = ","
   val STRING_CONTAINER = "\""
 
-  def transform(x:A):B
+  def transform(x:A):Iterable[B]
 }

@@ -56,6 +56,7 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[IdClassifier, K
       case CanalEntry.EventType.ALTER => transferDDltoJson(tempJsonKey, entry)
       case _ => throw new Exception(s"unsupported event type:$eventType,$syncTaskId")
     }
+
   }
 
   /**
