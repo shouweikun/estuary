@@ -106,6 +106,8 @@ class MysqlBinlogInOrderSinkerManager(
 
   def online: Receive = {
     case kafkaMessage: KafkaMessage => {
+//      if(true)throw new Exception("test")else throw new Exception("test")
+
       count = count + 1
       val ogIndex = kafkaMessage.getBaseDataJsonKey.syncTaskSequence
       val index: Int = if (ogIndex <= 0) 0 else ogIndex.toInt
@@ -130,7 +132,9 @@ class MysqlBinlogInOrderSinkerManager(
       schedulingSavedJournalName = lastSavedJournalName
     }
     case SinkerMessage(e: Throwable) => {
+
       sinkerChangeStatus(Status.ERROR)
+      context.become(error)
       if (!isAbnormal) {
         isAbnormal = true
         log.error(s"error when sink data,e:$e,message:${e.getMessage},cause:${e.getCause},id:$syncTaskId");
@@ -142,7 +146,7 @@ class MysqlBinlogInOrderSinkerManager(
   }
 
   def error: Receive = {
-    case x => log.warning(s"sinker is error,cannot handle this message:$x,id:$syncTaskId")
+    case x => log.warning(s"sinker is crashed,cannot handle this message:$x,id:$syncTaskId")
   }
 
   def initSinkers = {

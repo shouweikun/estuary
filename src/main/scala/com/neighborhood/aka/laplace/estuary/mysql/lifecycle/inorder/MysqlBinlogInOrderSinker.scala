@@ -45,7 +45,7 @@ class MysqlBinlogInOrderSinker(
       //同步写
       kafkaSinkFunc.sink(message.getBaseDataJsonKey, message.getJsonValue)(topic)
     } else {
-
+      //       throw new Exception("test")
       /**
         * 注意，开启异步写，程序将不能保证完全的顺序，只能说"大致有序"
         */
@@ -57,9 +57,8 @@ class MysqlBinlogInOrderSinker(
 
         override def onCompletion(metadata: RecordMetadata, exception: Exception): Unit = {
           if (exception != null) {
-//            receiver ! SinkerMessage(new Exception("test"))
-            receiver ! SinkerMessage(exception);
-            log.error(s"error when sending data:$theValue,e:$exception,message:${exception.getCause},id:$syncTaskId,sinker num:$num")
+            //            receiver ! SinkerMessage(new Exception("test"))
+            receiver ! SinkerMessage(new Exception(s"error when sending data:$theValue,e:$exception,message:${exception.getCause},id:$syncTaskId,sinker num:$num"), exception);
           }
         }
       }

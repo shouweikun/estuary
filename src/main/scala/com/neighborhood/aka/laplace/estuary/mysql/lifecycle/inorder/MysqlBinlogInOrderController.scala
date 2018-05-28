@@ -1,5 +1,7 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder
 
+import java.util.concurrent.Executors
+
 import akka.actor.SupervisorStrategy.Escalate
 import akka.actor.{Actor, ActorLogging, AllForOneStrategy, Props}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
@@ -12,6 +14,7 @@ import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlConnection
 import com.neighborhood.aka.laplace.estuary.mysql.task.{Mysql2KafkaTaskInfoBean, Mysql2KafkaTaskInfoManager}
 import org.I0Itec.zkclient.exception.ZkTimeoutException
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 /**
@@ -21,6 +24,12 @@ import scala.concurrent.duration._
 class MysqlBinlogInOrderController(
                                     taskInfoBean: Mysql2KafkaTaskInfoBean
                                   ) extends SyncController with Actor with ActorLogging {
+
+  lazy val schedulingCommandPool = Executors.newFixedThreadPool(3)
+  /**
+    * 必须要用这个，保证重启后，之前的定时发送任务都没了
+    */
+  implicit val scheduleTaskPool = ExecutionContext.fromExecutor(scheduleTaskPool)
   //资源管理器，一次同步任务所有的resource都由resourceManager负责
   val resourceManager = Mysql2KafkaTaskInfoManager.buildManager(taskInfoBean)
   val mysql2KafkaTaskInfoManager = resourceManager
@@ -30,7 +39,7 @@ class MysqlBinlogInOrderController(
   val isCounting = taskInfoBean.isCounting
   val isCosting = taskInfoBean.isCosting
   val isPowerAdapted = taskInfoBean.isPowerAdapted
-  implicit val scheduleTaskPool = context.dispatcher
+
 
   override var errorCountThreshold: Int = 3
   override var errorCount: Int = 0
@@ -283,7 +292,7 @@ class MysqlBinlogInOrderController(
 
   = {
     log.info(s"syncController processing postStop ,id:$syncTaskId")
-
+    schedulingCommandPool.shutdown()
     //    mysqlConnection.disconnect()
   }
 
