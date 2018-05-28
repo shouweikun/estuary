@@ -1,13 +1,14 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder
 
 import akka.actor.{Actor, ActorLogging, Props}
+import com.neighborhood.aka.laplace.estuary.bean.exception.sink.KafkaSinkSendFailureException
+import com.neighborhood.aka.laplace.estuary.bean.key.BinlogKey
 import com.neighborhood.aka.laplace.estuary.bean.support.KafkaMessage
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.SinkerMessage
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.SourceDataSinker
 import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManager
 import org.apache.kafka.clients.producer.{Callback, RecordMetadata}
-import org.springframework.util.StringUtils
 
 /**
   * Created by john_liu on 2018/5/8.
@@ -54,12 +55,17 @@ class MysqlBinlogInOrderSinker(
         val receiver = context.parent
         val theKey = key
         val theValue = message.getJsonValue
+        val binlogJournalName = message.getBaseDataJsonKey.asInstanceOf[BinlogKey].getMysqlJournalName
+        val binlogOffset = message.getBaseDataJsonKey.asInstanceOf[BinlogKey].getMysqlPosition
 
         override def onCompletion(metadata: RecordMetadata, exception: Exception): Unit = {
           if (exception != null) {
             //            receiver ! SinkerMessage(new Exception("test"))
-            receiver ! SinkerMessage(new Exception(s"error when sending data:$theValue,e:$exception,message:${exception.getCause},id:$syncTaskId,sinker num:$num"), exception);
+            receiver ! SinkerMessage(new KafkaSinkSendFailureException(s"error when sending data:$theValue,e:$exception,message:${exception.getCause},id:$syncTaskId,sinker num:$num"), exception);
           }
+         //if(isChecked){
+          // todo 存入redis校验数据
+          // }
         }
       }
 

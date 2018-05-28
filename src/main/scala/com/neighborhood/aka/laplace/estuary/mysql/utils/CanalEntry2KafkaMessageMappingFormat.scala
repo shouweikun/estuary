@@ -36,9 +36,11 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[IdClassifier, K
     lazy val header = entry.getHeader
 
     lazy val eventType = header.getEventType
-    lazy val primaryKey = if(idClassifier.consistentHashKey ==null){
+    lazy val primaryKey = if (idClassifier.consistentHashKey == null) {
       ""
-    }else{idClassifier.consistentHashKey.toString}
+    } else {
+      idClassifier.consistentHashKey.toString
+    }
     val tempJsonKey = BinlogKey.buildBinlogKey(header)
     tempJsonKey.setAppName(appName)
     tempJsonKey.setAppServerIp(appServerIp)
@@ -174,6 +176,7 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[IdClassifier, K
   = {
     val sb = new StringBuilder(512)
     sb.append(START_JSON)
+
     addKeyValue(sb, "version", header.getVersion, false)
     addKeyValue(sb, "logfileName", header.getLogfileName, false)
     addKeyValue(sb, "logfileOffset", header.getLogfileOffset, false)

@@ -2,6 +2,7 @@ package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder
 
 import akka.actor.SupervisorStrategy.Escalate
 import akka.actor.{Actor, ActorLogging, OneForOneStrategy, Props}
+import com.neighborhood.aka.laplace.estuary.bean.exception.sink.SinkDataException
 import com.neighborhood.aka.laplace.estuary.bean.key.BinlogKey
 import com.neighborhood.aka.laplace.estuary.bean.support.KafkaMessage
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
@@ -140,7 +141,7 @@ class MysqlBinlogInOrderSinkerManager(
         log.error(s"error when sink data,e:$e,message:${e.getMessage},cause:${e.getCause},id:$syncTaskId");
         logPositionHandler.persistLogPosition(destination, scheduledSavedJournalName, scheduledSavedOffset)
         //向上传递
-        throw new Exception(s"error when sink data,cause:$e,message:${e.getMessage},id:$syncTaskId", e)
+        throw new SinkDataException(s"error when sink data,cause:$e,message:${e.getMessage},id:$syncTaskId", e)
       }
     }
   }
