@@ -133,9 +133,9 @@ class MysqlBinlogInOrderSinkerManager(
       sinkerChangeStatus(Status.ERROR)
       if(!isAbnormal){
         isAbnormal = true
-        log.error(s"error when sink data,cause:$e,message:${e.getMessage},id:$syncTaskId");
+        log.error(s"error when sink data,e:$e,message:${e.getMessage},cause:${e.getCause},id:$syncTaskId");
         //向上传递
-        throw new Exception(s"error when sink data,cause:$e,message:${e.getMessage},id:$syncTaskId")
+        throw new Exception(s"error when sink data,cause:$e,message:${e.getMessage},id:$syncTaskId",e)
       }
     }
   }

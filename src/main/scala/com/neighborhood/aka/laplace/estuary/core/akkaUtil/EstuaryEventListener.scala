@@ -11,7 +11,7 @@ import scala.collection.mutable
 
 class EstuaryEventListener extends Actor with ActorLogging {
 
-  val TIME_INTERVAL = 1 * 60 * 1000 //1min 以ms为单位
+  val TIME_INTERVAL = 5 * 60 * 1000 //5min 以ms为单位
   val config = ConfigFactory.load()
   val url = config.getString("error.monitor.url")
   val mobilelist = List(config.getString("error.monitor.mobiles"))

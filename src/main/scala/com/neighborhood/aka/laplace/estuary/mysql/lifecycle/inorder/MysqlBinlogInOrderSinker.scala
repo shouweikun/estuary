@@ -49,7 +49,7 @@ class MysqlBinlogInOrderSinker(
       /**
         * 注意，开启异步写，程序将不能保证完全的顺序，只能说"大致有序"
         */
-      val callBack = new Callback {
+      lazy val callBack = new Callback {
         //接受错误消息，发给上级sinkerManager
         val receiver = context.parent
         val theKey = key
@@ -57,6 +57,7 @@ class MysqlBinlogInOrderSinker(
 
         override def onCompletion(metadata: RecordMetadata, exception: Exception): Unit = {
           if (exception != null) {
+//            receiver ! SinkerMessage(new Exception("test"))
             receiver ! SinkerMessage(exception);
             log.error(s"error when sending data:$theValue,e:$exception,message:${exception.getCause},id:$syncTaskId,sinker num:$num")
           }
