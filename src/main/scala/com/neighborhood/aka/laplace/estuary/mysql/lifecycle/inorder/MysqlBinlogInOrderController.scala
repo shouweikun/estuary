@@ -139,7 +139,9 @@ class MysqlBinlogInOrderController(
       } {
         ref =>
           ref ! SyncControllerMessage("start")
-          context.system.scheduler.schedule(SettingConstant.OFFSET_SAVE_CONSTANT seconds, SettingConstant.OFFSET_SAVE_CONSTANT seconds, ref, SyncControllerMessage("save"))
+
+
+          context.system.scheduler.schedule((SettingConstant.OFFSET_SAVE_CONSTANT + SettingConstant.COMPUTE_FIRST_DELAY) seconds, SettingConstant.OFFSET_SAVE_CONSTANT seconds, ref, SyncControllerMessage("save"))
       }
     //启动batcher
     context

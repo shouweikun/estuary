@@ -7,8 +7,8 @@ package com.neighborhood.aka.laplace.estuary.mysql
 object SettingConstant {
 
   val COMPUTE_COST_CONSTANT = 3
-  val COMPUTE_FIRST_DELAY = 10
-  val OFFSET_SAVE_CONSTANT = 10
+  val COMPUTE_FIRST_DELAY:Int = 10
+  val OFFSET_SAVE_CONSTANT:Int = 15
   val CHECKSEND_CONSTANT = 20
   val BATCHER_START_DELAY = 1
   val FETCHER_START_DELAY = 5
