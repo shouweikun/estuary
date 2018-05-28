@@ -4,6 +4,7 @@ import java.util.concurrent.Executors
 
 import akka.actor.SupervisorStrategy.Escalate
 import akka.actor.{Actor, ActorLogging, AllForOneStrategy, Props}
+import com.neighborhood.aka.laplace.estuary.bean.exception.control.{RestartCommandException, WorkerCannotFindException}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.{Status, SyncController}
@@ -90,7 +91,12 @@ class MysqlBinlogInOrderController(
 
   def online: Receive = {
     case "start" => startAllWorkers
-    case "restart" => throw new RuntimeException(s"重启,id:$syncTaskId")
+    case "restart" => throw new RestartCommandException(
+      {
+        log.warning(s"restart sync task:$syncTaskId at ${System.currentTimeMillis()}");
+        s"restart a,id:$syncTaskId"
+      }
+    )
     case ListenerMessage(msg) => {
       msg match {
         case x => {
@@ -100,9 +106,12 @@ class MysqlBinlogInOrderController(
     }
     case SinkerMessage(msg) => {
       msg match {
-        case "error" => {
-          throw new RuntimeException(s"sinker went wrong when sending data,id:$syncTaskId")
-        }
+        case "error" => throw new RestartCommandException(
+          {
+            log.error(s"sinker went wrong when sending data,id:$syncTaskId");
+            s"sinker went wrong when sending data,prepare to restart,id:$syncTaskId"
+          }
+        )
         case "flush" => {
           context
             .child("binlogBatcher")
@@ -135,7 +144,7 @@ class MysqlBinlogInOrderController(
       .child("binlogSinker")
       .fold {
         log.error(s"binlogSinker is null,id:$syncTaskId");
-        throw new Exception(s"binlogSinker is null,id:$syncTaskId")
+        throw new WorkerCannotFindException(s"binlogSinker is null,id:$syncTaskId")
       } {
         ref =>
           ref ! SyncControllerMessage("start")
@@ -148,7 +157,7 @@ class MysqlBinlogInOrderController(
       .child("binlogBatcher")
       .fold {
         log.error(s"binlogBatcher is null,id:$syncTaskId");
-        throw new Exception(s"binlogBatcher is null,id:$syncTaskId")
+        throw new WorkerCannotFindException(s"binlogBatcher is null,id:$syncTaskId")
       } {
         ref =>
           context.system.scheduler.scheduleOnce(SettingConstant.BATCHER_START_DELAY second, ref, SyncControllerMessage("start"))
@@ -159,7 +168,7 @@ class MysqlBinlogInOrderController(
       .child("binlogFetcher")
       .fold {
         log.error(s"binlogFetcher is null,id:$syncTaskId");
-        throw new Exception(s"binlogFetcher is null,id:$syncTaskId")
+        throw new WorkerCannotFindException(s"binlogFetcher is null,id:$syncTaskId")
       } {
         ref => context.system.scheduler.scheduleOnce(SettingConstant.FETCHER_START_DELAY second, ref, SyncControllerMessage("start"))
       }
@@ -168,7 +177,7 @@ class MysqlBinlogInOrderController(
       .child("heartBeatsListener")
       .fold {
         log.error(s"heartBeatsListener is null,id:$syncTaskId");
-        throw new Exception(s"heartBeatsListener is null,id:$syncTaskId")
+        throw new WorkerCannotFindException(s"heartBeatsListener is null,id:$syncTaskId")
       } {
         ref =>
           ref ! SyncControllerMessage("start")
@@ -181,7 +190,7 @@ class MysqlBinlogInOrderController(
         .child("powerAdapter")
         .fold {
           log.error(s"powerAdapter is null,id:$syncTaskId");
-          throw new Exception(s"powerAdapter is null,id:$syncTaskId")
+          throw new WorkerCannotFindException(s"powerAdapter is null,id:$syncTaskId")
         }(ref =>
           context
             .system
@@ -193,7 +202,7 @@ class MysqlBinlogInOrderController(
         .child("processingCounter")
         .fold {
           log.error(s"processingCounter is null,id:$syncTaskId");
-          throw new Exception(s"processingCounter is null,id:$syncTaskId")
+          throw new WorkerCannotFindException(s"processingCounter is null,id:$syncTaskId")
         } {
           ref =>
             context
@@ -206,7 +215,7 @@ class MysqlBinlogInOrderController(
       .child("powerAdapter")
       .fold {
         log.error(s"powerAdapter is null,id:$syncTaskId");
-        throw new Exception(s"powerAdapter is null,id:$syncTaskId")
+        throw new WorkerCannotFindException(s"powerAdapter is null,id:$syncTaskId")
       }(ref =>
         context.
           system
