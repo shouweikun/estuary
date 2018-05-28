@@ -131,13 +131,18 @@ class MysqlBinlogInOrderSinkerManager(
     }
     case SinkerMessage(e: Throwable) => {
       sinkerChangeStatus(Status.ERROR)
-      if(!isAbnormal){
+      if (!isAbnormal) {
         isAbnormal = true
         log.error(s"error when sink data,e:$e,message:${e.getMessage},cause:${e.getCause},id:$syncTaskId");
+        logPositionHandler.persistLogPosition(destination, scheduledSavedJournalName, scheduledSavedOffset)
         //向上传递
-        throw new Exception(s"error when sink data,cause:$e,message:${e.getMessage},id:$syncTaskId",e)
+        throw new Exception(s"error when sink data,cause:$e,message:${e.getMessage},id:$syncTaskId", e)
       }
     }
+  }
+
+  def error: Receive = {
+    case x => log.warning(s"sinker is error,cannot handle this message:$x,id:$syncTaskId")
   }
 
   def initSinkers = {
