@@ -21,7 +21,7 @@ trait KafkaBean extends DataSinkBean {
     */
   var maxBlockMs: String = "5000"
   var ack: String = "1"
-  var lingerMs: String = "200"
+  var lingerMs: String = "1"
   var kafkaRetries: String = "3"
   /**
     * 分区类
