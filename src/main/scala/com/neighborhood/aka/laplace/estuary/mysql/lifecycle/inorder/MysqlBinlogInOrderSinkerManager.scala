@@ -2,6 +2,7 @@ package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder
 
 import akka.actor.SupervisorStrategy.Escalate
 import akka.actor.{Actor, ActorLogging, OneForOneStrategy, Props}
+import com.neighborhood.aka.laplace.estuary.bean.exception.sink.SinkDataException
 import com.neighborhood.aka.laplace.estuary.bean.key.BinlogKey
 import com.neighborhood.aka.laplace.estuary.bean.support.KafkaMessage
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
@@ -82,6 +83,10 @@ class MysqlBinlogInOrderSinkerManager(
     startPosition.get.getPostion.getJournalName
   } else ""
   /**
+    * 最新时间戳
+    */
+  var latestTimestamp: Long = 0
+  /**
     * 是否出现异常
     */
   var isAbnormal: Boolean = false
@@ -106,23 +111,26 @@ class MysqlBinlogInOrderSinkerManager(
 
   def online: Receive = {
     case kafkaMessage: KafkaMessage => {
+      //      if(true)throw new Exception("test")else throw new Exception("test")
+
       count = count + 1
       val ogIndex = kafkaMessage.getBaseDataJsonKey.syncTaskSequence
       val index: Int = if (ogIndex <= 0) 0 else ogIndex.toInt
       sinkList(index) ! kafkaMessage
     }
-    case BinlogPositionInfo(journalName, offset) => {
+    case BinlogPositionInfo(journalName, offset, timestamp) => {
       this.lastSavedJournalName = journalName
       this.lastSavedOffset = offset
+      this.latestTimestamp = timestamp
       count = count + 1
       // log.info(s"JournalName update to $savedJournalName,offset update to $savedOffset")
-      if (isProfiling) mysql2KafkaTaskInfoManager.sinkerLogPosition.set(s"latest binlog:{$journalName:$offset},save point:{$schedulingSavedJournalName:$schedulingSavedOffset},lastSavedPoint:{$scheduledSavedJournalName:$scheduledSavedOffset},id:$syncTaskId")
+      if (isProfiling) mysql2KafkaTaskInfoManager.sinkerLogPosition.set(s"latest binlog:{$journalName:$offset,timestamp:$latestTimestamp},save point:{$schedulingSavedJournalName:$schedulingSavedOffset},lastSavedPoint:{$scheduledSavedJournalName:$scheduledSavedOffset},id:$syncTaskId")
       if (isCounting) processingCounter.fold(log.error(s"processingCounter cannot be null,id:$syncTaskId"))(ref => ref ! SinkerMessage(1))
     }
     case SyncControllerMessage("save") => {
-      if (schedulingSavedJournalName != null && schedulingSavedJournalName.trim != "") {
-        logPositionHandler.persistLogPosition(destination, schedulingSavedJournalName, schedulingSavedOffset)
-        log.info(s"save logPosition $schedulingSavedJournalName:$schedulingSavedOffset,id:$syncTaskId")
+      if (scheduledSavedJournalName != null && scheduledSavedJournalName.trim != "") {
+        logPositionHandler.persistLogPosition(destination, scheduledSavedJournalName, scheduledSavedOffset)
+        log.info(s"save logPosition $scheduledSavedJournalName:$scheduledSavedOffset,id:$syncTaskId")
       }
       scheduledSavedJournalName = schedulingSavedJournalName
       scheduledSavedOffset = schedulingSavedOffset
@@ -130,12 +138,21 @@ class MysqlBinlogInOrderSinkerManager(
       schedulingSavedJournalName = lastSavedJournalName
     }
     case SinkerMessage(e: Throwable) => {
+
       sinkerChangeStatus(Status.ERROR)
-      isAbnormal = true
-      log.error(s"error when sink data,cause:$e,message:${e.getMessage},id:$syncTaskId");
-      //向上传递
-      throw new Exception(s"error when sink data,cause:$e,message:${e.getMessage},id:$syncTaskId")
+      context.become(error)
+      if (!isAbnormal) {
+        isAbnormal = true
+        log.error(s"error when sink data,e:$e,message:${e.getMessage},cause:${e.getCause},id:$syncTaskId");
+        logPositionHandler.persistLogPosition(destination, scheduledSavedJournalName, scheduledSavedOffset)
+        //向上传递
+        throw new SinkDataException(s"error when sink data,cause:$e,message:${e.getMessage},id:$syncTaskId", e)
+      }
     }
+  }
+
+  def error: Receive = {
+    case x => log.warning(s"sinker is crashed,cannot handle this message:$x,id:$syncTaskId")
   }
 
   def initSinkers = {

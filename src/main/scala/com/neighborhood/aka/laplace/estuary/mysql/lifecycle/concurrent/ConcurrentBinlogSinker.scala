@@ -142,7 +142,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
               case message: KafkaMessage => handleSinkTask(message)(x._1)
               case messages: Array[KafkaMessage] => if (messages.length > 0) messages.map(handleSinkTask(_)(x._1))
 
-              case BinlogPositionInfo(journalName, offset) => {
+              case BinlogPositionInfo(journalName, offset,_) => {
                 savedJournalName = journalName
                 savedOffset = offset
               }
@@ -217,14 +217,15 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
       val thisJournalName: String = scheduledSavedJournalName
       val thisOffset: Long = scheduledSavedOffset
       val receiver = context.parent
-
+      val theKey = key
+      val theValue = kafkaMessage.getJsonValue
       override def onCompletion(metadata: RecordMetadata, exception: Exception): Unit = {
         if (exception != null) {
 
 
           if (isAbnormal.compareAndSet(false, true)) {
             if (!StringUtils.isEmpty(thisJournalName)) {
-              log.error("Error when send :" + key + ", metadata:" + metadata + exception + "lastSavedPoint" + s" thisJournalName = $thisJournalName" + s" thisOffset = $thisOffset,id:$syncTaskId")
+              log.error("Error when send :" + theKey + ", metadata:" + metadata + exception + "lastSavedPoint" + s" thisJournalName = $thisJournalName" + s" thisOffset = $thisOffset,e:${exception},cause:${exception.getCause}id:$syncTaskId")
               logPositionHandler.persistLogPosition(destination, thisJournalName, thisOffset)
             }
             receiver ! SinkerMessage("error")

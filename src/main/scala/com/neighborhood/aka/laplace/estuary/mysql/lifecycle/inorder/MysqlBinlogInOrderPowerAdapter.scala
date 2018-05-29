@@ -7,6 +7,8 @@ import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mysql.SettingConstant
 import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManager
 
+import scala.util.Try
+
 /**
   * Created by john_liu on 2018/5/5.
   */
@@ -15,6 +17,8 @@ class MysqlBinlogInOrderPowerAdapter(
                                     ) extends Actor with ActorLogging with PowerAdapter {
 
   val syncTaskId = taskManager.syncTaskId
+  val batchNum = taskManager.batcherNum
+  val sinkNum = taskManager.batcherNum // 和batcher数量相等
 
   override def receive: Receive = {
 
@@ -22,6 +26,8 @@ class MysqlBinlogInOrderPowerAdapter(
       x match {
         case timeCost: Long => updateFetchTimeByTimeCost(timeCost)
         case timeCost: Int => updateFetchTimeByTimeCost(timeCost)
+        //针对fetchCounter特化的
+        case count: String => lazy val cost = Try(count.toInt).getOrElse(0); fetchCountSum += cost
       }
     }
     case BatcherMessage(x) => {
@@ -47,14 +53,24 @@ class MysqlBinlogInOrderPowerAdapter(
     taskManager.sinkCostPercentage.set(computeCostPercentage(sinkTimeSum, SettingConstant.COMPUTE_COST_CONSTANT))
     //每秒数量
     taskManager.fetchCountPerSecond.set(computeQuantityPerSecond(fetchCountSum, SettingConstant.COMPUTE_COST_CONSTANT))
+
     taskManager.batchCountPerSecond.set(computeQuantityPerSecond(batchCountSum, SettingConstant.COMPUTE_COST_CONSTANT))
+
     taskManager.sinkCountPerSecond.set(computeQuantityPerSecond(sinkCountSum, SettingConstant.COMPUTE_COST_CONSTANT))
+
     //实时耗时
     computeActualCost
 
     taskManager.fetchCost.set(fetchActualTimeCost)
     taskManager.batchCost.set(batchActualTimeCost)
     taskManager.sinkCost.set(sinkActualTimeCost)
+
+    fetchCountSum = 0
+    batchCountSum = 0
+    sinkCountSum = 0
+    fetchTimeSum = 0
+    batchTimeSum = 0
+    sinkTimeSum = 0
   }
 
   override def control: Unit = {
@@ -85,17 +101,18 @@ class MysqlBinlogInOrderPowerAdapter(
     log.debug(s"delayDuration:$delayDuration,id:$syncTaskId")
 
     val finalDelayDuration: Long = ((fetchCount - sinkCount), fetchCost, batchCost, sinkCost) match {
-      case (_, x, _, _) if (x > 2000) => math.max(1000000, delayDuration) //1s 休眠
-      case (_, x, _, _) if (x > 1500) => math.max(700000, delayDuration) //700ms 休眠
-      case (_, x, _, _) if (x > 1000) => math.max(500000, delayDuration) ////500ms 休眠
-      case (_, x, _, _) if (x > 400) => math.max(150000, delayDuration) ////150ms 休眠
-      case (w, _, _, _) if (w < 10 * batcherNum) => 0 //0s 快速拉取数据
+      //      case _ => 10000  //做实验用
+      case (_, x, _, _) if (x > 2000) => math.max(3000000, delayDuration) //3s 休眠
+      case (_, x, _, _) if (x > 1500) => math.max(2000000, delayDuration) //2s 休眠
+      case (_, x, _, _) if (x > 1000) => math.max(1000000, delayDuration) //1s 休眠
+      case (_, x, _, _) if (x > 400) => math.max(200000, delayDuration) ////200ms 休眠
+      case (w, _, _, _) if (w < 3 * batcherNum) => 0 //0s 快速拉取数据
       case (_, x, y, z) if (x > 150 || y > 10000 || z > 800) => math.max(100000, delayDuration) //100ms 防止数据太大
       case (_, x, y, z) if (x > 100 || y > 8000 || z > 750) => math.max(80000, delayDuration) //80ms 防止数据太大
       case (_, x, y, z) if (x > 50 || y > 6000 || z > 700) => math.max(60000, delayDuration) //60ms 防止数据太大
       case (_, x, y, z) if (x > 30 || y > 4000 || z > 600) => math.max(40000, delayDuration) //40ms 防止数据太大
       case (_, x, y, z) if (x > 25 || y > 2500 || z > 450) => math.max(35000, delayDuration) //40ms
-      case (w, _, _, _) if (w < 15 * batcherNum) => 0 //0s 快速拉取数据
+      case (w, _, _, _) if (w < 5 * batcherNum) => 0 //0s 快速拉取数据
       case (_, x, y, z) if (x > 20 || y > 2000 || z > 400) => math.max(25000, delayDuration) //25ms
       case (_, x, y, z) if (x > 15 || y > 1800 || z > 300) => math.max(20000, delayDuration) //20ms
       case (_, x, y, z) if (x > 12 || y > 1700 || z > 250) => math.max(10000, delayDuration) //10ms
