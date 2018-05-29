@@ -13,5 +13,8 @@ abstract class EstuaryException(
   def this(message: => String) = this(message, null)
 
   def this(cause: Throwable) = this("", cause)
+
+  var binlogJournalName = ""
+  var binlogOffset = 4l
 }
 

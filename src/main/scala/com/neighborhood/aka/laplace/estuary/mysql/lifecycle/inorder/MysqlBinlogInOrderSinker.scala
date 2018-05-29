@@ -53,10 +53,12 @@ class MysqlBinlogInOrderSinker(
       lazy val callBack = new Callback {
         //接受错误消息，发给上级sinkerManager
         val receiver = context.parent
+
         val theKey = key
         val theValue = message.getJsonValue
         val binlogJournalName = message.getBaseDataJsonKey.asInstanceOf[BinlogKey].getMysqlJournalName
         val binlogOffset = message.getBaseDataJsonKey.asInstanceOf[BinlogKey].getMysqlPosition
+
 
         override def onCompletion(metadata: RecordMetadata, exception: Exception): Unit = {
           if (exception != null) {

@@ -1,6 +1,5 @@
-package com.neighborhood.aka.laplace.estuary.bean.exception.sink
+package com.neighborhood.aka.laplace.estuary.core.`implicit`
 
-import com.neighborhood.aka.laplace.estuary.core.trans
 import com.neighborhood.aka.laplace.estuary.core.trans.{RegTransPlugin, RegTransformation}
 
 /**

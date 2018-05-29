@@ -128,9 +128,9 @@ class MysqlBinlogInOrderSinkerManager(
       if (isCounting) processingCounter.fold(log.error(s"processingCounter cannot be null,id:$syncTaskId"))(ref => ref ! SinkerMessage(1))
     }
     case SyncControllerMessage("save") => {
-      if (schedulingSavedJournalName != null && schedulingSavedJournalName.trim != "") {
-        logPositionHandler.persistLogPosition(destination, schedulingSavedJournalName, schedulingSavedOffset)
-        log.info(s"save logPosition $schedulingSavedJournalName:$schedulingSavedOffset,id:$syncTaskId")
+      if (scheduledSavedJournalName != null && scheduledSavedJournalName.trim != "") {
+        logPositionHandler.persistLogPosition(destination, scheduledSavedJournalName, scheduledSavedOffset)
+        log.info(s"save logPosition $scheduledSavedJournalName:$scheduledSavedOffset,id:$syncTaskId")
       }
       scheduledSavedJournalName = schedulingSavedJournalName
       scheduledSavedOffset = schedulingSavedOffset
