@@ -18,10 +18,11 @@ import scala.util.Try
 class MysqlBinlogInOrderBatcherPrimaryKeyManager(
                                                   mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
                                                   sinker: ActorRef,
-                                                  num:Int = -1
+                                                  num: Int = -1
                                                 ) extends Actor with SourceDataBatcher with ActorLogging {
 
   val syncTaskId = mysql2KafkaTaskInfoManager.syncTaskId
+  val isSync = mysql2KafkaTaskInfoManager.isSync
   //  val mysqlMetaConnection = mysql2KafkaTaskInfoManager.mysqlConnection.fork
   //  var tableMetaCache = buildTableMeta
   val batcherNum = mysql2KafkaTaskInfoManager.batcherNum
@@ -52,10 +53,13 @@ class MysqlBinlogInOrderBatcherPrimaryKeyManager(
     //编号从1 开始
     lazy val paths = (1 to batcherNum)
       .map(index => context.actorOf(MysqlBinlogInOrderBatcher.props(mysql2KafkaTaskInfoManager, sinker, index), s"batcher$index").path.toString)
-//    context.actorOf(new ConsistentHashingGroup(paths, virtualNodesFactor = SettingConstant.HASH_MAPPING_VIRTUAL_NODES_FACTOR).props().withDispatcher("akka.batcher-dispatcher"), "router")
-    context.actorOf(new RoundRobinGroup(paths).props().withDispatcher("akka.batcher-dispatcher"), "router")
-  }
+    if (isSync) {
+      context.actorOf(new ConsistentHashingGroup(paths, virtualNodesFactor = SettingConstant.HASH_MAPPING_VIRTUAL_NODES_FACTOR).props().withDispatcher("akka.batcher-dispatcher"), "router")
+    } else {
+      context.actorOf(new RoundRobinGroup(paths).props().withDispatcher("akka.batcher-dispatcher"), "router")
+    }
 
+  }
 
 
   override def preStart(): Unit = {
@@ -104,9 +108,8 @@ object MysqlBinlogInOrderBatcherPrimaryKeyManager {
   def props(
              mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
              sinker: ActorRef,
-             num:Int
-           ): Props = Props(new MysqlBinlogInOrderBatcherPrimaryKeyManager(mysql2KafkaTaskInfoManager, sinker,num))
-
+             num: Int
+           ): Props = Props(new MysqlBinlogInOrderBatcherPrimaryKeyManager(mysql2KafkaTaskInfoManager, sinker, num))
 
 
 }

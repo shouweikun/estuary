@@ -2,7 +2,7 @@ package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder
 
 import akka.actor.SupervisorStrategy.Escalate
 import akka.actor.{Actor, ActorLogging, ActorRef, AllForOneStrategy, Props}
-import akka.routing.RoundRobinGroup
+import akka.routing.{ConsistentHashingGroup, RoundRobinGroup}
 import com.alibaba.otter.canal.parse.inbound.mysql.dbsync.TableMetaCache
 import com.alibaba.otter.canal.protocol.CanalEntry
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
@@ -10,6 +10,7 @@ import com.neighborhood.aka.laplace.estuary.core.lifecycle.SyncControllerMessage
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.{SourceDataBatcher, Status}
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
+import com.neighborhood.aka.laplace.estuary.mysql.SettingConstant
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.{BinlogPositionInfo, DatabaseAndTableNameClassifier, IdClassifier}
 import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlConnection
 import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManager
@@ -23,6 +24,7 @@ class MysqlBinlogInOrderBatcherManager(
                                       ) extends Actor with SourceDataBatcher with ActorLogging {
 
   val syncTaskId = mysql2KafkaTaskInfoManager.syncTaskId
+  val isSync = mysql2KafkaTaskInfoManager.isSync
   //  val mysqlMetaConnection = mysql2KafkaTaskInfoManager.mysqlConnection.fork
   //  var tableMetaCache = buildTableMeta
   val batcherNum = mysql2KafkaTaskInfoManager.batcherNum
@@ -68,8 +70,12 @@ class MysqlBinlogInOrderBatcherManager(
     //todo 暂时就89个
     lazy val paths = (1 to 89)
       .map(index => context.actorOf(MysqlBinlogInOrderBatcherPrimaryKeyManager.props(mysql2KafkaTaskInfoManager, sinker, index), s"batcher$index").path.toString)
-    //    context.actorOf(new ConsistentHashingGroup(paths, virtualNodesFactor = SettingConstant.HASH_MAPPING_VIRTUAL_NODES_FACTOR).props().withDispatcher("akka.batcher-dispatcher"), "router")
-    context.actorOf(new RoundRobinGroup(paths).props().withDispatcher("akka.batcher-dispatcher"), "router")
+
+    if (isSync) {
+      context.actorOf(new ConsistentHashingGroup(paths, virtualNodesFactor = SettingConstant.HASH_MAPPING_VIRTUAL_NODES_FACTOR).props().withDispatcher("akka.batcher-dispatcher"), "router")
+    } else {
+      context.actorOf(new RoundRobinGroup(paths).props().withDispatcher("akka.batcher-dispatcher"), "router")
+    }
   }
 
   @deprecated

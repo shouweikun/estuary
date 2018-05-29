@@ -35,8 +35,10 @@ trait TaskManager {
     * 是否打开功率调节器
     */
   val isPowerAdapted: Boolean
-
-
+  /**
+    * 是否同步写
+    */
+  val isSync: Boolean
   /**
     * 监听心跳用的语句
     */
@@ -123,7 +125,8 @@ trait TaskManager {
   /**
     * sinker的数量
     */
-  val sinkerNum:Int
+  val sinkerNum: Int
+
   /**
     * 任务运行状态
     * 此trait的实现类可以扩展此方法返回具体部件的状态

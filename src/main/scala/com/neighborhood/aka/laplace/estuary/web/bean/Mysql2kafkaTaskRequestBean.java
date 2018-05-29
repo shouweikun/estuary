@@ -31,8 +31,6 @@ public class Mysql2kafkaTaskRequestBean extends TaskRequestBean {
     private boolean filterQueryDdl = false;
     private boolean filterRows = false;
     private boolean filterTableError = false;
-    private String eventFilterPattern = "";
-    private String eventBlackFilterPattern = "";
     private String kafkaBootstrapServers = "";
     private String kafkaMaxBlockMs = "";
     private String kafkaAck = "";
@@ -284,22 +282,6 @@ public class Mysql2kafkaTaskRequestBean extends TaskRequestBean {
 
     public void setFilterTableError(boolean filterTableError) {
         this.filterTableError = filterTableError;
-    }
-
-    public String getEventFilterPattern() {
-        return eventFilterPattern;
-    }
-
-    public void setEventFilterPattern(String eventFilterPattern) {
-        this.eventFilterPattern = eventFilterPattern;
-    }
-
-    public String getEventBlackFilterPattern() {
-        return eventBlackFilterPattern;
-    }
-
-    public void setEventBlackFilterPattern(String eventBlackFilterPattern) {
-        this.eventBlackFilterPattern = eventBlackFilterPattern;
     }
 
     public String getKafkaBootstrapServers() {

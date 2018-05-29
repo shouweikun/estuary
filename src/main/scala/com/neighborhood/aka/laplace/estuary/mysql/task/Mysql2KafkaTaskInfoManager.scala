@@ -27,8 +27,10 @@ import org.apache.commons.lang.StringUtils
 class Mysql2KafkaTaskInfoManager(
                                   override val taskInfoBean: Mysql2KafkaTaskInfoBean) extends TaskManager with RecourceManager[String, MysqlConnection, KafkaSinkFunc[String]] {
 
-
-
+  /**
+    * 是否同步写，默认不是
+    */
+  override val isSync: Boolean = taskInfoBean.isSync
   /**
     * 是否计数，默认不计数
     */
@@ -209,8 +211,8 @@ class Mysql2KafkaTaskInfoManager(
     */
   def buildParser: MysqlBinlogParser = {
     val convert = new MysqlBinlogParser
-    val eventFilter:AviaterRegexFilter = if (!StringUtils.isEmpty(taskInfo.filterPattern)) new AviaterRegexFilter(taskInfo.filterPattern) else null
-    val eventBlackFilter:AviaterRegexFilter = if (!StringUtils.isEmpty(taskInfo.filterBlackPattern)) new AviaterRegexFilter(taskInfo.filterBlackPattern) else null
+    val eventFilter: AviaterRegexFilter = if (!StringUtils.isEmpty(taskInfo.filterPattern)) new AviaterRegexFilter(taskInfo.filterPattern) else null
+    val eventBlackFilter: AviaterRegexFilter = if (!StringUtils.isEmpty(taskInfo.filterBlackPattern)) new AviaterRegexFilter(taskInfo.filterBlackPattern) else null
     if (eventFilter != null) convert.setNameFilter(eventFilter)
     if (eventBlackFilter != null) convert.setNameBlackFilter(eventBlackFilter)
 
