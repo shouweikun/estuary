@@ -46,6 +46,7 @@ class MysqlBinlogInOrderBatcher(
   override def receive: Receive = {
 
     case x: IdClassifier => {
+
       //      implicit val num = this.num
       //      val before = System.currentTimeMillis()
       val kafkaMessage = transform(x)

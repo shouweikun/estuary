@@ -17,6 +17,26 @@ class Mongo2KafkaTaskInfoManager(
   extends TaskManager with RecourceManager[String, MongoConnection, KafkaSinkFunc[String]] {
 
   /**
+    * 是否计数，默认不计数
+    */
+  override val isCounting: Boolean = true
+  /**
+    * 是否计算每条数据的时间，默认不计时
+    */
+  override val isCosting: Boolean = true
+  /**
+    * 是否保留最新binlog位置
+    */
+  override val isProfiling: Boolean = true
+  /**
+    * 是否打开功率调节器
+    */
+  override val isPowerAdapted: Boolean = true
+  /**
+    * sinker的数量
+    */
+  override val sinkerNum: Int = 0
+  /**
     * 监听心跳用的语句
     */
   override val delectingCommand: String = ""

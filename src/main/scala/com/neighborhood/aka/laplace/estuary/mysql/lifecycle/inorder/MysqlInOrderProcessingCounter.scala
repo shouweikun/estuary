@@ -23,6 +23,7 @@ class MysqlInOrderProcessingCounter(
     case SyncControllerMessage("count") => {
       updateRecord
       log.debug(s"set fetch count $fetchCount,batch count $batchCount,sink count $sinkCount,id:$syncTaskId")
+
     }
   }
 

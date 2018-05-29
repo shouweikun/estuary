@@ -21,7 +21,7 @@ trait KafkaBean extends DataSinkBean {
     */
   var maxBlockMs: String = "5000"
   var ack: String = "1"
-  var lingerMs: String = "0"
+  var lingerMs: String = "1"
   var kafkaRetries: String = "3"
   /**
     * 分区类
@@ -38,7 +38,7 @@ trait KafkaBean extends DataSinkBean {
   /**
     * 依照特定规则映射表和数据库找出topic
     */
-  var specificTopics: Map[String,String] = Map.empty
+  var specificTopics: Map[String, String] = Map.empty
   /**
     * 最大接收数据
     */
@@ -46,7 +46,7 @@ trait KafkaBean extends DataSinkBean {
   /**
     * request延迟
     */
-  var requestTimeoutMs = "30000"
+  var requestTimeoutMs = "6500"
   /**
     * key Serializer类
     */
@@ -60,9 +60,15 @@ trait KafkaBean extends DataSinkBean {
     */
   var compressionType: String = "snappy"
   /**
+    * 批大小
+    */
+  var batchSize: String = "3000"
+
+  var retryBackoffMs:String = "300"
+  /**
     * 是否是同步写
     */
-  var isSync = true
+  var isSync = false
 
 }
 
@@ -80,6 +86,8 @@ object KafkaBean {
     config.put("value.serializer", kafkaBean.valueSerializer)
     config.put("partitioner.class", kafkaBean.partitionerClass)
     config.put("compression.type", kafkaBean.compressionType)
+    config.put("batch.size", kafkaBean.batchSize)
+    config.put("retry.backoff.ms",kafkaBean.retryBackoffMs)
     config
   }
 }

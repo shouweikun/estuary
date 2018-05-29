@@ -238,7 +238,7 @@ class BinlogEventBatcher(
                     //将offset记录下来
                     savedJournalName = header.getLogfileName
                     savedOffset = header.getLogfileOffset
-                    BinlogPositionInfo(header.getLogfileName, header.getLogfileOffset)
+                    BinlogPositionInfo(header.getLogfileName, header.getLogfileOffset, header.getExecuteTime)
                   }
                   case CanalEntry.EntryType.ROWDATA => {
                     tranferEntry2JsonByEventType

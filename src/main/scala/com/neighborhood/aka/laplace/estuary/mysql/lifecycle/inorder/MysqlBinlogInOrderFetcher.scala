@@ -1,24 +1,20 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder
 
-import java.util.concurrent.Executors
-
-import akka.actor.SupervisorStrategy.Restart
-import akka.actor.{Actor, ActorLogging, ActorRef, OneForOneStrategy, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import com.alibaba.otter.canal.parse.exception.TableIdNotFoundException
 import com.alibaba.otter.canal.protocol.CanalEntry
 import com.alibaba.otter.canal.protocol.position.EntryPosition
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.{FetcherMessage, SyncControllerMessage, WorkerMessage}
+import com.neighborhood.aka.laplace.estuary.bean.exception.fetch.{CannotFindOffsetException, FetchDataException, NullOfDataSourceConnectionException, OutOfFetchRetryThersholdException}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.{SourceDataFetcher, Status}
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.{FetcherMessage, SyncControllerMessage, WorkerMessage}
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlConnection
 import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManager
-import com.neighborhood.aka.laplace.estuary.mysql.utils.{CanalEntryJsonHelper, MysqlBinlogParser}
-import org.I0Itec.zkclient.exception.ZkTimeoutException
+import com.neighborhood.aka.laplace.estuary.mysql.utils.MysqlBinlogParser
 import org.apache.commons.lang.StringUtils
 
-import scala.annotation.tailrec
-import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
+import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
 
 /**
@@ -105,8 +101,12 @@ class MysqlBinlogInOrderFetcher(
           try {
             entryPosition = mysqlConnection.map(_.fork).map { conn => conn.connect(); logPositionHandler.findStartPosition(conn) }
             entryPosition.fold {
-              log.error(s"fetcher find entryPosition is null,id:$syncTaskId")
-              throw new Exception(s"entryPosition is null when find position,id:$syncTaskId")
+              throw new CannotFindOffsetException(
+                {
+                  log.error(s"fetcher find entryPosition is null,id:$syncTaskId");
+                  s"entryPosition is null when find position,id:$syncTaskId"
+                }
+              )
             } {
               thePosition =>
                 mysqlConnection.map(_.connect())
@@ -135,8 +135,10 @@ class MysqlBinlogInOrderFetcher(
         case "predump" => {
 
           mysqlConnection.fold {
-            log.error(s"fetcher mysqlConnection cannot be null,id:$syncTaskId");
-            throw new Exception(s"fetcher mysqlConnection cannot be null,id:$syncTaskId")
+            throw new NullOfDataSourceConnectionException({
+              log.error(s"fetcher mysqlConnection cannot be null,id:$syncTaskId");
+              s"fetcher mysqlConnection cannot be null,id:$syncTaskId"
+            })
           } {
             conn =>
               log.debug(s"fetcher predump,id:$syncTaskId")
@@ -190,10 +192,10 @@ class MysqlBinlogInOrderFetcher(
     * 从连接中取数据
     */
   def fetchOne(before: Long = System.currentTimeMillis()) = {
-    val entry = mysqlConnection.get.fetchUntilDefined(filterEntry(_))(binlogParser)
+    val entry = mysqlConnection.get.fetchUntilDefined(filterEntry(_))(binlogParser).get
 
-    if (isCounting) fetcherCounter.fold(log.warning(s"fetcherCounter not exist,id:$syncTaskId"))(ref => ref ! entry.get)
-    binlogEventBatcher ! entry.get
+    if (isCounting) fetcherCounter.fold(log.warning(s"fetcherCounter not exist,id:$syncTaskId"))(ref => ref ! entry)
+    binlogEventBatcher ! entry
     //    println(entry.get.getEntryType)
     //    count = count + 1
     lazy val cost = System.currentTimeMillis() - before
@@ -221,14 +223,17 @@ class MysqlBinlogInOrderFetcher(
     * 错误处理
     */
   override def processError(e: Throwable, message: WorkerMessage): Unit = {
-    log.warning(s"fetcher throws exception $e,cause:${e.getCause},id:$syncTaskId")
+
     errorCount += 1
     if (isCrashed) {
       fetcherChangeStatus(Status.ERROR)
       errorCount = 0
-      println(message.msg)
-      e.printStackTrace()
-      throw new Exception(s"fetching data failure for 3 times,id:$syncTaskId")
+      throw new OutOfFetchRetryThersholdException(
+        {
+          log.warning(s"fetcher throws exception $e,cause:${e.getCause},id:$syncTaskId");
+          s"fetching data failure for 3 times,id:$syncTaskId"
+        }, e
+      )
     } else {
       self ! message
     }

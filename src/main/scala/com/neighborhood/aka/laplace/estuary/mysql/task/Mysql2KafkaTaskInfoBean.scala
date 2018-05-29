@@ -62,7 +62,7 @@ final class Mysql2KafkaTaskInfoBean extends MysqlBean with KafkaBean with BaseEx
   /**
     * binlog文件名称
     */
-  var batcherNum: Int = 19
+  var batcherNum: Int = 23
   /**
     * 数据拉取时延
     * 单位微秒

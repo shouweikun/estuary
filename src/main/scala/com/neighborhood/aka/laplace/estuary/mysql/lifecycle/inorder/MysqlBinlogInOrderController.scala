@@ -1,7 +1,10 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder
 
+import java.util.concurrent.Executors
+
 import akka.actor.SupervisorStrategy.Escalate
 import akka.actor.{Actor, ActorLogging, AllForOneStrategy, Props}
+import com.neighborhood.aka.laplace.estuary.bean.exception.control.{RestartCommandException, WorkerCannotFindException}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.{Status, SyncController}
@@ -12,6 +15,7 @@ import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlConnection
 import com.neighborhood.aka.laplace.estuary.mysql.task.{Mysql2KafkaTaskInfoBean, Mysql2KafkaTaskInfoManager}
 import org.I0Itec.zkclient.exception.ZkTimeoutException
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 /**
@@ -21,6 +25,12 @@ import scala.concurrent.duration._
 class MysqlBinlogInOrderController(
                                     taskInfoBean: Mysql2KafkaTaskInfoBean
                                   ) extends SyncController with Actor with ActorLogging {
+
+  lazy val schedulingCommandPool = Executors.newFixedThreadPool(3)
+  /**
+    * 必须要用这个，保证重启后，之前的定时发送任务都没了
+    */
+  implicit val scheduleTaskPool = ExecutionContext.fromExecutor(schedulingCommandPool)
   //资源管理器，一次同步任务所有的resource都由resourceManager负责
   val resourceManager = Mysql2KafkaTaskInfoManager.buildManager(taskInfoBean)
   val mysql2KafkaTaskInfoManager = resourceManager
@@ -30,7 +40,7 @@ class MysqlBinlogInOrderController(
   val isCounting = taskInfoBean.isCounting
   val isCosting = taskInfoBean.isCosting
   val isPowerAdapted = taskInfoBean.isPowerAdapted
-  implicit val scheduleTaskPool = context.dispatcher
+
 
   override var errorCountThreshold: Int = 3
   override var errorCount: Int = 0
@@ -81,7 +91,12 @@ class MysqlBinlogInOrderController(
 
   def online: Receive = {
     case "start" => startAllWorkers
-    case "restart" => throw new RuntimeException(s"重启,id:$syncTaskId")
+    case "restart" => throw new RestartCommandException(
+      {
+        log.warning(s"restart sync task:$syncTaskId at ${System.currentTimeMillis()}");
+        s"restart a,id:$syncTaskId"
+      }
+    )
     case ListenerMessage(msg) => {
       msg match {
         case x => {
@@ -91,9 +106,12 @@ class MysqlBinlogInOrderController(
     }
     case SinkerMessage(msg) => {
       msg match {
-        case "error" => {
-          throw new RuntimeException(s"sinker went wrong when sending data,id:$syncTaskId")
-        }
+        case "error" => throw new RestartCommandException(
+          {
+            log.error(s"sinker went wrong when sending data,id:$syncTaskId");
+            s"sinker went wrong when sending data,prepare to restart,id:$syncTaskId"
+          }
+        )
         case "flush" => {
           context
             .child("binlogBatcher")
@@ -126,18 +144,20 @@ class MysqlBinlogInOrderController(
       .child("binlogSinker")
       .fold {
         log.error(s"binlogSinker is null,id:$syncTaskId");
-        throw new Exception(s"binlogSinker is null,id:$syncTaskId")
+        throw new WorkerCannotFindException(s"binlogSinker is null,id:$syncTaskId")
       } {
         ref =>
           ref ! SyncControllerMessage("start")
-          context.system.scheduler.schedule(SettingConstant.OFFSET_SAVE_CONSTANT seconds, SettingConstant.OFFSET_SAVE_CONSTANT seconds, ref, SyncControllerMessage("save"))
+
+
+          context.system.scheduler.schedule((SettingConstant.OFFSET_SAVE_CONSTANT + SettingConstant.COMPUTE_FIRST_DELAY) seconds, SettingConstant.OFFSET_SAVE_CONSTANT seconds, ref, SyncControllerMessage("save"))
       }
     //启动batcher
     context
       .child("binlogBatcher")
       .fold {
         log.error(s"binlogBatcher is null,id:$syncTaskId");
-        throw new Exception(s"binlogBatcher is null,id:$syncTaskId")
+        throw new WorkerCannotFindException(s"binlogBatcher is null,id:$syncTaskId")
       } {
         ref =>
           context.system.scheduler.scheduleOnce(SettingConstant.BATCHER_START_DELAY second, ref, SyncControllerMessage("start"))
@@ -148,7 +168,7 @@ class MysqlBinlogInOrderController(
       .child("binlogFetcher")
       .fold {
         log.error(s"binlogFetcher is null,id:$syncTaskId");
-        throw new Exception(s"binlogFetcher is null,id:$syncTaskId")
+        throw new WorkerCannotFindException(s"binlogFetcher is null,id:$syncTaskId")
       } {
         ref => context.system.scheduler.scheduleOnce(SettingConstant.FETCHER_START_DELAY second, ref, SyncControllerMessage("start"))
       }
@@ -157,7 +177,7 @@ class MysqlBinlogInOrderController(
       .child("heartBeatsListener")
       .fold {
         log.error(s"heartBeatsListener is null,id:$syncTaskId");
-        throw new Exception(s"heartBeatsListener is null,id:$syncTaskId")
+        throw new WorkerCannotFindException(s"heartBeatsListener is null,id:$syncTaskId")
       } {
         ref =>
           ref ! SyncControllerMessage("start")
@@ -170,7 +190,7 @@ class MysqlBinlogInOrderController(
         .child("powerAdapter")
         .fold {
           log.error(s"powerAdapter is null,id:$syncTaskId");
-          throw new Exception(s"powerAdapter is null,id:$syncTaskId")
+          throw new WorkerCannotFindException(s"powerAdapter is null,id:$syncTaskId")
         }(ref =>
           context
             .system
@@ -182,7 +202,7 @@ class MysqlBinlogInOrderController(
         .child("processingCounter")
         .fold {
           log.error(s"processingCounter is null,id:$syncTaskId");
-          throw new Exception(s"processingCounter is null,id:$syncTaskId")
+          throw new WorkerCannotFindException(s"processingCounter is null,id:$syncTaskId")
         } {
           ref =>
             context
@@ -195,7 +215,7 @@ class MysqlBinlogInOrderController(
       .child("powerAdapter")
       .fold {
         log.error(s"powerAdapter is null,id:$syncTaskId");
-        throw new Exception(s"powerAdapter is null,id:$syncTaskId")
+        throw new WorkerCannotFindException(s"powerAdapter is null,id:$syncTaskId")
       }(ref =>
         context.
           system
@@ -226,7 +246,7 @@ class MysqlBinlogInOrderController(
 
     log.info(s"initialize batcher,id:$syncTaskId")
     val binlogEventBatcher = context.actorOf(MysqlBinlogInOrderBatcherManager
-      .props(resourceManager, binlogSinker), "binlogBatcher")
+      .props(resourceManager, binlogSinker).withDispatcher("akka.batcher-dispatcher"), "binlogBatcher")
     log.info(s"initialize fetcher,id:$syncTaskId")
     //初始化binlogFetcher
     context.actorOf(MysqlBinlogInOrderFetcher.props(resourceManager, binlogEventBatcher).withDispatcher("akka.pinned-dispatcher"), "binlogFetcher")
@@ -283,7 +303,7 @@ class MysqlBinlogInOrderController(
 
   = {
     log.info(s"syncController processing postStop ,id:$syncTaskId")
-
+    schedulingCommandPool.shutdown()
     //    mysqlConnection.disconnect()
   }
 
