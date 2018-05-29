@@ -30,7 +30,7 @@ class MysqlBinlogInOrderController(
   /**
     * 必须要用这个，保证重启后，之前的定时发送任务都没了
     */
-  implicit val scheduleTaskPool = ExecutionContext.fromExecutor(scheduleTaskPool)
+  implicit val scheduleTaskPool = ExecutionContext.fromExecutor(schedulingCommandPool)
   //资源管理器，一次同步任务所有的resource都由resourceManager负责
   val resourceManager = Mysql2KafkaTaskInfoManager.buildManager(taskInfoBean)
   val mysql2KafkaTaskInfoManager = resourceManager

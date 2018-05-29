@@ -10,17 +10,21 @@ import com.google.protobuf.InvalidProtocolBufferException
 import com.googlecode.protobuf.format.JsonFormat
 import com.neighborhood.aka.laplace.estuary.bean.key.{BinlogKey, PartitionStrategy}
 import com.neighborhood.aka.laplace.estuary.bean.support.KafkaMessage
-import com.neighborhood.aka.laplace.estuary.core.trans.MappingFormat
+import com.neighborhood.aka.laplace.estuary.core.trans.{MappingFormat, RegTransPlugin, RegTransformation}
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.IdClassifier
 
 /**
   * Created by john_liu on 2018/5/1.
+  *
+  * 这是finup_core定制
   */
 trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[IdClassifier, KafkaMessage] {
   self: Actor with ActorLogging =>
 
   val syncTaskId: String
   val num: Int
+  val regRules = List(RegTransformation("", ""), RegTransformation("", "34"))
+  val transPlugin = RegTransPlugin(regRules)
   val config = context.system.settings.config
   val syncStartTime = System.currentTimeMillis()
   private val jsonFormat = new JsonFormat
@@ -177,6 +181,8 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[IdClassifier, K
     val sb = new StringBuilder(512)
     sb.append(START_JSON)
 
+    implicit def trans(str: String): String = RegTransPlugin.transfer(str, transPlugin)
+
     addKeyValue(sb, "version", header.getVersion, false)
     addKeyValue(sb, "logfileName", header.getLogfileName, false)
     addKeyValue(sb, "logfileOffset", header.getLogfileOffset, false)
@@ -184,8 +190,8 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[IdClassifier, K
     addKeyValue(sb, "serverenCode", header.getServerenCode, false)
     addKeyValue(sb, "executeTime", header.getExecuteTime, false)
     addKeyValue(sb, "sourceType", header.getSourceType, false)
-    addKeyValue(sb, "schemaName", header.getSchemaName, false)
-    addKeyValue(sb, "tableName", header.getTableName, false)
+    addKeyValue(sb, "schemaName", trans(header.getSchemaName), false)
+    addKeyValue(sb, "tableName", trans(header.getTableName), false)
     addKeyValue(sb, "eventLength", header.getEventLength, false)
     addKeyValue(sb, "eventType", header.getEventType, true)
     sb.append(END_JSON)

@@ -142,7 +142,7 @@ class ConcurrentBinlogSinker(mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoMana
               case message: KafkaMessage => handleSinkTask(message)(x._1)
               case messages: Array[KafkaMessage] => if (messages.length > 0) messages.map(handleSinkTask(_)(x._1))
 
-              case BinlogPositionInfo(journalName, offset) => {
+              case BinlogPositionInfo(journalName, offset,_) => {
                 savedJournalName = journalName
                 savedOffset = offset
               }

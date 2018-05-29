@@ -11,7 +11,7 @@ import scala.util.Try
   */
 package object lifecycle {
 
-  case class BinlogPositionInfo(journalName: String, offest: Long)
+  case class BinlogPositionInfo(journalName: String, offest: Long,timestamp:Long = 0)
 
   case class IdClassifier(entry: CanalEntry.Entry, rowData: RowData) extends ConsistentHashable {
 

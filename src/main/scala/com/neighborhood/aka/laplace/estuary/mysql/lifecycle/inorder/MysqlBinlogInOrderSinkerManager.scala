@@ -83,6 +83,10 @@ class MysqlBinlogInOrderSinkerManager(
     startPosition.get.getPostion.getJournalName
   } else ""
   /**
+    * 最新时间戳
+    */
+  var latestTimestamp: Long = 0
+  /**
     * 是否出现异常
     */
   var isAbnormal: Boolean = false
@@ -107,19 +111,20 @@ class MysqlBinlogInOrderSinkerManager(
 
   def online: Receive = {
     case kafkaMessage: KafkaMessage => {
-//      if(true)throw new Exception("test")else throw new Exception("test")
+      //      if(true)throw new Exception("test")else throw new Exception("test")
 
       count = count + 1
       val ogIndex = kafkaMessage.getBaseDataJsonKey.syncTaskSequence
       val index: Int = if (ogIndex <= 0) 0 else ogIndex.toInt
       sinkList(index) ! kafkaMessage
     }
-    case BinlogPositionInfo(journalName, offset) => {
+    case BinlogPositionInfo(journalName, offset, timestamp) => {
       this.lastSavedJournalName = journalName
       this.lastSavedOffset = offset
+      this.latestTimestamp = timestamp
       count = count + 1
       // log.info(s"JournalName update to $savedJournalName,offset update to $savedOffset")
-      if (isProfiling) mysql2KafkaTaskInfoManager.sinkerLogPosition.set(s"latest binlog:{$journalName:$offset},save point:{$schedulingSavedJournalName:$schedulingSavedOffset},lastSavedPoint:{$scheduledSavedJournalName:$scheduledSavedOffset},id:$syncTaskId")
+      if (isProfiling) mysql2KafkaTaskInfoManager.sinkerLogPosition.set(s"latest binlog:{$journalName:$offset,timestamp:$latestTimestamp},save point:{$schedulingSavedJournalName:$schedulingSavedOffset},lastSavedPoint:{$scheduledSavedJournalName:$scheduledSavedOffset},id:$syncTaskId")
       if (isCounting) processingCounter.fold(log.error(s"processingCounter cannot be null,id:$syncTaskId"))(ref => ref ! SinkerMessage(1))
     }
     case SyncControllerMessage("save") => {
