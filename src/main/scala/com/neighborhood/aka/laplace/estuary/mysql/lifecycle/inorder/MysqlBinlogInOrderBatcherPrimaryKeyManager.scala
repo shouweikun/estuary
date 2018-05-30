@@ -4,11 +4,14 @@ import akka.actor.SupervisorStrategy.Escalate
 import akka.actor.{ActorRef, AllForOneStrategy, Props}
 import akka.routing.{ConsistentHashingGroup, RoundRobinGroup}
 import com.alibaba.otter.canal.protocol.CanalEntry
+import com.neighborhood.aka.laplace.estuary.bean.exception.batch.StoreValueParseFailureException
+import com.neighborhood.aka.laplace.estuary.bean.exception.control.WorkerCannotFindException
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.SourceDataBatcherManagerPrototype
 import com.neighborhood.aka.laplace.estuary.mysql.SettingConstant
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.{DatabaseAndTableNameClassifier, IdClassifier}
 import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManager
+import com.neighborhood.aka.laplace.estuary.mysql.utils.CanalEntryJsonHelper
 
 import scala.util.Try
 
@@ -60,13 +63,19 @@ class MysqlBinlogInOrderBatcherPrimaryKeyManager(
       import scala.collection.JavaConverters._
       def parseError = {
         log.error(s"parse row data error,id:${syncTaskId}");
-        throw new Exception(s"parse row data error,id:${syncTaskId}")
+        throw new StoreValueParseFailureException(s"parse row data error entry:${CanalEntryJsonHelper.entryToJson(entry)},id:${syncTaskId}")
       }
 
       val rowChange = Try(CanalEntry.RowChange.parseFrom(entry.getStoreValue)).toOption.getOrElse(parseError)
-
+      /**
+        * 解析成功以后，根据主键分发到对应的batcher
+        */
       rowChange.getRowDatasList.asScala.foreach {
-        data => router.fold(log.error(s"batcher router cannot be found,id:$syncTaskId"))(ref => ref ! IdClassifier(entry, data))
+        data =>
+          router.fold(throw new WorkerCannotFindException({
+            log.error(s"batcher router cannot be found,id:$syncTaskId");
+            s"batcher router cannot be found,id:$syncTaskId"
+          }))(ref => ref ! IdClassifier(entry, data))
       }
 
 
