@@ -45,7 +45,6 @@ class MysqlConnectionInOrderListener(
     */
   var retryTimes: Int = retryTimeThreshold
 
-
   //等待初始化 offline状态
   override def receive: Receive = {
 
