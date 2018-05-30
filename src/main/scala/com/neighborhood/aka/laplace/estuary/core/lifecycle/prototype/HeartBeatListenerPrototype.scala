@@ -21,7 +21,7 @@ trait HeartBeatListenerPrototype[source <: DataSourceConnection] extends ActorPr
   /**
     * 同步任务id
     */
-  override val syncTaskId = taskManager.syncTaskId
+  override val syncTaskId:String
   /**
     * 数据源链接
     */

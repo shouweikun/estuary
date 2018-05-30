@@ -1,13 +1,13 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder
 
 import akka.actor.SupervisorStrategy.Escalate
-import akka.actor.{Actor, ActorLogging, OneForOneStrategy, Props}
+import akka.actor.{OneForOneStrategy, Props}
 import com.neighborhood.aka.laplace.estuary.bean.exception.sink.SinkDataException
-import com.neighborhood.aka.laplace.estuary.bean.key.BinlogKey
 import com.neighborhood.aka.laplace.estuary.bean.support.KafkaMessage
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.SourceDataSinkerManagerPrototype
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status.Status
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.{SourceDataSinker, Status}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{SinkerMessage, SyncControllerMessage}
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.BinlogPositionInfo
@@ -19,32 +19,50 @@ import org.springframework.util.StringUtils
   * Created by john_liu on 2018/5/8.
   */
 class MysqlBinlogInOrderSinkerManager(
-                                       val mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager) extends Actor with SourceDataSinker with ActorLogging {
+                                       val taskManager: Mysql2KafkaTaskInfoManager
+                                     ) extends SourceDataSinkerManagerPrototype {
 
-  val syncTaskId = mysql2KafkaTaskInfoManager.syncTaskId
+
+  /**
+    * 是否是顶部
+    */
+  override val isHead: Boolean = true
+  /**
+    * 同步任务ID
+    */
+  override val syncTaskId = taskManager.syncTaskId
+  /**
+    * sinker的数量
+    */
+  val sinkerNum = taskManager.sinkerNum
+  /**
+    * sinker的list
+    */
   lazy val sinkList = context.children.toList
-  val sinkerNum = mysql2KafkaTaskInfoManager.sinkerNum
-  lazy val processingCounter = mysql2KafkaTaskInfoManager.processingCounter
+  /**
+    * 计数器
+    */
+  lazy val processingCounter = taskManager.processingCounter
   /**
     * 是否计数
     */
-  val isCounting = mysql2KafkaTaskInfoManager.taskInfo.isCounting
+  val isCounting = taskManager.taskInfo.isCounting
   /**
     * 是否计时
     */
-  val isCosting = mysql2KafkaTaskInfoManager.taskInfo.isCosting
+  val isCosting = taskManager.taskInfo.isCosting
   /**
     * 是否记录binlogPosition
     */
-  val isProfiling = mysql2KafkaTaskInfoManager.taskInfo.isProfiling
+  val isProfiling = taskManager.taskInfo.isProfiling
   /**
     * logPosition处理
     */
-  val logPositionHandler = mysql2KafkaTaskInfoManager.logPositionHandler
+  val logPositionHandler = taskManager.logPositionHandler
   /**
     * 同步标识作为写入zk 的标识
     */
-  val destination = mysql2KafkaTaskInfoManager.taskInfo.syncTaskId
+  val destination = taskManager.taskInfo.syncTaskId
   /**
     * 本次同步任务开始的logPosition
     * 从zk中获取
@@ -124,7 +142,7 @@ class MysqlBinlogInOrderSinkerManager(
       this.latestTimestamp = timestamp
       count = count + 1
       // log.info(s"JournalName update to $savedJournalName,offset update to $savedOffset")
-      if (isProfiling) mysql2KafkaTaskInfoManager.sinkerLogPosition.set(s"latest binlog:{$journalName:$offset,timestamp:$latestTimestamp},save point:{$schedulingSavedJournalName:$schedulingSavedOffset},lastSavedPoint:{$scheduledSavedJournalName:$scheduledSavedOffset},id:$syncTaskId")
+      if (isProfiling) taskManager.sinkerLogPosition.set(s"latest binlog:{$journalName:$offset,timestamp:$latestTimestamp},save point:{$schedulingSavedJournalName:$schedulingSavedOffset},lastSavedPoint:{$scheduledSavedJournalName:$scheduledSavedOffset},id:$syncTaskId")
       if (isCounting) processingCounter.fold(log.error(s"processingCounter cannot be null,id:$syncTaskId"))(ref => ref ! SinkerMessage(1))
     }
     case SyncControllerMessage("save") => {
@@ -161,7 +179,7 @@ class MysqlBinlogInOrderSinkerManager(
     (0 to sinkerNum)
       .map {
         index =>
-          context.actorOf(MysqlBinlogInOrderSinker.props(mysql2KafkaTaskInfoManager, index).withDispatcher("akka.sinker-dispatcher"), s"sinker$index")
+          context.actorOf(MysqlBinlogInOrderSinker.props(taskManager, index).withDispatcher("akka.sinker-dispatcher"), s"sinker$index")
 
       }
 
@@ -186,11 +204,11 @@ class MysqlBinlogInOrderSinkerManager(
     * ********************* 状态变化 *******************
     */
 
-  private def changeFunc(status: Status) = TaskManager.changeFunc(status, mysql2KafkaTaskInfoManager)
+  override def changeFunc(status: Status) = TaskManager.changeFunc(status, taskManager)
 
-  private def onChangeFunc = TaskManager.onChangeStatus(mysql2KafkaTaskInfoManager)
+  override def onChangeFunc = TaskManager.onChangeStatus(taskManager)
 
-  private def sinkerChangeStatus(status: Status) = TaskManager.changeStatus(status, changeFunc, onChangeFunc)
+  override def sinkerChangeStatus(status: Status) = TaskManager.changeStatus(status, changeFunc, onChangeFunc)
 
 
   /**
@@ -199,7 +217,7 @@ class MysqlBinlogInOrderSinkerManager(
   override def preStart(): Unit = {
     sinkerChangeStatus(Status.OFFLINE)
     initSinkers
-    if (isProfiling) mysql2KafkaTaskInfoManager.sinkerLogPosition.set(s"latest binlog:{[]:[]},save point:{$schedulingSavedJournalName:$schedulingSavedOffset},lastSavedPoint:{$scheduledSavedJournalName:$scheduledSavedOffset},id:$syncTaskId")
+    if (isProfiling) taskManager.sinkerLogPosition.set(s"latest binlog:{[]:[]},save point:{$schedulingSavedJournalName:$schedulingSavedOffset},lastSavedPoint:{$scheduledSavedJournalName:$scheduledSavedOffset},id:$syncTaskId")
     log.info(s"switch sinker to offline,id:$syncTaskId")
 
   }
@@ -211,7 +229,7 @@ class MysqlBinlogInOrderSinkerManager(
       val theOffset = this.scheduledSavedOffset
       logPositionHandler.persistLogPosition(destination, theJournalName, theOffset)
       log.info(s"记录binlog $theJournalName:$theOffset,id:$syncTaskId")
-      if (isProfiling) mysql2KafkaTaskInfoManager.sinkerLogPosition.set(s"latest binlog:{[]:[]},save point:{$theJournalName:$theOffset},lastSavedPoint:{$scheduledSavedJournalName:$scheduledSavedOffset},id:$syncTaskId")
+      if (isProfiling) taskManager.sinkerLogPosition.set(s"latest binlog:{[]:[]},save point:{$theJournalName:$theOffset},lastSavedPoint:{$scheduledSavedJournalName:$scheduledSavedOffset},id:$syncTaskId")
     }
     //    kafkaSinker.kafkaProducer.close()
     //    sinkTaskPool.environment.shutdown()

@@ -28,5 +28,5 @@ trait SourceDataBatcherManagerPrototype extends ActorPrototype with SourceDataBa
   /**
     * 同步任务id
     */
-  override val syncTaskId = taskManager.syncTaskId
+  override val syncTaskId:String
 }

@@ -3,12 +3,13 @@ package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder
 import java.util.concurrent.Executors
 
 import akka.actor.SupervisorStrategy.Escalate
-import akka.actor.{Actor, ActorLogging, AllForOneStrategy, Props}
+import akka.actor.{AllForOneStrategy, Props}
 import com.neighborhood.aka.laplace.estuary.bean.exception.control.{RestartCommandException, WorkerCannotFindException}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status.Status
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.{Status, SyncController}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle._
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.SyncControllerPrototype
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status.Status
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mysql.SettingConstant
 import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlConnection
@@ -24,33 +25,47 @@ import scala.concurrent.duration._
 
 class MysqlBinlogInOrderController(
                                     taskInfoBean: Mysql2KafkaTaskInfoBean
-                                  ) extends SyncController with Actor with ActorLogging {
+                                  ) extends SyncControllerPrototype {
 
   lazy val schedulingCommandPool = Executors.newFixedThreadPool(3)
   /**
     * 必须要用这个，保证重启后，之前的定时发送任务都没了
     */
   implicit val scheduleTaskPool = ExecutionContext.fromExecutor(schedulingCommandPool)
-  //资源管理器，一次同步任务所有的resource都由resourceManager负责
+  /**
+    * 资源管理器，一次同步任务所有的resource都由resourceManager负责
+    */
   val resourceManager = Mysql2KafkaTaskInfoManager.buildManager(taskInfoBean)
-  val mysql2KafkaTaskInfoManager = resourceManager
-  //canal的mysqlConnection
+  /**
+    * 任务管理器
+    */
+  val taskManager = resourceManager
+  /**
+    * 数据库连接
+    */
   val mysqlConnection: MysqlConnection = resourceManager.mysqlConnection
-  val syncTaskId = taskInfoBean.syncTaskId
+  /**
+    * 同步任务标识
+    */
+  override val syncTaskId = taskInfoBean.syncTaskId
+  /**
+    * 是否计数
+    */
   val isCounting = taskInfoBean.isCounting
+  /**
+    * 是否计算耗时
+    */
   val isCosting = taskInfoBean.isCosting
+  /**
+    * 是否进行功率控制
+    */
   val isPowerAdapted = taskInfoBean.isPowerAdapted
 
 
   override var errorCountThreshold: Int = 3
   override var errorCount: Int = 0
 
-  /**
-    * 1.初始化HeartBeatsListener
-    * 2.初始化binlogSinker
-    * 3.初始化binlogEventBatcher
-    * 4.初始化binlogFetcher
-    */
+
 
   //offline 状态
   override def receive: Receive = {
@@ -223,17 +238,22 @@ class MysqlBinlogInOrderController(
           .schedule(SettingConstant.COMPUTE_FIRST_DELAY seconds, SettingConstant.POWER_CONTROL_CONSTANT seconds, ref, SyncControllerMessage("control")));
     log.info(s"power Control ON,id:$syncTaskId")
   }
-
+  /**
+    * 1.初始化HeartBeatsListener
+    * 2.初始化binlogSinker
+    * 3.初始化binlogEventBatcher
+    * 4.初始化binlogFetcher
+    */
   def initWorkers: Unit = {
     //初始化processingCounter
     log.info(s"initialize processingCounter,id:$syncTaskId")
-    context.actorOf(MysqlInOrderProcessingCounter.props(mysql2KafkaTaskInfoManager), "processingCounter")
+    context.actorOf(MysqlInOrderProcessingCounter.props(taskManager), "processingCounter")
     //初始化powerAdapter
     log.info(s"initialize powerAdapter,id:$syncTaskId")
-    context.actorOf(MysqlBinlogInOrderPowerAdapter.props(mysql2KafkaTaskInfoManager), "powerAdapter")
+    context.actorOf(MysqlBinlogInOrderPowerAdapter.props(taskManager), "powerAdapter")
     //初始化HeartBeatsListener
     log.info(s"initialize heartBeatListener,id:$syncTaskId")
-    context.actorOf(MysqlConnectionInOrderListener.props(mysql2KafkaTaskInfoManager).withDispatcher("akka.pinned-dispatcher")
+    context.actorOf(MysqlConnectionInOrderListener.props(taskManager).withDispatcher("akka.pinned-dispatcher")
       , "heartBeatsListener"
     )
     //初始化binlogPositionRecorder
@@ -271,9 +291,9 @@ class MysqlBinlogInOrderController(
   /**
     * ********************* 状态变化 *******************
     */
-  private def changeFunc(status: Status) = TaskManager.changeFunc(status, mysql2KafkaTaskInfoManager)
+  private def changeFunc(status: Status) = TaskManager.changeFunc(status, taskManager)
 
-  private def onChangeFunc = TaskManager.onChangeStatus(mysql2KafkaTaskInfoManager)
+  private def onChangeFunc = TaskManager.onChangeStatus(taskManager)
 
   private def controllerChangeStatus(status: Status) = TaskManager.changeStatus(status, changeFunc, onChangeFunc)
 
@@ -294,8 +314,8 @@ class MysqlBinlogInOrderController(
     controllerChangeStatus(Status.OFFLINE)
     log.info(s"start init all workers,id:$syncTaskId")
     initWorkers
-    mysql2KafkaTaskInfoManager.powerAdapter = context.child("powerAdapter")
-    mysql2KafkaTaskInfoManager.processingCounter = context.child("processingCounter")
+    taskManager.powerAdapter = context.child("powerAdapter")
+    taskManager.processingCounter = context.child("processingCounter")
   }
 
   //正常关闭时会调用，关闭资源

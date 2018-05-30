@@ -15,7 +15,10 @@ class Mongo2KafkaTaskInfoManager(
                                   override val taskInfoBean: Mongo2KafkaTaskInfoBean
                                 )
   extends TaskManager with RecourceManager[String, MongoConnection, KafkaSinkFunc[String]] {
-
+  /**
+    * 是否同步写
+    */
+  override val isSync: Boolean = true
   /**
     * 是否计数，默认不计数
     */
@@ -85,4 +88,5 @@ class Mongo2KafkaTaskInfoManager(
     * 同步任务标识
     */
   override val syncTaskId: String = taskInfoBean.syncTaskId
+
 }
