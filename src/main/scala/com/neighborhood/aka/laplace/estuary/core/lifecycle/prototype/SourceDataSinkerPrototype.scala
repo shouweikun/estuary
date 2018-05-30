@@ -23,7 +23,7 @@ trait SourceDataSinkerPrototype[Sink <: SinkFunc] extends ActorPrototype with So
   /**
     * 同步任务id
     */
-  override val syncTaskId = taskManager.syncTaskId
+  override val syncTaskId:String
 }
 
 

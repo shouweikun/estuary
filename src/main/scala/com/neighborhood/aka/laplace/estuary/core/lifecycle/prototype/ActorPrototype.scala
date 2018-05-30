@@ -15,5 +15,5 @@ trait ActorPrototype extends Actor with ActorLogging {
   /**
     * 同步任务id
     */
-  val syncTaskId = taskManager.syncTaskId
+  val syncTaskId:String
 }
