@@ -60,13 +60,6 @@ trait MysqlBean extends DataSourceBase {
   var filterQueryDdl = false
   var filterRows = false
   var filterTableError = false
-  /**
-    * 过滤字样
-    */
-  var eventFilterPattern = ""
-  /**
-    * 过滤黑名单字样
-    */
-  var eventBlackFilterPattern = ""
+
 
 }

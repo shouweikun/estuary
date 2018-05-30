@@ -3,7 +3,7 @@ package com.neighborhood.aka.laplace.estuary.mongo.task
 import akka.actor.ActorRef
 import com.neighborhood.aka.laplace.estuary.bean.datasink.DataSinkBean
 import com.neighborhood.aka.laplace.estuary.bean.resource.DataSourceBase
-import com.neighborhood.aka.laplace.estuary.core.sink.KafkaSinkFunc
+import com.neighborhood.aka.laplace.estuary.core.sink.kafka.KafkaSinkFunc
 import com.neighborhood.aka.laplace.estuary.core.task.{RecourceManager, TaskManager}
 import com.neighborhood.aka.laplace.estuary.mongo.source.MongoConnection
 import com.neighborhood.aka.laplace.estuary.mongo.utils.MongoOffsetHandler

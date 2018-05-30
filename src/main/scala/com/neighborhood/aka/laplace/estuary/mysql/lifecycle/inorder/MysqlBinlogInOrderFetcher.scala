@@ -185,6 +185,11 @@ class MysqlBinlogInOrderFetcher(
     }
     case SyncControllerMessage(x: Long) => fetchDelay = x
     case SyncControllerMessage(x: Int) => fetchDelay = x
+    case SyncControllerMessage("pause") => {
+      mysqlConnection.map(_.disconnect()) //断开数据库链接
+      context.unbecome() //切回offline模式
+      fetcherChangeStatus(Status.SUSPEND)
+    }
   }
 
 

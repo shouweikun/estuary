@@ -44,10 +44,7 @@ object TaskBeanTransformUtil {
     taskInfo.filterQueryDcl = requestBody.isFilterQueryDcl
     taskInfo.filterQueryDml = requestBody.isFilterQueryDml
     taskInfo.filterQueryDdl = requestBody.isFilterQueryDdl
-    if (!StringUtils.isEmpty(requestBody.getEventBlackFilterPattern))
-      taskInfo.eventBlackFilterPattern = requestBody.getEventBlackFilterPattern
-    if (!StringUtils.isEmpty(requestBody.getEventFilterPattern))
-      taskInfo.eventFilterPattern = requestBody.getEventFilterPattern
+
     //开始的position
     if (!StringUtils.isEmpty(requestBody.getBinlogJournalName)) {
       taskInfo.journalName = requestBody.getBinlogJournalName
@@ -56,7 +53,6 @@ object TaskBeanTransformUtil {
     taskInfo.timestamp = requestBody.getBinlogTimeStamp
     //模式设置
     taskInfo.isCosting = requestBody.isCosting
-    taskInfo.isTransactional = requestBody.isTransactional
     taskInfo.isCounting = requestBody.isCounting
     taskInfo.isProfiling = requestBody.isProfiling
     taskInfo.isSync = requestBody.isSync

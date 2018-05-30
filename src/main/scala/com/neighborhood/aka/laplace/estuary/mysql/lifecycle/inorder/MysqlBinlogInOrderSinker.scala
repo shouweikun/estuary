@@ -20,7 +20,7 @@ class MysqlBinlogInOrderSinker(
 
   val syncTaskId = mysql2KafkaTaskInfoManager.syncTaskId
   val kafkaSinkFunc = mysql2KafkaTaskInfoManager.kafkaSink.fork
-  val isSyncWrite = mysql2KafkaTaskInfoManager.taskInfo.isSync
+  val isSyncWrite = mysql2KafkaTaskInfoManager.isSync
   lazy val powerAdapter = mysql2KafkaTaskInfoManager.powerAdapter
   lazy val processingCounter = mysql2KafkaTaskInfoManager.processingCounter
   val isCounting = mysql2KafkaTaskInfoManager.taskInfo.isCounting

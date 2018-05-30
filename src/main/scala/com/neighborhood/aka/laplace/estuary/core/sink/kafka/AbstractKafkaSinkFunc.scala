@@ -1,7 +1,8 @@
-package com.neighborhood.aka.laplace.estuary.core.sink
+package com.neighborhood.aka.laplace.estuary.core.sink.kafka
 
 import com.neighborhood.aka.laplace.estuary.bean.datasink.KafkaBean
 import com.neighborhood.aka.laplace.estuary.bean.key.BaseDataJsonKey
+import com.neighborhood.aka.laplace.estuary.core.sink.SinkFunc
 import org.apache.kafka.clients.producer._
 
 /**

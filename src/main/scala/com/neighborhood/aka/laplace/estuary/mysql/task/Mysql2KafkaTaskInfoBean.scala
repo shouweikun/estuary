@@ -50,6 +50,7 @@ final class Mysql2KafkaTaskInfoBean extends MysqlBean with KafkaBean with BaseEx
     * 默认否
     * 如果否的话，就是并行写
     */
+  @deprecated
   var isTransactional: Boolean = false
   /**
     * 是否打开功率调节器
@@ -90,6 +91,7 @@ final class Mysql2KafkaTaskInfoBean extends MysqlBean with KafkaBean with BaseEx
   // zookeeper 链接超时设置,单位毫秒
   var zookeeperTimeout = 10000
 }
+
 object Mysql2KafkaTaskInfoBean {
   def apply: Mysql2KafkaTaskInfoBean = new Mysql2KafkaTaskInfoBean()
 }

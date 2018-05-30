@@ -1,11 +1,11 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder
 
 import akka.actor.SupervisorStrategy.Escalate
-import akka.actor.{Actor, ActorLogging, ActorRef, AllForOneStrategy, Props}
+import akka.actor.{ActorRef, AllForOneStrategy, Props}
 import akka.routing.{ConsistentHashingGroup, RoundRobinGroup}
 import com.alibaba.otter.canal.protocol.CanalEntry
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.SourceDataBatcher
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.SourceDataBatcherManagerPrototype
 import com.neighborhood.aka.laplace.estuary.mysql.SettingConstant
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.{DatabaseAndTableNameClassifier, IdClassifier}
 import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManager
@@ -16,18 +16,42 @@ import scala.util.Try
   * Created by john_liu on 2018/5/8.
   */
 class MysqlBinlogInOrderBatcherPrimaryKeyManager(
-                                                  mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
-                                                  sinker: ActorRef,
-                                                  num: Int = -1
-                                                ) extends Actor with SourceDataBatcher with ActorLogging {
+                                                  /**
+                                                    * 任务信息管理器
+                                                    */
+                                                  override val taskManager: Mysql2KafkaTaskInfoManager,
 
-  val syncTaskId = mysql2KafkaTaskInfoManager.syncTaskId
-  val isSync = mysql2KafkaTaskInfoManager.isSync
+                                                  /**
+                                                    * sinker 的ActorRef
+                                                    */
+                                                  override val sinker: ActorRef,
+
+                                                  /**
+                                                    * 编号
+                                                    */
+                                                  override val num: Int = -1
+                                                ) extends SourceDataBatcherManagerPrototype {
+
+  /**
+    * 是否是最上层的manager
+    */
+  override val isHead: Boolean = false
+  /**
+    * 同步任务id
+    */
+  override val syncTaskId = taskManager.syncTaskId
+  /**
+    * 是否同步写
+    */
+  val isSync = taskManager.isSync
   //  val mysqlMetaConnection = mysql2KafkaTaskInfoManager.mysqlConnection.fork
   //  var tableMetaCache = buildTableMeta
-  val batcherNum = mysql2KafkaTaskInfoManager.batcherNum
   /**
-    * router
+    * batcher的数量
+    */
+  val batcherNum = taskManager.batcherNum
+  /**
+    * router的ActorRef
     */
   lazy val router = context.child("router")
 
@@ -49,10 +73,10 @@ class MysqlBinlogInOrderBatcherPrimaryKeyManager(
     }
   }
 
-  def initBatchers = {
+  def initBatchers: Unit = {
     //编号从1 开始
     lazy val paths = (1 to batcherNum)
-      .map(index => context.actorOf(MysqlBinlogInOrderBatcher.props(mysql2KafkaTaskInfoManager, sinker, index), s"batcher$index").path.toString)
+      .map(index => context.actorOf(MysqlBinlogInOrderBatcher.props(taskManager, sinker, index), s"batcher$index").path.toString)
     if (isSync) {
       context.actorOf(new ConsistentHashingGroup(paths, virtualNodesFactor = SettingConstant.HASH_MAPPING_VIRTUAL_NODES_FACTOR).props().withDispatcher("akka.batcher-dispatcher"), "router")
     } else {

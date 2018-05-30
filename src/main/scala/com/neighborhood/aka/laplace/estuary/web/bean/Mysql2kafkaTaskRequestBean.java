@@ -15,7 +15,6 @@ public class Mysql2kafkaTaskRequestBean extends TaskRequestBean {
     private boolean isCounting = true;
     private boolean isProfiling = true;
     private boolean isCosting = true;
-    private boolean isTransactional = false;
     private boolean isPowerAdapted = true;
     private boolean isSync = false;
     private int batcherCount = 19;
@@ -188,13 +187,7 @@ public class Mysql2kafkaTaskRequestBean extends TaskRequestBean {
         isProfiling = profiling;
     }
 
-    public boolean isTransactional() {
-        return isTransactional;
-    }
 
-    public void setTransactional(boolean transactional) {
-        isTransactional = transactional;
-    }
 
     public long getBatchThreshold() {
         return batchThreshold;
