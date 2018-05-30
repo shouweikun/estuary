@@ -1,13 +1,13 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder
 
 import akka.actor.SupervisorStrategy.Escalate
-import akka.actor.{Actor, ActorLogging, OneForOneStrategy, Props}
+import akka.actor.{OneForOneStrategy, Props}
 import com.neighborhood.aka.laplace.estuary.bean.exception.sink.SinkDataException
 import com.neighborhood.aka.laplace.estuary.bean.support.KafkaMessage
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.{SourceDataSinkerManagerPrototype, SourceDataSinkerPrototype}
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.SourceDataSinkerManagerPrototype
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status.Status
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.{SourceDataSinker, Status}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{SinkerMessage, SyncControllerMessage}
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.BinlogPositionInfo
@@ -19,7 +19,8 @@ import org.springframework.util.StringUtils
   * Created by john_liu on 2018/5/8.
   */
 class MysqlBinlogInOrderSinkerManager(
-                                       val taskManager: Mysql2KafkaTaskInfoManager) extends SourceDataSinkerManagerPrototype {
+                                       val taskManager: Mysql2KafkaTaskInfoManager
+                                     ) extends SourceDataSinkerManagerPrototype {
 
 
   /**
