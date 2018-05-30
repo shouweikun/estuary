@@ -1,46 +1,59 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.actor.{ActorRef, Props}
+import com.neighborhood.aka.laplace.estuary.bean.exception.control.WorkerCannotFindException
+import com.neighborhood.aka.laplace.estuary.bean.support.KafkaMessage
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.SourceDataBatcher
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.SourceDataBatcherPrototype
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, FetcherMessage, SyncControllerMessage}
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.{BinlogPositionInfo, IdClassifier}
-import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlConnection
 import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManager
 import com.neighborhood.aka.laplace.estuary.mysql.utils.{CanalEntry2KafkaMessageMappingFormat, CanalEntryJsonHelper}
-import org.springframework.util.StringUtils
 
 /**
   * Created by john_liu on 2018/5/8.
   */
 class MysqlBinlogInOrderBatcher(
-                                 val mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
-                                 val sinker: ActorRef,
-                                 val num: Int = -1,
+                                 override val taskManager: Mysql2KafkaTaskInfoManager,
+                                 override val sinker: ActorRef,
+                                 override val num: Int = -1,
                                  val isDdlHandler: Boolean = false
-                               ) extends Actor with SourceDataBatcher with ActorLogging with CanalEntry2KafkaMessageMappingFormat {
+                               ) extends SourceDataBatcherPrototype[IdClassifier, KafkaMessage]
+  with CanalEntry2KafkaMessageMappingFormat {
 
-
-  override val syncTaskId: String = mysql2KafkaTaskInfoManager.syncTaskId
-  lazy val powerAdapter = mysql2KafkaTaskInfoManager.powerAdapter
-  lazy val processingCounter = mysql2KafkaTaskInfoManager.processingCounter
-
+  /**
+    * 同步任务id
+    */
+  override val syncTaskId: String = taskManager.syncTaskId
+  /**
+    * 功率控制器
+    */
+  lazy val powerAdapter = taskManager.powerAdapter
+  /**
+    * 计数器
+    */
+  lazy val processingCounter = taskManager.processingCounter
   /**
     * 该mysql实例所有的db
     */
-  lazy val mysqlDatabaseNameList = MysqlConnection.getSchemas(mysql2KafkaTaskInfoManager.mysqlConnection.fork)
-
+  lazy val mysqlDatabaseNameList = taskManager.mysqlDatabaseNameList
   /**
     * 是否计数
     */
-  val isCounting = mysql2KafkaTaskInfoManager.taskInfo.isCounting
+  val isCounting = taskManager.taskInfo.isCounting
 
   /**
     * 是否计时
     */
-  val isCosting = mysql2KafkaTaskInfoManager.taskInfo.isCosting
-  val concernedDbName = mysql2KafkaTaskInfoManager.taskInfo.concernedDatabase
-  val ignoredDbName = mysql2KafkaTaskInfoManager.taskInfo.ignoredDatabase
+  val isCosting = taskManager.taskInfo.isCosting
+  /**
+    * 需要发送心跳的数据库名称
+    */
+  val concernedDbName = taskManager.taskInfo.concernedDatabase
+  /**
+    * 不需要发送心跳的数据库名称
+    */
+  val ignoredDbName = taskManager.taskInfo.ignoredDatabase
 
 
   override def receive: Receive = {
@@ -56,15 +69,18 @@ class MysqlBinlogInOrderBatcher(
       sinker ! kafkaMessage
       log.debug(s"batch primaryKey:${
         x.consistentHashKey
-      },eventType:${x.entry.getHeader.getEventType},id:$syncTaskId")
+      },eventType:${
+        x.entry.getHeader.getEventType
+      },id:$syncTaskId")
 
       //性能分析
-      if (isCosting) powerAdapter.fold(log.warning(s"cannot find processCounter,id:$syncTaskId"))(ref => ref ! BatcherMessage(kafkaMessage.getBaseDataJsonKey.msgSyncUsedTime))
-      if (isCounting) processingCounter.fold(log.warning(s"cannot find powerAdapter,id:$syncTaskId"))(ref => ref ! BatcherMessage(1))
+      if (isCosting) powerAdapter.fold(throw new WorkerCannotFindException(s"cannot find processCounter,id:$syncTaskId")
+      )(ref => ref ! BatcherMessage(kafkaMessage.getBaseDataJsonKey.msgSyncUsedTime))
+      if (isCounting) processingCounter.fold(throw new WorkerCannotFindException(s"cannot find powerAdapter,id:$syncTaskId"))(ref => ref ! BatcherMessage(1))
     }
     case info: BinlogPositionInfo => {
       sinker ! info
-      if (isCounting) processingCounter.fold(log.warning(s"cannot find powerAdapter,id:$syncTaskId"))(ref => ref ! BatcherMessage(1))
+      if (isCounting) processingCounter.fold(throw new WorkerCannotFindException(s"cannot find powerAdapter,id:$syncTaskId"))(ref => ref ! BatcherMessage(1))
     }
     case SyncControllerMessage("check") => sendHeartBeats
     case x => {
@@ -72,10 +88,15 @@ class MysqlBinlogInOrderBatcher(
     }
   }
 
-  def sendHeartBeats = {
+  /**
+    * 发送心跳
+    */
+  def sendHeartBeats: Unit = {
 
-    val concernedDbNames = if (StringUtils.isEmpty(concernedDbName)) Array.empty[String] else concernedDbName.split(",")
-    val ignoredDbNames = if (StringUtils.isEmpty(ignoredDbName)) Array.empty[String] else ignoredDbName.split(",")
+    def isEmpty(string: Any): Boolean = string == null || "".equals(string)
+
+    val concernedDbNames = if (isEmpty(concernedDbName)) Array.empty[String] else concernedDbName.split(",")
+    val ignoredDbNames = if (isEmpty(ignoredDbName)) Array.empty[String] else ignoredDbName.split(",")
 
     /**
       *
@@ -86,8 +107,12 @@ class MysqlBinlogInOrderBatcher(
     def buildAndSendDummyKafkaMessage(dbNameList: Iterable[String])(sinker: ActorRef): Int = {
 
       val kafkaMessageList = dbNameList
-        .map { dbName => CanalEntryJsonHelper.dummyKafkaMessage(dbName) }
-        .map { message => sinker ! message }
+        .map {
+          dbName => CanalEntryJsonHelper.dummyKafkaMessage(dbName)
+        }
+        .map {
+          message => sinker ! message
+        }
       dbNameList.size
     }
 
@@ -97,7 +122,11 @@ class MysqlBinlogInOrderBatcher(
       case (_, false) => buildAndSendDummyKafkaMessage(mysqlDatabaseNameList)(sinker)
     }
     //补充计数
-    if (isCounting) processingCounter.fold(log.warning(s"cannot find powerAdapter,id:$syncTaskId")) { ref => ref ! BatcherMessage(size); ref ! FetcherMessage(size) }
+    if (isCounting) processingCounter.fold(log.warning(s"cannot find powerAdapter,id:$syncTaskId")) {
+      ref =>
+        ref ! BatcherMessage(size);
+        ref ! FetcherMessage(size)
+    }
   }
 
   /**

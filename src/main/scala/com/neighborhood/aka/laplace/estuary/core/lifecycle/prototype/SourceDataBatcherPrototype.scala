@@ -8,7 +8,10 @@ import com.neighborhood.aka.laplace.estuary.core.trans.MappingFormat
 /**
   * Created by john_liu on 2018/5/20.
   */
-trait SourceDataBatcherPrototype[A, B] extends ActorPrototype with SourceDataBatcher with MappingFormat[A, B] {
+trait SourceDataBatcherPrototype[A, B] extends ActorPrototype with SourceDataBatcher {
+
+
+  theOne: MappingFormat[A, B] =>
   /**
     * sinker 的ActorRef
     */
@@ -20,12 +23,11 @@ trait SourceDataBatcherPrototype[A, B] extends ActorPrototype with SourceDataBat
   /**
     * 编号
     */
-  val num:Int
+  val num: Int
   /**
     * 同步任务id
     */
   override val syncTaskId = taskManager.syncTaskId
-
 
 
   override def preStart(): Unit = {

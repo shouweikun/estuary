@@ -165,7 +165,7 @@ class Mysql2KafkaTaskInfoManager(
   /**
     * 该mysql实例上所有的mysql库名
     */
-  var mysqlDatabaseNameList: List[String] = _
+  lazy val mysqlDatabaseNameList: List[String] = MysqlConnection.getSchemas(buildMysqlConnection())
 
   /**
     * 实现@trait ResourceManager

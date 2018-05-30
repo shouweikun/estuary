@@ -275,6 +275,7 @@ object MysqlConnection {
     val list = mysqlConnection
       .query(querySchemaCmd)
       .getFieldValues
+    mysqlConnection.disconnect()
     (0 until list.size)
       .map(list.get(_))
       .filter(!_.equals(ignoredDatabaseName))
