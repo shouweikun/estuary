@@ -1,14 +1,15 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder
 
 import akka.actor.SupervisorStrategy.Escalate
-import akka.actor.{Actor, ActorLogging, ActorRef, AllForOneStrategy, Props}
+import akka.actor.{ActorRef, AllForOneStrategy, Props}
 import akka.routing.{ConsistentHashingGroup, RoundRobinGroup}
 import com.alibaba.otter.canal.parse.inbound.mysql.dbsync.TableMetaCache
 import com.alibaba.otter.canal.protocol.CanalEntry
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.SyncControllerMessage
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.SourceDataBatcherManagerPrototype
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status.Status
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.{SourceDataBatcher, Status}
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mysql.SettingConstant
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.{BinlogPositionInfo, DatabaseAndTableNameClassifier, IdClassifier}
@@ -19,19 +20,44 @@ import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManage
   * Created by john_liu on 2018/5/8.
   */
 class MysqlBinlogInOrderBatcherManager(
-                                        mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
-                                        sinker: ActorRef
-                                      ) extends Actor with SourceDataBatcher with ActorLogging {
+                                        /**
+                                          * 任务信息管理器
+                                          */
+                                        override val taskManager: Mysql2KafkaTaskInfoManager,
 
-  val syncTaskId = mysql2KafkaTaskInfoManager.syncTaskId
-  val isSync = mysql2KafkaTaskInfoManager.isSync
+                                        /**
+                                          * sinker 的ActorRef
+                                          */
+                                        override val sinker: ActorRef,
+
+                                        /**
+                                          * 编号
+                                          */
+                                        override val num: Int = -1
+                                      ) extends SourceDataBatcherManagerPrototype {
+
+  /**
+    * 是否是顶层manager
+    */
+  override val isHead: Boolean = true
+  /**
+    * 同步任务id
+    */
+  override val syncTaskId = taskManager.syncTaskId
+  /**
+    * 是否同步
+    */
+  val isSync = taskManager.isSync
   //  val mysqlMetaConnection = mysql2KafkaTaskInfoManager.mysqlConnection.fork
   //  var tableMetaCache = buildTableMeta
-  val batcherNum = mysql2KafkaTaskInfoManager.batcherNum
+  val batcherNum = taskManager.batcherNum
   /**
     * 处理ddl语句
     */
   lazy val ddlHandler = context.child("ddlHandler")
+  /**
+    * router的ActorRef
+    */
   lazy val router = context.child("router")
   var count = 0
 
@@ -65,11 +91,11 @@ class MysqlBinlogInOrderBatcherManager(
   }
 
   def initBatchers = {
-    context.actorOf(MysqlBinlogInOrderBatcher.props(mysql2KafkaTaskInfoManager, sinker, -1, true), "ddlHandler")
+    context.actorOf(MysqlBinlogInOrderBatcher.props(taskManager, sinker, -1, true), "ddlHandler")
     //编号从1 开始
     //todo 暂时就89个
     lazy val paths = (1 to 89)
-      .map(index => context.actorOf(MysqlBinlogInOrderBatcherPrimaryKeyManager.props(mysql2KafkaTaskInfoManager, sinker, index), s"batcher$index").path.toString)
+      .map(index => context.actorOf(MysqlBinlogInOrderBatcherPrimaryKeyManager.props(taskManager, sinker, index), s"batcher$index").path.toString)
 
     if (isSync) {
       context.actorOf(new ConsistentHashingGroup(paths, virtualNodesFactor = SettingConstant.HASH_MAPPING_VIRTUAL_NODES_FACTOR).props().withDispatcher("akka.batcher-dispatcher"), "router")
@@ -90,9 +116,9 @@ class MysqlBinlogInOrderBatcherManager(
   /**
     * ********************* 状态变化 *******************
     */
-  private def changeFunc(status: Status) = TaskManager.changeFunc(status, mysql2KafkaTaskInfoManager)
+  private def changeFunc(status: Status) = TaskManager.changeFunc(status, taskManager)
 
-  private def onChangeFunc = TaskManager.onChangeStatus(mysql2KafkaTaskInfoManager)
+  private def onChangeFunc = TaskManager.onChangeStatus(taskManager)
 
   private def batcherChangeStatus(status: Status) = TaskManager.changeStatus(status, changeFunc, onChangeFunc)
 
