@@ -1,5 +1,6 @@
 package com.neighborhood.aka.laplace.estuary.mysql.schema.storage
 
+import com.neighborhood.aka.laplace.estuary.mysql.schema.storage.SchemaEntry.{EmptySchemaEntry, MysqlConSchemaEntry}
 import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlConnection
 import com.typesafe.config.Config
 
@@ -29,13 +30,14 @@ class MysqlSchemaHandler(
         mysqlConnection.disconnect()
     }
 
-  def upsertSchema(schemaEntry: SchemaEntry) = upsertSchema(schemaEntry.convertEntry2Sql(targetDbName, targetTableName))
+  def upsertSchema(schemaEntry: MysqlConSchemaEntry) = upsertSchema(schemaEntry.convertEntry2Sql(targetDbName, targetTableName))
 
-  def getSchemas(sql: => String): Try[List[SchemaEntry]] = Try(mysqlConnection.reconnect()).map {
+  def getSchemas(sql: => String): Try[List[MysqlConSchemaEntry]] = Try(mysqlConnection.reconnect()).map {
     _ =>
       val result = mysqlConnection.queryForScalaList(sql)
       mysqlConnection.disconnect()
-      result.map(convertRow2SchemaEntry(_))
+      if (result.size == 0) List.empty else result.map(convertRow2ConSchemaEntry(_))
+
   }
 
   def getAllSchemas(dbName: String, tableName: String): Try[List[SchemaEntry]] = {
@@ -46,7 +48,13 @@ class MysqlSchemaHandler(
   def getLatestSchema(dbName: String, tableName: String): Try[SchemaEntry] = {
     lazy val sql = s"SELECT * FROM $targetDbName.$targetTableName where db_name = '$dbName' and table_name = '$tableName' ORDER BY version DESC limit 1"
     getSchemas(sql)
-      .map(x => x(0))
+      .map {
+        list =>
+          list match {
+            case Nil => new EmptySchemaEntry
+            case _ => list(0)
+          }
+      }
   }
 
   //todo 有问题
@@ -58,16 +66,18 @@ class MysqlSchemaHandler(
     getSchemas(sql)
       .map {
         list =>
-          list
-            .filter(x => convertBinlogPosition2Long(x.binlogFileName, x.binlogPosition) < convertBinlogPosition2Long(binlogJournalName, binlogOffset))
-            .maxBy(x => convertBinlogPosition2Long(x.binlogFileName, x.binlogPosition))
+          list match {
+            case Nil => new EmptySchemaEntry
+            case _ => list
+              .filter(x => convertBinlogPosition2Long(x.binlogFileName, x.binlogPosition) < convertBinlogPosition2Long(binlogJournalName, binlogOffset))
+              .maxBy(x => convertBinlogPosition2Long(x.binlogFileName, x.binlogPosition))
+          }
+
       }
   }
 
 
-  def getSchemas(dbName: String, tableName: String)
-
-  def convertRow2SchemaEntry(row: Map[String, Any]): SchemaEntry = {
+  def convertRow2ConSchemaEntry(row: Map[String, Any]): MysqlConSchemaEntry = {
     //todo
     ???
 
