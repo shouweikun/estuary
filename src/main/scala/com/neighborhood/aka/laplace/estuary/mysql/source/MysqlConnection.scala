@@ -111,6 +111,22 @@ class MysqlConnection(
     exector.query(cmd)
   }
 
+  def queryForScalaList(cmd: String): List[Map[String, Any]] = {
+    val resultSetPacket = query(cmd)
+    import scala.collection.JavaConverters._
+    lazy val fields = resultSetPacket.getFieldDescriptors.asScala.map(_.getName).toList
+    lazy val fieldCount = fields.size
+    lazy val dataCount = resultSetPacket.getFieldValues.size
+    lazy val dataList = resultSetPacket.getFieldValues.asScala.toList
+    (0 to ((dataCount / fieldCount) - 1)).map {
+      index =>
+        lazy val from = index * fieldCount
+        lazy val to = (index + 1) * fieldCount - 1
+        fields zip dataList.slice(from,to) toMap
+    }.toList
+
+  }
+
   /**
     *
     * @param cmd update sql 命令

@@ -188,7 +188,7 @@ class LogPositionHandler(
   def findEndPosition(mysqlConnection: MysqlConnection): EntryPosition = {
     logger.debug(s"start find endPosition id:$destination")
     lazy val re = try {
-      val packet = mysqlConnection.query("show master status")
+      lazy val packet = mysqlConnection.query("show master status")
       val fields = Option(packet.getFieldValues)
 
       if (fields.isEmpty || fields.get.isEmpty) throw new CanalParseException("command : 'show master status' has an error! pls check. you need (at least one of) the SUPER,REPLICATION CLIENT privilege(s) for this operation")

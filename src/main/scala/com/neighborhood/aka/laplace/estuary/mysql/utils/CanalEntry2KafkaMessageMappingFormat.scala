@@ -10,13 +10,11 @@ import com.google.protobuf.InvalidProtocolBufferException
 import com.googlecode.protobuf.format.JsonFormat
 import com.neighborhood.aka.laplace.estuary.bean.key.{BinlogKey, PartitionStrategy}
 import com.neighborhood.aka.laplace.estuary.bean.support.KafkaMessage
-import com.neighborhood.aka.laplace.estuary.core.trans.{MappingFormat, RegTransPlugin, RegTransformation}
+import com.neighborhood.aka.laplace.estuary.core.trans.MappingFormat
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.IdClassifier
 
 /**
   * Created by john_liu on 2018/5/1.
-  *
-  * 这是finup_core定制
   */
 trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[IdClassifier, KafkaMessage] {
   self: Actor with ActorLogging =>
