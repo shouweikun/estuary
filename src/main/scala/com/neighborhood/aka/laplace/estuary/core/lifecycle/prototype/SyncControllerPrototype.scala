@@ -15,5 +15,5 @@ trait SyncControllerPrototype extends ActorPrototype with SyncController{
   /**
     * 同步任务id
     */
-  override val syncTaskId = taskManager.syncTaskId
+  override val syncTaskId:String
 }

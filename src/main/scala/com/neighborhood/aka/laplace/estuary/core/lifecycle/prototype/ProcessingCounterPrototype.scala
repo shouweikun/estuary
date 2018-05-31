@@ -15,5 +15,5 @@ trait ProcessingCounterPrototype extends ActorPrototype with ProcessingCounter{
   /**
     * 同步任务id
     */
-  override val syncTaskId = taskManager.syncTaskId
+  override val syncTaskId:String
 }

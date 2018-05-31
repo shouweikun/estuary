@@ -27,7 +27,7 @@ trait SourceDataBatcherPrototype[A, B] extends ActorPrototype with SourceDataBat
   /**
     * 同步任务id
     */
-  override val syncTaskId = taskManager.syncTaskId
+  override val syncTaskId:String
 
 
   override def preStart(): Unit = {

@@ -1,12 +1,14 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder
 
-import akka.actor.{Actor, ActorLogging, Props}
+import akka.actor.Props
 import com.neighborhood.aka.laplace.estuary.bean.exception.sink.KafkaSinkSendFailureException
 import com.neighborhood.aka.laplace.estuary.bean.key.BinlogKey
 import com.neighborhood.aka.laplace.estuary.bean.support.KafkaMessage
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.SinkerMessage
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.SourceDataSinker
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.SourceDataSinkerPrototype
+import com.neighborhood.aka.laplace.estuary.core.sink.kafka.KafkaSinkFunc
+import com.neighborhood.aka.laplace.estuary.core.task.RecourceManager
 import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManager
 import org.apache.kafka.clients.producer.{Callback, RecordMetadata}
 
@@ -14,17 +16,45 @@ import org.apache.kafka.clients.producer.{Callback, RecordMetadata}
   * Created by john_liu on 2018/5/8.
   */
 class MysqlBinlogInOrderSinker(
-                                val mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
+                                /**
+                                  * 任务信息管理器
+                                  */
+                                override val taskManager: Mysql2KafkaTaskInfoManager,
                                 val num: Int = -1
-                              ) extends Actor with SourceDataSinker with ActorLogging {
+                              ) extends SourceDataSinkerPrototype[KafkaSinkFunc[String]] {
 
-  val syncTaskId = mysql2KafkaTaskInfoManager.syncTaskId
-  val kafkaSinkFunc = mysql2KafkaTaskInfoManager.kafkaSink.fork
-  val isSyncWrite = mysql2KafkaTaskInfoManager.isSync
-  lazy val powerAdapter = mysql2KafkaTaskInfoManager.powerAdapter
-  lazy val processingCounter = mysql2KafkaTaskInfoManager.processingCounter
-  val isCounting = mysql2KafkaTaskInfoManager.taskInfo.isCounting
-  val isCosting = mysql2KafkaTaskInfoManager.taskInfo.isCounting
+  /**
+    * 资源管理器
+    */
+  override val resourceManger: RecourceManager[_, _, KafkaSinkFunc[String]] = taskManager
+  /**
+    * 同步任务id
+    */
+  override val syncTaskId = taskManager.syncTaskId
+  /**
+    * sink
+    */
+  val kafkaSinkFunc = taskManager.kafkaSink.fork
+  /**
+    * 是否同步写
+    */
+  val isSyncWrite = taskManager.isSync
+  /**
+    * 功率控制器
+    */
+  lazy val powerAdapter = taskManager.powerAdapter
+  /**
+    * 计数器
+    */
+  lazy val processingCounter = taskManager.processingCounter
+  /**
+    * 是否计数
+    */
+  val isCounting = taskManager.taskInfo.isCounting
+  /**
+    * 是否计算耗时
+    */
+  val isCosting = taskManager.taskInfo.isCounting
 
 
   override def receive: Receive = {
@@ -65,7 +95,7 @@ class MysqlBinlogInOrderSinker(
             //            receiver ! SinkerMessage(new Exception("test"))
             receiver ! SinkerMessage(new KafkaSinkSendFailureException(s"error when sending data:$theValue,e:$exception,message:${exception.getCause},id:$syncTaskId,sinker num:$num"), exception);
           }
-         //if(isChecked){
+          //if(isChecked){
           // todo 存入redis校验数据
           // }
         }

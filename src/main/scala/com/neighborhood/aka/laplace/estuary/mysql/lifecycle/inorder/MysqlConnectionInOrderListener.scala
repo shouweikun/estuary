@@ -1,11 +1,12 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder
 
-import akka.actor.{Actor, ActorLogging, Props}
+import akka.actor.Props
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.HeartBeatListenerPrototype
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status.Status
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.{HeartBeatListener, Status}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{ListenerMessage, SyncControllerMessage}
-import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
+import com.neighborhood.aka.laplace.estuary.core.task.{RecourceManager, TaskManager}
 import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlConnection
 import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManager
 
@@ -15,29 +16,34 @@ import scala.util.Try
   * Created by john_liu on 2018/2/1.
   */
 class MysqlConnectionInOrderListener(
-                                      mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager
-                                    ) extends Actor with HeartBeatListener with ActorLogging {
+                                      override val taskManager: Mysql2KafkaTaskInfoManager
+                                    ) extends HeartBeatListenerPrototype[MysqlConnection] {
+
+
+  /**
+    * 资源管理器
+    */
+  override val recourceManager: RecourceManager[_, MysqlConnection, _] = taskManager
   /**
     * syncTaskId
     */
-  val syncTaskId = mysql2KafkaTaskInfoManager.syncTaskId
+  override val syncTaskId = taskManager.syncTaskId
   /**
     * 数据库连接
     */
-  val connection: Option[MysqlConnection] = Option(mysql2KafkaTaskInfoManager.mysqlConnection)
+  lazy val mysqlConnection: Option[MysqlConnection] = Option(connection.asInstanceOf[MysqlConnection])
   /**
     * 监听心跳用sql
     */
-  val delectingSql: String = mysql2KafkaTaskInfoManager.taskInfo.detectingSql
+  val delectingSql: String = taskManager.taskInfo.detectingSql
   /**
     * 重试次数标准值
     */
-  var retryTimeThreshold = mysql2KafkaTaskInfoManager.taskInfo.listenRetrytime
+  var retryTimeThreshold = taskManager.taskInfo.listenRetrytime
   /**
     * 重试次数
     */
   var retryTimes: Int = retryTimeThreshold
-
 
   //等待初始化 offline状态
   override def receive: Receive = {
@@ -49,7 +55,7 @@ class MysqlConnectionInOrderListener(
           //变为online状态
           log.info(s"heartBeatListener swtich to online,id:$syncTaskId")
           context.become(onlineState)
-          connection.fold {
+          mysqlConnection.fold {
             log.error(s"heartBeatListener connection cannot be null,id:$syncTaskId");
             throw new Exception(s"listener connection cannot be null,id:$syncTaskId")
           }(conn => conn.connect())
@@ -102,7 +108,7 @@ class MysqlConnectionInOrderListener(
   }
 
   def listenHeartBeats: Unit = {
-    connection.foreach {
+    mysqlConnection.foreach {
       conn =>
         val before = System.currentTimeMillis
         if (!Try(conn
@@ -125,11 +131,11 @@ class MysqlConnectionInOrderListener(
   /**
     * ********************* 状态变化 *******************
     */
-  private def changeFunc(status: Status) = TaskManager.changeFunc(status, mysql2KafkaTaskInfoManager)
+  override def changeFunc(status: Status) = TaskManager.changeFunc(status, taskManager)
 
-  private def onChangeFunc = TaskManager.onChangeStatus(mysql2KafkaTaskInfoManager)
+  override def onChangeFunc = TaskManager.onChangeStatus(taskManager)
 
-  private def listenerChangeStatus(status: Status) = TaskManager.changeStatus(status, changeFunc, onChangeFunc)
+  override def listenerChangeStatus(status: Status) = TaskManager.changeStatus(status, changeFunc, onChangeFunc)
 
 
   /**
@@ -154,7 +160,7 @@ class MysqlConnectionInOrderListener(
 
   override def postStop(): Unit = {
     log.info(s"heartBeatListener process postStop id:$syncTaskId")
-    connection.get.disconnect()
+    mysqlConnection.get.disconnect()
   }
 
 

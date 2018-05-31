@@ -1,14 +1,15 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.actor.{ActorRef, Props}
 import com.alibaba.otter.canal.parse.exception.TableIdNotFoundException
 import com.alibaba.otter.canal.protocol.CanalEntry
 import com.alibaba.otter.canal.protocol.position.EntryPosition
-import com.neighborhood.aka.laplace.estuary.bean.exception.fetch.{CannotFindOffsetException, FetchDataException, NullOfDataSourceConnectionException, OutOfFetchRetryThersholdException}
+import com.neighborhood.aka.laplace.estuary.bean.exception.fetch.{CannotFindOffsetException, NullOfDataSourceConnectionException, OutOfFetchRetryThersholdException}
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.DataSourceFetcherPrototype
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status.Status
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.{SourceDataFetcher, Status}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{FetcherMessage, SyncControllerMessage, WorkerMessage}
-import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
+import com.neighborhood.aka.laplace.estuary.core.task.{RecourceManager, TaskManager}
 import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlConnection
 import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManager
 import com.neighborhood.aka.laplace.estuary.mysql.utils.MysqlBinlogParser
@@ -22,19 +23,23 @@ import scala.concurrent.duration._
   */
 
 class MysqlBinlogInOrderFetcher(
-                                 val mysql2KafkaTaskInfoManager: Mysql2KafkaTaskInfoManager,
+                                 override val taskManager: Mysql2KafkaTaskInfoManager,
                                  val binlogEventBatcher: ActorRef
-                               ) extends Actor with SourceDataFetcher with ActorLogging {
+                               ) extends DataSourceFetcherPrototype[MysqlConnection] {
 
   implicit val transTaskPool: ExecutionContextExecutor = context.dispatcher
   /**
+    * 资源管理器
+    */
+  override val recourceManager: RecourceManager[_, MysqlConnection, _] = taskManager
+  /**
     * binlogParser 解析binlog
     */
-  lazy val binlogParser: MysqlBinlogParser = mysql2KafkaTaskInfoManager.binlogParser
+  lazy val binlogParser: MysqlBinlogParser = taskManager.binlogParser
   /**
     * 功率调节器
     */
-  lazy val powerAdapter = mysql2KafkaTaskInfoManager.powerAdapter
+  lazy val powerAdapter = taskManager.powerAdapter
   /**
     * fetcher专用counter
     */
@@ -42,7 +47,7 @@ class MysqlBinlogInOrderFetcher(
   /**
     * 任务id
     */
-  val syncTaskId = mysql2KafkaTaskInfoManager.syncTaskId
+  override val syncTaskId = taskManager.syncTaskId
   /**
     * 重试机制
     */
@@ -51,29 +56,29 @@ class MysqlBinlogInOrderFetcher(
   /**
     * 模拟的从库id
     */
-  val slaveId = mysql2KafkaTaskInfoManager.slaveId
+  val slaveId = taskManager.slaveId
   /**
     * mysql链接
     * 必须是fork 出来的
     */
-  val mysqlConnection: Option[MysqlConnection] = Option(mysql2KafkaTaskInfoManager.mysqlConnection.fork)
+  val mysqlConnection: Option[MysqlConnection] = Option(connection.asInstanceOf[MysqlConnection])
   /**
     * 寻址处理器
     */
-  val logPositionHandler = mysql2KafkaTaskInfoManager.logPositionHandler
+  val logPositionHandler = taskManager.logPositionHandler
   /**
     * 是否记录耗时
     */
-  val isCosting = mysql2KafkaTaskInfoManager.taskInfo.isCosting
+  val isCosting = taskManager.taskInfo.isCosting
   /**
     * 是否计数
     */
-  val isCounting = mysql2KafkaTaskInfoManager.taskInfo.isCounting
+  val isCounting = taskManager.taskInfo.isCounting
   /**
     * 暂存的entryPosition
     */
   var entryPosition: Option[EntryPosition] = None
-  var fetchDelay: Long = mysql2KafkaTaskInfoManager.fetchDelay.get()
+  var fetchDelay: Long = taskManager.fetchDelay.get()
   var count = 0
 
   //offline
@@ -247,11 +252,11 @@ class MysqlBinlogInOrderFetcher(
   /**
     * ********************* 状态变化 *******************
     */
-  private def changeFunc(status: Status): Unit = TaskManager.changeFunc(status, mysql2KafkaTaskInfoManager)
+  override def changeFunc(status: Status): Unit = TaskManager.changeFunc(status, taskManager)
 
-  private def onChangeFunc: Unit = TaskManager.onChangeStatus(mysql2KafkaTaskInfoManager)
+  override def onChangeFunc: Unit = TaskManager.onChangeStatus(taskManager)
 
-  private def fetcherChangeStatus(status: Status): Unit = TaskManager.changeStatus(status, changeFunc, onChangeFunc)
+  override def fetcherChangeStatus(status: Status): Unit = TaskManager.changeStatus(status, changeFunc, onChangeFunc)
 
   /**
     * ********************* Actor生命周期 *******************
@@ -259,7 +264,7 @@ class MysqlBinlogInOrderFetcher(
   override def preStart(): Unit = {
     log.info(s"fetcher switch to offline,id:$syncTaskId")
     if (mysqlConnection.isDefined && mysqlConnection.get.isConnected) mysqlConnection.get.disconnect()
-    context.actorOf(MysqlBinlogInOrderFetcherCounter.props(mysql2KafkaTaskInfoManager), "counter")
+    context.actorOf(MysqlBinlogInOrderFetcherCounter.props(taskManager), "counter")
     //状态置为offline
     fetcherChangeStatus(Status.OFFLINE)
   }
