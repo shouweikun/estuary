@@ -12,7 +12,7 @@ sealed trait DDL {
 
   case class ChangeName(db: Option[String], table: String, oldName: String, newColumn: String, dataType: (String, Option[String])) extends Alter
 
-  case class DropColumn(db: Option[String], table: String, dropColumnName: String) extends
+  case class DropColumn(db: Option[String], table: String, dropColumnName: String) extends Drop
 
   case class ChangeColumnType(db: Option[String], table: String, column: String, dataType: (String, Option[String])) extends DDL
 

@@ -93,8 +93,7 @@ class MysqlBinlogInOrderSinker(
         override def onCompletion(metadata: RecordMetadata, exception: Exception): Unit = {
           if (exception != null) {
             //            receiver ! SinkerMessage(new Exception("test"))
-            receiver ! SinkerMessage(new KafkaSinkSendFailureException(s"error when sending data:$theValue,e:$ex
-              ception,message:${exception.getCause},id:$syncTaskId,sinker num:$num"), exception);
+            receiver ! SinkerMessage(new KafkaSinkSendFailureException(s"error when sending data:$theValue,e:$exception,message:${exception.getCause},id:$syncTaskId,sinker num:$num"), exception);
           }
           //if(isChecked){
           // todo 存入redis校验数据
