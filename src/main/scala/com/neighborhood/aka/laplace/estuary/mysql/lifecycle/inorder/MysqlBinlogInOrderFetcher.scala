@@ -151,15 +151,15 @@ class MysqlBinlogInOrderFetcher(
               MysqlConnection.preDump(conn)(binlogParser);
               conn.connect()
           }
-          val startPosition = entryPosition.get
+          val startPosition = entryPosition.fold(throw new CannotFindOffsetException(s"fetcher find entryPosition is null,id:$syncTaskId"))(x => x)
           try {
             if (StringUtils.isEmpty(startPosition.getJournalName) && Option(startPosition.getTimestamp).isEmpty) {
               log.error(s"unsupported operation: dump by timestamp is not supported yet,id:$syncTaskId")
               throw new UnsupportedOperationException(s"unsupported operation: dump by timestamp is not supported yet,id:$syncTaskId")
             } else {
               log.info(s"start dump binlog,id:$syncTaskId")
-              MysqlConnection.dump(startPosition.getJournalName, startPosition.getPosition)(mysqlConnection.get)
 
+              mysqlConnection.fold(throw new NullOfDataSourceConnectionException(s"mysqlConnection is null when start to dump,id:$syncTaskId"))(conn => MysqlConnection.dump(startPosition.getJournalName, startPosition.getPosition)(conn))
             }
             self ! FetcherMessage("fetch")
           } catch {
@@ -174,7 +174,7 @@ class MysqlBinlogInOrderFetcher(
             context.system.scheduler.scheduleOnce(theFetchDelay microseconds, self, FetcherMessage("fetch"))
           } catch {
             case e: TableIdNotFoundException => {
-              entryPosition = Option(logPositionHandler.findStartPositionWithinTransaction(mysqlConnection.get))
+              entryPosition = Option(mysqlConnection.fold(throw new NullOfDataSourceConnectionException(s"mysqlConnection is null when find Start PositionWithinTransaction,id:$syncTaskId"))(conn => logPositionHandler.findStartPositionWithinTransaction(conn)))
               self ! FetcherMessage("start")
             }
             case e: Exception => processError(e, FetcherMessage("fetch"))
@@ -203,7 +203,8 @@ class MysqlBinlogInOrderFetcher(
     * 从连接中取数据
     */
   def fetchOne(before: Long = System.currentTimeMillis()) = {
-    val entry = mysqlConnection.get.fetchUntilDefined(filterEntry(_))(binlogParser).get
+
+    val entry = mysqlConnection.fold(throw new NullOfDataSourceConnectionException(s"mysqlConnection is null when fetch data,id:$syncTaskId"))(conn => conn.fetchUntilDefined(filterEntry(_))(binlogParser))
 
     if (isCounting) fetcherCounter.fold(log.warning(s"fetcherCounter not exist,id:$syncTaskId"))(ref => ref ! entry)
     binlogEventBatcher ! entry
@@ -220,13 +221,13 @@ class MysqlBinlogInOrderFetcher(
     *                    对entry在类型级别上进行过滤
     */
   def filterEntry(entryOption: Option[CanalEntry.Entry]): Boolean = {
-    if (!entryOption.isDefined) {
-      return false
-    }
-    val entry = entryOption.get
-    //我们只要rowdata和Transactioned
-    if ((entry.getEntryType == CanalEntry.EntryType.ROWDATA) || (entry.getEntryType == CanalEntry.EntryType.TRANSACTIONEND)) true else {
-      false
+
+    entryOption.fold(false) {
+      entry =>
+        //我们只要rowdata和Transactioned
+        if ((entry.getEntryType == CanalEntry.EntryType.ROWDATA) || (entry.getEntryType == CanalEntry.EntryType.TRANSACTIONEND)) true else {
+          false
+        }
     }
   }
 
@@ -264,7 +265,7 @@ class MysqlBinlogInOrderFetcher(
     */
   override def preStart(): Unit = {
     log.info(s"fetcher switch to offline,id:$syncTaskId")
-    if (mysqlConnection.isDefined && mysqlConnection.get.isConnected) mysqlConnection.get.disconnect()
+    mysqlConnection.map(conn=>if(conn.isConnected)conn.disconnect())
     context.actorOf(MysqlBinlogInOrderFetcherCounter.props(taskManager), "counter")
     //状态置为offline
     fetcherChangeStatus(Status.OFFLINE)
@@ -278,7 +279,7 @@ class MysqlBinlogInOrderFetcher(
 
   override def postStop(): Unit = {
     log.info(s"fetcher processing postStop,id:$syncTaskId")
-    mysqlConnection.get.disconnect()
+    mysqlConnection.map(conn=>if(conn.isConnected)conn.disconnect())
   }
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {

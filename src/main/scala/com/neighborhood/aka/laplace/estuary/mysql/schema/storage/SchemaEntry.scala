@@ -5,26 +5,21 @@ package com.neighborhood.aka.laplace.estuary.mysql.schema.storage
   *
   * @todo
   */
-sealed trait SchemaEntry {
+sealed trait SchemaEntry
 
 
-
-}
-
-
-
-object SchemaEntry{
+object SchemaEntry {
 
   class EmptySchemaEntry extends SchemaEntry
 
   case class MysqlConSchemaEntry(
-                             val schemaName: String,
-                             val tableName: String,
-                             val version: Long,
-                             val timestamp: Long,
-                             val binlogFileName: String,
-                             val binlogPosition: Long
-                           ) extends SchemaEntry {
+                                  val schemaName: String,
+                                  val tableName: String,
+                                  val version: Long,
+                                  val timestamp: Long,
+                                  val binlogFileName: String,
+                                  val binlogPosition: Long
+                                ) extends SchemaEntry {
 
     //每次新加字段都在这里更新一下
     lazy val fieldList: List[String] = List(schemaName, tableName, version, tableName, version, timestamp, binlogFileName, binlogPosition).map {
