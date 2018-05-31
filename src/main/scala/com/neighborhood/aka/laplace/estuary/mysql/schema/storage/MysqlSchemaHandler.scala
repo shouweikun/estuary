@@ -50,10 +50,18 @@ class MysqlSchemaHandler(
   }
 
   //todo 有问题
-  def getCorrespondingSchema(dbName: String, tableName: String, timestamp: Long): Try[SchemaEntry] = {
-    lazy val sql = s"SELECT * FROM $targetDbName.$targetTableName where db_name = '$dbName' and table_name = '$tableName' WHRER timestamp <= $timestamp ORDER BY version DESC limit 1"
+  def getCorrespondingSchema(dbName: String, tableName: String, timestamp: Long, binlogJournalName: String, binlogOffset: Long): Try[SchemaEntry] = {
+
+    def convertBinlogPosition2Long(binlogJournalName: String, binlogOffset: Long) = s"${binlogJournalName.split('.')(1)}$binlogOffset".toLong
+
+    lazy val sql = s"SELECT * FROM $targetDbName.$targetTableName where db_name = '$dbName' and table_name = '$tableName' WHERE timestamp <= $timestamp ORDER BY version "
     getSchemas(sql)
-      .map(x => x(0))
+      .map {
+        list =>
+          list
+            .filter(x => convertBinlogPosition2Long(x.binlogFileName, x.binlogPosition) < convertBinlogPosition2Long(binlogJournalName, binlogOffset))
+            .maxBy(x => convertBinlogPosition2Long(x.binlogFileName, x.binlogPosition))
+      }
   }
 
 
