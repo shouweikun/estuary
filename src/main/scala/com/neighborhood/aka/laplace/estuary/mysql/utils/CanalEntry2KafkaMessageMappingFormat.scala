@@ -23,8 +23,8 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[IdClassifier, K
 
   val syncTaskId: String
   val num: Int
-  val regRules = List(RegTransformation("", ""), RegTransformation("", "34"))
-  val transPlugin = RegTransPlugin(regRules)
+//  val regRules = List(RegTransformation("", ""), RegTransformation("", "34"))
+//  val transPlugin = RegTransPlugin(regRules)
   val config = context.system.settings.config
   val syncStartTime = System.currentTimeMillis()
   private val jsonFormat = new JsonFormat
