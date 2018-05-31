@@ -90,7 +90,7 @@ class MysqlBinlogInOrderFetcher(
           log.info(s"fetcher restarting,id:$syncTaskId")
           self ! SyncControllerMessage("start")
         }
-        case str: String => {
+        case str => {
           log.warning(s"fetcher offline  unhandled message:$str,id:$syncTaskId")
         }
       }
@@ -126,6 +126,7 @@ class MysqlBinlogInOrderFetcher(
           }
 
         }
+        case _ => log.warning(s"fetcher offline  unhandled message:$msg,id:$syncTaskId")
       }
     }
   }
