@@ -66,6 +66,7 @@ class MysqlBinlogInOrderBatcherManager(
       msg match {
         case "start" => {
           context.become(online)
+          batcherChangeStatus(Status.ONLINE)
         }
         case x => log.warning(s"batcher offline unhandled message$x,id:$syncTaskId")
       }
