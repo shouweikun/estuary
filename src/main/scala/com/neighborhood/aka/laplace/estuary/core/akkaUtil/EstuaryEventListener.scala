@@ -15,6 +15,8 @@ class EstuaryEventListener extends Actor with ActorLogging {
   val config = ConfigFactory.load()
   val url = config.getString("error.monitor.url")
   val mobilelist = List(config.getString("error.monitor.mobiles"))
+  val ip = if (config.hasPath("app.server.ip")) config.getString("app.server.ip") else "unknown"
+  val port = if (config.hasPath("app.server.port")) config.getInt("app.server.ip") else -1
   val restTemplate = new RestTemplate
   val headers = new HttpHeaders
   var lastSendTime = 0l
@@ -30,7 +32,7 @@ class EstuaryEventListener extends Actor with ActorLogging {
         headers.setContentType(MediaType.APPLICATION_JSON)
         import scala.collection.JavaConversions._
         //      信息内容
-        lazy val contents = List(s"exception:${cause},cause:${cause.getCause},logSource:$logSource,logClass:$logClass,message $message")
+        lazy val contents = List(s"exception:${cause},cause:${cause.getCause},logSource:$logSource,logClass:$logClass,message $message,host:$ip:$port")
         messageBody.setMessageContents(contents)
         //      手机号码列表
         messageBody.setMobiles(mobilelist)

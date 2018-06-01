@@ -200,6 +200,17 @@ class MysqlBinlogInOrderFetcher(
 
 
   /**
+    * 用于在最终的数据汇建立相应的schema信息
+    * 本次程序采用Hbase作为最终数据汇
+    *
+    * 0.检查最终数据汇的schema信息
+    * 1.进
+    *  */
+  override def initEventualSinkSchema: Unit = {
+
+  }
+
+  /**
     * 从连接中取数据
     */
   def fetchOne(before: Long = System.currentTimeMillis()) = {
@@ -225,9 +236,7 @@ class MysqlBinlogInOrderFetcher(
     entryOption.fold(false) {
       entry =>
         //我们只要rowdata和Transactioned
-        if ((entry.getEntryType == CanalEntry.EntryType.ROWDATA) || (entry.getEntryType == CanalEntry.EntryType.TRANSACTIONEND)) true else {
-          false
-        }
+        if ((entry.getEntryType == CanalEntry.EntryType.ROWDATA) || (entry.getEntryType == CanalEntry.EntryType.TRANSACTIONEND)) true else false
     }
   }
 
@@ -265,7 +274,7 @@ class MysqlBinlogInOrderFetcher(
     */
   override def preStart(): Unit = {
     log.info(s"fetcher switch to offline,id:$syncTaskId")
-    mysqlConnection.map(conn=>if(conn.isConnected)conn.disconnect())
+    mysqlConnection.map(conn => if (conn.isConnected) conn.disconnect())
     context.actorOf(MysqlBinlogInOrderFetcherCounter.props(taskManager), "counter")
     //状态置为offline
     fetcherChangeStatus(Status.OFFLINE)
@@ -279,7 +288,7 @@ class MysqlBinlogInOrderFetcher(
 
   override def postStop(): Unit = {
     log.info(s"fetcher processing postStop,id:$syncTaskId")
-    mysqlConnection.map(conn=>if(conn.isConnected)conn.disconnect())
+    mysqlConnection.map(conn => if (conn.isConnected) conn.disconnect())
   }
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {

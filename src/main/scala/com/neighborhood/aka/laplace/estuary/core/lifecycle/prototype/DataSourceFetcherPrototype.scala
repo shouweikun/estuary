@@ -27,6 +27,10 @@ trait DataSourceFetcherPrototype[source <: DataSourceConnection] extends ActorPr
   lazy val connection = recourceManager.source.fork
 
   /**
+    * 用于在最终的数据汇建立相应的schema信息
+    */
+  def initEventualSinkSchema: Unit = {}
+  /**
     * ********************* 状态变化 *******************
     */
   protected def changeFunc(status: Status): Unit = TaskManager.changeFunc(status, taskManager)
