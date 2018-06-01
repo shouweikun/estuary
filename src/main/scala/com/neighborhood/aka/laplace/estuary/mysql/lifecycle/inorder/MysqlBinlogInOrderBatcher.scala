@@ -10,6 +10,8 @@ import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.{BinlogPositionInfo,
 import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManager
 import com.neighborhood.aka.laplace.estuary.mysql.utils.{CanalEntry2KafkaMessageMappingFormat, CanalEntryJsonHelper}
 
+import scala.concurrent.Promise
+
 /**
   * Created by john_liu on 2018/5/8.
   */
@@ -54,7 +56,6 @@ class MysqlBinlogInOrderBatcher(
     * 不需要发送心跳的数据库名称
     */
   val ignoredDbName = taskManager.taskInfo.ignoredDatabase
-
 
   override def receive: Receive = {
 

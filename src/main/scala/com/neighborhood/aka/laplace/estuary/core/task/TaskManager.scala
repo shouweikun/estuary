@@ -6,6 +6,7 @@ import com.neighborhood.aka.laplace.estuary.bean.identity.BaseExtractBean
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.WorkerType.WorkerType
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.{Status, WorkerType}
+import com.neighborhood.aka.laplace.estuary.core.schema.EventualSinkSchemaHandler
 import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManager.taskStatusMap
 
 /**
@@ -81,6 +82,7 @@ trait TaskManager {
     * 同步任务标识
     */
   val syncTaskId: String = taskInfoBean.syncTaskId
+
   /**
     * 数据条目记录
     */
@@ -135,6 +137,8 @@ trait TaskManager {
     val thisTaskStatus = syncControllerStatus.get()
     Map("task" -> thisTaskStatus)
   }
+
+
 
 }
 

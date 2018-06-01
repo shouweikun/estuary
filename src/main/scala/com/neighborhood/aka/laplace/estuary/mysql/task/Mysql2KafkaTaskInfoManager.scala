@@ -15,8 +15,11 @@ import com.neighborhood.aka.laplace.estuary.bean.credential.MysqlCredentialBean
 import com.neighborhood.aka.laplace.estuary.bean.datasink.DataSinkBean
 import com.neighborhood.aka.laplace.estuary.bean.resource.DataSourceBase
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status.Status
+import com.neighborhood.aka.laplace.estuary.core.schema.EventualSinkSchemaHandler
+import com.neighborhood.aka.laplace.estuary.core.schema.HBaseEventualSinkSchemaHandler.HBaseTableInfo
 import com.neighborhood.aka.laplace.estuary.core.sink.kafka.KafkaSinkFunc
 import com.neighborhood.aka.laplace.estuary.core.task.{RecourceManager, TaskManager}
+import com.neighborhood.aka.laplace.estuary.mysql.schema.storage.MysqlSchemaHandler
 import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlConnection
 import com.neighborhood.aka.laplace.estuary.mysql.utils.{LogPositionHandler, MysqlBinlogParser}
 import org.apache.commons.lang.StringUtils
@@ -127,6 +130,14 @@ class Mysql2KafkaTaskInfoManager(
     */
   val kafkaSink = sink
   /**
+    * eventualSinkHandler
+    */
+  lazy  val eventualSinkSchemaHandler = buildEventualSinkSchemaHandler
+  /**
+    * mysqlSchemaHandler
+    */
+  lazy val mysqlSchemaHandler = buildMysqlSchemaHandler
+  /**
     * kafka客户端,专门处理DDL
     */
   lazy val kafkaDdlSink = kafkaSink.fork
@@ -183,6 +194,13 @@ class Mysql2KafkaTaskInfoManager(
     new KafkaSinkFunc[String](this.taskInfo)
   }
 
+  def buildEventualSinkSchemaHandler: EventualSinkSchemaHandler[HBaseTableInfo] = {
+    //todo
+    ???
+  }
+
+  def buildMysqlSchemaHandler: MysqlSchemaHandler = ???
+
   /**
     * @return canal的mysqlConnection
     */
@@ -205,6 +223,7 @@ class Mysql2KafkaTaskInfoManager(
       slaveId = this.slaveId
     )
   }
+
 
   /**
     * @return 构建binlogParser

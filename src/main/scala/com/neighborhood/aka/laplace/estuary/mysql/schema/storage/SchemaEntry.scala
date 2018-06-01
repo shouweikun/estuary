@@ -15,14 +15,22 @@ object SchemaEntry {
   case class MysqlConSchemaEntry(
                                   val schemaName: String,
                                   val tableName: String,
+                                  val tableComment: String,
+                                  val fieldPositionIndex: Int,
+                                  val fieldName: String,
+                                  val fieldComment: String,
+                                  val fieldType: String,
+                                  val fieldConstraint: String,
                                   val version: Long,
                                   val timestamp: Long,
                                   val binlogFileName: String,
-                                  val binlogPosition: Long
+                                  val binlogPosition: Long,
+                                  //是否是初始
+                                  val isOriginal: Boolean = false
                                 ) extends SchemaEntry {
 
     //每次新加字段都在这里更新一下
-    lazy val fieldList: List[String] = List(schemaName, tableName, version, tableName, version, timestamp, binlogFileName, binlogPosition).map {
+    lazy val fieldList: List[String] = List(schemaName, tableName, tableComment, fieldPositionIndex, fieldName, fieldComment, fieldType, fieldConstraint, version, timestamp, binlogFileName, binlogPosition).map {
       x =>
         x match {
           case str: String => s"'$x'"

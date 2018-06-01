@@ -4,7 +4,7 @@ import akka.actor.{ActorRef, Props}
 import com.alibaba.otter.canal.parse.exception.TableIdNotFoundException
 import com.alibaba.otter.canal.protocol.CanalEntry
 import com.alibaba.otter.canal.protocol.position.EntryPosition
-import com.neighborhood.aka.laplace.estuary.bean.exception.fetch.{CannotFindOffsetException, NullOfDataSourceConnectionException, OutOfFetchRetryThersholdException}
+import com.neighborhood.aka.laplace.estuary.bean.exception.fetch._
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.DataSourceFetcherPrototype
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status.Status
@@ -17,6 +17,7 @@ import org.apache.commons.lang.StringUtils
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
+import scala.util.{Failure, Success}
 
 /**
   * Created by john_liu on 2018/2/5.
@@ -45,9 +46,14 @@ class MysqlBinlogInOrderFetcher(
     */
   lazy val fetcherCounter = context.child("counter")
   /**
+    * schema信息处理
+    */
+  lazy val mysqlSchemaHandler = taskManager.mysqlSchemaHandler
+  /**
     * 任务id
     */
   override val syncTaskId = taskManager.syncTaskId
+
   /**
     * 重试机制
     */
@@ -74,6 +80,10 @@ class MysqlBinlogInOrderFetcher(
     * 是否计数
     */
   val isCounting = taskManager.taskInfo.isCounting
+  /**
+    * 关注的库
+    */
+  val concernedDatabaseList = taskManager.taskInfo.concernedDatabase.split(",")
   /**
     * 暂存的entryPosition
     */
@@ -201,12 +211,33 @@ class MysqlBinlogInOrderFetcher(
 
   /**
     * 用于在最终的数据汇建立相应的schema信息
-    * 本次程序采用Hbase作为最终数据汇
-    *
+    * 本次程序采用HBase作为最终数据汇
     * 0.检查最终数据汇的schema信息
     * 1.进
-    *  */
+    **/
   override def initEventualSinkSchema: Unit = {
+    val check = concernedDatabaseList.diff(taskManager.mysqlDatabaseNameList)
+    if (!check.isEmpty) throw new ConcernedDatabaseCannotFoundException(s"database(s):${check.mkString(",")} cannot be found when init Eventual Sink Schema,$syncTaskId ")
+    lazy val eventualSinkSchemaHandler = taskManager.eventualSinkSchemaHandler
+    concernedDatabaseList
+      .withFilter(!mysqlSchemaHandler.isInitialized(_))
+      .map {
+        dbName =>
+          mysqlSchemaHandler
+            .getAllTablesInfo(dbName) match {
+            case Failure(e) => throw new RetrieveSchemaFailureException(s"cannot fetch mysql schema,id:$syncTaskId", e)
+            case Success(tableSchemas) => {
+              tableSchemas.map {
+                kv =>
+                  lazy val tableName = kv._1
+                  lazy val schema = kv._2
+
+                  //todo 1.转换成SchemaEntry 2.hbase创建表 3.写入Mysql中记录元数据
+              }
+            }
+          }
+      }
+
 
   }
 
