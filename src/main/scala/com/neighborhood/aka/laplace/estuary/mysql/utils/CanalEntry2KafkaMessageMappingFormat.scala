@@ -21,11 +21,12 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[IdClassifier, K
 
   val syncTaskId: String
   val num: Int
+  val isSync: Boolean
+  var taskSequence = 0l
 
-  
-  
-//  val regRules = List(RegTransformation("", ""), RegTransformation("", "34"))
-//  val transPlugin = RegTransPlugin(regRules)
+
+  //  val regRules = List(RegTransformation("", ""), RegTransformation("", "34"))
+  //  val transPlugin = RegTransPlugin(regRules)
 
   val config = context.system.settings.config
   val syncStartTime = System.currentTimeMillis()
@@ -53,11 +54,18 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[IdClassifier, K
     tempJsonKey.setAppServerPort(appServerPort)
     tempJsonKey.setSyncTaskId(syncTaskId)
     tempJsonKey.setSyncTaskStartTime(syncStartTime)
-    tempJsonKey.setSyncTaskSequence(num)
     tempJsonKey.setMsgSyncStartTime(before)
     tempJsonKey.setPrimaryKeyValue(primaryKey)
     tempJsonKey.setMsgUuid(primaryKey)
-    tempJsonKey.setPartitionStrategy(PartitionStrategy.PRIMARY_KEY)
+    if (isSync) {
+      tempJsonKey.setSyncTaskSequence(num)
+      tempJsonKey.setPartitionStrategy(PartitionStrategy.PRIMARY_KEY)
+    } else {
+      tempJsonKey.setSyncTaskSequence(taskSequence)
+      taskSequence += 1
+      tempJsonKey.setPartitionStrategy(PartitionStrategy.MOD)
+    }
+
     eventType match {
       case CanalEntry.EventType.DELETE => tranformDMLtoJson(header, rowData, tempJsonKey, "DELETE")
       case CanalEntry.EventType.INSERT => tranformDMLtoJson(header, rowData, tempJsonKey, "INSERT")
@@ -182,7 +190,6 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[IdClassifier, K
   = {
     val sb = new StringBuilder(512)
     sb.append(START_JSON)
-
 
 
     addKeyValue(sb, "version", header.getVersion, false)

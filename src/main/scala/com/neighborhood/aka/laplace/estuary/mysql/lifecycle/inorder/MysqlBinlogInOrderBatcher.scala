@@ -28,6 +28,10 @@ class MysqlBinlogInOrderBatcher(
     */
   override val syncTaskId: String = taskManager.syncTaskId
   /**
+    * 是否同步
+    */
+  override val isSync: Boolean = taskManager.isSync
+  /**
     * 功率控制器
     */
   lazy val powerAdapter = taskManager.powerAdapter
