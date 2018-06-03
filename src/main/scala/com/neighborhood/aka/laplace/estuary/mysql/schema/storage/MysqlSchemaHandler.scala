@@ -26,7 +26,7 @@ class MysqlSchemaHandler(
 
   val targetDbName = if (dbName != null && !dbName.isEmpty) dbName else config.getString("schema.target.db")
   val targetTableName = if (tableName != null && !tableName.isEmpty) tableName else config.getString("schema.target.table")
-  val tableVersionMap: ConcurrentHashMap[String, Int] = new ConcurrentHashMap[String, Int]()
+  val tableVersionMap: ConcurrentHashMap[String, TableSchemaVersionCache] = new ConcurrentHashMap[String, TableSchemaVersionCache]()
   /**
     * SELECT
     *a.table_schema dbName,
@@ -57,7 +57,13 @@ class MysqlSchemaHandler(
         mysqlConnection.disconnect()
     }
 
-  def upsertSchema(schemaEntry: MysqlConSchemaEntry) = upsertSchema(schemaEntry.convertEntry2Sql(targetDbName, targetTableName))
+  def upsertSchema(schemaEntry: MysqlConSchemaEntry) ={
+    upsertSchema(schemaEntry.convertEntry2Sql(targetDbName, targetTableName))
+    if(!tableVersionMap.contains(schemaEntry.schemaName)){
+      tableVersionMap.put(schemaEntry.schemaName,new TableSchemaVersionCache(schemaEntry.schemaName))
+    }
+    tableVersionMap.get(schemaEntry.schemaName).upsertSchemas(schemaEntry)
+  }
 
   def upsertSchema(rowMap: Map[String, Any], isOriginal: Boolean) = upsertSchema(convertRow2ConSchemaEntry(rowMap, isOriginal))
 
@@ -156,7 +162,11 @@ class MysqlSchemaHandler(
     re
   }
 
-  private def convertRow2ConSchemaEntry(row: Map[String, Any], isOriginal: Boolean = false): MysqlConSchemaEntry = {
+  private def convertRow2ConSchemaEntry(
+                                         row: Map[String, Any],
+                                         isOriginal: Boolean = false,
+                                         binlogJournalName: String = "mysql-bin.000000",
+                                         binlogPosition: Long = 4l): MysqlConSchemaEntry = {
     //todo
     lazy val dbName = row("dbName").toString
     lazy val tableName = row("tableName").toString
@@ -167,8 +177,23 @@ class MysqlSchemaHandler(
     lazy val fieldType = row("fieldType").toString
     lazy val fieldConstraint = row("fieldConstraint").toString
     lazy val timestamp = row.get("tableUpdateTime").getOrElse(row("tableCreateTime")).toString.toLong * 1000
-    lazy val version = if (isOriginal) 0 else
-      ???
+    lazy val version = if (isOriginal) 0l else tableVersionMap.get(dbName).getLatestVersion(tableName) + 1
+
+    MysqlConSchemaEntry(
+      dbName,
+      tableName,
+      tableComment,
+      fieldIndex,
+      fieldName,
+      fieldComment,
+      fieldType,
+      fieldConstraint,
+      version,
+      timestamp,
+      binlogJournalName,
+      binlogPosition,
+      isOriginal
+    )
 
   }
 }

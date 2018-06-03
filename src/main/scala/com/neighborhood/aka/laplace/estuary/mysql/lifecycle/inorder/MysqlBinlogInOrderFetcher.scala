@@ -224,8 +224,12 @@ class MysqlBinlogInOrderFetcher(
   /**
     * 用于在最终的数据汇建立相应的schema信息
     * 本次程序采用HBase作为最终数据汇
-    * 0.检查最终数据汇的schema信息
-    * 1.进
+    * 0.检查传入的DatabaseList是否有问题
+    * 1.检查最终数据汇的schema信息，如果没有初始化
+    *   1.1 从mysql中获取当前元数据信息
+    *   1.2 在HBase中创建表
+    *   1.3 把信息更新到保存mysql元数据信息的数据库中
+    * 2.将初始化标志置为true（防止重启时重复操作）
     **/
   override def initEventualSinkSchema: Unit = {
     val check = concernedDatabaseList.diff(taskManager.mysqlDatabaseNameList)
