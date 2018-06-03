@@ -9,6 +9,7 @@ import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.DataSourceF
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{FetcherMessage, SyncControllerMessage, WorkerMessage}
+import com.neighborhood.aka.laplace.estuary.core.schema.HBaseEventualSinkSchemaHandler.HBaseTableInfo
 import com.neighborhood.aka.laplace.estuary.core.task.{RecourceManager, TaskManager}
 import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlConnection
 import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManager
@@ -85,6 +86,10 @@ class MysqlBinlogInOrderFetcher(
     */
   val concernedDatabaseList = taskManager.taskInfo.concernedDatabase.split(",")
   /**
+    * 是否初始化了
+    */
+  val isInitialized = taskManager.taskInfo.isInitialized
+  /**
     * 暂存的entryPosition
     */
   var entryPosition: Option[EntryPosition] = None
@@ -114,7 +119,13 @@ class MysqlBinlogInOrderFetcher(
         }
         case "start" => {
           try {
-            entryPosition = mysqlConnection.map(_.fork).map { conn => conn.connect(); logPositionHandler.findStartPosition(conn) }
+            entryPosition = mysqlConnection
+              .map(_.fork)
+              .map {
+                conn =>
+                  conn.connect();
+                  logPositionHandler.findStartPosition(conn)
+              }
             entryPosition.fold {
               throw new CannotFindOffsetException(
                 {
@@ -126,6 +137,7 @@ class MysqlBinlogInOrderFetcher(
               thePosition =>
                 mysqlConnection.map(_.connect())
                 log.info(s"fetcher find start position,binlogFileName:${thePosition.getJournalName},${thePosition.getPosition},id:$syncTaskId")
+                if (!isInitialized) initEventualSinkSchema
                 context.become(online)
                 log.info(s"fetcher switch to online,id:$syncTaskId")
                 self ! FetcherMessage("start")
@@ -227,18 +239,19 @@ class MysqlBinlogInOrderFetcher(
             .getAllTablesInfo(dbName) match {
             case Failure(e) => throw new RetrieveSchemaFailureException(s"cannot fetch mysql schema,id:$syncTaskId", e)
             case Success(tableSchemas) => {
+
+              eventualSinkSchemaHandler.createIfNotExists(HBaseTableInfo(dbName, ""))
               tableSchemas.map {
                 kv =>
                   lazy val tableName = kv._1
-                  lazy val schema = kv._2
-
-                  //todo 1.转换成SchemaEntry 2.hbase创建表 3.写入Mysql中记录元数据
+                  lazy val schemas = kv._2
+                  eventualSinkSchemaHandler.createIfNotExists(HBaseTableInfo(dbName, tableName))
+                  schemas.map(schema => mysqlSchemaHandler.upsertSchema(schema,true))
               }
             }
           }
       }
-
-
+    taskManager.taskInfo.isInitialized = true
   }
 
   /**
@@ -247,7 +260,6 @@ class MysqlBinlogInOrderFetcher(
   def fetchOne(before: Long = System.currentTimeMillis()) = {
 
     val entry = mysqlConnection.fold(throw new NullOfDataSourceConnectionException(s"mysqlConnection is null when fetch data,id:$syncTaskId"))(conn => conn.fetchUntilDefined(filterEntry(_))(binlogParser))
-
     if (isCounting) fetcherCounter.fold(log.warning(s"fetcherCounter not exist,id:$syncTaskId"))(ref => ref ! entry)
     binlogEventBatcher ! entry
     //    println(entry.get.getEntryType)

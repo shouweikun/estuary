@@ -70,6 +70,10 @@ final class Mysql2KafkaTaskInfoBean extends MysqlBean with KafkaBean with BaseEx
     */
   val fetchDelay: AtomicLong = new AtomicLong(2000000)
   /**
+    * 是否是第一次初始化
+    */
+  var isInitialized: Boolean = false
+  /**
     * 同步关心的表
     */
   var concernedDatabase = ""

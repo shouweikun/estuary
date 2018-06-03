@@ -357,6 +357,7 @@ class MysqlBinlogInOrderController(
       }
       case e: Exception => {
         controllerChangeStatus(Status.ERROR)
+
         Escalate
 
       }

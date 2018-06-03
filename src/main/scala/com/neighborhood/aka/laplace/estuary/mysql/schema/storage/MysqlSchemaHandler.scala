@@ -1,5 +1,7 @@
 package com.neighborhood.aka.laplace.estuary.mysql.schema.storage
 
+import java.util.concurrent.ConcurrentHashMap
+
 import com.neighborhood.aka.laplace.estuary.mysql.schema.storage.SchemaEntry.{EmptySchemaEntry, MysqlConSchemaEntry}
 import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlConnection
 import com.typesafe.config.Config
@@ -24,6 +26,24 @@ class MysqlSchemaHandler(
 
   val targetDbName = if (dbName != null && !dbName.isEmpty) dbName else config.getString("schema.target.db")
   val targetTableName = if (tableName != null && !tableName.isEmpty) tableName else config.getString("schema.target.table")
+  val tableVersionMap: ConcurrentHashMap[String, Int] = new ConcurrentHashMap[String, Int]()
+  /**
+    * SELECT
+    *a.table_schema dbName,
+    *a.table_name tableName,             //表名
+    *a.table_comment tableComment,       //表注释
+    *a.create_time tableCreateTime       //表创建时间
+    *a.update_time tableUpdateTime       //表更新时间
+    *b.ordinal_position fieldIndex       //字段序号
+    *b.COLUMN_NAME fieldName,            //字段名称
+    *b.column_comment fieldComment,      //字段注释
+    *b.column_type  fieldType,           //字段类型
+    *b.column_key fieldConstraint        //字段约束
+    * FROM
+    * information_schema. TABLES a
+    * LEFT JOIN information_schema. COLUMNS b ON a.table_name = b.TABLE_NAME
+    */
+  val infoSqlPrefix = "SELECT\na.table_name tableName,\na.table_comment tableComment,\nunix_timestamp(a.create_time) tableCreateTime,       \nunix_timestamp(a.update_time) tableUpdateTime,\nb.ordinal_position fieldIndex,\nb.COLUMN_NAME fieldName,\nb.column_comment fieldComment,\nb.column_type  fieldType,\nb.column_key fieldConstraint\nFROM\ninformation_schema. TABLES a\nLEFT JOIN information_schema. COLUMNS b ON a.table_name = b.TABLE_NAME"
 
   def isInitialized(dbName: String): Boolean = {
     //todo
@@ -38,6 +58,8 @@ class MysqlSchemaHandler(
     }
 
   def upsertSchema(schemaEntry: MysqlConSchemaEntry) = upsertSchema(schemaEntry.convertEntry2Sql(targetDbName, targetTableName))
+
+  def upsertSchema(rowMap: Map[String, Any], isOriginal: Boolean) = upsertSchema(convertRow2ConSchemaEntry(rowMap, isOriginal))
 
   def getSchemas(sql: => String): Try[List[MysqlConSchemaEntry]] = Try(mysqlConnection.reconnect()).map {
     _ =>
@@ -91,15 +113,19 @@ class MysqlSchemaHandler(
       connection.connect()
     }.map {
       _ =>
-        lazy val sql = s"SELECT\na.table_name tableName,\na.table_comment tableComment,\nb.COLUMN_NAME fieldName,\nb.column_comment fieldComment,\nb.column_type  fieldType,\nb.column_key fieldConstraint\nFROM\ninformation_schema. TABLES a\nLEFT JOIN information_schema. COLUMNS b ON a.table_name = b.TABLE_NAME\nWHERE\na.table_schema = '$dbName' and a.table_name = '$tableName'"
+        lazy val sql = s"$infoSqlPrefix\nWHERE\na.table_schema = '$dbName' and a.table_name = '$tableName'"
         connection.queryForScalaList(sql)
     }
   }
 
   /**
     * SELECT
+    *a.table_schema dbName,
     *a.table_name tableName,             //表名
     *a.table_comment tableComment,       //表注释
+    *a.create_time tableCreateTime       //表创建时间
+    *a.update_time tableUpdateTime       //表更新时间
+    *b.ordinal_position fieldIndex       //字段序号
     *b.COLUMN_NAME fieldName,            //字段名称
     *b.column_comment fieldComment,      //字段注释
     *b.column_type  fieldType,           //字段类型
@@ -115,24 +141,34 @@ class MysqlSchemaHandler(
     * @param dbName
     * @return
     */
-  def getAllTablesInfo(dbName: String): Try[Map[String, List[Map[String, String]]]] = {
+  def getAllTablesInfo(dbName: String): Try[Map[String, List[Map[String, Any]]]] = {
     val connection = mysqlConnection.fork
-    val a = Try {
+    lazy val re = Try {
       connection.connect()
     }.map {
       _ =>
-        lazy val sql = s"SELECT\na.table_name tableName,\na.table_comment tableComment,\nb.COLUMN_NAME fieldName,\nb.column_comment fieldComment,\nb.column_type  fieldType,\nb.column_key fieldConstraint\nFROM\ninformation_schema. TABLES a\nLEFT JOIN information_schema. COLUMNS b ON a.table_name = b.TABLE_NAME\nWHERE\na.table_schema = '$dbName' \nORDER BY\na.table_name"
+        lazy val sql = s"$infoSqlPrefix\nWHERE\na.table_schema = '$dbName' \nORDER BY\na.table_name"
         connection
           .queryForScalaList(sql)
-          .map(_.map(kv => (kv._1 -> kv._2.toString)))
           .groupBy(_ ("tableName"))
+          .map(kv => (kv._1.toString -> kv._2))
     }
-    a
+    re
   }
 
-  def convertRow2ConSchemaEntry(row: Map[String, Any]): MysqlConSchemaEntry = {
+  private def convertRow2ConSchemaEntry(row: Map[String, Any], isOriginal: Boolean = false): MysqlConSchemaEntry = {
     //todo
-    ???
+    lazy val dbName = row("dbName").toString
+    lazy val tableName = row("tableName").toString
+    lazy val tableComment = row("tableComment").toString
+    lazy val fieldName = row("fieldName").toString
+    lazy val fieldIndex = row("fieldIndex").toString.toInt
+    lazy val fieldComment = row("fieldComment").toString
+    lazy val fieldType = row("fieldType").toString
+    lazy val fieldConstraint = row("fieldConstraint").toString
+    lazy val timestamp = row.get("tableUpdateTime").getOrElse(row("tableCreateTime")).toString.toLong * 1000
+    lazy val version = if (isOriginal) 0 else
+      ???
 
   }
 }

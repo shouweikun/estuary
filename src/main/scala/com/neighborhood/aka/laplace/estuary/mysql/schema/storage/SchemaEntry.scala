@@ -21,12 +21,12 @@ object SchemaEntry {
                                   val fieldComment: String,
                                   val fieldType: String,
                                   val fieldConstraint: String,
-                                  val version: Long,
-                                  val timestamp: Long,
-                                  val binlogFileName: String,
-                                  val binlogPosition: Long,
+                                  var version: Long,
+                                  var timestamp: Long,
+                                  var binlogFileName: String,
+                                  var binlogPosition: Long,
                                   //是否是初始
-                                  val isOriginal: Boolean = false
+                                  var isOriginal: Boolean = false
                                 ) extends SchemaEntry {
 
     //每次新加字段都在这里更新一下

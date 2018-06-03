@@ -15,7 +15,7 @@ import com.neighborhood.aka.laplace.estuary.bean.credential.MysqlCredentialBean
 import com.neighborhood.aka.laplace.estuary.bean.datasink.DataSinkBean
 import com.neighborhood.aka.laplace.estuary.bean.resource.DataSourceBase
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status.Status
-import com.neighborhood.aka.laplace.estuary.core.schema.EventualSinkSchemaHandler
+import com.neighborhood.aka.laplace.estuary.core.schema.{EventualSinkSchemaHandler, HBaseEventualSinkSchemaHandler}
 import com.neighborhood.aka.laplace.estuary.core.schema.HBaseEventualSinkSchemaHandler.HBaseTableInfo
 import com.neighborhood.aka.laplace.estuary.core.sink.kafka.KafkaSinkFunc
 import com.neighborhood.aka.laplace.estuary.core.task.{RecourceManager, TaskManager}
@@ -194,7 +194,7 @@ class Mysql2KafkaTaskInfoManager(
     new KafkaSinkFunc[String](this.taskInfo)
   }
 
-  def buildEventualSinkSchemaHandler: EventualSinkSchemaHandler[HBaseTableInfo] = {
+  def buildEventualSinkSchemaHandler: HBaseEventualSinkSchemaHandler = {
     //todo
     ???
   }
