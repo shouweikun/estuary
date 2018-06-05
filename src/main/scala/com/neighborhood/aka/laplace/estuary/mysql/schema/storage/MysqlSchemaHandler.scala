@@ -2,7 +2,7 @@ package com.neighborhood.aka.laplace.estuary.mysql.schema.storage
 
 import java.util.concurrent.ConcurrentHashMap
 
-import com.neighborhood.aka.laplace.estuary.bean.exception.other.DeplicateInitializationException
+import com.neighborhood.aka.laplace.estuary.bean.exception.schema.DeplicateInitializationException
 import com.neighborhood.aka.laplace.estuary.mysql.schema.storage.SchemaEntry.{EmptySchemaEntry, MysqlConSchemaEntry}
 import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlConnection
 import com.typesafe.config.Config

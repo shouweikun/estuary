@@ -12,15 +12,18 @@ class TableSchemaVersionCache(val dbName: String) {
     * key:DbName
     * value:Ca
     */
-  val tableSchemaVersionMap: ConcurrentHashMap[String, MysqlConSchemaEntry] = new ConcurrentHashMap[String, MysqlConSchemaEntry]()
+  val tableSchemaVersionMap: ConcurrentHashMap[String, List[MysqlConSchemaEntry]] = new ConcurrentHashMap[String, List[MysqlConSchemaEntry]]()
 
 
   def upsertSchemas(schema: MysqlConSchemaEntry): Unit = {
-    if (tableSchemaVersionMap.contains(schema.tableName)) {
-
-
+    lazy val tableName = schema.tableId
+    if (tableSchemaVersionMap.containsKey(tableName)) {
+      val oldSchemas = tableSchemaVersionMap.get(tableName)
+      val newSchemas = oldSchemas.:+(schema)
+      tableSchemaVersionMap.put(tableName, newSchemas)
+    } else {
+      tableSchemaVersionMap.put(tableName,s)
     }
-
   }
 
   def getLatestVersion(tableName: String): Long = ???

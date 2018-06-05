@@ -5,6 +5,7 @@ import com.alibaba.otter.canal.parse.exception.TableIdNotFoundException
 import com.alibaba.otter.canal.protocol.CanalEntry
 import com.alibaba.otter.canal.protocol.position.EntryPosition
 import com.neighborhood.aka.laplace.estuary.bean.exception.fetch._
+import com.neighborhood.aka.laplace.estuary.bean.exception.schema.SchemaIsNotInitializedException
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.DataSourceFetcherPrototype
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status.Status
@@ -222,6 +223,10 @@ class MysqlBinlogInOrderFetcher(
 
 
   /**
+    * 检查数据库元数据信息是否都初始化
+    * 如果没初始化抛出异常
+    * 否则创建元数据信息缓存
+    *-----------------以下功能废弃-------------------
     * 用于在最终的数据汇建立相应的schema信息
     * 本次程序采用HBase作为最终数据汇
     * 0.检查传入的DatabaseList是否有问题
@@ -230,6 +235,7 @@ class MysqlBinlogInOrderFetcher(
     *   1.2 在HBase中创建表
     *   1.3 把信息更新到保存mysql元数据信息的数据库中
     * 2.将初始化标志置为true（防止重启时重复操作）
+    * ----------------以上功能废弃--------------------
     **/
   override def initEventualSinkSchema: Unit = {
     val check = concernedDatabaseList.diff(taskManager.mysqlDatabaseNameList)
@@ -240,24 +246,16 @@ class MysqlBinlogInOrderFetcher(
       .map {
       dbName =>
         if (!mysqlSchemaHandler.isInitialized(dbName)) {
-          mysqlSchemaHandler
-            .getAllTablesInfo(dbName) match {
-            case Failure(e) => throw new RetrieveSchemaFailureException(s"cannot fetch mysql schema,id:$syncTaskId", e)
-            case Success(tableSchemas) => {
-
-              eventualSinkSchemaHandler.createIfNotExists(HBaseTableInfo(dbName, ""))
-              tableSchemas.map {
-                kv =>
-                  lazy val tableName = kv._1
-                  lazy val schemas = kv._2
-                  eventualSinkSchemaHandler.createIfNotExists(HBaseTableInfo(dbName, tableName))
-                  schemas.map(schema => mysqlSchemaHandler.upsertSchema(schema, true))
-              }
-            }
-          }
+           throw new SchemaIsNotInitializedException(
+             {
+               lazy val info = s"schema:$dbName is not initialized,pls check,$syncTaskId"
+               log.error(info)
+               info
+             }
+           )
         } else {
             //已经初始化了的话
-             eventualSinkSchemaHandler.createCache(dbName)
+             mysqlSchemaHandler.createCache(dbName)
         }
 
     }
@@ -361,4 +359,20 @@ object MysqlBinlogInOrderFetcher {
              binlogEventBatcher: ActorRef
            ): Props = Props(new MysqlBinlogInOrderFetcher(mysql2KafkaTaskInfoManager, binlogEventBatcher))
 }
+
+//          mysqlSchemaHandler
+//            .getAllTablesInfo(dbName) match {
+//            case Failure(e) => throw new RetrieveSchemaFailureException(s"cannot fetch mysql schema,id:$syncTaskId", e)
+//            case Success(tableSchemas) => {
+//
+//              eventualSinkSchemaHandler.createIfNotExists(HBaseTableInfo(dbName, ""))
+//              tableSchemas.map {
+//                kv =>
+//                  lazy val tableName = kv._1
+//                  lazy val schemas = kv._2
+//                  eventualSinkSchemaHandler.createIfNotExists(HBaseTableInfo(dbName, tableName))
+//                  schemas.map(schema => mysqlSchemaHandler.upsertSchema(schema, true))
+//              }
+//            }
+//          }
 

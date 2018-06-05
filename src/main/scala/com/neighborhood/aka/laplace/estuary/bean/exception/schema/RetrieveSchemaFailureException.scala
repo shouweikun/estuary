@@ -1,4 +1,4 @@
-package com.neighborhood.aka.laplace.estuary.bean.exception.fetch
+package com.neighborhood.aka.laplace.estuary.bean.exception.schema
 
 /**
   * Created by john_liu on 2018/6/1.
@@ -6,7 +6,7 @@ package com.neighborhood.aka.laplace.estuary.bean.exception.fetch
 class RetrieveSchemaFailureException (
                                        message: => String,
                                        cause: Throwable
-                                     ) extends FetchDataException(message, cause) {
+                                     ) extends SchemaException(message, cause) {
   def this(message: => String) = this(message, null)
 
   def this(cause: Throwable) = this("", cause)
