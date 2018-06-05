@@ -59,6 +59,8 @@ class MysqlBinlogInOrderBatcherManager(
     * router的ActorRef
     */
   lazy val router = context.child("router")
+
+  lazy val schemaHandler = taskManager.mysqlSchemaHandler
   var count = 0
 
   override def receive: Receive = {
@@ -78,9 +80,11 @@ class MysqlBinlogInOrderBatcherManager(
       ddlHandler.fold(log.error(s"ddlHandler cannot be found,id:$syncTaskId"))(ref => ref ! BinlogPositionInfo(entry.getHeader.getLogfileName, entry.getHeader.getLogfileOffset, entry.getHeader.getExecuteTime))
       count = count + 1
     }
+
     case entry: CanalEntry.Entry => {
       count = count + 1
-
+      //todo
+      lazy val version = schemaHandler.getTableVersion(entry.getHeader.getSchemaName, entry.getHeader.getTableName)
       if (entry.getHeader.getEventType == CanalEntry.EventType.ALTER) ddlHandler.fold(log.error(s"ddlHandler cannot be found,id:$syncTaskId"))(ref => ref ! IdClassifier(entry, null)) //只会用到entry
       else {
         router.fold(log.error(s"batcher router cannot be found,id:$syncTaskId"))(ref => ref ! DatabaseAndTableNameClassifier(entry))

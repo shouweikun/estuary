@@ -31,4 +31,10 @@ trait EventualSinkSchemaHandler[A] {
     */
 
   def isExists(info:A):Boolean
+
+  /**
+    * 如果不存在就创建
+    */
+  def createIfNotExists(info:A):Unit
+
 }

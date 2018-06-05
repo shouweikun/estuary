@@ -13,7 +13,9 @@ object SchemaEntry {
   class EmptySchemaEntry extends SchemaEntry
 
   case class MysqlConSchemaEntry(
+                                  val schemaId: String,
                                   val schemaName: String,
+                                  val tableId:String,
                                   val tableName: String,
                                   val tableComment: String,
                                   val fieldPositionIndex: Int,

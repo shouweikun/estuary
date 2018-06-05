@@ -236,9 +236,10 @@ class MysqlBinlogInOrderFetcher(
     if (!check.isEmpty) throw new ConcernedDatabaseCannotFoundException(s"database(s):${check.mkString(",")} cannot be found when init Eventual Sink Schema,$syncTaskId ")
     lazy val eventualSinkSchemaHandler = taskManager.eventualSinkSchemaHandler
     concernedDatabaseList
-      .withFilter(!mysqlSchemaHandler.isInitialized(_))
+      //      .withFilter(!mysqlSchemaHandler.isInitialized(_))
       .map {
-        dbName =>
+      dbName =>
+        if (!mysqlSchemaHandler.isInitialized(dbName)) {
           mysqlSchemaHandler
             .getAllTablesInfo(dbName) match {
             case Failure(e) => throw new RetrieveSchemaFailureException(s"cannot fetch mysql schema,id:$syncTaskId", e)
@@ -250,12 +251,17 @@ class MysqlBinlogInOrderFetcher(
                   lazy val tableName = kv._1
                   lazy val schemas = kv._2
                   eventualSinkSchemaHandler.createIfNotExists(HBaseTableInfo(dbName, tableName))
-                  schemas.map(schema => mysqlSchemaHandler.upsertSchema(schema,true))
+                  schemas.map(schema => mysqlSchemaHandler.upsertSchema(schema, true))
               }
             }
           }
-      }
-    taskManager.taskInfo.isInitialized = true
+        } else {
+            //已经初始化了的话
+             eventualSinkSchemaHandler.createCache(dbName)
+        }
+
+    }
+
   }
 
   /**
@@ -263,9 +269,10 @@ class MysqlBinlogInOrderFetcher(
     */
   def fetchOne(before: Long = System.currentTimeMillis()) = {
 
-    val entry = mysqlConnection.fold(throw new NullOfDataSourceConnectionException(s"mysqlConnection is null when fetch data,id:$syncTaskId"))(conn => conn.fetchUntilDefined(filterEntry(_))(binlogParser))
+    val entry = mysqlConnection.fold(throw new NullOfDataSourceConnectionException(s"mysqlConnection is null when fetch data,id:$syncTaskId"))(conn => conn.fetchUntilDefined(filterEntry(_))(binlogParser).get)
     if (isCounting) fetcherCounter.fold(log.warning(s"fetcherCounter not exist,id:$syncTaskId"))(ref => ref ! entry)
     binlogEventBatcher ! entry
+
     //    println(entry.get.getEntryType)
     //    count = count + 1
     lazy val cost = System.currentTimeMillis() - before
