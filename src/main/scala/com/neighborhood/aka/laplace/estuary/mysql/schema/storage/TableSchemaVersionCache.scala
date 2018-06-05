@@ -22,18 +22,29 @@ class TableSchemaVersionCache(
   lazy val log = LoggerFactory.getLogger(s"TableSchemaVersionCache-$dbName-$syncTaskId")
 
   /**
-    * key:DbName
-    * value:Ca
+    * key:tableId
+    * value:Map
+    * {
+    * key:Version版本
+    * value:MysqlSchemaVersionCollection
+    * }
     */
-  val tableSchemaVersionMap: ConcurrentHashMap[String, mutable.Map[Int, MysqlSchemaVersionCollection]] = new ConcurrentHashMap[String, mutable.Map[Int, MysqlSchemaVersionCollection]]()
+  lazy val tableSchemaVersionMap: ConcurrentHashMap[String, mutable.Map[Int, MysqlSchemaVersionCollection]] = new ConcurrentHashMap[String, mutable.Map[Int, MysqlSchemaVersionCollection]]()
   /**
     * key:tableName
-    * value:tableId
+    * value:MysqlTableNameMappingTableIdEntry
     */
-  val tableNameMappingTableIdMap: ConcurrentHashMap[String, List[MysqlTableNameMappingTableIdEntry]] = new ConcurrentHashMap[String, List[MysqlTableNameMappingTableIdEntry]]()
+  lazy val tableNameMappingTableIdMap: ConcurrentHashMap[String, List[MysqlTableNameMappingTableIdEntry]] = new ConcurrentHashMap[String, List[MysqlTableNameMappingTableIdEntry]]()
+
   init
 
-  def init() = {}
+  /**
+    * 1.初始化 tableSchemaVersionMap
+    * 2.初始化 tableNameMappingTableIdMap
+    */
+  def init() = {
+    //todo
+  }
 
   /**
     *
@@ -163,11 +174,34 @@ class TableSchemaVersionCache(
 
   def onCreateTable: Unit = ???
 
+  /**
+    * 获得匹配的Schema
+    * 根据binlogPosition
+    * 获得对应的MysqlSchemaVersionCollection
+    *
+    * 详细的逻辑见内部loopFindVersion
+    *
+    * @param tableName
+    * @param binlogPositionInfo
+    * @return
+    */
   def getCorespondingVersionSchema(tableName: String, binlogPositionInfo: BinlogPositionInfo): MysqlSchemaVersionCollection = {
     lazy val tableId = findTableId(tableName, binlogPositionInfo)
     lazy val tableVersionMap = tableSchemaVersionMap.get(tableId).toList.map(_._2)
 
     //todo offset寻址
+
+    /**
+      *
+      * * 1.只剩最后的一个元素 => 返回最后一个元素
+      * 2.迭代中途
+      *   2.1 head 的时间戳小于传入的时间戳则返回 => head
+      *   2.2 否则继续迭代
+      * 3.空列表 Nil => null
+      *
+      * @param remain
+      * @return
+      */
     @tailrec
     def loopFindVersion(remain: List[MysqlSchemaVersionCollection]): MysqlSchemaVersionCollection = {
       remain match {
