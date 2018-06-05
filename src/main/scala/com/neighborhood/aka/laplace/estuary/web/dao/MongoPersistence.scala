@@ -13,8 +13,8 @@ import org.springframework.stereotype.Component
 class MongoPersistence[E <: TaskRequestBean] {
   private val LOG = LoggerFactory.getLogger(classOf[MongoPersistence[E]])
 
-  private val mongoUtils: MongoUtils = new MongoUtils
-  private val datastore: Datastore = mongoUtils.initMongo
+  lazy private val mongoUtils: MongoUtils = new MongoUtils
+  lazy private val datastore: Datastore = mongoUtils.initMongo
 
 
   //  将mysql2kafka的配置信息存入mongodb中
