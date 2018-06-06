@@ -8,6 +8,7 @@ import com.neighborhood.aka.laplace.estuary.mysql.schema.storage.SchemaEntry.{Em
 import com.neighborhood.aka.laplace.estuary.mysql.schema.storage.TableSchemaVersionCache.MysqlSchemaVersionCollection
 import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlConnection
 import com.typesafe.config.Config
+import org.slf4j.LoggerFactory
 
 import scala.util.Try
 
@@ -24,9 +25,7 @@ class MysqlSchemaHandler(
                             */
                           val mysqlConnection: MysqlConnection,
                           val syncTaskId: String,
-                          val config: Config,
-                          dbName: String = "",
-                          tableName: String = ""
+                          val config: Config
                         ) {
 
 
@@ -55,6 +54,7 @@ class MysqlSchemaHandler(
     */
   val schemaMappingTableName = "trickle3_schema_hbase_hive_mapping"
 
+  lazy val log = LoggerFactory.getLogger(s"MysqlSchemaHandler-$syncTaskId")
   lazy val dbNameMappingdbIdMap: ConcurrentHashMap[String, String] = new ConcurrentHashMap[String, String]()
 
   lazy val tableVersionCacheMap: ConcurrentHashMap[String, TableSchemaVersionCache] = new ConcurrentHashMap[String, TableSchemaVersionCache]()
@@ -111,9 +111,24 @@ class MysqlSchemaHandler(
       }
   }
 
+  /**
+    * 主要逻辑在getTableVersionInternal中
+    * 最后增加一步校验
+    * 如果获取的Schema的字段数量和实际的对不上
+    * 返回 -1 否则返回正确Version
+    *
+    * @param dbName
+    * @param tableName
+    * @param binlogPositionInfo
+    * @param fieldCount
+    * @return
+    */
   def getTableVersion(dbName: String, tableName: String, binlogPositionInfo: BinlogPositionInfo, fieldCount: Int): Int = {
     lazy val re = getTableVersionInternal(dbName, tableName, binlogPositionInfo)
-    if (re.fieldSize != fieldCount) -1 else re.version
+    if (re.fieldSize != fieldCount) {
+      log.warn(s"this entry:${binlogPositionInfo} has ${re.fieldSize} field(s),which not equal to actual field count:$fieldCount,this entry should be abandoned");
+      -1
+    } else re.version
   }
 
 
