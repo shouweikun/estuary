@@ -41,6 +41,7 @@ object CanalEntryJsonHelper {
        """.stripMargin
     jsonKey.setDbName(dbName)
     jsonKey.setTableName(tableName)
+    jsonKey.setSyncTaskSequence(1)
     new KafkaMessage(jsonKey, jsonValue)
   }
 
