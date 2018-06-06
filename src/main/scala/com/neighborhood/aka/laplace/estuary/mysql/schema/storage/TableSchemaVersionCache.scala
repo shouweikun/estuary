@@ -2,7 +2,7 @@ package com.neighborhood.aka.laplace.estuary.mysql.schema.storage
 
 import java.util.concurrent.ConcurrentHashMap
 
-import com.neighborhood.aka.laplace.estuary.bean.exception.schema.NoCorrespondingTableIdException
+import com.neighborhood.aka.laplace.estuary.bean.exception.schema.{NoCorrespondingSchemaException, NoCorrespondingTableIdException}
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.BinlogPositionInfo
 import com.neighborhood.aka.laplace.estuary.mysql.schema.storage.SchemaEntry.MysqlConSchemaEntry
 import com.neighborhood.aka.laplace.estuary.mysql.schema.storage.TableSchemaVersionCache.{MysqlSchemaVersionCollection, MysqlTableNameMappingTableIdEntry}
@@ -28,6 +28,8 @@ class TableSchemaVersionCache(
     * key:Version版本
     * value:MysqlSchemaVersionCollection
     * }
+    *
+    * 将一对多的tableId和Field Schema 转为一对一的映射
     */
   lazy val tableSchemaVersionMap: ConcurrentHashMap[String, mutable.Map[Int, MysqlSchemaVersionCollection]] = new ConcurrentHashMap[String, mutable.Map[Int, MysqlSchemaVersionCollection]]()
   /**
@@ -127,12 +129,11 @@ class TableSchemaVersionCache(
     loopFindId(list)
 
     /**
-      * case的三种情况
-      * 1.只剩最后的一个元素 => 返回最后一个元素的tableId
-      * 2.迭代中途
-      *   2.1 head 的时间戳小于传入的时间戳
-      *   2.2 否则继续迭代
-      * 3.空列表 Nil
+      * case的二种情况
+      * 1.迭代中途
+      *   1.1 head 的时间戳小于传入的时间戳
+      *   1.2 否则继续迭代
+      * 2.空列表 Nil
       * 抛出:
       *
       * @throws NoCorrespondingTableIdException
@@ -142,7 +143,6 @@ class TableSchemaVersionCache(
     @tailrec
     def loopFindId(remain: => List[MysqlTableNameMappingTableIdEntry]): String = {
       remain match {
-        case hd :: Nil => hd.tableId
         case hd :: tl => if (hd.binlogInfo.timestamp < binlogPositionInfo.timestamp) hd.tableId else loopFindId(tl)
         case Nil => throw new NoCorrespondingTableIdException(
           {
@@ -155,14 +155,9 @@ class TableSchemaVersionCache(
     }
   }
 
-  def getLatestVersion(table: String): Long = {
-    ???
-  }
-
-  def handlerDdl4updateSchema: Unit = ???
 
   /**
-    * 当发生Alter语句时
+    * 当发生Alter Table语句时
     * 执行以下操作:
     * 1.表改名
     *   1.1 找出Alter前的tableName
@@ -172,6 +167,12 @@ class TableSchemaVersionCache(
     */
   def onAlterTable: Unit = ???
 
+  /**
+    * 当发生Create Table操作时
+    * 执行以下操作:
+    * 1.更新TableNameMappingTableIdMap
+    * 2.调用upsertSchemas
+    */
   def onCreateTable: Unit = ???
 
   /**
@@ -193,22 +194,27 @@ class TableSchemaVersionCache(
 
     /**
       *
-      * * 1.只剩最后的一个元素 => 返回最后一个元素
-      * 2.迭代中途
-      *   2.1 head 的时间戳小于传入的时间戳则返回 => head
-      *   2.2 否则继续迭代
-      * 3.空列表 Nil => null
+      * 1.迭代中途
+      *   1.1 head 的时间戳小于传入的时间戳则返回 => head
+      *   1.2 否则继续迭代
+      * 2.空列表 Nil =>
+      * 抛出
+      * @throws NoCorrespondingSchemaException
       *
       * @param remain
-      * @return
+      * @return MysqlSchemaVersionCollection
       */
     @tailrec
     def loopFindVersion(remain: List[MysqlSchemaVersionCollection]): MysqlSchemaVersionCollection = {
       remain match {
-        case hd :: Nil => hd
         case hd :: tl => if (hd.binlogInfo.timestamp < binlogPositionInfo.timestamp) hd else loopFindVersion(tl)
-        case Nil => null
-
+        case Nil => throw new NoCorrespondingSchemaException(
+          {
+            lazy val message = s"cannot find MysqlSchemaVersionCollection at tableName:${dbName}.${tableName} when loop Find Version,the list has been run out ,pls check!!!,binlogInfo:$binlogPositionInfo,id:${syncTaskId}"
+            log.error(message)
+            message
+          }
+        )
       }
     }
 

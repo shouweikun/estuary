@@ -2,8 +2,10 @@ package com.neighborhood.aka.laplace.estuary.mysql.schema.storage
 
 import java.util.concurrent.ConcurrentHashMap
 
-import com.neighborhood.aka.laplace.estuary.bean.exception.schema.DeplicateInitializationException
+import com.neighborhood.aka.laplace.estuary.bean.exception.schema.{DeplicateInitializationException, SchemaIsNotInitializedException}
+import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.BinlogPositionInfo
 import com.neighborhood.aka.laplace.estuary.mysql.schema.storage.SchemaEntry.{EmptySchemaEntry, MysqlConSchemaEntry}
+import com.neighborhood.aka.laplace.estuary.mysql.schema.storage.TableSchemaVersionCache.MysqlSchemaVersionCollection
 import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlConnection
 import com.typesafe.config.Config
 
@@ -53,25 +55,9 @@ class MysqlSchemaHandler(
     */
   val schemaMappingTableName = "trickle3_schema_hbase_hive_mapping"
 
+  lazy val dbNameMappingdbIdMap: ConcurrentHashMap[String, String] = new ConcurrentHashMap[String, String]()
 
-  val tableVersionMap: ConcurrentHashMap[String, TableSchemaVersionCache] = new ConcurrentHashMap[String, TableSchemaVersionCache]()
-  /**
-    * SELECT
-    *a.table_schema dbName,
-    *a.table_name tableName,             //表名
-    *a.table_comment tableComment,       //表注释
-    *a.create_time tableCreateTime       //表创建时间
-    *a.update_time tableUpdateTime       //表更新时间
-    *b.ordinal_position fieldIndex       //字段序号
-    *b.COLUMN_NAME fieldName,            //字段名称
-    *b.column_comment fieldComment,      //字段注释
-    *b.column_type  fieldType,           //字段类型
-    *b.column_key fieldConstraint        //字段约束
-    * FROM
-    * information_schema.TABLES a
-    * LEFT JOIN information_schema. COLUMNS b ON a.table_name = b.TABLE_NAME
-    */
-  val sourceInfoSqlPrefix = "SELECT\na.table_name tableName,\na.table_comment tableComment,\nunix_timestamp(a.create_time) tableCreateTime,       \nunix_timestamp(a.update_time) tableUpdateTime,\nb.ordinal_position fieldIndex,\nb.COLUMN_NAME fieldName,\nb.column_comment fieldComment,\nb.column_type  fieldType,\nb.column_key fieldConstraint\nFROM\ninformation_schema. TABLES a\nLEFT JOIN information_schema. COLUMNS b ON a.table_name = b.TABLE_NAME"
+  lazy val tableVersionCacheMap: ConcurrentHashMap[String, TableSchemaVersionCache] = new ConcurrentHashMap[String, TableSchemaVersionCache]()
 
   /**
     * SELECT
@@ -100,7 +86,36 @@ class MysqlSchemaHandler(
     }
   }
 
-  def getTableVersion(dbName: String, tableName: String): Int = ???
+  private def findDbId(dbName: String): String = Option(dbNameMappingdbIdMap.get(dbName))
+    .fold(throw new SchemaIsNotInitializedException(s"cannot find dbId when findDbId at dbName:$dbName,pls check!,id:$syncTaskId"))(x => x)
+
+  /**
+    * 根据条件
+    * 从tableVersionCacheMap查询
+    * 对应的MysqlSchemaVersionCollection
+    * 1.根据dbName获得对应的dbId
+    * 2.获取dbId对应的tableVersionCache
+    * 3.获取【当前条件】下的MysqlSchemaVersionCollection
+    *
+    * @param dbName
+    * @param tableName
+    * @param binlogPositionInfo
+    * @return MysqlSchemaVersionCollection
+    */
+  private def getTableVersionInternal(dbName: String, tableName: String, binlogPositionInfo: BinlogPositionInfo): MysqlSchemaVersionCollection = {
+    lazy val dbId = findDbId(dbId)
+    Option(tableVersionCacheMap.get(dbName))
+      .fold(throw new SchemaIsNotInitializedException(s"cannot find dbName :$dbName when get table version，pls check,id:$syncTaskId")) {
+        map =>
+          map.getCorespondingVersionSchema(tableName, binlogPositionInfo)
+      }
+  }
+
+  def getTableVersion(dbName: String, tableName: String, binlogPositionInfo: BinlogPositionInfo, fieldCount: Int): Int = {
+    lazy val re = getTableVersionInternal(dbName, tableName, binlogPositionInfo)
+    if (re.fieldSize != fieldCount) -1 else re.version
+  }
+
 
   def upsertSchema(sql: => String): Try[Unit] = Try {
     val conn = mysqlConnection.fork
@@ -218,7 +233,7 @@ class MysqlSchemaHandler(
     //todo
   }
 
-  def handleInitializationTask(dbName: String):Unit = {
+  def handleInitializationTask(dbName: String): Unit = {
     //todo
   }
 
@@ -263,3 +278,22 @@ class MysqlSchemaHandler(
 
   }
 }
+
+//
+///**
+//  * SELECT
+//  *a.table_schema dbName,
+//  *a.table_name tableName,             //表名
+//  *a.table_comment tableComment,       //表注释
+//  *a.create_time tableCreateTime       //表创建时间
+//  *a.update_time tableUpdateTime       //表更新时间
+//  *b.ordinal_position fieldIndex       //字段序号
+//  *b.COLUMN_NAME fieldName,            //字段名称
+//  *b.column_comment fieldComment,      //字段注释
+//  *b.column_type  fieldType,           //字段类型
+//  *b.column_key fieldConstraint        //字段约束
+//  * FROM
+//  * information_schema.TABLES a
+//  * LEFT JOIN information_schema. COLUMNS b ON a.table_name = b.TABLE_NAME
+//  */
+//val sourceInfoSqlPrefix = "SELECT\na.table_name tableName,\na.table_comment tableComment,\nunix_timestamp(a.create_time) tableCreateTime,       \nunix_timestamp(a.update_time) tableUpdateTime,\nb.ordinal_position fieldIndex,\nb.COLUMN_NAME fieldName,\nb.column_comment fieldComment,\nb.column_type  fieldType,\nb.column_key fieldConstraint\nFROM\ninformation_schema. TABLES a\nLEFT JOIN information_schema. COLUMNS b ON a.table_name = b.TABLE_NAME"
