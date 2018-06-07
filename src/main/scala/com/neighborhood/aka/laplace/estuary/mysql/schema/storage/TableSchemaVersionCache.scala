@@ -177,6 +177,11 @@ class TableSchemaVersionCache(
   def onCreateTable: Unit = ???
 
   /**
+    * RenameTable的逻辑和AlterTable 情况1 一样
+    */
+  def onRenameTable: Unit = ???
+
+  /**
     * 获得匹配的Schema
     * 根据binlogPosition
     * 获得对应的MysqlSchemaVersionCollection
@@ -220,6 +225,13 @@ class TableSchemaVersionCache(
     }
 
     loopFindVersion(tableVersionMap)
+  }
+
+  /**
+    * 待设计
+    */
+  private def handleRenameTableTask: Unit = {
+    ???
   }
 }
 
