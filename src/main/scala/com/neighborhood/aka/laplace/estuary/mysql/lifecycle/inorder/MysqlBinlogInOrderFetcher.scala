@@ -226,7 +226,7 @@ class MysqlBinlogInOrderFetcher(
     * 检查数据库元数据信息是否都初始化
     * 如果没初始化抛出异常
     * 否则创建元数据信息缓存
-    *-----------------以下功能废弃-------------------
+    * -----------------以下功能废弃-------------------
     * 用于在最终的数据汇建立相应的schema信息
     * 本次程序采用HBase作为最终数据汇
     * 0.检查传入的DatabaseList是否有问题
@@ -246,16 +246,16 @@ class MysqlBinlogInOrderFetcher(
       .map {
       dbName =>
         if (!mysqlSchemaHandler.isInitialized(dbName)) {
-           throw new SchemaIsNotInitializedException(
-             {
-               lazy val info = s"schema:$dbName is not initialized,pls check,$syncTaskId"
-               log.error(info)
-               info
-             }
-           )
+          throw new SchemaIsNotInitializedException(
+            {
+              lazy val info = s"schema:$dbName is not initialized,pls check,$syncTaskId"
+              log.error(info)
+              info
+            }
+          )
         } else {
-            //已经初始化了的话
-             mysqlSchemaHandler.createCache(dbName)
+          //已经初始化了的话
+          mysqlSchemaHandler.createCache(dbName)
         }
 
     }
@@ -280,10 +280,27 @@ class MysqlBinlogInOrderFetcher(
   }
 
   /**
+    * 判定是否是ddl
+    * 包含ALTER
+    * @param eventType
+    * @return
+    */
+  private def isDdl(eventType: CanalEntry.EventType): Boolean = {
+
+
+    eventType.equals(CanalEntry.EventType.ALTER) ||
+      eventType.equals(CanalEntry.EventType.CREATE) ||
+      eventType.equals(CanalEntry.EventType.ERASE) ||
+      eventType.equals(CanalEntry.EventType.RENAME) ||
+      eventType.equals(CanalEntry.EventType.TRUNCATE)
+
+  }
+
+  /**
     * @param entryOption 得到的entry
     *                    对entry在类型级别上进行过滤
     */
-  def filterEntry(entryOption: Option[CanalEntry.Entry]): Boolean = {
+  private def filterEntry(entryOption: Option[CanalEntry.Entry]): Boolean = {
 
     entryOption.fold(false) {
       entry =>
