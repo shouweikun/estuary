@@ -129,16 +129,34 @@ class MysqlSchemaHandler(
     } else re.version
   }
 
+  /**
+    * 根据entry 中的ddl sql 更新schema信息
+    * 1. 将ddl sql 解析成对应的ddl实体
+    * 2. 将ddl 实体装换成SchemaEntryCollection
+    * 3. 将实体装换成 SchemaEntryCollection 转换成sql 更新回数据库
+    * 4. 将SchemaEntryCollection 添加到 对应的TableSchemaVersionCache中
+    *
+    * @param ddlSql
+    * @return
+    */
+  def upsertSchema(ddlSql: String): Try[Unit] = {
+    ???
+    //    lazy val sql = convertSchemaVersionCollection2Sql(schemaEntryCollection)
+    //    upsertSchemaIntoSchemaDatabase(sql)
+    //      .map {
+    //        _ =>
+    //
+    //
+    //      }
+  }
 
-  def upsertSchema(schemaEntryCollection: MysqlSchemaVersionCollection): Try[Unit] = {
-     def isHandled()
-    lazy val sql = convertSchemaVersionCollection2Sql(schemaEntryCollection)
-    upsertSchemaIntoSchemaDatabase(sql)
-      .map {
-        _ =>
+  /**
+    * 根据mysql-dbName加载对应的数据库数据缓存
+    *
+    * @param dbName
+    */
+  def createCache(dbName:String):Unit = {
 
-
-      }
   }
 
   /**
@@ -147,7 +165,7 @@ class MysqlSchemaHandler(
     * @param sql
     * @return
     */
-  def getSchemas(sql: => String): Try[TableSchemaVersionCache] = {
+  private def getSchemas(sql: => String): Try[List[TableSchemaVersionCache]] = {
 
     ???
   }
@@ -211,7 +229,7 @@ class MysqlSchemaHandler(
     lazy val version = row("version").toString.toInt
     lazy val binlogJournalName = row("binlogJournalName").toString
     lazy val binlogPosition = row("binlogPosition").toString.toLong
-    lazy val isOriginal = if(row("isOriginal").toString.toInt == 1) true else false
+    lazy val isOriginal = if (row("isOriginal").toString.toInt == 1) true else false
 
     MysqlConSchemaEntry(
       dbId,
