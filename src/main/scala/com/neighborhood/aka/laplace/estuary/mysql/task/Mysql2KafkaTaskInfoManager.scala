@@ -12,11 +12,10 @@ import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection.{BinlogFormat
 import com.alibaba.otter.canal.parse.index.ZooKeeperLogPositionManager
 import com.alibaba.otter.canal.protocol.position.EntryPosition
 import com.neighborhood.aka.laplace.estuary.bean.credential.MysqlCredentialBean
-import com.neighborhood.aka.laplace.estuary.bean.datasink.DataSinkBean
+import com.neighborhood.aka.laplace.estuary.bean.datasink.{DataSinkBean, HBaseBean}
 import com.neighborhood.aka.laplace.estuary.bean.resource.DataSourceBase
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status.Status
-import com.neighborhood.aka.laplace.estuary.core.schema.{EventualSinkSchemaHandler, HBaseEventualSinkSchemaHandler}
-import com.neighborhood.aka.laplace.estuary.core.schema.HBaseEventualSinkSchemaHandler.HBaseTableInfo
+import com.neighborhood.aka.laplace.estuary.core.schema.HBaseEventualSinkSchemaHandler
 import com.neighborhood.aka.laplace.estuary.core.sink.kafka.KafkaSinkFunc
 import com.neighborhood.aka.laplace.estuary.core.task.{RecourceManager, TaskManager}
 import com.neighborhood.aka.laplace.estuary.mysql.schema.storage.MysqlSchemaHandler
@@ -132,7 +131,7 @@ class Mysql2KafkaTaskInfoManager(
   /**
     * eventualSinkHandler
     */
-  lazy  val eventualSinkSchemaHandler = buildEventualSinkSchemaHandler
+  lazy val eventualSinkSchemaHandler = buildEventualSinkSchemaHandler
   /**
     * mysqlSchemaHandler
     */
@@ -195,8 +194,11 @@ class Mysql2KafkaTaskInfoManager(
   }
 
   def buildEventualSinkSchemaHandler: HBaseEventualSinkSchemaHandler = {
-    //todo
-    ???
+    lazy val hBaseBean = new HBaseBean {
+      override val HabseZookeeperPropertyClientPort: String = taskInfo.hbaseZookeeperPropertyClientPort
+      override val HbaseZookeeperQuorum: String = taskInfo.hbaseZookeeperQuorum
+    }
+    new HBaseEventualSinkSchemaHandler(hBaseBean)
   }
 
   def buildMysqlSchemaHandler: MysqlSchemaHandler = ???

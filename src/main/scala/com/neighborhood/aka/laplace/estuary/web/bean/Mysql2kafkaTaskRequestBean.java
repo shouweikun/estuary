@@ -49,6 +49,8 @@ public class Mysql2kafkaTaskRequestBean extends TaskRequestBean {
     private String concernedDataBase = "";
     private String ignoredDataBase = "";
     private int taskType = 1;
+    private String hbaseZookeeperQuorum = "";
+    private String hbaseZookeeperPropertyClientPort = "";
 
     // 支持的binlogImage
     // binlog.images = ""
@@ -58,6 +60,22 @@ public class Mysql2kafkaTaskRequestBean extends TaskRequestBean {
     private String zookeeperServers;
     // zookeeper 链接超时设置,单位毫秒
     private int zookeeperTimeout = 10000;
+
+    public String getHbaseZookeeperQuorum() {
+        return hbaseZookeeperQuorum;
+    }
+
+    public void setHbaseZookeeperQuorum(String hbaseZookeeperQuorum) {
+        this.hbaseZookeeperQuorum = hbaseZookeeperQuorum;
+    }
+
+    public String getHbaseZookeeperPropertyClientPort() {
+        return hbaseZookeeperPropertyClientPort;
+    }
+
+    public void setHbaseZookeeperPropertyClientPort(String hbaseZookeeperPropertyClientPort) {
+        this.hbaseZookeeperPropertyClientPort = hbaseZookeeperPropertyClientPort;
+    }
 
     public boolean isSync() {
         return isSync;

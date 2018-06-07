@@ -55,6 +55,9 @@ class Mysql2KafkaTaskController {
     ValidationUtils.notNull(requestBody.getZookeeperServers, "ZookeeperServers cannot be null")
     ValidationUtils.notblank(requestBody.getZookeeperServers, "ZookeeperServers cannot be blank")
     ValidationUtils.notZero(requestBody.getTaskType,"TaskType cannot be zero")
+
+    ValidationUtils.notblank(requestBody.getHbaseZookeeperQuorum,"Hbase Zookeeper Quorum cannot be blank")
+    ValidationUtils.notblank(requestBody.getHbaseZookeeperPropertyClientPort,"Hbase Zookeeper Property Client Port cannot be blank")
     /** *****************************************************/
 
 

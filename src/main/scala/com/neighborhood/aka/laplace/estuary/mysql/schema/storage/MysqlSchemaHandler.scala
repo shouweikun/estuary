@@ -101,7 +101,7 @@ class MysqlSchemaHandler(
     * @return MysqlSchemaVersionCollection
     */
   private def getTableVersionInternal(dbName: String, tableName: String, binlogPositionInfo: BinlogPositionInfo): MysqlSchemaVersionCollection = {
-    lazy val dbId = findDbId(dbId)
+    lazy val dbId = findDbId(dbName)
     Option(tableVersionCacheMap.get(dbName))
       .fold(throw new SchemaIsNotInitializedException(s"cannot find dbName :$dbName when get table version，pls check,id:$syncTaskId")) {
         map =>

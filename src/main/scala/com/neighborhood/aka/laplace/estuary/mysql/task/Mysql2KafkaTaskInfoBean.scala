@@ -90,10 +90,22 @@ final class Mysql2KafkaTaskInfoBean extends MysqlBean with KafkaBean with BaseEx
   var binlogImages = ""
   //支持的binlogFormat
   var binlogFormat = ""
-  //zookeeper地址,可以设置多个，用";"分隔
+  /**
+    * zookeeper地址,可以设置多个，用";"分隔
+    */
   var zookeeperServers = "10.10.248.207:2181;10.10.237.78:2181"
-  // zookeeper 链接超时设置,单位毫秒
+  /**
+    * zookeeper 链接超时设置,单位毫秒
+    */
   var zookeeperTimeout = 10000
+  /**
+    * HBase 用的 zookeeper配置信息
+    */
+  var hbaseZookeeperQuorum: String = ""
+  /**
+    * HBase 用的zookeeper配置信息
+    */
+  var hbaseZookeeperPropertyClientPort:String = ""
 }
 
 object Mysql2KafkaTaskInfoBean {

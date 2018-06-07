@@ -7,4 +7,5 @@ trait HBaseBean extends DataSinkBean {
 
   val HbaseZookeeperQuorum: String
   val HabseZookeeperPropertyClientPort: String
+  override var dataSinkType: String  =SinkDataType.HBASE.toString
 }

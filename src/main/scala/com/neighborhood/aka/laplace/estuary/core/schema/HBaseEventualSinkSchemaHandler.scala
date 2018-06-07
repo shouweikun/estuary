@@ -12,7 +12,7 @@ import scala.util.{Failure, Success, Try}
   * Created by john_liu on 2018/6/1.
   */
 class HBaseEventualSinkSchemaHandler(
-                                      hBaseBean: HBaseBean
+                                      val hBaseBean: HBaseBean
                                     ) extends EventualSinkSchemaHandler[HBaseTableInfo] {
 
   val log = LoggerFactory.getLogger(classOf[HBaseEventualSinkSchemaHandler])
@@ -75,7 +75,7 @@ class HBaseEventualSinkSchemaHandler(
       admin.tableExists(tableName)
     } else {
       Try(admin.getNamespaceDescriptor(info.nameSpaceName)) match {
-        case Failure(e@NamespaceNotFoundException) => true
+        case Failure(e:NamespaceNotFoundException) => true
         case _ => false
       }
     }

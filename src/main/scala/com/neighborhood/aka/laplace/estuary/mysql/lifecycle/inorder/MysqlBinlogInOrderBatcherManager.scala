@@ -83,8 +83,7 @@ class MysqlBinlogInOrderBatcherManager(
 
     case entry: CanalEntry.Entry => {
       count = count + 1
-      //todo
-      lazy val version = schemaHandler.getTableVersion(entry.getHeader.getSchemaName, entry.getHeader.getTableName)
+
       if (entry.getHeader.getEventType == CanalEntry.EventType.ALTER) ddlHandler.fold(log.error(s"ddlHandler cannot be found,id:$syncTaskId"))(ref => ref ! IdClassifier(entry, null)) //只会用到entry
       else {
         router.fold(log.error(s"batcher router cannot be found,id:$syncTaskId"))(ref => ref ! DatabaseAndTableNameClassifier(entry))

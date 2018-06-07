@@ -72,6 +72,9 @@ object TaskBeanTransformUtil {
 
     taskInfo.concernedDatabase = requestBody.getConcernedDataBase
     taskInfo.ignoredDatabase = requestBody.getIgnoredDataBase
+    //hbase
+    taskInfo.hbaseZookeeperQuorum = requestBody.getHbaseZookeeperQuorum
+    taskInfo.hbaseZookeeperPropertyClientPort = requestBody.getHbaseZookeeperPropertyClientPort
     taskInfo
   }
 }

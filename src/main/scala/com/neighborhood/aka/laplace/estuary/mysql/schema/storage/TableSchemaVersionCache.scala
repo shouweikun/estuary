@@ -124,10 +124,7 @@ class TableSchemaVersionCache(
     * @return
     */
   def findTableId(tableName: String, binlogPositionInfo: BinlogPositionInfo): String = {
-    //todo 检查集合是不是有顺序
-    //todo binlogOffset寻址
-    lazy val list = tableNameMappingTableIdMap.get(tableName)
-    loopFindId(list)
+
 
     /**
       * case的二种情况
@@ -142,18 +139,21 @@ class TableSchemaVersionCache(
       * @return tableId
       */
     @tailrec
-    def loopFindId(remain: => List[MysqlTableNameMappingTableIdEntry]): String = {
-      remain match {
-        case hd :: tl => if (hd.binlogInfo.timestamp < binlogPositionInfo.timestamp) hd.tableId else loopFindId(tl)
-        case Nil => throw new NoCorrespondingTableIdException(
-          {
-            lazy val message = s"cannot find tableId at tableName when loop Find table Id,the list has been run out ,pls check!!!:${dbName}.${tableName},binlogInfo:$binlogPositionInfo,id:${syncTaskId}"
-            log.error(message)
-            message
-          }
-        )
-      }
+    def loopFindId(remain: => List[MysqlTableNameMappingTableIdEntry]): String = remain match {
+      case hd :: tl => if (hd.binlogInfo.timestamp < binlogPositionInfo.timestamp) hd.tableId else loopFindId(tl)
+      case Nil => throw new NoCorrespondingTableIdException(
+        {
+          lazy val message = s"cannot find tableId at tableName when loop Find table Id,the list has been run out ,pls check!!!:${dbName}.${tableName},binlogInfo:$binlogPositionInfo,id:${syncTaskId}"
+          log.error(message)
+          message
+        }
+      )
     }
+
+    //todo 检查集合是不是有顺序
+    //todo binlogOffset寻址
+    lazy val list = tableNameMappingTableIdMap.get(tableName)
+    loopFindId(list)
   }
 
 
