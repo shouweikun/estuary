@@ -11,7 +11,8 @@ import com.googlecode.protobuf.format.JsonFormat
 import com.neighborhood.aka.laplace.estuary.bean.key.{BinlogKey, PartitionStrategy}
 import com.neighborhood.aka.laplace.estuary.bean.support.KafkaMessage
 import com.neighborhood.aka.laplace.estuary.core.trans.MappingFormat
-import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.IdClassifier
+import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.{BinlogPositionInfo, IdClassifier}
+import com.neighborhood.aka.laplace.estuary.mysql.schema.storage.MysqlSchemaHandler
 
 /**
   * Created by john_liu on 2018/5/1.
@@ -22,6 +23,8 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[IdClassifier, K
   val syncTaskId: String
   val num: Int
   val isSync: Boolean
+  val mysqlSchemaHandler: MysqlSchemaHandler
+
   var taskSequence = 0l
 
 
@@ -41,14 +44,29 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[IdClassifier, K
     lazy val entry = idClassifier.entry
     lazy val rowData = idClassifier.rowData
     lazy val header = entry.getHeader
-
+    lazy val schemaName = header.getSchemaName
+    lazy val tableName = header.getTableName
+    lazy val binlogPositionInfo = BinlogPositionInfo(header.getLogfileName, header.getLogfileOffset, header.getExecuteTime)
     lazy val eventType = header.getEventType
+    lazy val fieldCount = if (eventType == CanalEntry.EventType.DELETE) rowData.getBeforeColumnsCount else rowData.getAfterColumnsCount
     lazy val primaryKey = if (idClassifier.consistentHashKey == null) {
       ""
     } else {
       idClassifier.consistentHashKey.toString
     }
     val tempJsonKey = BinlogKey.buildBinlogKey(header)
+    mysqlSchemaHandler.getTableVersion(schemaName, tableName, binlogPositionInfo, fieldCount).fold {
+      tempJsonKey.setAbnormal(true)
+      log.warning(s"${CanalEntryJsonHelper.headerToJson(header)} is marked as Abnormal,$syncTaskId")
+    } {
+      versionCollection =>
+        tempJsonKey.setHbaseDatabaseName(versionCollection.dbName)
+        tempJsonKey.setHbaseTableName(versionCollection.tableName)
+        tempJsonKey.setSchemaVersion(versionCollection.version)
+        import scala.collection.JavaConverters._
+        tempJsonKey.setFieldMapping(versionCollection.schemas.map(x => (x.fieldPositionIndex.toString -> x.fieldName)).toMap.asJava)
+
+    }
     tempJsonKey.setAppName(appName)
     tempJsonKey.setAppServerIp(appServerIp)
     tempJsonKey.setAppServerPort(appServerPort)
@@ -71,6 +89,7 @@ trait CanalEntry2KafkaMessageMappingFormat extends MappingFormat[IdClassifier, K
       case CanalEntry.EventType.INSERT => tranformDMLtoJson(header, rowData, tempJsonKey, "INSERT")
       case CanalEntry.EventType.UPDATE => tranformDMLtoJson(header, rowData, tempJsonKey, "UPDATE")
       //DDL操作直接将entry变为json,目前只处理Alter
+      //现在只保留Alter的原因是要和老版本兼容
       case CanalEntry.EventType.ALTER => transferDDltoJson(tempJsonKey, entry)
       case _ => throw new Exception(s"unsupported event type:$eventType,$syncTaskId")
     }

@@ -113,7 +113,7 @@ class MysqlSchemaHandler(
     * 主要逻辑在getTableVersionInternal中
     * 最后增加一步校验
     * 如果获取的Schema的字段数量和实际的对不上
-    * 返回 -1 否则返回正确Version
+    * 返回 None 否则返回正确MysqlSchemaVersionCollection
     *
     * @param dbName
     * @param tableName
@@ -121,12 +121,12 @@ class MysqlSchemaHandler(
     * @param fieldCount
     * @return
     */
-  def getTableVersion(dbName: String, tableName: String, binlogPositionInfo: BinlogPositionInfo, fieldCount: Int): Int = {
+  def getTableVersion(dbName: String, tableName: String, binlogPositionInfo: BinlogPositionInfo, fieldCount: Int): Option[MysqlSchemaVersionCollection] = {
     lazy val re = getTableVersionInternal(dbName, tableName, binlogPositionInfo)
     if (re.fieldSize != fieldCount) {
       log.warn(s"this entry:${binlogPositionInfo} has ${re.fieldSize} field(s),which not equal to actual field count:$fieldCount,this entry should be abandoned");
-      -1
-    } else re.version
+      None
+    } else Option(re)
   }
 
   /**
@@ -155,7 +155,7 @@ class MysqlSchemaHandler(
     *
     * @param dbName
     */
-  def createCache(dbName:String):Unit = {
+  def createCache(dbName: String): Unit = {
 
   }
 

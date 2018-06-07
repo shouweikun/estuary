@@ -16,6 +16,7 @@ import scala.collection.mutable
   */
 class TableSchemaVersionCache(
                                val dbName: String,
+                               val dbId: String,
                                val syncTaskId: String
                              ) {
 
@@ -84,10 +85,10 @@ class TableSchemaVersionCache(
       lazy val oldSchemas = tableSchemaVersionMap.get(theTableId)
       lazy val newVersion = oldSchemas.keySet.max + 1
       oldSchemas
-      lazy val newSchemas = oldSchemas.+(newVersion -> MysqlSchemaVersionCollection(theTableId, tableName, newVersion, binlogPositionInfo, schema))
+      lazy val newSchemas = oldSchemas.+(newVersion -> MysqlSchemaVersionCollection(dbId, dbName, theTableId, tableName, newVersion, binlogPositionInfo, schema))
       tableSchemaVersionMap.put(theTableId, newSchemas)
     } else {
-      tableSchemaVersionMap.put(theTableId, mutable.Map(0 -> MysqlSchemaVersionCollection(theTableId, tableName, 0, binlogPositionInfo, schema)))
+      tableSchemaVersionMap.put(theTableId, mutable.Map(0 -> MysqlSchemaVersionCollection(dbId, dbName, theTableId, tableName, 0, binlogPositionInfo, schema)))
     }
   }
 
@@ -199,8 +200,8 @@ class TableSchemaVersionCache(
       *   1.2 否则继续迭代
       * 2.空列表 Nil =>
       * 抛出
-      * @throws NoCorrespondingSchemaException
       *
+      * @throws NoCorrespondingSchemaException
       * @param remain
       * @return MysqlSchemaVersionCollection
       */
@@ -224,12 +225,13 @@ class TableSchemaVersionCache(
 
 object TableSchemaVersionCache {
 
-  case class MysqlSchemaVersionCollection(
-                                           tableId: String,
-                                           tableName: String,
-                                           version: Int,
-                                           binlogInfo: BinlogPositionInfo,
-                                           schemas: List[MysqlConSchemaEntry]
+  case class MysqlSchemaVersionCollection(dbId: String,
+                                          dbName: String,
+                                          tableId: String,
+                                          tableName: String,
+                                          version: Int,
+                                          binlogInfo: BinlogPositionInfo,
+                                          schemas: List[MysqlConSchemaEntry]
                                          ) {
     lazy val fieldSize = schemas.size
   }

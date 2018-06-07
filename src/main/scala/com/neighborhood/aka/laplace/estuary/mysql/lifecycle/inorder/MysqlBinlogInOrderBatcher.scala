@@ -44,6 +44,10 @@ class MysqlBinlogInOrderBatcher(
     */
   lazy val mysqlDatabaseNameList = taskManager.mysqlDatabaseNameList
   /**
+    * schema信息处理
+    */
+  override lazy val mysqlSchemaHandler = taskManager.mysqlSchemaHandler
+  /**
     * 是否计数
     */
   val isCounting = taskManager.taskInfo.isCounting

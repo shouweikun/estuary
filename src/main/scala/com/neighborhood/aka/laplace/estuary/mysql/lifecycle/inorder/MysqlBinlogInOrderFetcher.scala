@@ -269,10 +269,14 @@ class MysqlBinlogInOrderFetcher(
 
     val entry = mysqlConnection.fold(throw new NullOfDataSourceConnectionException(s"mysqlConnection is null when fetch data,id:$syncTaskId"))(conn => conn.fetchUntilDefined(filterEntry(_))(binlogParser).get)
     if (isCounting) fetcherCounter.fold(log.warning(s"fetcherCounter not exist,id:$syncTaskId"))(ref => ref ! entry)
-    binlogEventBatcher ! entry
 
-    //    println(entry.get.getEntryType)
-    //    count = count + 1
+    /**
+      * 增加ddl的处理，处理期间阻塞
+      */
+    if (isDdl(entry.getHeader.getEventType)) {
+      mysqlSchemaHandler.upsertSchema(entry.getStoreValue.toString)
+    }
+    binlogEventBatcher ! entry
     lazy val cost = System.currentTimeMillis() - before
 
     if (isCosting) powerAdapter.fold(log.warning(s"powerAdapter not exist,id:$syncTaskId"))(x => x ! FetcherMessage(cost))
@@ -282,6 +286,7 @@ class MysqlBinlogInOrderFetcher(
   /**
     * 判定是否是ddl
     * 包含ALTER
+    *
     * @param eventType
     * @return
     */
