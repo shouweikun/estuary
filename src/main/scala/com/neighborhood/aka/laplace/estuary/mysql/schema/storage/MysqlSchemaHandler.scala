@@ -86,8 +86,6 @@ class MysqlSchemaHandler(
     }
   }
 
-  private def findDbId(dbName: String): String = Option(dbNameMappingdbIdMap.get(dbName))
-    .fold(throw new SchemaIsNotInitializedException(s"cannot find dbId when findDbId at dbName:$dbName,pls check!,id:$syncTaskId"))(x => x)
 
   /**
     * 根据条件
@@ -132,146 +130,88 @@ class MysqlSchemaHandler(
   }
 
 
-  def upsertSchema(sql: => String): Try[Unit] = Try {
+  def upsertSchema(schemaEntryCollection: MysqlSchemaVersionCollection): Try[Unit] = {
+     def isHandled()
+    lazy val sql = convertSchemaVersionCollection2Sql(schemaEntryCollection)
+    upsertSchemaIntoSchemaDatabase(sql)
+      .map {
+        _ =>
+
+
+      }
+  }
+
+  /**
+    * todo sql的设计
+    *
+    * @param sql
+    * @return
+    */
+  def getSchemas(sql: => String): Try[TableSchemaVersionCache] = {
+
+    ???
+  }
+
+  /**
+    * 将变换的schema更新到数据库中
+    *
+    * @param sql
+    * @return
+    */
+  private def upsertSchemaIntoSchemaDatabase(sql: => String): Try[Unit] = Try {
     val conn = mysqlConnection.fork
     conn.connect()
     conn.update(sql);
     conn.disconnect()
   }
 
-  def upsertSchema(schemaEntry: MysqlConSchemaEntry) = {
-
-  }
-
-  def upsertSchema(rowMap: Map[String, Any], isOriginal: Boolean) = upsertSchema(convertRow2ConSchemaEntry(rowMap, isOriginal))
-
-  def getSchemas(sql: => String): Try[List[MysqlConSchemaEntry]] = Try(mysqlConnection.reconnect()).map {
-    _ =>
-      val result = mysqlConnection.queryForScalaList(sql)
-      mysqlConnection.disconnect()
-      if (result.size == 0) List.empty else result.map(convertRow2ConSchemaEntry(_))
-
-  }
-
-  def getAllSchemas(dbName: String, tableName: String): Try[List[SchemaEntry]] = {
-    lazy val sql = s"SELECT * FROM $targetDbName.$targetTableName where db_name = '$dbName' and table_name = '$tableName'"
-    getSchemas(sql)
-  }
-
-  def getLatestSchema(dbName: String, tableName: String): Try[SchemaEntry] = {
-    lazy val sql = s"SELECT * FROM $targetDbName.$targetTableName where db_name = '$dbName' and table_name = '$tableName' ORDER BY version DESC limit 1"
-    getSchemas(sql)
-      .map {
-        list =>
-          list match {
-            case Nil => new EmptySchemaEntry
-            case _ => list(0)
-          }
-      }
-  }
-
-  //todo 有问题
-  def getCorrespondingSchema(dbName: String, tableName: String, timestamp: Long, binlogJournalName: String, binlogOffset: Long): Try[SchemaEntry] = {
-
-    def convertBinlogPosition2Long(binlogJournalName: String, binlogOffset: Long) = s"${binlogJournalName.split('.')(1)}$binlogOffset".toLong
-
-    lazy val sql = s"SELECT * FROM $targetDbName.$targetTableName where db_name = '$dbName' and table_name = '$tableName' WHERE timestamp <= $timestamp ORDER BY version "
-    getSchemas(sql)
-      .map {
-        list =>
-          list match {
-            case Nil => new EmptySchemaEntry
-            case _ => {
-              list
-                .filter(x => convertBinlogPosition2Long(x.binlogFileName, x.binlogPosition) < convertBinlogPosition2Long(binlogJournalName, binlogOffset))
-                .maxBy(x => convertBinlogPosition2Long(x.binlogFileName, x.binlogPosition))
-            }
-          }
-
-      }
-  }
-
-  def getSingleTableInfo(dbName: String, tableName: String): Try[List[Map[String, Any]]] = {
-    val connection = mysqlConnection.fork
-    Try {
-      connection.connect()
-    }.map {
-      _ =>
-        lazy val sql = s"$sourceInfoSqlPrefix\nWHERE\na.table_schema = '$dbName' and a.table_name = '$tableName'"
-        connection.queryForScalaList(sql)
-    }
-  }
-
   /**
-    * SELECT
-    *a.table_schema dbName,
-    *a.table_name tableName,             //表名
-    *a.table_comment tableComment,       //表注释
-    *a.create_time tableCreateTime       //表创建时间
-    *a.update_time tableUpdateTime       //表更新时间
-    *b.ordinal_position fieldIndex       //字段序号
-    *b.COLUMN_NAME fieldName,            //字段名称
-    *b.column_comment fieldComment,      //字段注释
-    *b.column_type  fieldType,           //字段类型
-    *b.column_key fieldConstraint        //字段约束
-    * FROM
-    * information_schema. TABLES a
-    * LEFT JOIN information_schema. COLUMNS b ON a.table_name = b.TABLE_NAME
-    * WHERE
-    *a.table_schema = '$dbName'
-    * ORDER BY
-    *a.table_name
+    * 根据dbName寻找DbId
     *
     * @param dbName
     * @return
     */
-  def getAllTablesInfo(dbName: String): Try[Map[String, List[Map[String, Any]]]] = {
-    val connection = mysqlConnection.fork
-    lazy val re = Try {
-      connection.connect()
-    }.map {
-      _ =>
-        lazy val sql = s"$sourceInfoSqlPrefix\nWHERE\na.table_schema = '$dbName' \nORDER BY\na.table_name"
-        connection
-          .queryForScalaList(sql)
-          .groupBy(_ ("tableName"))
-          .map(kv => (kv._1.toString -> kv._2))
-    }
-    re
-  }
+  private def findDbId(dbName: String): String = Option(dbNameMappingdbIdMap.get(dbName))
+    .fold(throw new SchemaIsNotInitializedException(s"cannot find dbId when findDbId at dbName:$dbName,pls check!,id:$syncTaskId"))(x => x)
 
   /**
     *
-    * @param dbName
+    * 将binlogPosition装换成Long
+    * 方便比较
+    *
+    * @param binlogJournalName
+    * @param binlogOffset
+    * @return
     */
-  def createCache(dbName: String): Unit = {
-    //todo
-  }
+  private def convertBinlogPosition2Long(binlogJournalName: String, binlogOffset: Long) = s"${binlogJournalName.split('.')(1)}$binlogOffset".toLong
 
-  def handleInitializationTask(dbName: String): Unit = {
-    //todo
-  }
-
+  /**
+    * 将数据库query的行数据转换为实体
+    *
+    * @param row
+    * @return
+    */
   private def convertRow2ConSchemaEntry(
-                                         row: Map[String, Any],
-                                         isOriginal: Boolean = false,
-                                         binlogJournalName: String = "mysql-bin.000000",
-                                         binlogPosition: Long = 4l
+                                         row: Map[String, Any]
+
                                        ): MysqlConSchemaEntry = {
     //todo
     lazy val effectTimestamp = System.currentTimeMillis()
     lazy val dbName = row("dbName").toString
-    lazy val dbId = if (isOriginal) s"mysql@${dbName}@$effectTimestamp" else ""
+    lazy val dbId = row("dbId").toString
     lazy val tableName = row("tableName").toString
-    lazy val tableId = if (isOriginal) s"mysql@${dbName}-@{$tableName}$effectTimestamp" else "" //TODO
+    lazy val tableId = row("tableId").toString
     lazy val tableComment = row("tableComment").toString
     lazy val fieldName = row("fieldName").toString
     lazy val fieldIndex = row("fieldIndex").toString.toInt
     lazy val fieldComment = row("fieldComment").toString
     lazy val fieldType = row("fieldType").toString
     lazy val fieldConstraint = row("fieldConstraint").toString
-    lazy val timestamp = row.get("tableUpdateTime").getOrElse(row("tableCreateTime")).toString.toLong * 1000
-    lazy val version = if (isOriginal) 0l else tableVersionMap.get(dbName).getLatestVersion(tableName) + 1
+    lazy val timestamp = row("timestamp").toString.toLong * 1000
+    lazy val version = row("version").toString.toInt
+    lazy val binlogJournalName = row("binlogJournalName").toString
+    lazy val binlogPosition = row("binlogPosition").toString.toLong
+    lazy val isOriginal = if(row("isOriginal").toString.toInt == 1) true else false
 
     MysqlConSchemaEntry(
       dbId,
@@ -292,7 +232,21 @@ class MysqlSchemaHandler(
     )
 
   }
+
+  /**
+    * 将MysqlSchemaVersionCollection转换成Sql
+    * 要做成事务式提交!
+    * TODO
+    *
+    * @param mysqlSchemaVersionCollection
+    * @return
+    */
+  private def convertSchemaVersionCollection2Sql(mysqlSchemaVersionCollection: MysqlSchemaVersionCollection): String = {
+    ???
+
+  }
 }
+
 
 //
 ///**

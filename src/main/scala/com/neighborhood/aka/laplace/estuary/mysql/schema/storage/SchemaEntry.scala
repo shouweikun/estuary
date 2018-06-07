@@ -15,7 +15,7 @@ object SchemaEntry {
   case class MysqlConSchemaEntry(
                                   val schemaId: String,
                                   val schemaName: String,
-                                  val tableId:String,
+                                  val tableId: String,
                                   val tableName: String,
                                   val tableComment: String,
                                   val fieldPositionIndex: Int,
@@ -28,7 +28,8 @@ object SchemaEntry {
                                   var binlogFileName: String,
                                   var binlogPosition: Long,
                                   //是否是初始
-                                  var isOriginal: Boolean = false
+                                  var isOriginal: Boolean = false,
+                                  val ddlSql: String = ""
                                 ) extends SchemaEntry {
 
     //每次新加字段都在这里更新一下
@@ -46,6 +47,7 @@ object SchemaEntry {
       * @param targetTableName  表名
       * @return
       */
+    @deprecated
     def convertEntry2Sql(targetSchemaName: String, targetTableName: String): String = s"INSERT INTO $targetSchemaName.$targetTableName VALUES(${fieldList mkString (",")})"
   }
 
