@@ -7,7 +7,7 @@ import com.neighborhood.aka.laplace.estuary.web.bean.Mysql2kafkaTaskRequestBean
   */
 object Mysql2KafkaUtils {
 
-  def validateMysqlConfiguration(requestBean: Mysql2kafkaTaskRequestBean): Unit = {
+  def validateMysql2KafkaTaskConfiguration(requestBean: Mysql2kafkaTaskRequestBean): Unit = {
     ValidationUtils.notNull(requestBean.getKafkaBootstrapServers, "KafkaBootstrapServers cannot be null ")
     ValidationUtils.notblank(requestBean.getKafkaBootstrapServers, "KafkaBootstrapServers cannot be blank ")
     ValidationUtils.notNull(requestBean.getKafkaTopic, "kafkaTopic cannot be null")

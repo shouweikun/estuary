@@ -35,7 +35,7 @@ class Mysql2KafkaTaskController {
   @ApiOperation(value = "开始一个新的mysql2kafka任务", httpMethod = "POST", notes = "")
   @RequestMapping(value = Array("/new/"), method = Array(RequestMethod.POST))
   def createNewTask(@RequestBody requestBody: Mysql2kafkaTaskRequestBean) = {
-    Mysql2KafkaUtils.validateMysqlConfiguration(requestBody)
+    Mysql2KafkaUtils.validateMysql2KafkaTaskConfiguration(requestBody)
     Mysql2KafkaService.startNewOneTask(requestBody)
   }
 
