@@ -6,7 +6,7 @@ import org.mongodb.morphia.{Datastore, Morphia}
 class MongoUtils {
   val config = ConfigFactory.load()
   val url = config.getString("mongodb.url")
-  val dbName=config.getString("mongodb.dbName")
+  val dbName = config.getString("mongodb.dbName")
 
 
   //  通过morphia操作mongodb

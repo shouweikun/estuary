@@ -2,7 +2,7 @@ package com.neighborhood.aka.laplace.estuary.web.controller
 
 import com.neighborhood.aka.laplace.estuary.web.bean.Mysql2kafkaTaskRequestBean
 import com.neighborhood.aka.laplace.estuary.web.service.Mysql2KafkaService
-import com.neighborhood.aka.laplace.estuary.web.utils.ValidationUtils
+import com.neighborhood.aka.laplace.estuary.web.utils.Mysql2KafkaUtils
 import io.swagger.annotations.ApiOperation
 import org.springframework.web.bind.annotation._
 
@@ -35,29 +35,7 @@ class Mysql2KafkaTaskController {
   @ApiOperation(value = "开始一个新的mysql2kafka任务", httpMethod = "POST", notes = "")
   @RequestMapping(value = Array("/new/"), method = Array(RequestMethod.POST))
   def createNewTask(@RequestBody requestBody: Mysql2kafkaTaskRequestBean) = {
-    /** ******************************************************/
-    ValidationUtils.notNull(requestBody.getKafkaBootstrapServers, "KafkaBootstrapServers cannot be null ")
-    ValidationUtils.notblank(requestBody.getKafkaBootstrapServers, "KafkaBootstrapServers cannot be blank ")
-    ValidationUtils.notNull(requestBody.getKafkaTopic, "kafkaTopic cannot be null")
-    ValidationUtils.notblank(requestBody.getKafkaTopic, "kafkaTopic cannot be null")
-    ValidationUtils.notNull(requestBody.getKafkaDdlTopic, "kafkaDdlTopic cannot be null")
-    ValidationUtils.notblank(requestBody.getKafkaDdlTopic, "kafkaDdlTopic cannot be null")
-    ValidationUtils.notNull(requestBody.getMysqladdress, "Mysqladdress cannot be null")
-    ValidationUtils.notblank(requestBody.getMysqladdress, "Mysqladdress cannot be blank")
-    ValidationUtils.notNull(requestBody.getMysqladdress, "Mysqladdress cannot be null")
-    ValidationUtils.notblank(requestBody.getMysqladdress, "Mysqladdress cannot be blank")
-    ValidationUtils.notNull(requestBody.getMysqlUsername, "MysqlUsername cannot be null")
-    ValidationUtils.notblank(requestBody.getMysqlUsername, "MysqlUsername cannot be blank")
-    ValidationUtils.notNull(requestBody.getMysqlPassword, "MysqlPassword cannot be null")
-    ValidationUtils.notblank(requestBody.getMysqlUsername, "MysqlPassword cannot be blank")
-    ValidationUtils.notNull(requestBody.getSyncTaskId, "SyncTaskId cannot be null")
-    ValidationUtils.notblank(requestBody.getSyncTaskId, "SyncTaskId cannot be null")
-    ValidationUtils.notNull(requestBody.getZookeeperServers, "ZookeeperServers cannot be null")
-    ValidationUtils.notblank(requestBody.getZookeeperServers, "ZookeeperServers cannot be blank")
-    ValidationUtils.notZero(requestBody.getTaskType,"TaskType cannot be zero")
-    /** *****************************************************/
-
-
+    Mysql2KafkaUtils.validateMysqlConfiguration(requestBody)
     Mysql2KafkaService.startNewOneTask(requestBody)
   }
 
