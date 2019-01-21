@@ -168,7 +168,7 @@ schema读取和更新的三个层次
 
 #### 已经实现的功能
  - 目前提供mysql 到 mysql 的数据同步实现
- - 支持ddl的实时更新sink mysql的功能 (重要)
+ - **支持ddl的实时更新sink mysql的功能,支持定制选项** (重要)
  - 基于Akka框架，在高可用(HA)方面做了很多工作，应对所有notFatal级错误
  - 遵循着"Let it crash"理念对异常的处理很轻松
  - 利用spring 提供了简易的restful接口
