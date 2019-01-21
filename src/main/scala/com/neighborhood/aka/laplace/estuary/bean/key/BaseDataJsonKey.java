@@ -14,6 +14,10 @@ public class BaseDataJsonKey implements Cloneable {
      */
     public PartitionStrategy partitionStrategy = PartitionStrategy.MOD;
     /**
+     * 分区键计算出的值
+     */
+    public int partitionStrategyValue;
+    /**
      * Application Server的名称
      */
     public String appName;
@@ -43,18 +47,33 @@ public class BaseDataJsonKey implements Cloneable {
      */
     public String sourceType;
     /**
-     * database 名称
+     * 数据源database名称
      */
     public String dbName;
     /**
-     * 表名称
+     * HBase database Name
+     */
+    public String hbaseDatabaseName = "";
+    /**
+     * 数据源表名称
      */
     public String tableName;
-
+    /**
+     * HBase TableName
+     */
+    public String hbaseTableName = "";
+    /**
+     * schema Version
+     */
+    public int schemaVersion = -1;
     /**
      * 消息本身携带的唯一标识
      */
     public String msgUuid;
+    /**
+     * 是否正常
+     */
+    public boolean isAbnormal = false;
     /**
      * 消息同步的开始时间
      */
@@ -105,6 +124,30 @@ public class BaseDataJsonKey implements Cloneable {
     @Override
     public Object clone() throws CloneNotSupportedException {
         return super.clone();
+    }
+
+    public String getHbaseDatabaseName() {
+        return hbaseDatabaseName;
+    }
+
+    public void setHbaseDatabaseName(String hbaseDatabaseName) {
+        this.hbaseDatabaseName = hbaseDatabaseName;
+    }
+
+    public String getHbaseTableName() {
+        return hbaseTableName;
+    }
+
+    public void setHbaseTableName(String hbaseTableName) {
+        this.hbaseTableName = hbaseTableName;
+    }
+
+    public boolean isAbnormal() {
+        return isAbnormal;
+    }
+
+    public void setAbnormal(boolean abnormal) {
+        isAbnormal = abnormal;
     }
 
     public String getAppName() {
@@ -267,6 +310,14 @@ public class BaseDataJsonKey implements Cloneable {
         this.partitionStrategy = partitionStrategy;
     }
 
+    public int getSchemaVersion() {
+        return schemaVersion;
+    }
+
+    public void setSchemaVersion(int schemaVersion) {
+        this.schemaVersion = schemaVersion;
+    }
+
     @Override
     public String toString() {
         return "BaseDataJsonKey{" +
@@ -290,6 +341,10 @@ public class BaseDataJsonKey implements Cloneable {
                 ", kafkaPartition=" + kafkaPartition +
                 ", kafkaOffset=" + kafkaOffset +
                 ", eventType='" + eventType + '\'' +
+                ", hbaseDatabaseName='" + hbaseDatabaseName + '\'' +
+                ", hbaseTableName='" + hbaseTableName + '\'' +
+                ", isAbnormal'" + isAbnormal + '\'' +
+                ", schemaVersion'" + schemaVersion + '\'' +
                 '}';
     }
 }

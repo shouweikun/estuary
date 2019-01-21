@@ -1,17 +1,20 @@
 package com.neighborhood.aka.laplace.estuary.bean.datasink
 
-import java.util
 
-import com.neighborhood.aka.laplace.estuary.bean.datasink.DataSinkType.DataSinkType
-import com.neighborhood.aka.laplace.estuary.bean.key.{JsonKeyPartitioner, JsonKeySerializer, MultipleJsonKeyPartitioner, MultipleJsonKeyPartitionerJava}
+import com.neighborhood.aka.laplace.estuary.bean.key._
+import com.neighborhood.aka.laplace.estuary.core.sink.mysql.MysqlSinkFunc
 import org.apache.kafka.common.serialization.StringSerializer
 
 /**
   * Created by john_liu on 2018/2/7.
+  *
+  * @todo 未完成
   */
-trait KafkaBean extends DataSinkBean {
+trait KafkaBean extends DataSinkBean[MysqlSinkFunc] {
   //  override var dataSinkType: DataSinkType = DataSinkType.KAFKA
-  override var dataSinkType: String = SinkDataType.KAFKA.toString
+  override val dataSinkType: String = SinkDataType.KAFKA.toString
+
+  var partitionStrategy: PartitionStrategy = PartitionStrategy.PRIMARY_KEY
   /**
     * broker地址
     */
@@ -19,9 +22,9 @@ trait KafkaBean extends DataSinkBean {
   /**
     * 最大阻塞时间
     */
-  var maxBlockMs: String = "5000"
-  var ack: String = "1"
-  var lingerMs: String = "1"
+  var maxBlockMs: String = "20000"
+  var ack: String = "all"
+  var lingerMs: String = "30"
   var kafkaRetries: String = "3"
   /**
     * 分区类
@@ -46,7 +49,7 @@ trait KafkaBean extends DataSinkBean {
   /**
     * request延迟
     */
-  var requestTimeoutMs = "6500"
+  var requestTimeoutMs = "35000"
   /**
     * key Serializer类
     */
@@ -62,19 +65,21 @@ trait KafkaBean extends DataSinkBean {
   /**
     * 批大小
     */
-  var batchSize: String = "3000"
+  var batchSize: String = "10000"
 
-  var retryBackoffMs:String = "300"
+  var retryBackoffMs: String = "300"
   /**
     * 是否是同步写
     */
   var isSync = false
 
+  var maxInFlightRequestsPerConnection = "1"
+
 }
 
 object KafkaBean {
-  def buildConfig(kafkaBean: KafkaBean): util.HashMap[String, String] = {
-    val config: util.HashMap[String, String] = new util.HashMap[String, String]()
+  def buildConfig(kafkaBean: KafkaBean): java.util.HashMap[String, String] = {
+    val config: java.util.HashMap[String, String] = new java.util.HashMap[String, String]()
     config.put("acks", kafkaBean.ack)
     config.put("linger.ms", kafkaBean.lingerMs)
     config.put("retries", kafkaBean.kafkaRetries)
@@ -87,7 +92,8 @@ object KafkaBean {
     config.put("partitioner.class", kafkaBean.partitionerClass)
     config.put("compression.type", kafkaBean.compressionType)
     config.put("batch.size", kafkaBean.batchSize)
-    config.put("retry.backoff.ms",kafkaBean.retryBackoffMs)
+    config.put("retry.backoff.ms", kafkaBean.retryBackoffMs)
+    config.put("max.in.flight.requests.per.connection", kafkaBean.maxInFlightRequestsPerConnection)
     config
   }
 }

@@ -15,13 +15,16 @@ import com.alibaba.otter.canal.parse.exception.CanalParseException
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlConnection.{BinlogFormat, BinlogImage}
 import com.alibaba.otter.canal.parse.inbound.mysql.dbsync.{DirectLogFetcher, TableMetaCache}
 import com.alibaba.otter.canal.protocol.CanalEntry
-import com.neighborhood.aka.laplace.estuary.core.source.DataSourceConnection
+import com.neighborhood.aka.laplace.estuary.bean.exception.fetch.UnexpectedEndStream
+import com.neighborhood.aka.laplace.estuary.core.source.{DataSourceConnection, MysqlJdbcConnection}
 import com.neighborhood.aka.laplace.estuary.mysql.utils.MysqlBinlogParser
 import com.taobao.tddl.dbsync.binlog.event.FormatDescriptionLogEvent
 import com.taobao.tddl.dbsync.binlog.{LogContext, LogDecoder, LogEvent, LogPosition}
 import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec
+import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.util.Try
 
 /**
   * Created by john_liu on 2018/3/21.
@@ -111,6 +114,22 @@ class MysqlConnection(
     exector.query(cmd)
   }
 
+  def queryForScalaList(cmd: String): List[Map[String, Any]] = {
+    if (!this.isConnected) this.connect()
+    lazy val resultSetPacket = query(cmd)
+    import scala.collection.JavaConverters._
+    lazy val fields = resultSetPacket.getFieldDescriptors.asScala.map(_.getName).toList
+    lazy val fieldCount = fields.size
+    lazy val dataCount = resultSetPacket.getFieldValues.size
+    lazy val dataList = resultSetPacket.getFieldValues.asScala.toList
+    (0 to ((dataCount / fieldCount) - 1)).map {
+      index =>
+        lazy val from = index * fieldCount
+        lazy val to = (index + 1) * fieldCount
+        fields zip dataList.slice(from, to) toMap
+    }.toList
+  }
+
   /**
     *
     * @param cmd update sql 命令
@@ -155,6 +174,12 @@ class MysqlConnection(
     re
   }
 
+  def toJdbcConnecton: MysqlJdbcConnection = new
+      MysqlJdbcConnection(
+        s"jdbc:mysql://${address.getHostName}:${address.getPort}",
+        username,
+        password
+      )
 
   /**
     * 获取一下binlog format格式
@@ -192,11 +217,30 @@ class MysqlConnection(
   }
 
   @tailrec
-  final def fetchUntilDefined(filterEntry: Option[CanalEntry.Entry] => Boolean)(implicit binlogParser: MysqlBinlogParser): Option[CanalEntry.Entry] = {
-    lazy val event = decoder.decode(fetcher, logContext)
-    lazy val entry = try {
-      binlogParser.parse(Option(event))
+  @throws[IOException]
+  final def blockingFetchUntilDefined(filterEntry: Option[CanalEntry.Entry] => Boolean)(implicit binlogParser: MysqlBinlogParser): Option[CanalEntry.Entry] = {
 
+    lazy val entry = directFetch(binlogParser)
+    if (filterEntry(entry)) entry else if
+    (fetcher.fetch()) blockingFetchUntilDefined(filterEntry)(binlogParser)
+    else throw new UnexpectedEndStream("impossible,unexpected end of stream")
+  }
+
+  def nonBlockingFetch(filterEntry: Option[CanalEntry.Entry] => Boolean)(binlogParser: MysqlBinlogParser)(implicit executor: ExecutionContext = null): Future[CanalEntry.Entry] = {
+    lazy val ec = Option(executor).getOrElse(scala.concurrent.ExecutionContext.Implicits.global)
+    Future(blockingFetchUntilDefined(filterEntry)(binlogParser))(ec).map(_.get)
+  }
+
+  /**
+    * 拉取一个event并解码
+    *
+    * @param binlogParser
+    */
+  private def directFetch(binlogParser: MysqlBinlogParser): Option[CanalEntry.Entry] = {
+
+    val event = decoder.decode(fetcher, logContext)
+    val entry = try {
+      binlogParser.parse(Option(event))
     } catch {
       case e: CanalParseException => {
         e.getCause match {
@@ -206,9 +250,7 @@ class MysqlConnection(
 
       }
     }
-    if (filterEntry(entry)) entry else if
-    (fetcher.fetch()) fetchUntilDefined(filterEntry)(binlogParser)
-    else throw new Exception("impossible,unexpected end of stream")
+    entry
   }
 
   /**
@@ -275,6 +317,7 @@ object MysqlConnection {
     val list = mysqlConnection
       .query(querySchemaCmd)
       .getFieldValues
+    mysqlConnection.disconnect()
     (0 until list.size)
       .map(list.get(_))
       .filter(!_.equals(ignoredDatabaseName))

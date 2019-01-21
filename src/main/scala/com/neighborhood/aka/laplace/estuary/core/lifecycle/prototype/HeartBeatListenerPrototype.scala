@@ -2,9 +2,8 @@ package com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype
 
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.{HeartBeatListener, Status}
-import com.neighborhood.aka.laplace.estuary.core.sink.SinkFunc
 import com.neighborhood.aka.laplace.estuary.core.source.DataSourceConnection
-import com.neighborhood.aka.laplace.estuary.core.task.{RecourceManager, TaskManager}
+import com.neighborhood.aka.laplace.estuary.core.task.{SourceManager, TaskManager}
 
 /**
   * Created by john_liu on 2018/5/20.
@@ -13,19 +12,41 @@ trait HeartBeatListenerPrototype[source <: DataSourceConnection] extends ActorPr
   /**
     * 任务信息管理器
     */
-  val taskManager: TaskManager
+  def taskManager: TaskManager
+
   /**
     * 资源管理器
     */
-  val recourceManager: RecourceManager[_, source, _]
+  def sourceManager: SourceManager[source]
+
   /**
     * 同步任务id
     */
-  override val syncTaskId = taskManager.syncTaskId
+  def syncTaskId: String
+
+  //onlineState
+  protected def onlineState: Receive
+
+  protected def stop: Unit = {
+    context.become(receive)
+    listenerChangeStatus(Status.OFFLINE)
+  }
+
+  protected def start: Unit = {
+    //变为online状态
+    log.info(s"heartBeatListener switch to online,id:$syncTaskId")
+    context.become(onlineState)
+    Option(connection).fold {
+      log.error(s"heartBeatListener connection cannot be null,id:$syncTaskId");
+      throw new Exception(s"listener connection cannot be null,id:$syncTaskId")
+    }(conn => conn.connect())
+    listenerChangeStatus(Status.ONLINE)
+  }
+
   /**
     * 数据源链接
     */
-  lazy val connection = recourceManager.source.fork
+  protected lazy val connection = sourceManager.source.fork
 
 
   /**

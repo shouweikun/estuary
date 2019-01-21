@@ -2,20 +2,20 @@ package com.neighborhood.aka.laplace.estuary.bean.identity
 
 import java.util.Date
 
-import org.bson.types.ObjectId
-import org.mongodb.morphia.annotations.{Id, Version}
-
 /**
   * Created by john_liu on 2018/2/7.
   * 标识唯一任务
   */
 trait BaseBean {
-   var id:ObjectId = null
+  /**
+    * 同步任务的唯一id, 这个id表示同步任务的唯一标识
+    */
+  def syncTaskId: String
 
-  protected var createTime:Date = null
-  protected var lastChange:Date = null
+  protected def createTime: Date
 
-   private val version = 0L
+  protected def lastChange: Date
 
-  override def toString: String = "BaseBean{" + "id=" + id + ", createTime=" + createTime + ", lastChange=" + lastChange + ", version=" + version + '}'
+  protected def version = 0L
+
 }

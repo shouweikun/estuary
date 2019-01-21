@@ -5,21 +5,22 @@ package com.neighborhood.aka.laplace.estuary.core
   */
 package object lifecycle {
 
-  trait WorkerMessage {
-    val msg: Any
-//    val data: Option[Any] = None
-  }
+  sealed trait WorkerMessage{def msg: Any}
 
-  case class SyncControllerMessage(msg: Any) extends WorkerMessage
+  final case class SyncControllerMessage(override val msg: Any) extends WorkerMessage
 
-  case class ListenerMessage(msg: Any) extends WorkerMessage
+  final case class ListenerMessage(override val msg: Any) extends WorkerMessage
 
-  case class SinkerMessage(msg: Any) extends WorkerMessage
+  final case class SinkerMessage(override val msg: Any) extends WorkerMessage
 
-  case class FetcherMessage(msg: Any) extends WorkerMessage
+  final case class FetcherMessage(override val msg: Any) extends WorkerMessage
 
-  case class BatcherMessage(msg: Any) extends WorkerMessage
+  final case class BatcherMessage(override val msg: Any) extends WorkerMessage
 
-  case class RecorderMessage(msg: Any) extends WorkerMessage
+  final case class RecorderMessage(override val msg: Any) extends WorkerMessage
+
+  final case class SnapshotJudgerMessage(override val msg: Any) extends WorkerMessage
+
+  final case class PowerAdapterMessage(override val msg: Any) extends WorkerMessage
 
 }

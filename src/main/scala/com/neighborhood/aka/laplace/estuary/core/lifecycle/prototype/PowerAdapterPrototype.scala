@@ -15,5 +15,5 @@ trait PowerAdapterPrototype extends ActorPrototype with PowerAdapter{
   /**
     * 同步任务id
     */
-  override val syncTaskId = taskManager.syncTaskId
+  override val syncTaskId:String
 }

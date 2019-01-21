@@ -1,6 +1,5 @@
 package com.neighborhood.aka.laplace.estuary.web.bean;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -10,16 +9,20 @@ import java.util.Map;
 public class Mysql2kafkaTaskRequestBean extends TaskRequestBean {
     private String syncTaskId;
     private String binlogJournalName;
+    private String kafkaPartitionStrategy = "PRIMARY_KEY";
     private long binlogPosition;
     private long binlogTimeStamp = 0;
+    private boolean schemaComponentIsOn = false;
+    private boolean isDataRemedy = false;
     private boolean isCounting = true;
     private boolean isProfiling = true;
     private boolean isCosting = true;
-    private boolean isTransactional = false;
+    private boolean isSavingTaskInfo = false;
     private boolean isPowerAdapted = true;
-    private boolean isSync = false;
+    private boolean isBlockingFetch = false;
     private int batcherCount = 19;
-    private long batchThreshold = 50;
+    private long batchThreshold = 1;
+    private long taskStartTime = 1;
     private long fetchDelay = 0;
     private String filterPattern;
     private String filterBlackPattern;
@@ -31,9 +34,8 @@ public class Mysql2kafkaTaskRequestBean extends TaskRequestBean {
     private boolean filterQueryDdl = false;
     private boolean filterRows = false;
     private boolean filterTableError = false;
-    private String eventFilterPattern = "";
-    private String eventBlackFilterPattern = "";
     private String kafkaBootstrapServers = "";
+    private String kafkaBatchSize = "10000";
     private String kafkaMaxBlockMs = "";
     private String kafkaAck = "";
     private String kafkaLingerMs = "";
@@ -52,6 +54,9 @@ public class Mysql2kafkaTaskRequestBean extends TaskRequestBean {
     private String concernedDataBase = "";
     private String ignoredDataBase = "";
     private int taskType = 1;
+    private long taskEndTime = -1;
+    private String hbaseZookeeperQuorum = "";
+    private String hbaseZookeeperPropertyClientPort = "";
 
     // 支持的binlogImage
     // binlog.images = ""
@@ -62,13 +67,79 @@ public class Mysql2kafkaTaskRequestBean extends TaskRequestBean {
     // zookeeper 链接超时设置,单位毫秒
     private int zookeeperTimeout = 10000;
 
-    public boolean isSync() {
-        return isSync;
+
+    public String getKafkaBatchSize() {
+        return kafkaBatchSize;
     }
 
-    public void setSync(boolean sync) {
-        isSync = sync;
+    public void setKafkaBatchSize(String kafkaBatchSize) {
+        this.kafkaBatchSize = kafkaBatchSize;
     }
+
+    public boolean isSchemaComponentIsOn() {
+        return schemaComponentIsOn;
+    }
+
+    public void setSchemaComponentIsOn(boolean schemaComponentIsOn) {
+        this.schemaComponentIsOn = schemaComponentIsOn;
+    }
+
+    public String getKafkaPartitionStrategy() {
+        return kafkaPartitionStrategy;
+    }
+
+    public void setKafkaPartitionStrategy(String kafkaPartitionStrategy) {
+        this.kafkaPartitionStrategy = kafkaPartitionStrategy;
+    }
+
+    public boolean isBlockingFetch() {
+        return isBlockingFetch;
+    }
+
+    public void setBlockingFetch(boolean blockingFetch) {
+        isBlockingFetch = blockingFetch;
+    }
+
+    public long getTaskStartTime() {
+        return taskStartTime;
+    }
+
+    public void setTaskStartTime(long taskStartTime) {
+        this.taskStartTime = taskStartTime;
+    }
+
+    public boolean isSavingTaskInfo() {
+        return isSavingTaskInfo;
+    }
+
+    public void setSavingTaskInfo(boolean savingTaskInfo) {
+        isSavingTaskInfo = savingTaskInfo;
+    }
+
+    public boolean isDataRemedy() {
+        return isDataRemedy;
+    }
+
+    public void setDataRemedy(boolean dataRemedy) {
+        isDataRemedy = dataRemedy;
+    }
+
+    public String getHbaseZookeeperQuorum() {
+        return hbaseZookeeperQuorum;
+    }
+
+    public void setHbaseZookeeperQuorum(String hbaseZookeeperQuorum) {
+        this.hbaseZookeeperQuorum = hbaseZookeeperQuorum;
+    }
+
+    public String getHbaseZookeeperPropertyClientPort() {
+        return hbaseZookeeperPropertyClientPort;
+    }
+
+    public void setHbaseZookeeperPropertyClientPort(String hbaseZookeeperPropertyClientPort) {
+        this.hbaseZookeeperPropertyClientPort = hbaseZookeeperPropertyClientPort;
+    }
+
 
     public int getTaskType() {
         return taskType;
@@ -116,6 +187,14 @@ public class Mysql2kafkaTaskRequestBean extends TaskRequestBean {
 
     public void setKafkaSpecficTopics(Map<String, String> kafkaSpecficTopics) {
         this.kafkaSpecficTopics = kafkaSpecficTopics;
+    }
+
+    public long getTaskEndTime() {
+        return taskEndTime;
+    }
+
+    public void setTaskEndTime(long taskEndTime) {
+        this.taskEndTime = taskEndTime;
     }
 
     public long getFetchDelay() {
@@ -190,13 +269,6 @@ public class Mysql2kafkaTaskRequestBean extends TaskRequestBean {
         isProfiling = profiling;
     }
 
-    public boolean isTransactional() {
-        return isTransactional;
-    }
-
-    public void setTransactional(boolean transactional) {
-        isTransactional = transactional;
-    }
 
     public long getBatchThreshold() {
         return batchThreshold;
@@ -284,22 +356,6 @@ public class Mysql2kafkaTaskRequestBean extends TaskRequestBean {
 
     public void setFilterTableError(boolean filterTableError) {
         this.filterTableError = filterTableError;
-    }
-
-    public String getEventFilterPattern() {
-        return eventFilterPattern;
-    }
-
-    public void setEventFilterPattern(String eventFilterPattern) {
-        this.eventFilterPattern = eventFilterPattern;
-    }
-
-    public String getEventBlackFilterPattern() {
-        return eventBlackFilterPattern;
-    }
-
-    public void setEventBlackFilterPattern(String eventBlackFilterPattern) {
-        this.eventBlackFilterPattern = eventBlackFilterPattern;
     }
 
     public String getKafkaBootstrapServers() {

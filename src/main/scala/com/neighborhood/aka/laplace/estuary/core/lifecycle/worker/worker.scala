@@ -9,7 +9,8 @@ trait worker {
   /**
     * 错位次数阈值
     */
-  var errorCountThreshold: Int
+  def errorCountThreshold: Int
+
   /**
     * 错位次数
     */

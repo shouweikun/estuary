@@ -2,31 +2,33 @@ package com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype
 
 import akka.actor.ActorRef
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.SourceDataBatcher
-import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.core.trans.MappingFormat
 
 /**
   * Created by john_liu on 2018/5/20.
   */
-trait SourceDataBatcherPrototype[A, B] extends ActorPrototype with SourceDataBatcher with MappingFormat[A, B] {
+trait SourceDataBatcherPrototype[A, B] extends ActorPrototype with SourceDataBatcher {
+
+
+  def mappingFormat: MappingFormat[A, B]
+
   /**
     * sinker 的ActorRef
     */
-  val sinker: ActorRef
-  /**
-    * 任务信息管理器
-    */
-  val taskManager: TaskManager
+  def sinker: ActorRef
+
   /**
     * 编号
     */
-  val num:Int
+  def num: Int
+
   /**
-    * 同步任务id
+    * 核心转换方法
+    *
+    * @param a 待转换的
+    * @return 转换结果
     */
-  override val syncTaskId = taskManager.syncTaskId
-
-
+  def transform(a: A): B = mappingFormat.transform(a) // todo 这么干有问题
 
   override def preStart(): Unit = {
     log.info(s"init batcher$num,id:$syncTaskId")

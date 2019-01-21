@@ -4,6 +4,8 @@ package com.neighborhood.aka.laplace.estuary.bean.key;
 import com.alibaba.otter.canal.protocol.CanalEntry;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import java.util.Map;
+
 /**
  * Created by z on 17-3-31.
  */
@@ -31,6 +33,18 @@ public class BinlogKey extends BaseDataJsonKey {
      * 主键值
      */
     private String primaryKeyValue = "";
+    /**
+     * 字段映射
+     */
+    private Map<String,String> fieldMapping;
+
+    public Map<String, String> getFieldMapping() {
+        return fieldMapping;
+    }
+
+    public void setFieldMapping(Map<String, String> fieldMapping) {
+        this.fieldMapping = fieldMapping;
+    }
 
     public String getPrimaryKeyValue() {
         return primaryKeyValue;
@@ -103,6 +117,8 @@ public class BinlogKey extends BaseDataJsonKey {
     public void setSavedOffset(long savedOffset) {
         this.savedOffset = savedOffset;
     }
+
+
 
     @Override
     public String toString() {

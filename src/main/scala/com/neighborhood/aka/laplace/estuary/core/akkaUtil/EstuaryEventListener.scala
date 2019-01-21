@@ -3,11 +3,8 @@ package com.neighborhood.aka.laplace.estuary.core.akkaUtil
 
 import akka.actor.{Actor, ActorLogging, Props}
 import akka.event.Logging._
+import com.neighborhood.aka.laplace.estuary.core.util.message.MessageSender
 import com.typesafe.config.ConfigFactory
-import org.springframework.http.{HttpHeaders, MediaType}
-import org.springframework.web.client.RestTemplate
-
-import scala.collection.mutable
 
 class EstuaryEventListener extends Actor with ActorLogging {
 
@@ -15,35 +12,24 @@ class EstuaryEventListener extends Actor with ActorLogging {
   val config = ConfigFactory.load()
   val url = config.getString("error.monitor.url")
   val mobilelist = List(config.getString("error.monitor.mobiles"))
-  val restTemplate = new RestTemplate
-  val headers = new HttpHeaders
+  val ip = if (config.hasPath("app.server.ip")) config.getString("app.server.ip") else "unknown"
+  val port = if (config.hasPath("app.server.port")) config.getInt("app.server.port") else -1
   var lastSendTime = 0l
 
   override def receive = {
     case InitializeLogger(_) => sender() ! LoggerInitialized
 
     case Error(cause, logSource, logClass, message) => {
-      def buildandSendErrorMessage = {
-        //    消息体
-        lazy val messageBody = new MessageBody
-        //
-        headers.setContentType(MediaType.APPLICATION_JSON)
-        import scala.collection.JavaConversions._
+      def buildAndSendErrorMessage = {
         //      信息内容
-        lazy val contents = List(s"exception:${cause},cause:${cause.getCause},logSource:$logSource,logClass:$logClass,message $message")
-        messageBody.setMessageContents(contents)
-        //      手机号码列表
-        messageBody.setMobiles(mobilelist)
-        //      必填，自定义发送者的名字
-        messageBody.setSenderName("estuary")
-        //      通过resttemlate发送信息
-        restTemplate.postForObject(url, messageBody, classOf[String])
+        lazy val contents = List(s"exception:${cause},cause:${cause.getCause},logSource:$logSource,logClass:$logClass,message $message,host:$ip:$port")
+        MessageSender.sendMessageReturnWithinString(contents, mobilelist)(url).toOption
+          .fold(log.error(s"message send failure"))(_ => log.info("message send success"))
       }
 
-      val taskMark = logSource.substring(0, logSource.lastIndexOf("/"))
       lazy val now = System.currentTimeMillis()
       if (now - lastSendTime > TIME_INTERVAL) {
-        buildandSendErrorMessage
+        buildAndSendErrorMessage
         lastSendTime = now
       }
 

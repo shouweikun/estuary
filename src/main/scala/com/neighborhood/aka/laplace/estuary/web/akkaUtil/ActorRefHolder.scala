@@ -14,7 +14,6 @@ object ActorRefHolder extends theActorSystem {
   //todo 初始化守护Actor
   //todo 保留重要ActorRef
   val syncDaemon = system.actorOf(Props(classOf[SyncDaemon]), "syncDaemon")
-
   val actorRefMap: ConcurrentHashMap[String,ActorRef] = new ConcurrentHashMap[String,ActorRef]()
 
 
