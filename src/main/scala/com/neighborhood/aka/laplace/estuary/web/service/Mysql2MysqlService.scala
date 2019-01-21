@@ -13,6 +13,7 @@ import org.slf4j.{Logger, LoggerFactory}
 import org.springframework.beans.factory.annotation.{Autowired, Qualifier, Value}
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Service
+import org.springframework.web.client.RestTemplate
 
 import scala.collection.JavaConverters._
 import scala.util.Try
@@ -28,9 +29,17 @@ final class Mysql2MysqlService extends SyncService[Mysql2MysqlRequestBean] {
   private val concernedConfigTableName: String = null
   @Value("server.port")
   private val port: String = null
+  @Value("sda.tableMapping.matadata.url")
+  private val mataDataUrl: String = null
+  @Value("sda.tableMapping.matadata.token")
+  private val mataDataToken: String = null
   @Autowired
   @Qualifier("configJdbcTemplate") private lazy val jdbcTemplate: JdbcTemplate = null
   private lazy val logger: Logger = LoggerFactory.getLogger(classOf[Mysql2MysqlService])
+
+  @Autowired
+  @Qualifier("restTemplate")
+  private val restTemplate: RestTemplate = null
 
   /**
     * 为Sda定制的开始方法
@@ -74,8 +83,15 @@ final class Mysql2MysqlService extends SyncService[Mysql2MysqlRequestBean] {
   private def customRequestForSda(taskRequestBean: Mysql2MysqlRequestBean): Unit = {
     val syncTaskId: String = taskRequestBean.getMysql2MysqlRunningInfoBean.getSyncTaskId
     val concernedTableNameSqlTemplete: String => String = x => s"select xxx from $concernedConfigTableName where  yyy = '$x'"
-    val getMappingRule: Map[String, String] = Map.empty //todo
-    val concernedFilterPattern: String = taskRequestBean.getMysqlSourceBean.getConcernedDatabase.asScala.flatMap {
+    val concernedDatabases: List[String] = taskRequestBean.getMysqlSourceBean.getConcernedDatabase.asScala.toList
+//    val getMappingRule: java.util.Map[String, String] = concernedDatabases.flatMap {
+//      db =>
+//        getAllTableMappingByDatabaseName(db)
+//        ???
+//
+//      //todo
+//    }
+    val concernedFilterPattern: String = concernedDatabases.flatMap {
       databaseName =>
         jdbcTemplate
           .queryForMap(concernedTableNameSqlTemplete(databaseName))
@@ -85,7 +101,14 @@ final class Mysql2MysqlService extends SyncService[Mysql2MysqlRequestBean] {
     }.mkString(",")
     taskRequestBean.getMysqlSourceBean.setFilterPattern(concernedFilterPattern) //强制设置concernedPattern
     taskRequestBean.getMysql2MysqlRunningInfoBean.setMappingFormatName("sda") //强制Sda
-    taskRequestBean.setSdaBean(new SdaRequestBean(getMappingRule.asJava)) //增加rule
+    taskRequestBean.setSdaBean(new SdaRequestBean(getMappingRule)) //增加rule
   }
 
+  private def getAllTableMappingByDatabaseName(dbName: String): java.util.Map[String, String] = {
+    val map = new java.util.HashMap[String, String]()
+    map.put("token", mataDataToken)
+    map.put("accept", "*/*")
+    restTemplate.getForEntity(mataDataUrl, java.util.Map[String, String], map)
+    ???
+  }
 }
