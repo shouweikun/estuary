@@ -29,7 +29,7 @@ hi,大家好 失踪人口回归
 #### 技术选型
 
 本程序以Akka为核心构建起来的，利用Akka驱动程序的逻辑流程
-目前完成了Mysql Binlog 到 Kafka的实现
+目前完成了Mysql Binlog 到 Mysql的实现
 - 编程语言:Scala(主)/Java
 - 并发框架及主逻辑串联：Akka
 - Binlog解析:Canal(将canal解析部分源码提出并使用)
@@ -196,9 +196,9 @@ schema读取和更新的三个层次
 mvn package
 ```
  ```
-vim application.properties
-vim application.conf 
-来配置你的属性
+cp application.properties.templete  application.properties
+cp application.conf.templete  application.conf 
+编辑文件来配置你的属性
 ```
  ```
 ./bin/start
