@@ -10,4 +10,12 @@ public class JavaCommonUtil {
         Pattern pattern = Pattern.compile("^[-\\+]?[\\d]*$");
         return pattern.matcher(str).matches();
     }
+
+    public static boolean isEmpty(Object str) {
+        return str == null || str.equals("");
+    }
+
+    public static boolean nonEmpty(String str) {
+        return !isEmpty(str);
+    }
 }

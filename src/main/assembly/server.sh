@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 cd `dirname $0`
 if [ "$1" = "start" ]; then
-	./start.sh
+	start.sh
 else
 	if [ "$1" = "stop" ]; then
-		./stop.sh
+		stop.sh
 	else
 		if [ "$1" = "debug" ]; then
-			./start.sh debug
+			start.sh debug
 		else
 			if [ "$1" = "restart" ]; then
-				./restart.sh
+				restart.sh
 			else
 				if [ "$1" = "dump" ]; then
-					./dump.sh
+					dump.sh
 				else
 					echo "ERROR: Please input argument: start or stop or debug or restart or dump"
 				    exit 1

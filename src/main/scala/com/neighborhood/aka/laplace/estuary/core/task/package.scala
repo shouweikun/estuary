@@ -7,22 +7,22 @@ import akka.actor.Props
   */
 package object task {
 
-  trait SyncTask {
-    val prop: Props
-    val name: Option[String]
+  sealed trait SyncTask {
+    def props: Props
+
+    def name: String
 
     def taskType: String = this.getClass.getName
 
     override def toString: String = {
-      s"SyncTask,taskType:$taskType,prop:$prop,name:$name"
+      s"SyncTask,taskType:$taskType,prop:$props,name:$name"
     }
   }
 
-  case class Mysql2KafkaInOrderTask(override val prop: Props, override val name: Option[String]) extends SyncTask
+  final case class Mysql2MysqlSyncTask(
+                                        override val props: Props,
+                                        override val name: String) extends SyncTask
 
-  case class Mysql2KafkaTask(override val prop: Props, override val name: Option[String]) extends SyncTask
-
-  case class Mongo2KafkaTask(override val prop: Props, override val name: Option[String]) extends SyncTask
 
 
 }

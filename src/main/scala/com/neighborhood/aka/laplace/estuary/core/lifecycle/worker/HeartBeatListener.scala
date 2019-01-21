@@ -6,8 +6,9 @@ package com.neighborhood.aka.laplace.estuary.core.lifecycle.worker
   */
 trait HeartBeatListener extends worker {
   implicit val workerType = WorkerType.Listener
+
   /**
     * 监听心跳
     */
-  def listenHeartBeats: Unit
+  protected def listenHeartBeats: Unit
 }

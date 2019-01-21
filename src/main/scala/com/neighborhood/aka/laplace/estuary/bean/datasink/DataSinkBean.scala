@@ -1,11 +1,11 @@
 package com.neighborhood.aka.laplace.estuary.bean.datasink
 
-import DataSinkType.DataSinkType
+import com.neighborhood.aka.laplace.estuary.core.sink.SinkFunc
 
 /**
   * Created by john_liu on 2018/2/7.
   */
-trait DataSinkBean {
+trait DataSinkBean[S <: SinkFunc] {
   //  var dataSinkType:DataSinkType
-  var dataSinkType:String
+  def dataSinkType: String
 }

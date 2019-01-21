@@ -1,29 +1,36 @@
 package com.neighborhood.aka.laplace.estuary.bean.credential
 
+import scala.beans.BeanProperty
+
 /**
   * Created by john_liu on 2018/2/7.
   */
-class MysqlCredentialBean(Address:String,Port:Int,Username:String,Password:String,DefaultDatabase :String) extends DataSourceCredentialBean{
-  /**
-    * 服务器地址
-    */
-  var address:String = Address
-  /**
-    * 服务器端口号
-    */
-  var port:Int = Port
-  /**
-    * 服务器用户名
-    */
-  var username:String = Username
-  /**
-    * 服务器密码
-    */
-  var password:String = Password
-  /**
-    * 服务器密码
-    */
-  var defaultDatabase :String = DefaultDatabase
+@BeanProperty
+final case class MysqlCredentialBean(/**
+                                       * 服务器地址
+                                       */
+                                     val address: String,
+
+                                     /**
+                                       * 服务器端口号
+                                       */
+                                     val port: Int,
+
+                                     /**
+                                       * 服务器用户名
+                                       */
+                                     val username: String,
+
+                                     /**
+                                       * 服务器密码
+                                       */
+                                     val password: String,
+
+                                     /**
+                                       * 服务器密码
+                                       */
+                                     val defaultDatabase: Option[String] = None
+                                    ) extends DataSourceCredentialBean {
 
 
 }

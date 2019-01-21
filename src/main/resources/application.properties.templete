@@ -1,0 +1,9 @@
+info.build.artifactId=@project.artifactId@
+info.build.version=@project.version@
+#可以自己填
+server.port=9000
+spring.config.datasource.url=jdbc:mysql://xxx
+spring.config.datasource.username=xxx
+spring.config.datasource.password=xxx
+#这个sda专用的配置项
+spring.config.concerned.tableName=11

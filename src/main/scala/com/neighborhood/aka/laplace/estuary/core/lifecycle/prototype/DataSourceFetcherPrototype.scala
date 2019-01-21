@@ -1,39 +1,28 @@
 package com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype
 
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status.Status
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.{SourceDataFetcher, Status}
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.SourceDataFetcher
 import com.neighborhood.aka.laplace.estuary.core.source.DataSourceConnection
-import com.neighborhood.aka.laplace.estuary.core.task.{RecourceManager, TaskManager}
+import com.neighborhood.aka.laplace.estuary.core.task.SourceManager
 
 /**
   * Created by john_liu on 2018/5/30.
   */
 trait DataSourceFetcherPrototype[source <: DataSourceConnection] extends ActorPrototype with SourceDataFetcher {
+
   /**
-    * 任务信息管理器
+    * 数据源资源管理器
     */
-  val taskManager: TaskManager
-  /**
-    * 资源管理器
-    */
-  val recourceManager: RecourceManager[_, source, _]
-  /**
-    * 同步任务id
-    */
-  override val syncTaskId:String
+  def sourceManager: SourceManager[source]
+
   /**
     * 数据源链接
     */
-  lazy val connection = recourceManager.source.fork
+  lazy val connection = sourceManager.source  //取消fork，使得线程可以被杀死
 
-  /**
-    * ********************* 状态变化 *******************
+  /*
+    * 用于在最终的数据汇建立相应的schema信息
     */
-  protected def changeFunc(status: Status): Unit = TaskManager.changeFunc(status, taskManager)
-
-  protected def onChangeFunc: Unit = TaskManager.onChangeStatus(taskManager)
-
-  protected def fetcherChangeStatus(status: Status): Unit = TaskManager.changeStatus(status, changeFunc, onChangeFunc)
+  def initEventualSinkSchema: Unit = {}
 
   /**
     * ********************* Actor生命周期 *******************
@@ -42,7 +31,6 @@ trait DataSourceFetcherPrototype[source <: DataSourceConnection] extends ActorPr
     log.info(s"fetcher switch to offline,id:$syncTaskId")
     if (connection.isConnected) connection.disconnect()
     //状态置为offline
-    fetcherChangeStatus(Status.OFFLINE)
   }
 
   override def postRestart(reason: Throwable): Unit = {
@@ -59,7 +47,6 @@ trait DataSourceFetcherPrototype[source <: DataSourceConnection] extends ActorPr
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
     log.info(s"fetcher processing preRestart,id:$syncTaskId")
     context.become(receive)
-    fetcherChangeStatus(Status.RESTARTING)
     super.preRestart(reason, message)
   }
 

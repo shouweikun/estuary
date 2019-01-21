@@ -5,7 +5,7 @@ import com.neighborhood.aka.laplace.estuary.bean.exception.EstuaryException
 /**
   * Created by john_liu on 2018/5/30.
   */
-class BatchException(
+abstract class BatchException(
                       message: => String,
                       cause: Throwable
                     ) extends EstuaryException(message, cause) {

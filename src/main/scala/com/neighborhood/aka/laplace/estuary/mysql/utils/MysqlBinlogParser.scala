@@ -1,7 +1,5 @@
 package com.neighborhood.aka.laplace.estuary.mysql.utils
 
-import java.util.concurrent.atomic.AtomicLong
-
 import com.alibaba.otter.canal.parse.inbound.mysql.dbsync.LogEventConvert
 import com.alibaba.otter.canal.protocol.CanalEntry
 import com.taobao.tddl.dbsync.binlog.LogEvent
@@ -9,28 +7,32 @@ import com.taobao.tddl.dbsync.binlog.LogEvent
 /**
   * Created by john_liu on 2018/2/2.
   */
-class MysqlBinlogParser extends LogEventConvert {
+final class MysqlBinlogParser extends LogEventConvert {
 
-  lazy val count = new AtomicLong(0)
+  private var filterTimestamp: Long = Long.MaxValue
+   start()
 
-  def parse(event: Option[LogEvent]): Option[CanalEntry.Entry] = {
-    event match {
-      case Some(x) => Option(parse(x))
-      case None => None
-    }
+  def parse(eventOption: Option[LogEvent]): Option[CanalEntry.Entry] = eventOption.flatMap {
+    event =>
+      event.getHeader.getType match {
+        case LogEvent.ROTATE_EVENT => Option(parse(event))
+        case LogEvent.QUERY_EVENT => Option(parse(event))
+        case LogEvent.XID_EVENT => Option(parse(event))
+        case _ => if (event.getWhen *1000 >= filterTimestamp) Option(parse(event)) else None
 
+      }
   }
-   @deprecated
+
+  @deprecated
   def parseAndProfilingIfNecessary(event: LogEvent, necessary: Boolean): Option[CanalEntry.Entry] = {
 
     if (necessary) {
-      
+
     }
     parse(Option(event))
   }
 
-
-
+  def setFilterTimestamp(ts: Long) = this.filterTimestamp = ts
 }
 
 

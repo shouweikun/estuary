@@ -10,10 +10,10 @@ trait ActorPrototype extends Actor with ActorLogging {
   /**
     * 任务信息管理器
     */
-  val taskManager: TaskManager
+  def  taskManager: TaskManager
 
   /**
     * 同步任务id
     */
-  val syncTaskId:String
+  def  syncTaskId:String
 }

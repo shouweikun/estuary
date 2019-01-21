@@ -7,13 +7,16 @@ package com.neighborhood.aka.laplace.estuary.mysql
 object SettingConstant {
 
   val COMPUTE_COST_CONSTANT = 3
-  val COMPUTE_FIRST_DELAY:Int = 10
+  val COMPUTE_COUNT_CONSTANT = 100 //这个单位是ms
+  val COMPUTE_FIRST_DELAY:Int = 5
   val OFFSET_SAVE_CONSTANT:Int = 60
   val CHECKSEND_CONSTANT = 20
   val BATCHER_START_DELAY = 1
   val FETCHER_START_DELAY = 5
-  val POWER_CONTROL_CONSTANT = 3
+  val POWER_CONTROL_CONSTANT = 5 //这个单位是ms
   val LISTEN_QUERY_TIMEOUT = 5
-  val TASK_RESTART_DELAY = 30
+  val TASK_RESTART_DELAY = 10
   val HASH_MAPPING_VIRTUAL_NODES_FACTOR = 32
+  val CHECK_STATUS_INTERVAL = 20
+  val SINKER_FLUSH_INTERVAL = 200 //这个单位是毫秒
 }

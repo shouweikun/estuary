@@ -1,16 +1,11 @@
 package com.neighborhood.aka.laplace.estuary.web.service
 
-import com.neighborhood.aka.laplace.estuary.core.task.{Mysql2KafkaInOrderTask, Mysql2KafkaTask}
-import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.concurrent.MysqlBinlogController
-import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.inorder.MysqlBinlogInOrderController
-import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2KafkaTaskInfoManager
+import java.util.concurrent.ConcurrentHashMap
+
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.neighborhood.aka.laplace.estuary.web.akkaUtil.ActorRefHolder
-import com.neighborhood.aka.laplace.estuary.web.akkaUtil.ActorRefHolder.actorRefMap
-import com.neighborhood.aka.laplace.estuary.web.bean.Mysql2kafkaTaskRequestBean
-import com.neighborhood.aka.laplace.estuary.web.dao.MongoPersistence
-import com.neighborhood.aka.laplace.estuary.web.utils.TaskBeanTransformUtil
+import com.neighborhood.aka.laplace.estuary.web.bean.{Mysql2kafkaTaskRequestBean, SnapshotRequestBean}
 import org.slf4j.{Logger, LoggerFactory}
-import org.springframework.beans.factory.annotation.Autowired
 
 
 /**
@@ -18,46 +13,43 @@ import org.springframework.beans.factory.annotation.Autowired
   */
 object Mysql2KafkaService {
 
-  val logger: Logger = LoggerFactory.getLogger(Mysql2KafkaService.getClass)
+  private lazy val logger: Logger = LoggerFactory.getLogger(Mysql2KafkaService.getClass)
+  private lazy val objectMapper: ObjectMapper = new ObjectMapper
+  private lazy val requestBeanMap: ConcurrentHashMap[String, Mysql2kafkaTaskRequestBean]
+  = new ConcurrentHashMap[String, Mysql2kafkaTaskRequestBean]()
 
-  val mongoPersistence = new MongoPersistence[Mysql2kafkaTaskRequestBean]
-
-  // 根据syncTaskId从mongodb中查询出详细信息
-  def loadOneExistTask(key: String, value: String): Mysql2kafkaTaskRequestBean = {
-    val mongoValue = mongoPersistence.getKV(classOf[Mysql2kafkaTaskRequestBean], key, value)
-    mongoValue
+  def checkSnapshotTaskRunningInfo(syncTaskId: String): String = {
+    //    val manager = Mysql2KafkaTaskInfoManager.taskManagerMap.get(syncTaskId)
+    //    Option(manager).fold {
+    //      s"""{
+    //            syncTaskId:"$syncTaskId"
+    //          }""".stripMargin
+    //    } {
+    //      _.snapshotStauts.get()
+    //    }
+    ???
   }
 
-  // 从mongodb中查出所有的mysql的同步任务
-  def loadAllExistTask: java.util.List[Mysql2kafkaTaskRequestBean] = {
-    mongoPersistence.findAll(classOf[Mysql2kafkaTaskRequestBean])
-  }
-
-  def startAllExistTask: String = {
-    import scala.collection.JavaConversions._
-    loadAllExistTask
-      .map(startAllExistTasks(_))
-      .mkString(",")
-
-  }
-
-  def startOneExistTask(key: String, value: String): String = {
-    Option(actorRefMap.get(key)).fold {
-      val mysql2kafkaTaskRequestBean = loadOneExistTask(key, value)
-      val mysql2KafkaTaskInfoBean = TaskBeanTransformUtil.transform2Mysql2KafkaTaskInfoBean(mysql2kafkaTaskRequestBean)
-      val prop = MysqlBinlogController.props(mysql2KafkaTaskInfoBean)
-      ActorRefHolder.syncDaemon ! (prop, Option(mysql2KafkaTaskInfoBean.syncTaskId))
-      //    开启已经存在的任务不需要持久化
-      s"mession: exist task ${mysql2KafkaTaskInfoBean.syncTaskId} submitted"
-    }(value => s"mession: exist task ${value} already started")
-  }
-
-  def startAllExistTasks(mysql2kafkaTaskRequestBean: Mysql2kafkaTaskRequestBean): String = {
-    val mysql2KafkaTaskInfoBean = TaskBeanTransformUtil.transform2Mysql2KafkaTaskInfoBean(mysql2kafkaTaskRequestBean)
-    val prop = MysqlBinlogController.props(mysql2KafkaTaskInfoBean)
-    ActorRefHolder.syncDaemon ! (prop, Option(mysql2KafkaTaskInfoBean.syncTaskId))
-    //    开启已经存在的任务不需要持久化
-    s"mession:${mysql2KafkaTaskInfoBean.syncTaskId} submitted"
+  def startNewSnapshotTask(taskBean: SnapshotRequestBean): String = {
+    //    lazy val syncTaskId = taskBean.getSyncTaskId
+    //    val map = ActorRefHolder.actorRefMap
+    //    Option(map.get(syncTaskId)).fold(
+    //      s"""
+    //        {
+    //         syncTaskId:"$syncTaskId"
+    //         submit:false
+    //        }
+    //      """.stripMargin) {
+    //      ref =>
+    //        ref ! TaskBeanTransformUtil.convert2SnapshotTask(taskBean)
+    //        s"""
+    //        {
+    //         syncTaskId:"$syncTaskId"
+    //         submit:true
+    //        }
+    //      """.stripMargin
+    //    }
+    ???
   }
 
   /**
@@ -69,48 +61,63 @@ object Mysql2KafkaService {
     * @return
     */
   def startNewOneTask(mysql2kafkaTaskRequestBean: Mysql2kafkaTaskRequestBean): String = {
-    val mysql2KafkaTaskInfoBean = TaskBeanTransformUtil.transform2Mysql2KafkaTaskInfoBean(
-      mysql2kafkaTaskRequestBean)
-    val taskType = mysql2kafkaTaskRequestBean.getTaskType
-    lazy val prop = {
-      taskType match {
-        case 1 => MysqlBinlogController.props(mysql2KafkaTaskInfoBean)
-        case 2 => MysqlBinlogInOrderController.props(mysql2KafkaTaskInfoBean)
-      }
-
-    }
-    taskType match {
-      case 1 => ActorRefHolder.syncDaemon ! Mysql2KafkaTask(prop, Option(mysql2KafkaTaskInfoBean.syncTaskId))
-      case 2 => ActorRefHolder.syncDaemon ! Mysql2KafkaInOrderTask(prop, Option(mysql2KafkaTaskInfoBean.syncTaskId))
-      case x => throw new IllegalArgumentException(s"不支持的任务类型,$x,id:${Option(mysql2KafkaTaskInfoBean.syncTaskId).getOrElse("None,pls do not let it none")}")
-    }
-
-
-    //todo 持久化任务
-    // mongoPersistence.save(mysql2kafkaTaskRequestBean)
-    s"mession:${mysql2KafkaTaskInfoBean.syncTaskId} submitted"
+    //    val mysql2KafkaTaskInfoBean = TaskBeanTransformUtil.transform2Mysql2KafkaTaskInfoBean(
+    //      mysql2kafkaTaskRequestBean)
+    //    val taskType = mysql2kafkaTaskRequestBean.getTaskType
+    //    lazy val prop = {
+    //      taskType match {
+    //        case 1 => MysqlBinlogController.props(mysql2KafkaTaskInfoBean)
+    //        case 2 => MysqlBinlogInOrderController.props(mysql2KafkaTaskInfoBean)
+    //      }
+    //
+    //    }
+    //    taskType match {
+    //      case 1 => ActorRefHolder.syncDaemon ! Mysql2KafkaTask(prop, Option(mysql2KafkaTaskInfoBean.syncTaskId))
+    //      case 2 => ActorRefHolder.syncDaemon ! Mysql2KafkaInOrderTask(prop, Option(mysql2KafkaTaskInfoBean.syncTaskId))
+    //      case x => throw new IllegalArgumentException(s"不支持的任务类型,$x,id:${Option(mysql2KafkaTaskInfoBean.syncTaskId).getOrElse("None,pls do not let it none")}")
+    //    }
+    //    requestBeanMap.put(mysql2KafkaTaskInfoBean.syncTaskId, mysql2kafkaTaskRequestBean)
+    //    s"mession:${mysql2KafkaTaskInfoBean.syncTaskId} submitted"
+    ???
   }
+
+  def getEstuaryConfigString(syncTaskId: String): String = Option(requestBeanMap.get(syncTaskId))
+    .fold(s"""{"syncTaskId":"$syncTaskId"}""")(objectMapper.writeValueAsString(_))
+
 
   def checkRunningTaskIds: String = {
     import scala.collection.JavaConverters._
-    s"{runningTasks:[${
+    s"""
+       {
+       runningTasks:[${
       ActorRefHolder
         .actorRefMap
         .asScala
         .map(kv => s""""${kv._1}"""")
-        .mkString(",")
-    }]}"
+        .mkString(",\n")
+    }]
+    }
+     """.stripMargin
   }
 
   def checkTaskStatus(syncTaskId: String): String = {
-    Option(Mysql2KafkaTaskInfoManager.taskStatusMap.get(syncTaskId))
-    match {
-      case Some(x) => {
-        s"{$syncTaskId:${x.map(kv => s"${kv._1}:${kv._2}").mkString(",")}}"
-      }
-      case None => s"$syncTaskId:None}"
-    }
-
+    //    val idStringKv = ("syncTaskId" -> s"""$syncTaskId""")
+    //    Option(Mysql2KafkaTaskInfoManager.taskStatusMap.get(syncTaskId))
+    //    match {
+    //      case Some(x) => {
+    //        s"""
+    //        {
+    //           ${x.+(idStringKv).map(kv => s""""${kv._1}":"${kv._2}"""").mkString(",\n")}
+    //        }""".stripMargin
+    //      }
+    //      case None =>
+    //        s"""
+    //           {
+    //           syncTaskId:"$syncTaskId"
+    //           }
+    //         """.stripMargin
+    //    }
+    ???
   }
 
   def reStartTask(syncTaskId: String): Boolean = {
@@ -129,50 +136,60 @@ object Mysql2KafkaService {
       map
         .get(syncTaskId)
     ) match {
-      case Some(x) => ActorRefHolder.system.stop(x); map.remove(syncTaskId); true
+      case Some(x) => ActorRefHolder.system.stop(x); map.remove(syncTaskId); requestBeanMap.remove(syncTaskId); true
       case None => false
     }
 
   }
 
-  def checkSystemStatus = {
-    ???
-  }
-
   def checklogCount(syncTaskId: String): String = {
-    val manager = Mysql2KafkaTaskInfoManager.taskManagerMap.get(syncTaskId)
-    Option(manager)
-    match {
-      case Some(x) => if (x.taskInfo.isCounting) s"{$syncTaskId: ${
-        Mysql2KafkaTaskInfoManager
-          .logCount(x)
-          .map(kv => s"${kv._1}:${kv._2}")
-          .mkString(",")
-      } }" else s"{$syncTaskId:count is not set}"
-      case None => "task not exist"
-    }
+    ???
+    //    val manager = Mysql2KafkaTaskInfoManager.taskManagerMap.get(syncTaskId)
+    //    Option(manager)
+    //    match {
+    //      case Some(x) => if (x.taskInfo.isCounting) Mysql2KafkaTaskInfoManager.logCount(x)
+    //      else
+    //        s"""
+    //              {
+    //              syncTaskId:"$syncTaskId"
+    //              }
+    //            """.stripMargin
+    //      case None =>
+    //        """
+    //          {
+    //          syncTaskId:"None"
+    //          }
+    //        """.stripMargin
+    //    }
   }
 
   def checkTimeCost(syncTaskId: String): String = {
-    val manager = Mysql2KafkaTaskInfoManager.taskManagerMap.get(syncTaskId)
-    Option(manager)
-    match {
-      case Some(x) => if (x.taskInfo.isCosting) s"{$syncTaskId: ${
-        Mysql2KafkaTaskInfoManager
-          .logTimeCost(x)
-          .map(kv => s"${kv._1}:${kv._2}")
-          .mkString(",")
-      } }" else s"{$syncTaskId:profiling is not set}"
-      case None => "task not exist"
-    }
+    ???
+    //    val manager = Mysql2KafkaTaskInfoManager.taskManagerMap.get(syncTaskId)
+    //    Option(manager)
+    //    match {
+    //      case Some(x) => if (x.taskInfo.isCosting) Mysql2KafkaTaskInfoManager.logTimeCost(x) else
+    //        s"""
+    //              {
+    //          syncTaskId:"$syncTaskId"
+    //              }
+    //            """.stripMargin
+    //      case None => "{syncTaskId:\"None\"}"
+    //    }
   }
 
-  def checklastSavedlogPosition(syncTaskId: String): String = {
-    val manager = Mysql2KafkaTaskInfoManager.taskManagerMap.get(syncTaskId)
-    Option(manager)
-    match {
-      case Some(x) => if (x.taskInfo.isProfiling) s"{$syncTaskId:${x.sinkerLogPosition.get()} }" else s"{$syncTaskId:profiling is not set}"
-      case None => "task not exist"
-    }
+  def checkLastSavedLogPosition(syncTaskId: String): String = {
+    ???
+    //    val manager = Mysql2KafkaTaskInfoManager.taskManagerMap.get(syncTaskId)
+    //    Option(manager)
+    //    match {
+    //      case Some(x) => if (x.taskInfo.isProfiling) x.sinkerLogPosition.get else
+    //        s"""
+    //           {
+    //            syncTaskId:$syncTaskId
+    //           }
+    //         """.stripMargin
+    //      case None => "{syncTaskId:None}"
+    //    }
   }
 }

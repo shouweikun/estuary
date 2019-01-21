@@ -5,6 +5,7 @@ package com.neighborhood.aka.laplace.estuary.core.trans
   */
 trait MappingFormat[A, B] {
 
+
   /**
     * 拼接json用
     */
@@ -16,5 +17,7 @@ trait MappingFormat[A, B] {
   val ELEMENT_SPLIT = ","
   val STRING_CONTAINER = "\""
 
-  def transform(x:A):B
+  def transform(x: A): B
+
+
 }
