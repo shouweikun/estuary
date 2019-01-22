@@ -99,10 +99,10 @@ final class MysqlBinlogInOrderMysqlRingBufferSinker(
     * 将RingBuffer里所有的元素都形成sql 以batch的形式更新到数据库中
     */
   private def flush: Unit = {
-    lazy val connection = sinkFunc.getJdbcConnection
+
     if (!ringBuffer.isEmpty) {
       lastBinlogPosition = Option(ringBuffer.peek).map(_.binlogPositionInfo)
-
+      lazy val connection = sinkFunc.getJdbcConnection
       val startTime = System.currentTimeMillis()
       val elemNum = ringBuffer.elemNum
       try {
@@ -111,7 +111,7 @@ final class MysqlBinlogInOrderMysqlRingBufferSinker(
         ringBuffer.foreach {
           x =>
 
-              statement.addBatch(x.sql)
+            statement.addBatch(x.sql)
         }
         statement.executeBatch()
         connection.commit()

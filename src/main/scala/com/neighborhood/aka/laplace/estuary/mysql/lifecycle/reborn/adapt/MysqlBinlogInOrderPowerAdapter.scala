@@ -113,11 +113,11 @@ abstract class MysqlBinlogInOrderPowerAdapter(
       //      case (_, x, y, z) if (x > 8 || y > 950 || z > 180) => math.max(2000, delayDuration) //2ms
       //      case (_, x, y, z) if (x > 5 || y > 700 || z > 160) => math.max(1500, delayDuration) //1.5ms
       //            case (w, _, _, _) if (w < 20000 * 1) => 1
-      case (w, _, _, _) if (w < 45000 * 1) => 2
+      case (w, _, _, _) if (w < 55000 * 1) => 2
       //      case (w, _, _, _) if (w < 55000 * 1) => 10
       //      case (w, _, _, _) if (w < 70000 * 1) => 1500
       //      case (w, _, _, _) if (w < 65000 * 1) => 300
-      case (w, _, _, _) if (w < 72000 * 1) => 500 //0.5ms
+      case (w, _, _, _) if (w < 72000 * 1) => 20 //0.05ms
       //      case (w, _, _, _) if (w < 65000 * 1) => 500000 // 5s
       case (w, _, _, _) if (w < 82000 * 1) => math.max(delayDuration * 10, 10000) //10ms
       //      case (w, _, _, _) if (w < 100000 * 1) => math.max(delayDuration, 7000) //7ms
