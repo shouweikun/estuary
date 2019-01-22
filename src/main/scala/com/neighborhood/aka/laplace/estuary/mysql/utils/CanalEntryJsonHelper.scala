@@ -74,19 +74,21 @@ object CanalEntryJsonHelper {
 
   /**
     * 根据mysql类型生成对应的value
+    *
     * @param mysqlType mysql类型
-    * @param value 原始value
+    * @param value     原始value
     * @return 返回mysql使用的value
     */
   def getSqlValueByMysqlType(mysqlType: String, value: String): String = {
-    mysqlType match {
+    mysqlType.toLowerCase match {
       case "bit" => value
       case "char" => value
       case "int" => value
+      case x if (x.contains("long")) => value
       case x if (x.contains("float")) => value
       case x if (x.contains("decimal")) => value
-      case x if (x.contains("double")) =>value
-      case x if (x.contains("bigInt")) => value
+      case x if (x.contains("double")) => value
+      case x if (x.contains("bigint")) => value
       case _ => s"'$value'"
     }
   }

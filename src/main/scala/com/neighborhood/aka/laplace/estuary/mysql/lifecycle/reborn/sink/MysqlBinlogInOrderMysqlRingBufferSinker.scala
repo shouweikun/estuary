@@ -6,8 +6,8 @@ import com.neighborhood.aka.laplace.estuary.core.sink.mysql.MysqlSinkFunc
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.core.util.SimpleEstuaryRingBuffer
 import com.neighborhood.aka.laplace.estuary.mysql.SettingConstant
-import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.{BinlogPositionInfo, MysqlRowDataInfo}
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink.MysqlBinlogInOrderSinkerCommand.{MysqlInOrderSinkerCheckBatch, MysqlInOrderSinkerGetAbnormal}
+import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.{BinlogPositionInfo, MysqlRowDataInfo}
 import com.neighborhood.aka.laplace.estuary.mysql.sink.MysqlSinkManagerImp
 
 import scala.concurrent.duration._
@@ -102,13 +102,16 @@ final class MysqlBinlogInOrderMysqlRingBufferSinker(
     lazy val connection = sinkFunc.getJdbcConnection
     if (!ringBuffer.isEmpty) {
       lastBinlogPosition = Option(ringBuffer.peek).map(_.binlogPositionInfo)
+
       val startTime = System.currentTimeMillis()
       val elemNum = ringBuffer.elemNum
       try {
         connection.setAutoCommit(false)
         val statement = connection.createStatement()
         ringBuffer.foreach {
-          x => statement.addBatch(x.sql)
+          x =>
+
+              statement.addBatch(x.sql)
         }
         statement.executeBatch()
         connection.commit()

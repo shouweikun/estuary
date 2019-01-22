@@ -73,9 +73,9 @@ final class CanalEntry2RowDataInfoMappingFormat(
 
   private def handleDeleteEventRowDataToSql(dbName: String, tableName: String, rowData: RowData): String = {
     import scala.collection.JavaConverters._
-    val columnList = rowData.getAfterColumnsList.asScala
+    val columnList = rowData.getBeforeColumnsList.asScala
     columnList.find(x => x.hasIsKey && x.getIsKey).fold { //暂时不处理无主键的
-      ""
+    ""
     } {
       keyColumn =>
         val keyName = keyColumn.getName
