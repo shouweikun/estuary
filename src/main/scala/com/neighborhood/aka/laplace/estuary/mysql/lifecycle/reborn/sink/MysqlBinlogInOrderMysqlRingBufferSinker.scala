@@ -108,7 +108,7 @@ final class MysqlBinlogInOrderMysqlRingBufferSinker(
         connection.setAutoCommit(false)
         val statement = connection.createStatement()
         ringBuffer.foreach {
-          _ => statement.addBatch(s"replace into test.test_0120(longid) VALUES($num)")
+          x => statement.addBatch(x.sql)
         }
         statement.executeBatch()
         connection.commit()
