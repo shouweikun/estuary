@@ -23,7 +23,7 @@ final class SdaMysqlBinlogInOrderDirectFetcher(
   lazy val rule: Map[String, String] = taskManager.tableMappingRule
 
   private lazy val ALTER_PATTERN = """^\s*[a/A][l/L][t/T][e/E][r/R]\s+[T/t][a/A][b/B][l/L][e/E]\s*(\w+).*""".r
-  A
+
 
   override protected def executeDdl(entry: CanalEntry.Entry): Unit = {
     val ddlSql = CanalEntryTransUtil.parseStoreValue(entry)(syncTaskId).getSql

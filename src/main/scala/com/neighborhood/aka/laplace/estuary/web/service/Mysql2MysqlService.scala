@@ -7,7 +7,7 @@ import com.neighborhood.aka.laplace.estuary.core.akkaUtil.SyncDaemonCommand.Exte
 import com.neighborhood.aka.laplace.estuary.core.task.Mysql2MysqlSyncTask
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.control.{MysqlBinlogInOrderController, MysqlBinlogInOrderMysqlController}
 import com.neighborhood.aka.laplace.estuary.web.akkaUtil.ActorRefHolder
-import com.neighborhood.aka.laplace.estuary.web.bean.{Mysql2MysqlRequestBean, SdaRequestBean}
+import com.neighborhood.aka.laplace.estuary.web.bean.{Mysql2MysqlRequestBean, SdaRequestBean, TableNameMappingBean}
 import com.neighborhood.aka.laplace.estuary.web.utils.TaskBeanTransformUtil
 import org.slf4j.{Logger, LoggerFactory}
 import org.springframework.beans.factory.annotation.{Autowired, Qualifier, Value}
@@ -16,7 +16,6 @@ import org.springframework.stereotype.Service
 import org.springframework.web.client.RestTemplate
 
 import scala.collection.JavaConverters._
-import scala.util.Try
 
 /**
   * Created by john_liu on 2018/3/10.
@@ -84,13 +83,7 @@ final class Mysql2MysqlService extends SyncService[Mysql2MysqlRequestBean] {
     val syncTaskId: String = taskRequestBean.getMysql2MysqlRunningInfoBean.getSyncTaskId
     val concernedTableNameSqlTemplete: String => String = x => s"select xxx from $concernedConfigTableName where  yyy = '$x'"
     val concernedDatabases: List[String] = taskRequestBean.getMysqlSourceBean.getConcernedDatabase.asScala.toList
-//    val getMappingRule: java.util.Map[String, String] = concernedDatabases.flatMap {
-//      db =>
-//        getAllTableMappingByDatabaseName(db)
-//        ???
-//
-//      //todo
-//    }
+    val getMappingRule: java.util.Map[String, String] = getAllTableMappingByDatabase(concernedDatabases.toSet).asJava //必须要是java map
     val concernedFilterPattern: String = concernedDatabases.flatMap {
       databaseName =>
         jdbcTemplate
@@ -104,11 +97,22 @@ final class Mysql2MysqlService extends SyncService[Mysql2MysqlRequestBean] {
     taskRequestBean.setSdaBean(new SdaRequestBean(getMappingRule)) //增加rule
   }
 
-  private def getAllTableMappingByDatabaseName(dbName: String): java.util.Map[String, String] = {
+  /**
+    * 获取全部表的映射关系
+    *
+    * @return
+    */
+  private def getAllTableMappingByDatabase(concernedDatabases: Set[String]): Map[String, String] = {
     val map = new java.util.HashMap[String, String]()
     map.put("token", mataDataToken)
     map.put("accept", "*/*")
-    restTemplate.getForEntity(mataDataUrl, java.util.Map[String, String], map)
-    ???
+    restTemplate
+      .getForEntity(mataDataUrl, classOf[java.util.List[TableNameMappingBean]], map)
+      .getBody
+      .asScala
+      .withFilter(x => concernedDatabases.contains(x.getSourceDb)) //过滤
+      .map { x => (s"${x.getSourceDb.trim.toLowerCase}.${x.getSourceTable.toLowerCase}" -> s"${x.getNewDb}.${x.getNewTable}") } //全部转为小写
+      .toMap
   }
+
 }
