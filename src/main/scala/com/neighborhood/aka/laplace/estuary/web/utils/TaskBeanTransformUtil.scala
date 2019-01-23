@@ -32,7 +32,7 @@ object TaskBeanTransformUtil {
     )(
       isAutoCommit = Option(requestMysqlSinkBean.isAutoCommit),
       connectionTimeout = if (requestMysqlSinkBean.getConnectionTimeout <= 1l) None else Option(requestMysqlSinkBean.getConnectionTimeout),
-      maximumPoolSize = if (requestMysqlSinkBean.getMaximumPoolSize <= 1) Option(requestRunningBean.getBatcherNum + 1) else Option(math.max(requestRunningBean.getBatcherNum + 1, requestMysqlSinkBean.getMaximumPoolSize))
+      maximumPoolSize = Option(math.max(requestRunningBean.getBatcherNum + 3, requestMysqlSinkBean.getMaximumPoolSize))
     )
 
     val runningInfoBean = MysqlTaskInfoBeanImp(

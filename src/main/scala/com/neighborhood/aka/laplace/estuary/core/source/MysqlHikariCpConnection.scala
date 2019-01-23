@@ -55,7 +55,6 @@ final class MysqlHikariCpConnection(
   def insertBatchSql(sqls: List[String]): Try[List[Int]] = Try {
     val conn = ds.getConnection()
     try {
-
       conn.setAutoCommit(false)
       val statement = conn.createStatement()
       sqls.foreach(sql => ds.getConnection.createStatement().addBatch(sql))
