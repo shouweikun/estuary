@@ -8,8 +8,10 @@ package com.neighborhood.aka.laplace.estuary.mysql.schema.tablemeta
   * @author neighborhood.aka.laplace
   */
 final case class MysqlTableSchemaHolder(
-                                         private val tableSchemas: Map[String, EstuaryMysqlTableMeta]
+                                         @volatile private var tableSchemas: Map[String, EstuaryMysqlTableMeta]
                                        ) {
 
   def getTableMetaByFullName(fullName: String): Option[EstuaryMysqlTableMeta] = tableSchemas.get(fullName)
+
+  def addNewTableMeta(fullName: String, m: EstuaryMysqlTableMeta): Unit = tableSchemas = tableSchemas.+(fullName -> m)
 }

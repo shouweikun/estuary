@@ -6,6 +6,7 @@ import com.neighborhood.aka.laplace.estuary.bean.key.PartitionStrategy
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.core.trans.MappingFormat
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.batch.mappings.{CanalEntry2RowDataInfoMappingFormat, CanalEntry2RowDataInfoMappingFormat4Sda}
+import com.neighborhood.aka.laplace.estuary.mysql.schema.tablemeta.{EstuaryMysqlColumnInfo, EstuaryMysqlTableMeta, MysqlTableSchemaHolder}
 import com.neighborhood.aka.laplace.estuary.mysql.sink.{MysqlSinkBeanImp, MysqlSinkManagerImp}
 import com.neighborhood.aka.laplace.estuary.mysql.source.{MysqlSourceBeanImp, MysqlSourceManagerImp}
 import com.typesafe.config.Config
@@ -176,6 +177,8 @@ final class Mysql2MysqlTaskInfoManager(
     */
   val tableMappingRule: Map[String, String] = taskInfo.sdaBean.map(_.tableMappingRule).getOrElse(Map.empty)
 
+  val sinkMysqlTableSchemaHolder: MysqlTableSchemaHolder
+
   /**
     * 关闭
     * 当与资源管理器eg:SinkManager和SourceManager绑定时，将资源关闭交给这个方法
@@ -184,6 +187,31 @@ final class Mysql2MysqlTaskInfoManager(
     closeSource
     closeSink
 
+  }
+
+  /**
+    * 从Sink端的Information Schema构造mysqlTableSchemaHolder
+    *
+    * @return
+    */
+  def buildMysqlTableSchemaHolderFromSink: MysqlTableSchemaHolder = {
+    val dbs = tableMappingRule
+      .values.map(_.split(".")(0)) //这么做的理由是获取sink端的databaseName,防止由于source 和sink tableName对应不上的问题
+      .map(x => s"'$x'")
+      .mkString(",")
+    val sql = s"select a.TABLE_SCHEMA, a.TABLE_NAME,b.COLUMN_NAME,b.DATA_TYPE,b.ORDINAL_POSITION from TABLES a join COLUMNS b ON (a.TABLE_NAME = b.TABLE_NAME) where a.TABLE_SCHEMA in ( $dbs )"
+    val map = sink
+      .queryAsScalaList(sql).map {
+      x =>
+        val columnName = x("COLUMN_NAME").toString
+        val mysqlType = x("DATA_TYPE").toString
+        val index = x("ORDINAL_POSITION").toString.toInt - 1
+        (s"${x("TABLE_SCHEMA")}.${x("TABLE_NAME")}" -> EstuaryMysqlColumnInfo(columnName, index, mysqlType))
+    }.groupBy(x => x._1) //聚类
+      .map {
+      case (fullName, columns) => (fullName -> EstuaryMysqlTableMeta(fullName.split('.')(0), fullName.split('.')(1), columns.map(_._2)))
+    }
+    MysqlTableSchemaHolder(map)
   }
 
   def buildMappingFormat: MappingFormat[_, _] = {

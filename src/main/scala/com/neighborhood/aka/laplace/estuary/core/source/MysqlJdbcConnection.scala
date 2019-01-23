@@ -5,6 +5,7 @@ import java.sql._
 import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec
+import scala.util.Try
 
 /**
   * Created by john_liu on 2018/6/19.
@@ -103,9 +104,9 @@ final class MysqlJdbcConnection(
   }
 
   @throws[SQLException]
-  def selectSqlAndClose(sql: String): List[Map[String, Any]] = {
+  def selectSqlAndClose(sql: String): List[Map[String, AnyRef]] = {
     val re = selectSql(sql)
-    this.disconnect()
+    Try(this.disconnect())
     re
   }
 
@@ -163,8 +164,17 @@ final class MysqlJdbcConnection(
     //    if (!isConnected) connect() //因为是在一个事务中使用，所以不能尝试重连
     conn.fold(throw new SQLException("connection is not connected,is null"))(_.commit())
   }
+
+  def setConnection(connection: Connection): Unit = {
+    conn = Option(connection)
+  }
 }
 
 object MysqlJdbcConnection {
 
+  implicit def MysqlJdbcConnectionHolder(connection: Connection): MysqlJdbcConnection = {
+    val re = new MysqlJdbcConnection
+    re.setConnection(connection)
+    re
+  }
 }
