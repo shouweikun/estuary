@@ -108,11 +108,8 @@ final class MysqlBinlogInOrderMysqlRingBufferSinker(
       try {
         connection.setAutoCommit(false)
         val statement = connection.createStatement()
-        ringBuffer.foreach {
-          x =>
-
-            statement.addBatch(x.sql)
-        }
+        ringBuffer.foreach { x => statement.addBatch(x.sql) }
+        statement.executeBatch()
         statement.executeBatch()
         connection.commit()
         statement.clearBatch()
