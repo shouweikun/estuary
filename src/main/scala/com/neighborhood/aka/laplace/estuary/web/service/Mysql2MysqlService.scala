@@ -7,15 +7,15 @@ import com.neighborhood.aka.laplace.estuary.core.akkaUtil.SyncDaemonCommand.Exte
 import com.neighborhood.aka.laplace.estuary.core.task.Mysql2MysqlSyncTask
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.control.{MysqlBinlogInOrderController, MysqlBinlogInOrderMysqlController}
 import com.neighborhood.aka.laplace.estuary.web.akkaUtil.ActorRefHolder
-import com.neighborhood.aka.laplace.estuary.web.bean.{Mysql2MysqlRequestBean, SdaRequestBean}
+import com.neighborhood.aka.laplace.estuary.web.bean.{Mysql2MysqlRequestBean, SdaRequestBean, TableNameMappingBean}
 import com.neighborhood.aka.laplace.estuary.web.utils.TaskBeanTransformUtil
 import org.slf4j.{Logger, LoggerFactory}
 import org.springframework.beans.factory.annotation.{Autowired, Qualifier, Value}
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Service
+import org.springframework.web.client.RestTemplate
 
 import scala.collection.JavaConverters._
-import scala.util.Try
 
 /**
   * Created by john_liu on 2018/3/10.
@@ -28,9 +28,17 @@ final class Mysql2MysqlService extends SyncService[Mysql2MysqlRequestBean] {
   private val concernedConfigTableName: String = null
   @Value("server.port")
   private val port: String = null
+  @Value("sda.tableMapping.matadata.url")
+  private val mataDataUrl: String = null
+  @Value("sda.tableMapping.matadata.token")
+  private val mataDataToken: String = null
   @Autowired
   @Qualifier("configJdbcTemplate") private lazy val jdbcTemplate: JdbcTemplate = null
   private lazy val logger: Logger = LoggerFactory.getLogger(classOf[Mysql2MysqlService])
+
+  @Autowired
+  @Qualifier("restTemplate")
+  private val restTemplate: RestTemplate = null
 
   /**
     * 为Sda定制的开始方法
@@ -74,8 +82,9 @@ final class Mysql2MysqlService extends SyncService[Mysql2MysqlRequestBean] {
   private def customRequestForSda(taskRequestBean: Mysql2MysqlRequestBean): Unit = {
     val syncTaskId: String = taskRequestBean.getMysql2MysqlRunningInfoBean.getSyncTaskId
     val concernedTableNameSqlTemplete: String => String = x => s"select xxx from $concernedConfigTableName where  yyy = '$x'"
-    val getMappingRule: Map[String, String] = Map.empty //todo
-    val concernedFilterPattern: String = taskRequestBean.getMysqlSourceBean.getConcernedDatabase.asScala.flatMap {
+    val concernedDatabases: List[String] = taskRequestBean.getMysqlSourceBean.getConcernedDatabase.asScala.toList
+    val getMappingRule: java.util.Map[String, String] = getAllTableMappingByDatabase(concernedDatabases.toSet).asJava //必须要是java map
+    val concernedFilterPattern: String = concernedDatabases.flatMap {
       databaseName =>
         jdbcTemplate
           .queryForMap(concernedTableNameSqlTemplete(databaseName))
@@ -85,7 +94,25 @@ final class Mysql2MysqlService extends SyncService[Mysql2MysqlRequestBean] {
     }.mkString(",")
     taskRequestBean.getMysqlSourceBean.setFilterPattern(concernedFilterPattern) //强制设置concernedPattern
     taskRequestBean.getMysql2MysqlRunningInfoBean.setMappingFormatName("sda") //强制Sda
-    taskRequestBean.setSdaBean(new SdaRequestBean(getMappingRule.asJava)) //增加rule
+    taskRequestBean.setSdaBean(new SdaRequestBean(getMappingRule)) //增加rule
+  }
+
+  /**
+    * 获取全部表的映射关系
+    *
+    * @return
+    */
+  private def getAllTableMappingByDatabase(concernedDatabases: Set[String]): Map[String, String] = {
+    val map = new java.util.HashMap[String, String]()
+    map.put("token", mataDataToken)
+    map.put("accept", "*/*")
+    restTemplate
+      .getForEntity(mataDataUrl, classOf[java.util.List[TableNameMappingBean]], map)
+      .getBody
+      .asScala
+      .withFilter(x => concernedDatabases.contains(x.getSourceDb)) //过滤
+      .map { x => (s"${x.getSourceDb.trim.toLowerCase}.${x.getSourceTable.toLowerCase}" -> s"${x.getNewDb}.${x.getNewTable}") } //全部转为小写
+      .toMap
   }
 
 }

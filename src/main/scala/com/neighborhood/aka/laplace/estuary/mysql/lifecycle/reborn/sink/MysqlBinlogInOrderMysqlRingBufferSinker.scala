@@ -6,8 +6,8 @@ import com.neighborhood.aka.laplace.estuary.core.sink.mysql.MysqlSinkFunc
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.core.util.SimpleEstuaryRingBuffer
 import com.neighborhood.aka.laplace.estuary.mysql.SettingConstant
-import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.{BinlogPositionInfo, MysqlRowDataInfo}
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink.MysqlBinlogInOrderSinkerCommand.{MysqlInOrderSinkerCheckBatch, MysqlInOrderSinkerGetAbnormal}
+import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.{BinlogPositionInfo, MysqlRowDataInfo}
 import com.neighborhood.aka.laplace.estuary.mysql.sink.MysqlSinkManagerImp
 
 import scala.concurrent.duration._
@@ -99,16 +99,19 @@ final class MysqlBinlogInOrderMysqlRingBufferSinker(
     * 将RingBuffer里所有的元素都形成sql 以batch的形式更新到数据库中
     */
   private def flush: Unit = {
-    lazy val connection = sinkFunc.getJdbcConnection
+
     if (!ringBuffer.isEmpty) {
       lastBinlogPosition = Option(ringBuffer.peek).map(_.binlogPositionInfo)
+      val connection = sinkFunc.getJdbcConnection
       val startTime = System.currentTimeMillis()
       val elemNum = ringBuffer.elemNum
       try {
         connection.setAutoCommit(false)
         val statement = connection.createStatement()
         ringBuffer.foreach {
-          _ => statement.addBatch(s"replace into test.test_0120(longid) VALUES($num)")
+          x =>
+
+            statement.addBatch(x.sql)
         }
         statement.executeBatch()
         connection.commit()
