@@ -45,7 +45,13 @@ trait SourceDataPositionRecorder[A <: ComparableOffset[A]] extends ActorPrototyp
   }
 
   protected def saveOffsetWhenError(e: Throwable, offset: Option[A]): Unit = {
-    offset.flatMap(getMatchOffset(_)).fold(log.warning(s"this can be really dangerous,cause cannot find a suitable offset to save when error, considering of loss of data plz,id:$syncTaskId"))(saveOffsetInternal(_))
+    val oldest: Option[A] = quene.headOption
+    offset.flatMap(getMatchOffset(_)).fold {
+      log.warning(s"this can be really dangerous,cause cannot find a suitable offset to save when error, considering of loss of data plz,id:$syncTaskId")
+      oldest.map(saveOffsetInternal(_)) //把最老的保存一下
+      if (oldest.isDefined) log.warning(s"try to save the oldest offset instead,but still can not guarantee no data is loss,id:$syncTaskId ")
+    }(saveOffsetInternal(_))
+
     context.become(error)
     throw new SinkerAbnormalException(s"sinker some thing wrong,e:$e,message:${e.getMessage},id:$syncTaskId")
   }
