@@ -34,8 +34,17 @@ final class MysqlHikariCpConnection(
     * @return 插入结果
     */
   def insertSql(sql: String): Try[Int] = Try {
-    ds.getConnection.createStatement().executeUpdate(sql)
+    val connection = ds.getConnection
+    try {
+      connection.createStatement().executeUpdate(sql)
+    } catch {
+      case e => throw e
+    }
+    finally {
+      connection.close()
+    }
   }
+
 
   /**
     * 插入一批Sql
