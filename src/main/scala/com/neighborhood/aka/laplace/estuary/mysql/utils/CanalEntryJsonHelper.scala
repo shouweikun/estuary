@@ -81,15 +81,16 @@ object CanalEntryJsonHelper {
     */
   def getSqlValueByMysqlType(mysqlType: String, value: String): String = {
     mysqlType.toLowerCase match {
-      case "bit" => value
-      case "char" => value
-      case "int" => value
+      case x if (x.startsWith("char")) => value
+      case x if (x.contains("int")) => value
+      case x if (x.contains("bit")) => value
       case x if (x.contains("long")) => value
       case x if (x.contains("float")) => value
       case x if (x.contains("decimal")) => value
       case x if (x.contains("double")) => value
       case x if (x.contains("bigint")) => value
-      case _ => s"'$value'"
+      case _ => s""""${value.replaceAll("\"","""\\"""")}"""" //add escape char handler
     }
   }
+
 }

@@ -102,7 +102,7 @@ final class MysqlBinlogInOrderMysqlRingBufferSinker(
 
     if (!ringBuffer.isEmpty) {
       lastBinlogPosition = Option(ringBuffer.peek).map(_.binlogPositionInfo)
-      lazy val connection = sinkFunc.getJdbcConnection
+      val connection = sinkFunc.getJdbcConnection
       val startTime = System.currentTimeMillis()
       val elemNum = ringBuffer.elemNum
       try {
