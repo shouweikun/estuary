@@ -26,7 +26,12 @@ object CanalEntryJsonHelper {
     re
   }
 
-
+  /**
+    * entry 转换为Json
+    *
+    * @param entry entry
+    * @return Json
+    */
   def entryToJson(entry: CanalEntry.Entry): String = {
     val sb = new StringBuilder(entry.getSerializedSize + 2048)
     sb.append("{\"header\":")
