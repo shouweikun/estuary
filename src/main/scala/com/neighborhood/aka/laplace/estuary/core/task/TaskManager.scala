@@ -327,15 +327,23 @@ trait TaskManager {
   }
 
   /**
-    * 等待sinkCount == fetchCount
+    * 等待sinkCount == fetchCount == batchCount
     */
   @tailrec
   final def wait4TheSameCount(startTime: Long = System.currentTimeMillis()): Unit = {
-    lazy val theFetchCount = this.fetchCount.get()
-    lazy val theSinkCount = this.sinkCount.get()
     if (System.currentTimeMillis() - startTime > 60000) throw new RuntimeException(s"1 min has passed but still not same count,id:$syncTaskId")
-    if (theFetchCount - theSinkCount != 0) wait4TheSameCount(startTime) else Thread.sleep(50)
+    if (!sameCountOnce) {
+      Thread.sleep(50)
+      wait4TheSameCount(startTime)
+    }
+  }
 
+  @inline
+  private def sameCountOnce: Boolean = {
+    lazy val theFetchCount = this.fetchCount.get()
+    lazy val theBatchCount = this.batchCount.get()
+    lazy val theSinkCount = this.sinkCount.get()
+    theFetchCount == theBatchCount && theBatchCount == theSinkCount
   }
 
   /**
