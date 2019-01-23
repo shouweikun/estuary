@@ -274,3 +274,44 @@ cp application.conf.templete  application.conf
   }
 }
 ```
+```json
+//一个样例
+
+{
+	"mysql2MysqlRunningInfoBean": {
+		"batcherNum": 31,
+		"offsetZkServers": "nbhd.aka.laplace.zookeeper.com:2181",
+		"partitionStrategy": "PRIMARY_KEY",
+		"syncTaskId": "nbhd",
+		"sinkerNameToLoad": {
+			"sinker": "com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink.MysqlBinlogInOrderMysqlRingBufferSinker" //推荐使用这个
+		},
+		"startPosition": {
+			"timestamp": 1548126793000 //binlog会从这个时间点消费
+		}
+	},
+	"mysqlSinkBean": {
+		"credential": {
+			"address": "localhost",
+			"defaultDatabase": "",
+			"password": "123456",
+			"port": 3306,
+			"username": "root"
+		}
+	},
+	"mysqlSourceBean": {
+		"concernedDatabase": [
+			"xxx"
+		],
+		"filterPattern": "xxx\\.yyy", //白名单过滤
+		"master": {
+			"address": "localhost",
+			"defaultDatabase": "",
+			"password": "123456",
+			"port": 3306,
+			"username": "root"
+		}
+	}
+
+}
+```
