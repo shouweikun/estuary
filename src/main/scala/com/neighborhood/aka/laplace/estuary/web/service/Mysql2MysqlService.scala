@@ -91,7 +91,7 @@ final class Mysql2MysqlService extends SyncService[Mysql2MysqlRequestBean] {
           .queryForMap(concernedTableNameSqlTemplete(databaseName))
           .get("xxx").toString
           .split(",")
-          .map(tablename => if (tablename.contains('.')) tablename else s"$databaseName.$tablename")
+          .map(tableName => if (tableName.contains('.')) tableName else s"$databaseName.$tableName")
     }
       .flatMap(x => List(x, s"_${x}_new", s"_${x}_temp", s"_${x}_old"))  //增加临时表的白名单
       .mkString(",")
