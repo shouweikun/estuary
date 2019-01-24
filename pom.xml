@@ -33,6 +33,7 @@
         <maxwell.version>1.14.7.4</maxwell.version>
         <trickle.version>1.7.12</trickle.version>
         <hikari.version>3.2.0</hikari.version>
+        <antlr.version>4.5</antlr.version>
     </properties>
     <dependencies>
         <dependency>
@@ -77,45 +78,6 @@
             <artifactId>guava</artifactId>
             <version>18.0</version>
         </dependency>
-        <!--<dependency>-->
-        <!--<groupId>com.zendesk</groupId>-->
-        <!--<artifactId>maxwell-sql</artifactId>-->
-        <!--<version>${maxwell.version}</version>-->
-        <!--<exclusions>-->
-        <!--<exclusion>-->
-        <!--<groupId>org.apache.logging.log4j</groupId>-->
-        <!--<artifactId>log4j-core</artifactId>-->
-        <!--</exclusion>-->
-        <!--<exclusion>-->
-        <!--<groupId>org.apache.logging.log4j</groupId>-->
-        <!--<artifactId>log4j-slf4j-impl</artifactId>-->
-        <!--</exclusion>-->
-        <!--<exclusion>-->
-        <!--<groupId>org.slf4j</groupId>-->
-        <!--<artifactId>jul-to-slf4j</artifactId>-->
-        <!--</exclusion>-->
-        <!--<exclusion>-->
-        <!--<groupId>org.apache.commons</groupId>-->
-        <!--<artifactId>commons-lang3</artifactId>-->
-        <!--</exclusion>-->
-        <!--<exclusion>-->
-        <!--<groupId>commons-codec</groupId>-->
-        <!--<artifactId>commons-codec</artifactId>-->
-        <!--</exclusion>-->
-        <!--<exclusion>-->
-        <!--<artifactId>mysql-binlog-connector-java</artifactId>-->
-        <!--<groupId>com.github.shyiko</groupId>-->
-        <!--</exclusion>-->
-        <!--<exclusion>-->
-        <!--<artifactId>antlr4-runtime</artifactId>-->
-        <!--<groupId>org.antlr</groupId>-->
-        <!--</exclusion>-->
-        <!--<exclusion>-->
-        <!--<artifactId>log4j-staticshutdown</artifactId>-->
-        <!--<groupId>com.djdch.log4j</groupId>-->
-        <!--</exclusion>-->
-        <!--</exclusions>-->
-        <!--</dependency>-->
         <dependency>
             <groupId>org.apache.kafka</groupId>
             <artifactId>kafka_${scala.binary.version}</artifactId>
@@ -147,21 +109,23 @@
                 </exclusion>
             </exclusions>
         </dependency>
-
         <!-- https://mvnrepository.com/artifact/ch.qos.logback/logback-classic -->
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>1.2.1</version>
         </dependency>
-
         <!-- https://mvnrepository.com/artifact/com.zaxxer/HikariCP -->
         <dependency>
             <groupId>com.zaxxer</groupId>
             <artifactId>HikariCP</artifactId>
             <version>${hikari.version}</version>
         </dependency>
-
+        <dependency>
+            <groupId>org.antlr</groupId>
+            <artifactId>antlr4-runtime</artifactId>
+            <version>${antlr.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>io.springfox</groupId>
