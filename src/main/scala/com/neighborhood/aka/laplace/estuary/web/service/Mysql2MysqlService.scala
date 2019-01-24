@@ -93,7 +93,7 @@ final class Mysql2MysqlService extends SyncService[Mysql2MysqlRequestBean] {
           .split(",")
           .map(tablename => if (tablename.contains('.')) tablename else s"$databaseName.$tablename")
     }
-      .flatMap(x => List(x, s"_${x}_new", s"_${x}_temp", s"_${x}_new"))  //增加临时表的白名单
+      .flatMap(x => List(x, s"_${x}_new", s"_${x}_temp", s"_${x}_old"))  //增加临时表的白名单
       .mkString(",")
     taskRequestBean.getMysqlSourceBean.setFilterPattern(concernedFilterPattern) //强制设置concernedPattern
     taskRequestBean.getMysql2MysqlRunningInfoBean.setMappingFormatName("sda") //强制Sda
