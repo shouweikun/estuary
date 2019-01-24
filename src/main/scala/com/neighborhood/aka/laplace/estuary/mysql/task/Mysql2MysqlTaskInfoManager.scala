@@ -160,7 +160,7 @@ final class Mysql2MysqlTaskInfoManager(
   /**
     * 打包阈值
     */
-  override def batchThreshold: Long = taskInfo.taskRunningInfoBean.batchThreshold
+  override val batchThreshold: Long = taskInfo.taskRunningInfoBean.batchThreshold
 
   /**
     * batcher的数量
@@ -173,11 +173,20 @@ final class Mysql2MysqlTaskInfoManager(
   override val sinkerNum: Int = batcherNum
 
   /**
+    * 是否开启数据监测
+    */
+  val isCheckSinkSchema: Boolean = taskInfo.taskRunningInfoBean.isCheckSinkSchema
+
+  /**
     * sda专用属性,table对应规则
     */
   val tableMappingRule: Map[String, String] = taskInfo.sdaBean.map(_.tableMappingRule).getOrElse(Map.empty)
 
-  val sinkMysqlTableSchemaHolder: MysqlTableSchemaHolder
+
+  /**
+    * sink端的元数据信息
+    */
+  lazy val sinkMysqlTableSchemaHolder: MysqlTableSchemaHolder = buildMysqlTableSchemaHolderFromSink
 
   /**
     * 关闭
@@ -186,7 +195,6 @@ final class Mysql2MysqlTaskInfoManager(
   override def close: Unit = Try {
     closeSource
     closeSink
-
   }
 
   /**

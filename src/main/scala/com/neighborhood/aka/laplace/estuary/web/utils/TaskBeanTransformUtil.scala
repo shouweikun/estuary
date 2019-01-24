@@ -44,6 +44,7 @@ object TaskBeanTransformUtil {
       isCounting = requestRunningBean.isCounting,
       isProfiling = requestRunningBean.isProfiling,
       isPowerAdapted = requestRunningBean.isPowerAdapted,
+      isCheckSinkSchema = requestRunningBean.isCheckSinkSchema,
       partitionStrategy = requestRunningBean.getPartitionStrategy,
       startPosition = Option(requestRunningBean.getStartPosition),
       batcherNum = requestRunningBean.getBatcherNum,
