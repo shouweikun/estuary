@@ -53,10 +53,6 @@ final class Mysql2MysqlTaskInfoManager(
     */
   override val startPosition: Option[EntryPosition] = taskInfo.taskRunningInfoBean.startPosition
 
-  /**
-    * 是否需要执行ddl
-    */
-  override def isNeedExecuteDDL: Boolean = taskInfo.taskRunningInfoBean.isNeedExecuteDDL
 
   /**
     * batch转换模块
@@ -108,10 +104,18 @@ final class Mysql2MysqlTaskInfoManager(
   override def taskType: String = s"${sourceBean.dataSourceType}-${taskInfo.dataSyncType}-${sinkBean.dataSinkType}"
 
   /**
-    * 是否启动Schema管理模块
+    * 是否启动Schema管理模块,保存元数据
     */
-  override def schemaComponentIsOn: Boolean = taskInfo.taskRunningInfoBean.schemaComponentIsOn
-
+  override val schemaComponentIsOn: Boolean = taskInfo.taskRunningInfoBean.schemaComponentIsOn
+  /**
+    * 是否开启数据Schema校验对比
+    * 如果Schema管理模块没有开启，不支持就不支持该功能
+    */
+  val isCheckSinkSchema: Boolean = schemaComponentIsOn && taskInfo.taskRunningInfoBean.isCheckSinkSchema
+  /**
+    * 是否需要执行ddl
+    */
+  override val isNeedExecuteDDL: Boolean = taskInfo.taskRunningInfoBean.isNeedExecuteDDL
   /**
     * 分区模式
     *
@@ -172,10 +176,6 @@ final class Mysql2MysqlTaskInfoManager(
     */
   override val sinkerNum: Int = batcherNum
 
-  /**
-    * 是否开启数据监测
-    */
-  val isCheckSinkSchema: Boolean = taskInfo.taskRunningInfoBean.isCheckSinkSchema
 
   /**
     * sda专用属性,table对应规则
