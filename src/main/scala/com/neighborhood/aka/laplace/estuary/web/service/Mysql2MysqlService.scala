@@ -11,6 +11,7 @@ import com.neighborhood.aka.laplace.estuary.web.bean.{Mysql2MysqlRequestBean, Sd
 import com.neighborhood.aka.laplace.estuary.web.utils.TaskBeanTransformUtil
 import org.slf4j.{Logger, LoggerFactory}
 import org.springframework.beans.factory.annotation.{Autowired, Qualifier, Value}
+import org.springframework.http.HttpHeaders
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Service
 import org.springframework.web.client.RestTemplate
@@ -91,7 +92,9 @@ final class Mysql2MysqlService extends SyncService[Mysql2MysqlRequestBean] {
           .get("xxx").toString
           .split(",")
           .map(tablename => if (tablename.contains('.')) tablename else s"$databaseName.$tablename")
-    }.mkString(",")
+    }
+      .flatMap(x => List(x, s"_${x}_new", s"_${x}_temp", s"_${x}_new"))  //增加临时表的白名单
+      .mkString(",")
     taskRequestBean.getMysqlSourceBean.setFilterPattern(concernedFilterPattern) //强制设置concernedPattern
     taskRequestBean.getMysql2MysqlRunningInfoBean.setMappingFormatName("sda") //强制Sda
     taskRequestBean.setSdaBean(new SdaRequestBean(getMappingRule)) //增加rule
@@ -103,9 +106,9 @@ final class Mysql2MysqlService extends SyncService[Mysql2MysqlRequestBean] {
     * @return
     */
   private def getAllTableMappingByDatabase(concernedDatabases: Set[String]): Map[String, String] = {
-    val map = new java.util.HashMap[String, String]()
-    map.put("token", mataDataToken)
-    map.put("accept", "*/*")
+    val map = new HttpHeaders
+    map.add("token", mataDataToken)
+    map.add("accept", "*/*")
     restTemplate
       .getForEntity(mataDataUrl, classOf[java.util.List[TableNameMappingBean]], map)
       .getBody
