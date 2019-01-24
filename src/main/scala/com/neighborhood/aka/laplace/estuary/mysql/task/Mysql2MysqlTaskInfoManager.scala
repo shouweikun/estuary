@@ -224,8 +224,8 @@ final class Mysql2MysqlTaskInfoManager(
 
   def buildMappingFormat: MappingFormat[_, _] = {
 
-    lazy val default = new CanalEntry2RowDataInfoMappingFormat(partitionStrategy, syncTaskId, syncStartTime, mysqlSchemaHandler, schemaComponentIsOn, config)
-    lazy val sda = new CanalEntry2RowDataInfoMappingFormat4Sda(partitionStrategy, syncTaskId, syncStartTime, mysqlSchemaHandler, schemaComponentIsOn, config, tableMappingRule)
+    lazy val default = new CanalEntry2RowDataInfoMappingFormat(partitionStrategy, syncTaskId, syncStartTime, schemaComponentIsOn, config)
+    lazy val sda = new CanalEntry2RowDataInfoMappingFormat4Sda(partitionStrategy, syncTaskId, syncStartTime, schemaComponentIsOn, config, tableMappingRule)
     taskInfo.taskRunningInfoBean.batchMappingFormatName
       .map {
         name =>

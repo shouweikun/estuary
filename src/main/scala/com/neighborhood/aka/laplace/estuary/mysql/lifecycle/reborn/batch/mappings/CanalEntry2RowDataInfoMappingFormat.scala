@@ -4,8 +4,7 @@ import com.alibaba.otter.canal.protocol.CanalEntry.{EventType, RowData}
 import com.neighborhood.aka.laplace.estuary.bean.key.PartitionStrategy
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.{BinlogPositionInfo, MysqlRowDataInfo}
-import com.neighborhood.aka.laplace.estuary.mysql.schema.storage.MysqlSchemaHandler
-import com.neighborhood.aka.laplace.estuary.mysql.utils.CanalEntryJsonHelper
+import com.neighborhood.aka.laplace.estuary.mysql.utils.CanalEntryTransHelper
 import com.typesafe.config.Config
 
 import scala.collection.mutable.ListBuffer
@@ -17,7 +16,6 @@ final class CanalEntry2RowDataInfoMappingFormat(
                                                  override val partitionStrategy: PartitionStrategy,
                                                  override val syncTaskId: String,
                                                  override val syncStartTime: Long,
-                                                 override val mysqlSchemaHandler: MysqlSchemaHandler,
                                                  override val schemaComponentIsOn: Boolean,
                                                  override val config: Config
                                                ) extends CanalEntryMappingFormat[MysqlRowDataInfo] {
@@ -55,7 +53,7 @@ final class CanalEntry2RowDataInfoMappingFormat(
       index =>
         val column = rowData.getAfterColumns(index)
         if (column.hasValue) {
-          values.append(CanalEntryJsonHelper.getSqlValueByMysqlType(column.getMysqlType, column.getValue))
+          values.append(CanalEntryTransHelper.getSqlValueByMysqlType(column.getMysqlType, column.getValue))
           fields.append(column.getName)
         }
     }
@@ -79,7 +77,7 @@ final class CanalEntry2RowDataInfoMappingFormat(
     } {
       keyColumn =>
         val keyName = keyColumn.getName
-        val keyValue = CanalEntryJsonHelper.getSqlValueByMysqlType(keyColumn.getMysqlType, keyColumn.getValue)
+        val keyValue = CanalEntryTransHelper.getSqlValueByMysqlType(keyColumn.getMysqlType, keyColumn.getValue)
         s"DELETE FROM $dbName.$tableName WHERE $keyName=$keyValue"
     }
   }

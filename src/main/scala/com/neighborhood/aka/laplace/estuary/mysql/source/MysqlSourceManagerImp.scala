@@ -8,7 +8,6 @@ import com.alibaba.otter.canal.parse.index.ZooKeeperLogPositionManager
 import com.alibaba.otter.canal.protocol.position.EntryPosition
 import com.neighborhood.aka.laplace.estuary.core.task.SourceManager
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.fetch.{FetchContextInitializer, FetchEntryHandler}
-import com.neighborhood.aka.laplace.estuary.mysql.schema.storage.MysqlSchemaHandler
 import com.neighborhood.aka.laplace.estuary.mysql.utils.{LogPositionHandler, MysqlBinlogParser}
 
 import scala.util.Try
@@ -92,7 +91,6 @@ trait MysqlSourceManagerImp extends SourceManager[MysqlConnection] {
   def isNeedExecuteDDL: Boolean
 
 
-  def mysqlSchemaHandler: MysqlSchemaHandler = mysqlSchemaHandler_
 
   def binlogParser: MysqlBinlogParser = binlogParser_
 
@@ -108,17 +106,7 @@ trait MysqlSourceManagerImp extends SourceManager[MysqlConnection] {
   private lazy val fetchEntryHandler_ = FetchEntryHandler(this)
   private lazy val logPositionHandler_ = buildEntryPositionHandler
   private lazy val binlogParser_ : MysqlBinlogParser = buildParser
-  private lazy val mysqlSchemaHandler_ : MysqlSchemaHandler = buildMysqlSchemaHandler
   private lazy val fetchContextInitializer_ = FetchContextInitializer(this)
-
-
-  /**
-    * 元数据管理域
-    *
-    * @todo 支持
-    * @return
-    */
-  def buildMysqlSchemaHandler: MysqlSchemaHandler = null
 
 
   /**
@@ -189,10 +177,10 @@ trait MysqlSourceManagerImp extends SourceManager[MysqlConnection] {
   /**
     * 停止所有资源
     */
-  override def closeSource: Unit = Try{
-    if(source.isConnected)source.disconnect()
-    if(binlogParser.isStart)binlogParser.stop()
-    if(logPositionHandler.isStart) logPositionHandler.close()
+  override def closeSource: Unit = Try {
+    if (source.isConnected) source.disconnect()
+    if (binlogParser.isStart) binlogParser.stop()
+    if (logPositionHandler.isStart) logPositionHandler.close()
   }
 }
 

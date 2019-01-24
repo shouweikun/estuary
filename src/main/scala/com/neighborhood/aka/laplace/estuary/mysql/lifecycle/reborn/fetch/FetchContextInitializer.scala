@@ -1,8 +1,7 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.fetch
 
 import com.alibaba.otter.canal.protocol.position.EntryPosition
-import com.neighborhood.aka.laplace.estuary.bean.exception.fetch.{CannotFindOffsetException, ConcernedDatabaseCannotFoundException, NullOfDataSourceConnectionException}
-import com.neighborhood.aka.laplace.estuary.bean.exception.schema.SchemaIsNotInitializedException
+import com.neighborhood.aka.laplace.estuary.bean.exception.fetch.{CannotFindOffsetException, NullOfDataSourceConnectionException}
 import com.neighborhood.aka.laplace.estuary.core.util.JavaCommonUtil
 import com.neighborhood.aka.laplace.estuary.mysql.source.{MysqlConnection, MysqlSourceManagerImp}
 import com.neighborhood.aka.laplace.estuary.mysql.utils.MysqlBinlogParser
@@ -20,10 +19,6 @@ import org.slf4j.LoggerFactory
 final class FetchContextInitializer(
                                      taskManager: MysqlSourceManagerImp
                                    ) {
-  /**
-    * schema信息处理
-    */
-  lazy val mysqlSchemaHandler = taskManager.mysqlSchemaHandler
   /**
     * 任务id
     */
@@ -89,7 +84,6 @@ final class FetchContextInitializer(
     log.info(s"MysqlBinlogInOrderDirectFetcher process onPrepareStart,to load schema info and save logPosition,id:$syncTaskId")
     log.info(s"fetcher find start position,binlogFileName:${thePosition.getJournalName},${thePosition.getPosition},id:$syncTaskId")
     mysqlConnection.fold(throw new NullOfDataSourceConnectionException(s"cannot find mysqlConnection when switch2Start,id:$syncTaskId")) { conn => if (!conn.isConnected) conn.connect() }
-    if (schemaComponentIsOn) initEventualSinkSchema //开启的时候才会缓存元数据
     logPositionHandler.persistLogPosition(syncTaskId, thePosition)
   }
 
@@ -143,36 +137,6 @@ final class FetchContextInitializer(
     }
   }
 
-  /**
-    * 检查数据库元数据信息是否都初始化
-    * 如果没初始化抛出异常
-    * 否则创建元数据信息缓存
-    **/
-  private def initEventualSinkSchema: Unit = {
-    log.info(s"start process init TableSchemaVersionCache,id:$syncTaskId")
-    lazy val mysqlDatabaseList = taskManager.mysqlDatabaseNameList
-    lazy val concernedDatabaseList = taskManager.concernedDatabase
-    lazy val check = concernedDatabaseList.diff(mysqlDatabaseList)
-    if (!check.isEmpty) throw new ConcernedDatabaseCannotFoundException(s"database(s):${check.mkString(",")} cannot be found when init Eventual Sink Schema,$syncTaskId ")
-    concernedDatabaseList
-      //      .withFilter(!mysqlSchemaHandler.isInitialized(_))
-      .map {
-      dbName =>
-        if (mysqlSchemaHandler.isInitialized(dbName)) {
-          //已经初始化了的话
-          mysqlSchemaHandler.createCache(dbName)
-        } else {
-          throw new SchemaIsNotInitializedException(
-            {
-              lazy val info = s"schema:$dbName is not initialized,pls check,$syncTaskId"
-              log.error(info)
-              info
-            }
-          )
-        }
-    }
-
-  }
 }
 
 object FetchContextInitializer {

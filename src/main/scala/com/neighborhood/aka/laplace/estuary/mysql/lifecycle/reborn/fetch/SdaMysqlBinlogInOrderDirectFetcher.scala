@@ -8,7 +8,7 @@ import com.neighborhood.aka.laplace.estuary.core.lifecycle.FetcherMessage
 import com.neighborhood.aka.laplace.estuary.core.sink.mysql.MysqlSinkFunc
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.record.MysqlBinlogInOrderRecorderCommand.MysqlBinlogInOrderRecorderSaveLatestPosition
 import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2MysqlTaskInfoManager
-import com.neighborhood.aka.laplace.estuary.mysql.utils.{CanalEntryJsonHelper, CanalEntryTransUtil}
+import com.neighborhood.aka.laplace.estuary.mysql.utils.{CanalEntryTransHelper, CanalEntryTransUtil}
 
 /**
   * Created by john_liu on 2019/1/16.
@@ -37,7 +37,7 @@ final class SdaMysqlBinlogInOrderDirectFetcher(
     * @author neighborhood.aka.laplace
     */
   override protected def executeDdl(entry: CanalEntry.Entry): Unit = {
-    log.info(s"try to execute ddl:${CanalEntryJsonHelper.headerToJson(entry.getHeader)},id:$syncTaskId")
+    log.info(s"try to execute ddl:${CanalEntryTransHelper.headerToJson(entry.getHeader)},id:$syncTaskId")
     val ddlSql = CanalEntryTransUtil.parseStoreValue(entry)(syncTaskId).getSql
     val sdaDbAndTableName: String = rule.getOrElse(s"${entry.getHeader.getSchemaName}.${entry.getHeader.getTableName}", s"${entry.getHeader.getSchemaName}.${entry.getHeader.getTableName}") //注意，如果在
     lazy val handleAlter: String = ???

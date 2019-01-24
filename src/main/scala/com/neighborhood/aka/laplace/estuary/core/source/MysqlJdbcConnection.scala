@@ -65,13 +65,13 @@ final class MysqlJdbcConnection(
     * 复用之前的方法
     */
   @throws[SQLException]
-  def resultSetMetaDataToArrayList(rs: ResultSet): List[Map[String, Any]] = {
+  def resultSetMetaDataToArrayList(rs: ResultSet): List[Map[String, AnyRef]] = {
 
     val rsmd: ResultSetMetaData = rs.getMetaData
     val fieldList = (1 to rsmd.getColumnCount).map(index => (index, rsmd.getColumnName(index).toLowerCase.trim))
 
     @tailrec
-    def loopBuildList(acc: List[Map[String, Any]] = List.empty): List[Map[String, Any]] = {
+    def loopBuildList(acc: List[Map[String, AnyRef]] = List.empty): List[Map[String, AnyRef]] = {
       if (rs.next()) {
         lazy val row = fieldList.map {
           case (index, fieldName) =>
@@ -92,7 +92,7 @@ final class MysqlJdbcConnection(
     * SELECT
     */
   @throws[SQLException]
-  def selectSql(sql: String): List[Map[String, Any]] = {
+  def selectSql(sql: String): List[Map[String, AnyRef]] = {
     logger.info(sql)
     if (!isConnected) connect()
     conn.fold(throw new SQLException("connection is not connected,is null")) {

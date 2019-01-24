@@ -4,9 +4,8 @@ import com.alibaba.otter.canal.protocol.CanalEntry.{EventType, RowData}
 import com.neighborhood.aka.laplace.estuary.bean.key.PartitionStrategy
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.{BinlogPositionInfo, MysqlRowDataInfo}
-import com.neighborhood.aka.laplace.estuary.mysql.schema.storage.MysqlSchemaHandler
 import com.neighborhood.aka.laplace.estuary.mysql.schema.tablemeta.MysqlTableSchemaHolder
-import com.neighborhood.aka.laplace.estuary.mysql.utils.CanalEntryJsonHelper
+import com.neighborhood.aka.laplace.estuary.mysql.utils.CanalEntryTransHelper
 import com.typesafe.config.Config
 import org.slf4j.LoggerFactory
 
@@ -19,7 +18,6 @@ import scala.collection.mutable.ListBuffer
   * @param partitionStrategy   分区策略
   * @param syncTaskId          同步任务Id
   * @param syncStartTime       同步任务开始时间
-  * @param mysqlSchemaHandler  mysqlSchema处理器
   * @param schemaComponentIsOn 是否开启schema管理
   * @param config              typesafe.config
   * @param tableMappingRule    表名称映射规则
@@ -29,7 +27,6 @@ final class CanalEntry2RowDataInfoMappingFormat4Sda(
                                                      override val partitionStrategy: PartitionStrategy,
                                                      override val syncTaskId: String,
                                                      override val syncStartTime: Long,
-                                                     override val mysqlSchemaHandler: MysqlSchemaHandler,
                                                      override val schemaComponentIsOn: Boolean,
                                                      override val config: Config,
                                                      val tableMappingRule: Map[String, String],
@@ -71,7 +68,7 @@ final class CanalEntry2RowDataInfoMappingFormat4Sda(
       index =>
         val column = rowData.getAfterColumns(index)
         if (column.hasValue) {
-          values.append(CanalEntryJsonHelper.getSqlValueByMysqlType(column.getMysqlType, column.getValue))
+          values.append(CanalEntryTransHelper.getSqlValueByMysqlType(column.getMysqlType, column.getValue))
           fields.append(column.getName)
         }
     }
@@ -95,7 +92,7 @@ final class CanalEntry2RowDataInfoMappingFormat4Sda(
     } {
       keyColumn =>
         val keyName = keyColumn.getName
-        val keyValue = CanalEntryJsonHelper.getSqlValueByMysqlType(keyColumn.getMysqlType, keyColumn.getValue)
+        val keyValue = CanalEntryTransHelper.getSqlValueByMysqlType(keyColumn.getMysqlType, keyColumn.getValue)
         s"DELETE FROM $dbName.$tableName WHERE $keyName=$keyValue"
     }
   }
