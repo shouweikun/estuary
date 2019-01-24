@@ -4,7 +4,9 @@ import akka.actor.{ActorRef, Props}
 import com.alibaba.otter.canal.parse.inbound.mysql.dbsync.SimpleDdlParser
 import com.alibaba.otter.canal.protocol.CanalEntry
 import com.alibaba.otter.canal.protocol.CanalEntry.EventType
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.FetcherMessage
 import com.neighborhood.aka.laplace.estuary.core.sink.mysql.MysqlSinkFunc
+import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.record.MysqlBinlogInOrderRecorderCommand.MysqlBinlogInOrderRecorderSaveLatestPosition
 import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2MysqlTaskInfoManager
 import com.neighborhood.aka.laplace.estuary.mysql.utils.{CanalEntryJsonHelper, CanalEntryTransUtil}
 
@@ -23,6 +25,7 @@ final class SdaMysqlBinlogInOrderDirectFetcher(
 
   private lazy val rule: Map[String, String] = taskManager.tableMappingRule
 
+  private lazy val positionRecorder: Option[ActorRef] = taskManager.positionRecorder
   //  private lazy val ALTER_PATTERN = """^\s*[a/A][l/L][t/T][e/E][r/R]\s+[T/t][a/A][b/B][l/L][e/E]\s*(\w+).*""".r
 
   /**
@@ -44,6 +47,7 @@ final class SdaMysqlBinlogInOrderDirectFetcher(
       case _ => ???
     }
     if (!sink.isTerminated) sink.insertSql(sdaDdlSql) //出现异常的话一定要暴露出来
+    positionRecorder.map(ref => ref ! FetcherMessage(MysqlBinlogInOrderRecorderSaveLatestPosition)) //recorder立即更新到最新处
   }
 }
 

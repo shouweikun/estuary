@@ -87,6 +87,7 @@ package object lifecycle {
     val sql: String = overrideSql.getOrElse("") //todo
   }
 
+
   final case class EntryKeyClassifier(entry: CanalEntry.Entry, rowData: RowData, partitionStrategy: PartitionStrategy = PartitionStrategy.PRIMARY_KEY) extends ConsistentHashable {
 
     import scala.collection.JavaConverters._

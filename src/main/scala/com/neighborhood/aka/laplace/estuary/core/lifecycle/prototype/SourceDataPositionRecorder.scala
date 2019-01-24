@@ -1,6 +1,5 @@
 package com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype
 
-import com.neighborhood.aka.laplace.estuary.bean.exception.sink.SinkerAbnormalException
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.PositionRecorder
 import com.neighborhood.aka.laplace.estuary.core.offset.ComparableOffset
 import org.slf4j.LoggerFactory
@@ -35,7 +34,7 @@ trait SourceDataPositionRecorder[A <: ComparableOffset[A]] extends ActorPrototyp
     setProfilingContent
   }
 
-  protected def saveOffset: Unit = {
+  def saveOffset: Unit = {
     logger.info(s"start saveOffset,id:$syncTaskId")
     scheduledSavedOffset.map(saveOffsetInternal(_))
     scheduledSavedOffset.map(updateQuene(_))
@@ -44,7 +43,7 @@ trait SourceDataPositionRecorder[A <: ComparableOffset[A]] extends ActorPrototyp
     lastSavedOffset = latestOffset
   }
 
-  protected def saveOffsetWhenError(e: Throwable, offset: Option[A]): Unit = {
+  def saveOffsetWhenError(e: Throwable, offset: Option[A]): Unit = {
     val oldest: Option[A] = quene.headOption
     offset.flatMap(getMatchOffset(_)).fold {
       log.warning(s"this can be really dangerous,cause cannot find a suitable offset to save when error, considering of loss of data plz,id:$syncTaskId")
@@ -53,7 +52,21 @@ trait SourceDataPositionRecorder[A <: ComparableOffset[A]] extends ActorPrototyp
     }(saveOffsetInternal(_))
 
     context.become(error)
-    throw new SinkerAbnormalException(s"sinker some thing wrong,e:$e,message:${e.getMessage},id:$syncTaskId")
+    throw new RuntimeException(s"some thing wrong,e:$e,message:${e.getMessage},id:$syncTaskId")
+  }
+
+  /**
+    * 这是一个特殊情况
+    * 会被特殊的事件触发
+    * 效果是清除所有的缓存offset,保留latest offset
+    */
+  def saveLatestOffset: Unit = {
+    log.warning(s"start to save latest offset,id:$syncTaskId")
+    lastSavedOffset = latestOffset
+    schedulingSavedOffset = latestOffset
+    scheduledSavedOffset = latestOffset
+    quene.clear() //将队列清空
+    saveOffset
   }
 
   protected def saveOffsetInternal(offset: A): Unit

@@ -5,8 +5,10 @@ import com.neighborhood.aka.laplace.estuary.bean.key.PartitionStrategy
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.{BinlogPositionInfo, MysqlRowDataInfo}
 import com.neighborhood.aka.laplace.estuary.mysql.schema.storage.MysqlSchemaHandler
+import com.neighborhood.aka.laplace.estuary.mysql.schema.tablemeta.MysqlTableSchemaHolder
 import com.neighborhood.aka.laplace.estuary.mysql.utils.CanalEntryJsonHelper
 import com.typesafe.config.Config
+import org.slf4j.LoggerFactory
 
 import scala.collection.mutable.ListBuffer
 
@@ -21,6 +23,7 @@ import scala.collection.mutable.ListBuffer
   * @param schemaComponentIsOn 是否开启schema管理
   * @param config              typesafe.config
   * @param tableMappingRule    表名称映射规则
+  * @param schemaHolder        schema校验
   */
 final class CanalEntry2RowDataInfoMappingFormat4Sda(
                                                      override val partitionStrategy: PartitionStrategy,
@@ -29,9 +32,11 @@ final class CanalEntry2RowDataInfoMappingFormat4Sda(
                                                      override val mysqlSchemaHandler: MysqlSchemaHandler,
                                                      override val schemaComponentIsOn: Boolean,
                                                      override val config: Config,
-                                                     val tableMappingRule: Map[String, String]
+                                                     val tableMappingRule: Map[String, String],
+                                                     val schemaHolder: Option[MysqlTableSchemaHolder] = None
                                                    ) extends CanalEntryMappingFormat[MysqlRowDataInfo] {
 
+  override protected lazy val logger = LoggerFactory.getLogger(classOf[CanalEntry2RowDataInfoMappingFormat4Sda])
 
   override def transform(x: lifecycle.EntryKeyClassifier): MysqlRowDataInfo = {
     val entry = x.entry
@@ -100,10 +105,19 @@ final class CanalEntry2RowDataInfoMappingFormat4Sda(
     *
     * @param dbName    原始数据库名称
     * @param tableName 原始表名称
-    * @return sda库表名称
+    * @return sda库表名称 如果获取不到,就是$源库名.$源表名
     */
   private def getSdaDbNameAndTableName(dbName: String, tableName: String): (String, String) = {
-    (dbName, tableMappingRule(tableName))
+    tableMappingRule.get(s"${dbName}.${tableName}")
+
+      .fold((dbName, tableName)) {
+        case kv =>
+          val kAndV = kv.split('.')
+          (kAndV(0), kAndV(1))
+      }
   }
 
+  private def compcareSchema(rowData: RowData): Boolean = {
+    ???
+  }
 }
