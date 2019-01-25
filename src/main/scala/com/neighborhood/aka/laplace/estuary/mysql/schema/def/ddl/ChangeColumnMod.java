@@ -2,7 +2,7 @@ package com.neighborhood.aka.laplace.estuary.mysql.schema.def.ddl;
 
 import com.neighborhood.aka.laplace.estuary.mysql.schema.def.columndef.ColumnDef;
 
-class ChangeColumnMod extends ColumnMod {
+public class ChangeColumnMod extends ColumnMod {
 	public ColumnDef definition;
 	public ColumnPosition position;
 
@@ -10,6 +10,7 @@ class ChangeColumnMod extends ColumnMod {
 		super(name);
 		this.definition = d;
 		this.position = position;
+
 	}
 
 }

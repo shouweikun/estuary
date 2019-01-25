@@ -2,7 +2,7 @@ package com.neighborhood.aka.laplace.estuary.mysql.schema.def.ddl;
 
 import java.util.*;
 
-public class TableAlter extends SchemaChange {
+public  class TableAlter extends SchemaChange {
 	public String database;
 	public String table;
 	public ArrayList<ColumnMod> columnMods;
