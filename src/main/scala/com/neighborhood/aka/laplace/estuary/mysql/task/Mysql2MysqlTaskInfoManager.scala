@@ -5,7 +5,7 @@ import com.alibaba.otter.canal.protocol.position.EntryPosition
 import com.neighborhood.aka.laplace.estuary.bean.key.PartitionStrategy
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.core.trans.MappingFormat
-import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.batch.mappings.{CanalEntry2RowDataInfoMappingFormat, CanalEntry2RowDataInfoMappingFormat4Sda}
+import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.batch.mappings.{DefaultCanalEntry2RowDataInfoMappingFormat, CanalEntry2RowDataInfoMappingFormat4Sda}
 import com.neighborhood.aka.laplace.estuary.mysql.schema.SdaSchemaMappingRule
 import com.neighborhood.aka.laplace.estuary.mysql.schema.tablemeta.{EstuaryMysqlColumnInfo, EstuaryMysqlTableMeta, MysqlTableSchemaHolder}
 import com.neighborhood.aka.laplace.estuary.mysql.sink.{MysqlSinkBeanImp, MysqlSinkManagerImp}
@@ -226,7 +226,7 @@ final class Mysql2MysqlTaskInfoManager(
 
   def buildMappingFormat: MappingFormat[_, _] = {
 
-    lazy val default = new CanalEntry2RowDataInfoMappingFormat(partitionStrategy, syncTaskId, syncStartTime, schemaComponentIsOn, config)
+    lazy val default = new DefaultCanalEntry2RowDataInfoMappingFormat(partitionStrategy, syncTaskId, syncStartTime, schemaComponentIsOn, config)
     lazy val sda = new CanalEntry2RowDataInfoMappingFormat4Sda(partitionStrategy, syncTaskId, syncStartTime, schemaComponentIsOn, config, tableMappingRule)
     taskInfo.taskRunningInfoBean.batchMappingFormatName
       .map {

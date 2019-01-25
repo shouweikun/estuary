@@ -1,24 +1,24 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.batch.mappings
 
-import com.alibaba.otter.canal.protocol.CanalEntry.EventType
+import com.alibaba.otter.canal.protocol.CanalEntry.{EventType, RowData}
+import com.neighborhood.aka.laplace.estuary.bean.key.PartitionStrategy
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.{BinlogPositionInfo, MysqlRowDataInfo}
-import com.neighborhood.aka.laplace.estuary.mysql.schema.tablemeta.MysqlTableSchemaHolder
+import com.neighborhood.aka.laplace.estuary.mysql.utils.CanalEntryTransHelper
+import com.typesafe.config.Config
+
+import scala.collection.mutable.ListBuffer
 
 /**
   * Created by john_liu on 2019/1/13.
   */
-trait CanalEntry2RowDataInfoMappingFormat extends CanalEntryMappingFormat[MysqlRowDataInfo] {
-
-  /**
-    * 是否检查Schema
-    */
-  def isCheckSchema: Boolean
-
-  /**
-    *  schema缓存
-    */
-  def schemaHolder: Option[MysqlTableSchemaHolder] = None
+final class DefaultCanalEntry2RowDataInfoMappingFormat(
+                                                 override val partitionStrategy: PartitionStrategy,
+                                                 override val syncTaskId: String,
+                                                 override val syncStartTime: Long,
+                                                 override val schemaComponentIsOn: Boolean,
+                                                 override val config: Config
+                                               ) extends CanalEntryMappingFormat[MysqlRowDataInfo] {
 
   override def transform(x: lifecycle.EntryKeyClassifier): MysqlRowDataInfo = {
     val entry = x.entry
@@ -70,9 +70,10 @@ trait CanalEntry2RowDataInfoMappingFormat extends CanalEntryMappingFormat[MysqlR
     */
 
   private def handleDeleteEventRowDataToSql(dbName: String, tableName: String, rowData: RowData): String = {
+    import scala.collection.JavaConverters._
     val columnList = rowData.getBeforeColumnsList.asScala
     columnList.find(x => x.hasIsKey && x.getIsKey).fold { //暂时不处理无主键的
-      ""
+    ""
     } {
       keyColumn =>
         val keyName = keyColumn.getName

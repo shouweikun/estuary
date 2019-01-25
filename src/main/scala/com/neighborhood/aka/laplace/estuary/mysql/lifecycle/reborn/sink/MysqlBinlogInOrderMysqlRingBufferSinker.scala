@@ -4,7 +4,7 @@ import akka.actor.{ActorRef, Props}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, SinkerMessage, WorkerMessage}
 import com.neighborhood.aka.laplace.estuary.core.sink.mysql.MysqlSinkFunc
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
-import com.neighborhood.aka.laplace.estuary.core.util.SimpleEstuaryRingBuffer
+import com.neighborhood.aka.laplace.estuary.core.util.{JavaCommonUtil, SimpleEstuaryRingBuffer}
 import com.neighborhood.aka.laplace.estuary.mysql.SettingConstant
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink.MysqlBinlogInOrderSinkerCommand.{MysqlInOrderSinkerCheckBatch, MysqlInOrderSinkerGetAbnormal}
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.{BinlogPositionInfo, MysqlRowDataInfo}
@@ -108,7 +108,7 @@ final class MysqlBinlogInOrderMysqlRingBufferSinker(
       try {
         connection.setAutoCommit(false)
         val statement = connection.createStatement()
-        ringBuffer.foreach { x => statement.addBatch(x.sql) }
+        ringBuffer.foreach { x => if (!JavaCommonUtil.isEmpty(x.sql)) statement.addBatch(x.sql) }
         statement.executeBatch()
         statement.executeBatch()
         connection.commit()

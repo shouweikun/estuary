@@ -6,7 +6,7 @@ import com.neighborhood.aka.laplace.estuary.mysql.schema.defs.ddl._
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.util.Try
-import com.neighborhood.aka.laplace.estuary.mysql.schema.tablemeta._
+
 
 /**
   * Created by john_liu on 2019/1/23.

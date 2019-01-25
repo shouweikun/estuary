@@ -30,7 +30,7 @@ package object tablemeta {
   }
 
 
-  implicit class EstuaryMysqlColumnInfoSyntax(column: ColumnDef) {
+  implicit final class EstuaryMysqlColumnInfoSyntax(column: ColumnDef) {
     def toEstuaryMysqlColumnInfo: EstuaryMysqlColumnInfo = {
       EstuaryMysqlColumnInfo(column.getName, column.getPos, column.getType)
     }
