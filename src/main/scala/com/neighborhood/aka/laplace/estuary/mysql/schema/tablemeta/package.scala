@@ -1,5 +1,7 @@
 package com.neighborhood.aka.laplace.estuary.mysql.schema
 
+import com.neighborhood.aka.laplace.estuary.mysql.schema.defs.columndef.ColumnDef
+
 /**
   * Created by john_liu on 2019/1/23.
   */
@@ -25,6 +27,13 @@ package object tablemeta {
     */
   final case class EstuaryMysqlTableMeta(schemaName: String, tableName: String, columns: List[EstuaryMysqlColumnInfo]) {
     val columnNum = columns.size
+  }
+
+
+  implicit class EstuaryMysqlColumnInfoSyntax(column: ColumnDef) {
+    def toEstuaryMysqlColumnInfo: EstuaryMysqlColumnInfo = {
+      EstuaryMysqlColumnInfo(column.getName, column.getPos, column.getType)
+    }
   }
 
 }
