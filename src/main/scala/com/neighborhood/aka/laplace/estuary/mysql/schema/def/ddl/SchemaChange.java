@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import com.neighborhood.aka.laplace.estuary.schema.ddl.mysqlLexer;
+import com.neighborhood.aka.laplace.estuary.schema.ddl.mysqlParser;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.antlr.v4.runtime.tree.ParseTree;

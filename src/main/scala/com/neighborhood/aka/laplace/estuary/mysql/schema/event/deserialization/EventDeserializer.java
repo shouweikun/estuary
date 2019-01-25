@@ -17,8 +17,6 @@ package com.neighborhood.aka.laplace.estuary.mysql.schema.event.deserialization;
 
 import com.neighborhood.aka.laplace.estuary.mysql.schema.event.*;
 import com.neighborhood.aka.laplace.estuary.mysql.schema.io.ByteArrayInputStream;
-import com.neighbothood.aka.laplace.event.*;
-import com.zendesk.maxwell.event.*;
 
 import java.io.IOException;
 import java.util.EnumSet;

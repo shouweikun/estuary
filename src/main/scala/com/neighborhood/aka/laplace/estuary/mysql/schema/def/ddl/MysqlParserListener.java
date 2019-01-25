@@ -5,12 +5,14 @@ import java.util.LinkedList;
 import java.util.List;
 
 import com.neighborhood.aka.laplace.estuary.mysql.schema.def.columndef.ColumnDef;
+import com.neighborhood.aka.laplace.estuary.schema.ddl.mysqlBaseListener;
+import com.neighborhood.aka.laplace.estuary.schema.ddl.mysqlParser;
 import org.antlr.v4.runtime.TokenStream;
 import org.antlr.v4.runtime.TokenStreamRewriter;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.antlr.v4.runtime.tree.ErrorNode;
 
-import com.neighborhood.aka.laplace.schema.ddl.mysqlParser.*;
+import com.neighborhood.aka.laplace.estuary.schema.ddl.mysqlParser.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -261,7 +263,7 @@ public class MysqlParserListener extends mysqlBaseListener {
 		schemaChanges.add(new TableTruncate(getDB(t), getTable(t)));
 	}
 
-	@Override
+	
 	public void exitDrop_database(mysqlParser.Drop_databaseContext ctx) {
 		boolean ifExists = ctx.if_exists() != null;
 		String dbName = unquote(ctx.name().getText());
