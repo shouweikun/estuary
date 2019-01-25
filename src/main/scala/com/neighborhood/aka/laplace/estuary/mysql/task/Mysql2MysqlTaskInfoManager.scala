@@ -219,7 +219,7 @@ final class Mysql2MysqlTaskInfoManager(
       .map {
       case (fullName, columns) => (fullName -> EstuaryMysqlTableMeta(fullName.split('.')(0), fullName.split('.')(1), columns.map(_._2)))
     }
-    MysqlTableSchemaHolder(map)
+    new MysqlTableSchemaHolder(map)
   }
 
   def buildMappingFormat: MappingFormat[_, _] = {

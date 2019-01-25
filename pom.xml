@@ -242,8 +242,26 @@
             <artifactId>protobuf-java-format</artifactId>
             <version>1.4</version>
         </dependency>
-        <!--end akka-->
-
+        <dependency>
+            <groupId>com.djdch.log4j</groupId>
+            <artifactId>log4j-staticshutdown</artifactId>
+            <version>1.1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.vividsolutions</groupId>
+            <artifactId>jts</artifactId>
+            <version>1.13</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.4</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>1.5</version>
+        </dependency>
         <!--<dependency>-->
         <!--<groupId>org.apache.kafka</groupId>-->
         <!--<artifactId>kafka-clients</artifactId>-->
