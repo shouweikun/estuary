@@ -7,6 +7,7 @@ import com.alibaba.otter.canal.protocol.CanalEntry.EventType
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.FetcherMessage
 import com.neighborhood.aka.laplace.estuary.core.sink.mysql.MysqlSinkFunc
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.record.MysqlBinlogInOrderRecorderCommand.MysqlBinlogInOrderRecorderSaveLatestPosition
+import com.neighborhood.aka.laplace.estuary.mysql.schema.SdaSchemaMappingRule
 import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2MysqlTaskInfoManager
 import com.neighborhood.aka.laplace.estuary.mysql.utils.{CanalEntryTransHelper, CanalEntryTransUtil}
 
@@ -23,7 +24,7 @@ final class SdaMysqlBinlogInOrderDirectFetcher(
 
   private lazy val sink: MysqlSinkFunc = taskManager.sink
 
-  private lazy val rule: Map[String, String] = taskManager.tableMappingRule
+  private lazy val rule: SdaSchemaMappingRule = taskManager.tableMappingRule
 
   private lazy val positionRecorder: Option[ActorRef] = taskManager.positionRecorder
   //  private lazy val ALTER_PATTERN = """^\s*[a/A][l/L][t/T][e/E][r/R]\s+[T/t][a/A][b/B][l/L][e/E]\s*(\w+).*""".r
@@ -39,7 +40,7 @@ final class SdaMysqlBinlogInOrderDirectFetcher(
   override protected def executeDdl(entry: CanalEntry.Entry): Unit = {
     log.info(s"try to execute ddl:${CanalEntryTransHelper.headerToJson(entry.getHeader)},id:$syncTaskId")
     val ddlSql = CanalEntryTransUtil.parseStoreValue(entry)(syncTaskId).getSql
-    val sdaDbAndTableName: String = rule.getOrElse(s"${entry.getHeader.getSchemaName}.${entry.getHeader.getTableName}", s"${entry.getHeader.getSchemaName}.${entry.getHeader.getTableName}") //注意，如果在
+    val (sdaDbName, sdaTableName) = rule.getMappingName(entry.getHeader.getSchemaName, entry.getHeader.getTableName)
     lazy val handleAlter: String = ???
     taskManager.wait4TheSameCount() //必须要等到same count
     val sdaDdlSql = entry.getHeader.getEventType match {

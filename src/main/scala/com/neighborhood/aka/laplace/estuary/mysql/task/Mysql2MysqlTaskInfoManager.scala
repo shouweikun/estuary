@@ -6,6 +6,7 @@ import com.neighborhood.aka.laplace.estuary.bean.key.PartitionStrategy
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.core.trans.MappingFormat
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.batch.mappings.{CanalEntry2RowDataInfoMappingFormat, CanalEntry2RowDataInfoMappingFormat4Sda}
+import com.neighborhood.aka.laplace.estuary.mysql.schema.SdaSchemaMappingRule
 import com.neighborhood.aka.laplace.estuary.mysql.schema.tablemeta.{EstuaryMysqlColumnInfo, EstuaryMysqlTableMeta, MysqlTableSchemaHolder}
 import com.neighborhood.aka.laplace.estuary.mysql.sink.{MysqlSinkBeanImp, MysqlSinkManagerImp}
 import com.neighborhood.aka.laplace.estuary.mysql.source.{MysqlSourceBeanImp, MysqlSourceManagerImp}
@@ -116,6 +117,7 @@ final class Mysql2MysqlTaskInfoManager(
     * 是否需要执行ddl
     */
   override val isNeedExecuteDDL: Boolean = taskInfo.taskRunningInfoBean.isNeedExecuteDDL
+
   /**
     * 分区模式
     *
@@ -180,7 +182,7 @@ final class Mysql2MysqlTaskInfoManager(
   /**
     * sda专用属性,table对应规则
     */
-  val tableMappingRule: Map[String, String] = taskInfo.sdaBean.map(_.tableMappingRule).getOrElse(Map.empty)
+  val tableMappingRule: SdaSchemaMappingRule = new SdaSchemaMappingRule(taskInfo.sdaBean.map(_.tableMappingRule).getOrElse(Map.empty))
 
 
   /**
@@ -203,10 +205,10 @@ final class Mysql2MysqlTaskInfoManager(
     * @return
     */
   def buildMysqlTableSchemaHolderFromSink: MysqlTableSchemaHolder = {
-    val dbs = tableMappingRule
-      .values.map(_.split(".")(0)) //这么做的理由是获取sink端的databaseName,防止由于source 和sink tableName对应不上的问题
-      .map(x => s"'$x'")
-      .mkString(",")
+    //这么做的理由是获取sink端的databaseName,防止由于source 和sink tableName对应不上的问题
+    val dbs = concernedDatabase.map(x => tableMappingRule.getDatabaseMappingName(x).getOrElse(x)) //如果匹配不到sda的，就使用原来的
+        .map(x => s"'$x'")
+        .mkString(",")
     val sql = s"select a.TABLE_SCHEMA, a.TABLE_NAME,b.COLUMN_NAME,b.DATA_TYPE,b.ORDINAL_POSITION from TABLES a join COLUMNS b ON (a.TABLE_NAME = b.TABLE_NAME) where a.TABLE_SCHEMA in ( $dbs )"
     val map = sink
       .queryAsScalaList(sql).map {

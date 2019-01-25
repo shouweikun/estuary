@@ -4,6 +4,7 @@ import com.alibaba.otter.canal.protocol.CanalEntry.{EventType, RowData}
 import com.neighborhood.aka.laplace.estuary.bean.key.PartitionStrategy
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.{BinlogPositionInfo, MysqlRowDataInfo}
+import com.neighborhood.aka.laplace.estuary.mysql.schema.SdaSchemaMappingRule
 import com.neighborhood.aka.laplace.estuary.mysql.schema.tablemeta.MysqlTableSchemaHolder
 import com.neighborhood.aka.laplace.estuary.mysql.utils.CanalEntryTransHelper
 import com.typesafe.config.Config
@@ -29,7 +30,7 @@ final class CanalEntry2RowDataInfoMappingFormat4Sda(
                                                      override val syncStartTime: Long,
                                                      override val schemaComponentIsOn: Boolean,
                                                      override val config: Config,
-                                                     val tableMappingRule: Map[String, String],
+                                                     val tableMappingRule: SdaSchemaMappingRule,
                                                      val schemaHolder: Option[MysqlTableSchemaHolder] = None
                                                    ) extends CanalEntryMappingFormat[MysqlRowDataInfo] {
 
@@ -105,13 +106,7 @@ final class CanalEntry2RowDataInfoMappingFormat4Sda(
     * @return sda库表名称 如果获取不到,就是$源库名.$源表名
     */
   private def getSdaDbNameAndTableName(dbName: String, tableName: String): (String, String) = {
-    tableMappingRule.get(s"${dbName}.${tableName}")
-
-      .fold((dbName, tableName)) {
-        case kv =>
-          val kAndV = kv.split('.')
-          (kAndV(0), kAndV(1))
-      }
+    tableMappingRule.getMappingName(dbName, tableName)
   }
 
   private def compcareSchema(rowData: RowData): Boolean = {
