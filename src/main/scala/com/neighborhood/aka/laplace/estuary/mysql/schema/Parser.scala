@@ -1,10 +1,14 @@
 package com.neighborhood.aka.laplace.estuary.mysql.schema
 
 import com.neighborhood.aka.laplace.estuary.mysql.schema.defs.ddl.{SchemaChange, TableAlter, TableCreate, TableDrop}
+
 import scala.collection.JavaConverters._
 
 /**
   * Created by john_liu on 2019/1/28.
+  * 处理Ddl Sql 到 SchemaChange
+  *
+  * @author neighborhood
   */
 object Parser {
 

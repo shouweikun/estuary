@@ -26,7 +26,7 @@ final class SdaSchemaMappingRule(
   def getMappingName(dbName: String, tableName: String): (String, String) = {
     tableMappingRule
       .get(s"$dbName.$tableName")
-      .map { kv => (kv.split('.')(0), kv.split('.')(1)) }
+      .map { kv => (kv.split('.')(0), kv.split('.')(1)) } //todo 可以优化
       .getOrElse((getDatabaseMappingName(dbName).get, tableName)) //找不到情况是使用(sdaDb->tb) 如果找不到我们期望扔出异常
   }
 

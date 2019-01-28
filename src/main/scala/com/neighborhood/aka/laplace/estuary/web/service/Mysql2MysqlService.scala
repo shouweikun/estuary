@@ -25,13 +25,13 @@ import scala.collection.JavaConverters._
   */
 @Service("mysql2Mysql")
 final class Mysql2MysqlService extends SyncService[Mysql2MysqlRequestBean] {
-  @Value("spring.config.concerned.tableName")
+  @Value("${spring.config.concerned.tableName}")
   private val concernedConfigTableName: String = null
-  @Value("server.port")
+  @Value("${server.port}")
   private val port: String = null
-  @Value("sda.tableMapping.matadata.url")
+  @Value("${sda.tableMapping.matadata.url}")
   private val mataDataUrl: String = null
-  @Value("sda.tableMapping.matadata.token")
+  @Value("${sda.tableMapping.matadata.token}")
   private val mataDataToken: String = null
   @Autowired
   @Qualifier("configJdbcTemplate") private lazy val jdbcTemplate: JdbcTemplate = null
@@ -109,6 +109,8 @@ final class Mysql2MysqlService extends SyncService[Mysql2MysqlRequestBean] {
     val map = new HttpHeaders
     map.add("token", mataDataToken)
     map.add("accept", "*/*")
+    val a = restTemplate
+      .getForEntity(mataDataUrl, classOf[String], map).getBody
     restTemplate
       .getForEntity(mataDataUrl, classOf[java.util.List[TableNameMappingBean]], map)
       .getBody
