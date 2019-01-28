@@ -38,7 +38,8 @@ final class MysqlHikariCpConnection(
     try {
       connection.createStatement().executeUpdate(sql)
     } catch {
-      case e => throw e
+      case e =>
+        throw e
     }
     finally {
       connection.close()
@@ -57,13 +58,15 @@ final class MysqlHikariCpConnection(
     try {
       conn.setAutoCommit(false)
       val statement = conn.createStatement()
-      sqls.foreach(sql => ds.getConnection.createStatement().addBatch(sql))
+      sqls.foreach(sql => statement.addBatch(sql))
       val re = statement.executeBatch()
       conn.commit()
       statement.clearBatch()
       re.toList
     } catch {
-      case e => throw e
+      case e =>
+        e.printStackTrace()
+        throw e
     } finally {
       conn.close()
     }
