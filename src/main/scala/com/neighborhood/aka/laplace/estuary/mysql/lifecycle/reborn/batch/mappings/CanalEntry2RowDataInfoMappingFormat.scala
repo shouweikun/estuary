@@ -78,7 +78,10 @@ trait CanalEntry2RowDataInfoMappingFormat extends CanalEntryMappingFormat[MysqlR
     if (!isCheckSchema) true
     else schemaHolder
       .flatMap(_.getTableMetaByFullName(s"$dbName.$tableName"))
-      .map { tableMeta => columnList.forall(x => tableMeta.columnInfoMap.contains(x.name)) }
+      .map { tableMeta =>
+        columnList
+          .forall(x => tableMeta.columnInfoMap.contains(x.name))
+      }
       .getOrElse(false)
   }
 
@@ -109,7 +112,7 @@ trait CanalEntry2RowDataInfoMappingFormat extends CanalEntryMappingFormat[MysqlR
     }
     //EstuaryMysqlColumnInfo的list 方便值比较
     val estuaryColumnInfoList = columnList.map(_.toEstuaryMysqlColumnInfo)
-    val sql: String = if (checkSchema(dbName, tableName, estuaryColumnInfoList)) {
+    val sql: String = if (!checkSchema(dbName, tableName, estuaryColumnInfoList)) {
       logger.warn(s"check schema failed,entry:${CanalEntryTransHelper.entryToJson(entry)},id:$syncTaskId")
       "" //返回空字符串
     }

@@ -175,6 +175,7 @@ object MysqlJdbcConnection {
   implicit def MysqlJdbcConnectionHolder(connection: Connection): MysqlJdbcConnection = {
     val re = new MysqlJdbcConnection
     re.setConnection(connection)
+    re.flag = true
     re
   }
 }

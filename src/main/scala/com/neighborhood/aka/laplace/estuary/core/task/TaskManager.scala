@@ -94,10 +94,7 @@ trait TaskManager {
     */
   def taskType: String
 
-  /**
-    * 是否启动Schema管理模块
-    */
-  def schemaComponentIsOn: Boolean
+
 
   /**
     * 分区模式

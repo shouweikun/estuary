@@ -41,14 +41,7 @@ final class SdaMysqlBinlogInOrderDirectFetcher(
     log.info(s"try to execute ddl:${CanalEntryTransHelper.headerToJson(entry.getHeader)},id:$syncTaskId")
     val ddlSql = CanalEntryTransUtil.parseStoreValue(entry)(syncTaskId).getSql
     val (sdaDbName, sdaTableName) = rule.getMappingName(entry.getHeader.getSchemaName, entry.getHeader.getTableName)
-    lazy val handleAlter: String = ???
-    taskManager.wait4TheSameCount() //必须要等到same count
-    val sdaDdlSql = entry.getHeader.getEventType match {
-      case EventType.ALTER => handleAlter
-      case _ => ???
-    }
-    if (!sink.isTerminated) sink.insertSql(sdaDdlSql) //出现异常的话一定要暴露出来
-    positionRecorder.map(ref => ref ! FetcherMessage(MysqlBinlogInOrderRecorderSaveLatestPosition)) //recorder立即更新到最新处
+
   }
 }
 
