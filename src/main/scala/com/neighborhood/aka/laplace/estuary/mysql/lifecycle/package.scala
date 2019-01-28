@@ -85,21 +85,11 @@ package object lifecycle {
                                     binlogPositionInfo: BinlogPositionInfo,
                                     overrideSql: Option[String] = None) {
 
-    import scala.collection.JavaConverters._
-    import com.neighborhood.aka.laplace.estuary.mysql.schema.tablemeta._
+
 
     val sql: String = overrideSql.getOrElse("") //todo
 
-    lazy val columnList: List[CanalEntry.Column] = {
-      val buffer = dmlType match {
-        case EventType.DELETE => rowData.getBeforeColumnsList.asScala
-        case EventType.INSERT | EventType.UPDATE => rowData.getAfterColumnsList.asScala
-        case _ => mutable.Buffer.empty
-      }
-      buffer.toList
-    }
-    //EstuaryMysqlColumnInfo的list 方便值比较
-    lazy val estuaryColumnInfoList = columnList.map(_.toEstuaryMysqlColumnInfo)
+
 
   }
 

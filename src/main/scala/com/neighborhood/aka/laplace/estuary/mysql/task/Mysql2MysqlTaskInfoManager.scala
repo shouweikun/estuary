@@ -207,8 +207,8 @@ final class Mysql2MysqlTaskInfoManager(
   def buildMysqlTableSchemaHolderFromSink: MysqlTableSchemaHolder = {
     //这么做的理由是获取sink端的databaseName,防止由于source 和sink tableName对应不上的问题
     val dbs = concernedDatabase.map(x => tableMappingRule.getDatabaseMappingName(x).getOrElse(x)) //如果匹配不到sda的，就使用原来的
-        .map(x => s"'$x'")
-        .mkString(",")
+      .map(x => s"'$x'")
+      .mkString(",")
     val sql = s"select a.TABLE_SCHEMA, a.TABLE_NAME,b.COLUMN_NAME,b.DATA_TYPE,b.ORDINAL_POSITION from TABLES a join COLUMNS b ON (a.TABLE_NAME = b.TABLE_NAME) where a.TABLE_SCHEMA in ( $dbs )"
     val map = sink
       .queryAsScalaList(sql).map {
@@ -226,8 +226,8 @@ final class Mysql2MysqlTaskInfoManager(
 
   def buildMappingFormat: MappingFormat[_, _] = {
 
-    lazy val default = new DefaultCanalEntry2RowDataInfoMappingFormat(partitionStrategy, syncTaskId, syncStartTime, schemaComponentIsOn, config)
-    lazy val sda = new CanalEntry2RowDataInfoMappingFormat4Sda(partitionStrategy, syncTaskId, syncStartTime, schemaComponentIsOn, config, tableMappingRule)
+    lazy val default = new DefaultCanalEntry2RowDataInfoMappingFormat(partitionStrategy, syncTaskId, syncStartTime, schemaComponentIsOn, config, isCheckSinkSchema, Option(sinkMysqlTableSchemaHolder))
+    lazy val sda = new CanalEntry2RowDataInfoMappingFormat4Sda(partitionStrategy, syncTaskId, syncStartTime, schemaComponentIsOn, isCheckSinkSchema, config, Option(sinkMysqlTableSchemaHolder), tableMappingRule)
     taskInfo.taskRunningInfoBean.batchMappingFormatName
       .map {
         name =>

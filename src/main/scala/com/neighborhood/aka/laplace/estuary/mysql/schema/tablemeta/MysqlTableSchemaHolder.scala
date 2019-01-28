@@ -90,9 +90,7 @@ final class MysqlTableSchemaHolder(
           case add: AddColumnMod => loopBuild(tl, add.definition.toEstuaryMysqlColumnInfo :: acc)
           case remove: RemoveColumnMod => loopBuild(tl, acc.filter(x => x.name == remove.name))
           case change: ChangeColumnMod => loopBuild(
-            tl, acc.map {
-              column => if (column.name == change.definition.getName) change.definition.toEstuaryMysqlColumnInfo else column
-            })
+            tl, acc.map { column => if (column.name == change.definition.getName) change.definition.toEstuaryMysqlColumnInfo else column })
         }
         case Nil => acc
       }

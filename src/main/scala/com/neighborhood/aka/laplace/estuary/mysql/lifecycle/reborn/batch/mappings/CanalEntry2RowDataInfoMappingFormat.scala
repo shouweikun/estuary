@@ -1,14 +1,14 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.batch.mappings
 
 import com.alibaba.otter.canal.protocol.CanalEntry
-import com.alibaba.otter.canal.protocol.CanalEntry.{Column, RowData}
-import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.MysqlRowDataInfo
-import com.neighborhood.aka.laplace.estuary.mysql.schema.tablemeta.{EstuaryMysqlColumnInfo, MysqlTableSchemaHolder}
+import com.alibaba.otter.canal.protocol.CanalEntry.{EventType, RowData}
+import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.{BinlogPositionInfo, MysqlRowDataInfo}
+import com.neighborhood.aka.laplace.estuary.mysql.schema.tablemeta.{EstuaryMysqlColumnInfo, MysqlTableSchemaHolder, _}
 import com.neighborhood.aka.laplace.estuary.mysql.utils.CanalEntryTransHelper
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
-
 
 /**
   * Created by john_liu on 2019/1/13.
@@ -75,12 +75,53 @@ trait CanalEntry2RowDataInfoMappingFormat extends CanalEntryMappingFormat[MysqlR
     * @return
     */
   protected def checkSchema(dbName: String, tableName: String, columnList: List[EstuaryMysqlColumnInfo]): Boolean = {
-    schemaHolder
+    if (!isCheckSchema) true
+    else schemaHolder
       .flatMap(_.getTableMetaByFullName(s"$dbName.$tableName"))
-      .map {
-        tableMeta =>
-          columnList.forall(x => tableMeta.columnInfoMap.contains(x.name))
-      }.getOrElse(false)
+      .map { tableMeta => columnList.forall(x => tableMeta.columnInfoMap.contains(x.name)) }
+      .getOrElse(false)
   }
 
+  /**
+    * 检查并获取RowDataInfo
+    *
+    * @param dbName    db名称
+    * @param tableName 表名称
+    * @param dmlType   dml类型
+    * @param rowData   rowData
+    * @return MysqlRowDataInfo
+    */
+  @inline
+  protected def checkAndGetMysqlRowDataInfo(
+                                             dbName: String,
+                                             tableName: String,
+                                             dmlType: EventType,
+                                             rowData: RowData,
+                                             entry: CanalEntry.Entry
+                                           ): MysqlRowDataInfo = {
+    lazy val columnList: List[CanalEntry.Column] = {
+      val buffer = dmlType match {
+        case EventType.DELETE => rowData.getBeforeColumnsList.asScala
+        case EventType.INSERT | EventType.UPDATE => rowData.getAfterColumnsList.asScala
+        case _ => mutable.Buffer.empty
+      }
+      buffer.toList
+    }
+    //EstuaryMysqlColumnInfo的list 方便值比较
+    val estuaryColumnInfoList = columnList.map(_.toEstuaryMysqlColumnInfo)
+    val sql: String = if (checkSchema(dbName, tableName, estuaryColumnInfoList)) {
+      logger.warn(s"check schema failed,entry:${CanalEntryTransHelper.entryToJson(entry)},id:$syncTaskId")
+      "" //返回空字符串
+    }
+    else dmlType match {
+      case EventType.INSERT | EventType.UPDATE => handleUpdateEventRowDataToSql(dbName, tableName, columnList)
+      case EventType.DELETE => handleDeleteEventRowDataToSql(dbName, tableName, columnList)
+    }
+    val binlogPositionInfo = BinlogPositionInfo(
+      entry.getHeader.getLogfileName,
+      entry.getHeader.getLogfileOffset,
+      entry.getHeader.getExecuteTime
+    )
+    MysqlRowDataInfo(dbName, tableName, dmlType, rowData, binlogPositionInfo, Option(sql))
+  }
 }
