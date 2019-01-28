@@ -1,9 +1,14 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.batch.mappings
 
-import com.alibaba.otter.canal.protocol.CanalEntry.EventType
-import com.neighborhood.aka.laplace.estuary.mysql.lifecycle
-import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.{BinlogPositionInfo, MysqlRowDataInfo}
-import com.neighborhood.aka.laplace.estuary.mysql.schema.tablemeta.MysqlTableSchemaHolder
+import com.alibaba.otter.canal.protocol.CanalEntry
+import com.alibaba.otter.canal.protocol.CanalEntry.{Column, RowData}
+import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.MysqlRowDataInfo
+import com.neighborhood.aka.laplace.estuary.mysql.schema.tablemeta.{EstuaryMysqlColumnInfo, MysqlTableSchemaHolder}
+import com.neighborhood.aka.laplace.estuary.mysql.utils.CanalEntryTransHelper
+
+import scala.collection.JavaConverters._
+import scala.collection.mutable.ListBuffer
+
 
 /**
   * Created by john_liu on 2019/1/13.
@@ -16,42 +21,24 @@ trait CanalEntry2RowDataInfoMappingFormat extends CanalEntryMappingFormat[MysqlR
   def isCheckSchema: Boolean
 
   /**
-    *  schema缓存
+    * schema缓存
     */
   def schemaHolder: Option[MysqlTableSchemaHolder] = None
-
-  override def transform(x: lifecycle.EntryKeyClassifier): MysqlRowDataInfo = {
-    val entry = x.entry
-    val tableName = entry.getHeader.getTableName
-    val dbName = entry.getHeader.getSchemaName
-
-    val sql: String = entry.getHeader.getEventType
-    match {
-      case EventType.INSERT | EventType.UPDATE => handleUpdateEventRowDataToSql(dbName, tableName, x.rowData)
-      case EventType.DELETE => handleDeleteEventRowDataToSql(dbName, tableName, x.rowData)
-    }
-    val binlogPositionInfo = BinlogPositionInfo(
-      entry.getHeader.getLogfileName,
-      entry.getHeader.getLogfileOffset,
-      entry.getHeader.getExecuteTime
-    )
-    MysqlRowDataInfo(x.entry.getHeader.getSchemaName, x.entry.getHeader.getTableName, x.entry.getHeader.getEventType, x.rowData, binlogPositionInfo, Option(sql))
-  }
 
   /**
     * 处理Mysql的UpdateEvent和InsertEvent
     *
-    * @param dbName    数据库名称
-    * @param tableName 表名称
-    * @param rowData   rowData
+    * @param dbName     数据库名称
+    * @param tableName  表名称
+    * @param columnList List[EstuaryMysqlColumnInfo]
     * @return Sql
     */
-  private def handleUpdateEventRowDataToSql(dbName: String, tableName: String, rowData: RowData): String = {
+  @inline
+  protected def handleUpdateEventRowDataToSql(dbName: String, tableName: String, columnList: List[CanalEntry.Column]): String = {
     val values = new ListBuffer[String]
     val fields = new ListBuffer[String]
-    (0 until rowData.getAfterColumnsCount).foreach {
-      index =>
-        val column = rowData.getAfterColumns(index)
+    columnList.foreach {
+      column =>
         if (column.hasValue) {
           values.append(CanalEntryTransHelper.getSqlValueByMysqlType(column.getMysqlType, column.getValue))
           fields.append(column.getName)
@@ -65,12 +52,10 @@ trait CanalEntry2RowDataInfoMappingFormat extends CanalEntryMappingFormat[MysqlR
     *
     * @param dbName    数据库名称
     * @param tableName 表名称
-    * @param rowData   rowData
     * @return sql
     */
-
-  private def handleDeleteEventRowDataToSql(dbName: String, tableName: String, rowData: RowData): String = {
-    val columnList = rowData.getBeforeColumnsList.asScala
+  @inline
+  protected def handleDeleteEventRowDataToSql(dbName: String, tableName: String, columnList: List[CanalEntry.Column]): String = {
     columnList.find(x => x.hasIsKey && x.getIsKey).fold { //暂时不处理无主键的
       ""
     } {
@@ -80,4 +65,22 @@ trait CanalEntry2RowDataInfoMappingFormat extends CanalEntryMappingFormat[MysqlR
         s"DELETE FROM $dbName.$tableName WHERE $keyName=$keyValue"
     }
   }
+
+  /**
+    * 检测Schema
+    *
+    * @param dbName    数据库名称
+    * @param tableName 表名称
+    * @param columnList
+    * @return
+    */
+  protected def checkSchema(dbName: String, tableName: String, columnList: List[EstuaryMysqlColumnInfo]): Boolean = {
+    schemaHolder
+      .flatMap(_.getTableMetaByFullName(s"$dbName.$tableName"))
+      .map {
+        tableMeta =>
+          columnList.forall(x => tableMeta.columnInfoMap.contains(x.name))
+      }.getOrElse(false)
+  }
+
 }
