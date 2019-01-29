@@ -233,7 +233,8 @@ final class Mysql2MysqlTaskInfoManager(
 
     def default = new DefaultCanalEntry2RowDataInfoMappingFormat(partitionStrategy, syncTaskId, syncStartTime, schemaComponentIsOn, config, isCheckSinkSchema, Option(sinkMysqlTableSchemaHolder))
 
-    def sda = new CanalEntry2RowDataInfoMappingFormat4Sda(partitionStrategy, syncTaskId, syncStartTime, schemaComponentIsOn, isCheckSinkSchema, config, Option(sinkMysqlTableSchemaHolder), tableMappingRule)
+    def sda = new CanalEntry2RowDataInfoMappingFormat4Sda(partitionStrategy, syncTaskId, syncStartTime, schemaComponentIsOn, isCheckSinkSchema, config, Option(sinkMysqlTableSchemaHolder), tableMappingRule, taskInfo.sdaBean.map(_.encryptField).getOrElse(Map.empty))
+
 
     taskInfo.taskRunningInfoBean.batchMappingFormatName
       .map {

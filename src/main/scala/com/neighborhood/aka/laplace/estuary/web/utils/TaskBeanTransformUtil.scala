@@ -55,7 +55,10 @@ object TaskBeanTransformUtil {
       controllerNameToLoad = Option(requestRunningBean.getControllerNameToLoad).map(_.asScala.toMap).getOrElse(Map.empty),
       fetcherNameToLoad = Option(requestRunningBean.getFetcherNameToLoad).map(_.asScala.toMap).getOrElse(Map.empty)
     )
-    val sdaBean = Option(request.getSdaBean).map(_.getTableMappingRule.asScala.toMap[String, String]).map(SdaBean(_))
+
+    val tableMappingRule = Option(request.getSdaBean).map(_.getTableMappingRule.asScala.toMap[String, String]).getOrElse(Map.empty)
+    val encryptionField = Option(request.getSdaBean).map(_.getEncryptField.asScala.mapValues(_.asScala.toSet).toMap[String, Set[String]]).getOrElse(Map.empty)
+    val sdaBean = Option(SdaBean(tableMappingRule, encryptionField))
     Mysql2MysqlTaskInfoBean(sourceBean = mysqlSourceBean, sinkBean = mysqlSinkBean, taskRunningInfoBean = runningInfoBean, sdaBean = sdaBean)
   }
 

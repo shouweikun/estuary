@@ -7,5 +7,6 @@ spring.config.datasource.username=xxx
 spring.config.datasource.password=xxx
 #这个sda专用的配置项
 spring.config.concerned.tableName=11
+spring.config.encryptField.tableName= 23
 sda.tableMapping.matedata.url=http://1xx
 sda.tableMapping.matedata.token=2sss

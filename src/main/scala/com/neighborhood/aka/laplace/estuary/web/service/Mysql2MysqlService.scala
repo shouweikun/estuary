@@ -26,8 +26,11 @@ import scala.collection.JavaConverters._
   */
 @Service("mysql2Mysql")
 final class Mysql2MysqlService extends SyncService[Mysql2MysqlRequestBean] {
+
   @Value("${spring.config.concerned.tableName}")
   private val concernedConfigTableName: String = null
+  @Value("${spring.config.encryptField.tableName}")
+  private val encryptFieldInfoTableName: String = null
   @Value("${server.port}")
   private val port: String = null
   @Value("${sda.tableMapping.matadata.url}")
@@ -100,13 +103,14 @@ final class Mysql2MysqlService extends SyncService[Mysql2MysqlRequestBean] {
       .flatMap(x => List(x, s"_${x}_new", s"_${x}_temp", s"_${x}_old")) //增加临时表的白名单
       .mkString(",")
     logger.info(s"we get concerned filter pattern:$concernedFilterPattern,specially considering online ddl,and override input fitler pattern id:$syncTaskId")
+    val allEncryptField = getAllEncryptField(concernedDatabases)
     taskRequestBean.getMysqlSourceBean.setFilterPattern(concernedFilterPattern) //强制设置concernedPattern
     logger.info(s"using sda mapping format,id:$syncTaskId")
     taskRequestBean.getMysql2MysqlRunningInfoBean.setMappingFormatName("sda") //强制Sda
     logger.info(s"using SdaMysqlBinlogInOrderDirectFetcher,id:$syncTaskId ")
     taskRequestBean.getMysql2MysqlRunningInfoBean.setFetcherNameToLoad(new util.HashMap[String, String]())
     taskRequestBean.getMysql2MysqlRunningInfoBean.getFetcherNameToLoad.put("directFetcher", "com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.fetch.SdaMysqlBinlogInOrderDirectFetcher") //强制sda
-    taskRequestBean.setSdaBean(new SdaRequestBean(getMappingRule)) //增加rule
+    taskRequestBean.setSdaBean(new SdaRequestBean(getMappingRule, allEncryptField)) //增加rule
   }
 
   /**
@@ -127,4 +131,15 @@ final class Mysql2MysqlService extends SyncService[Mysql2MysqlRequestBean] {
       .toMap
   }
 
+  private def getAllEncryptField(concernedDatabases: List[String]): util.Map[String, java.util.Set[String]] = {
+    val sql = s"select db_name,table_name,columns from $encryptFieldInfoTableName where db_name in (${concernedDatabases.map(x => s"'$x'").mkString(",")})"
+    jdbcTemplate
+      .queryForList(sql)
+      .asScala
+      .map {
+        map =>
+          (s"${map.get("db_name")}.${map.get("table_name")}" -> map.get("columns").toString.split(",").toSet.asJava)
+      }
+      .toMap.asJava
+  }
 }
