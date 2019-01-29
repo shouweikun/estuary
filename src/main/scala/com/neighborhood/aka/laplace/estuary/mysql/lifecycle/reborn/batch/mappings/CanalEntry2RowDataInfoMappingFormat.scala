@@ -16,6 +16,13 @@ import scala.collection.mutable.ListBuffer
   */
 trait CanalEntry2RowDataInfoMappingFormat extends CanalEntryMappingFormat[MysqlRowDataInfo] {
 
+  sealed protected case class OperationField(
+                                              dbName: String,
+                                              tableName: String,
+                                              column: CanalEntry.Column,
+                                              value: String,
+                                              entry: CanalEntry.Entry)
+
   /**
     * 是否检查Schema
     */
@@ -35,13 +42,13 @@ trait CanalEntry2RowDataInfoMappingFormat extends CanalEntryMappingFormat[MysqlR
     * @return Sql
     */
   @inline
-  protected def handleUpdateEventRowDataToSql(dbName: String, tableName: String, columnList: List[CanalEntry.Column]): String = {
+  protected def handleUpdateEventRowDataToSql(dbName: String, tableName: String, columnList: List[CanalEntry.Column], entry: => CanalEntry.Entry): String = {
     val values = new ListBuffer[String]
     val fields = new ListBuffer[String]
     columnList.foreach {
       column =>
         if (column.hasValue) {
-          values.append(mapRowValue((column, column.getValue)))
+          values.append(mapRowValue((OperationField(dbName, tableName, column, column.getValue, entry))))
           fields.append(column.getName)
         }
     }
@@ -56,13 +63,13 @@ trait CanalEntry2RowDataInfoMappingFormat extends CanalEntryMappingFormat[MysqlR
     * @return sql
     */
   @inline
-  protected def handleDeleteEventRowDataToSql(dbName: String, tableName: String, columnList: List[CanalEntry.Column]): String = {
+  protected def handleDeleteEventRowDataToSql(dbName: String, tableName: String, columnList: List[CanalEntry.Column], entry: CanalEntry.Entry): String = {
     columnList.find(x => x.hasIsKey && x.getIsKey && x.hasValue).fold { //暂时不处理无主键的
       ""
     } {
       keyColumn =>
         val keyName = keyColumn.getName
-        val keyValue = mapRowValue((keyColumn, keyColumn.getValue))
+        val keyValue = (mapRowValue((OperationField(dbName, tableName, keyColumn, keyColumn.getValue, entry))))
         s"DELETE FROM $dbName.$tableName WHERE $keyName=$keyValue"
     }
   }
@@ -101,7 +108,7 @@ trait CanalEntry2RowDataInfoMappingFormat extends CanalEntryMappingFormat[MysqlR
                                              tableName: String,
                                              dmlType: EventType,
                                              rowData: RowData,
-                                             entry: CanalEntry.Entry
+                                             entry: => CanalEntry.Entry
                                            ): MysqlRowDataInfo = {
     lazy val columnList: List[CanalEntry.Column] = {
       val buffer = dmlType match {
@@ -118,8 +125,8 @@ trait CanalEntry2RowDataInfoMappingFormat extends CanalEntryMappingFormat[MysqlR
       "" //返回空字符串
     }
     else dmlType match {
-      case EventType.INSERT | EventType.UPDATE => handleUpdateEventRowDataToSql(dbName, tableName, columnList)
-      case EventType.DELETE => handleDeleteEventRowDataToSql(dbName, tableName, columnList)
+      case EventType.INSERT | EventType.UPDATE => handleUpdateEventRowDataToSql(dbName, tableName, columnList, entry)
+      case EventType.DELETE => handleDeleteEventRowDataToSql(dbName, tableName, columnList, entry)
     }
     val binlogPositionInfo = BinlogPositionInfo(
       entry.getHeader.getLogfileName,
@@ -137,13 +144,13 @@ trait CanalEntry2RowDataInfoMappingFormat extends CanalEntryMappingFormat[MysqlR
     * @return
     */
   @tailrec
-  protected final def mapRowValue(input: => (CanalEntry.Column, String), funcList: List[PartialFunction[(CanalEntry.Column, String), (CanalEntry.Column, String)]] = this.valueMappingFunctions): String = {
+  protected final def mapRowValue(input: => OperationField, funcList: List[PartialFunction[OperationField, OperationField]] = this.valueMappingFunctions): String = {
     funcList match {
       case f :: nextFuncList => {
-        lazy val nextInput = f.applyOrElse(input, (input: (CanalEntry.Column, String)) => input)
+        lazy val nextInput = f.applyOrElse(input, (input: OperationField) => input)
         mapRowValue(nextInput, nextFuncList)
       }
-      case Nil => input._2
+      case Nil => input.value
     }
   }
 
@@ -152,16 +159,16 @@ trait CanalEntry2RowDataInfoMappingFormat extends CanalEntryMappingFormat[MysqlR
     *
     * @note 请使用:: 来添加新方法
     */
-  protected val valueMappingFunctions: List[PartialFunction[(CanalEntry.Column, String), (CanalEntry.Column, String)]] = List(getSqlValueBySqlType)
+  protected val valueMappingFunctions: List[PartialFunction[OperationField, OperationField]] = List(getSqlValueBySqlType)
 
   /**
     * 根据sqltype 来决定是否加`'``'`
     *
     **/
-  protected val getSqlValueBySqlType = new PartialFunction[(CanalEntry.Column, String), (CanalEntry.Column, String)] {
-    override def isDefinedAt(x: (CanalEntry.Column, String)): Boolean = true
+  protected val getSqlValueBySqlType = new PartialFunction[OperationField, OperationField] {
+    override def isDefinedAt(x: OperationField): Boolean = true
 
-    override def apply(v1: (CanalEntry.Column, String)): (CanalEntry.Column, String) = (v1._1, CanalEntryTransHelper.getSqlValueByMysqlType(v1._1.getMysqlType, v1._2))
+    override def apply(v1: OperationField): OperationField = v1.copy(value = CanalEntryTransHelper.getSqlValueByMysqlType(v1.column.getMysqlType, v1.value))
 
   }
 
