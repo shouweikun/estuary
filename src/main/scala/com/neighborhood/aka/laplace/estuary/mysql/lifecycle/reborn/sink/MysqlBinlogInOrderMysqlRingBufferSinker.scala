@@ -31,7 +31,7 @@ final class MysqlBinlogInOrderMysqlRingBufferSinker(
   /**
     * ringBuffer
     */
-  protected lazy val ringBuffer = new SimpleEstuaryRingBuffer[MysqlRowDataInfo](255) //支持batch
+  protected lazy val ringBuffer = new SimpleEstuaryRingBuffer[MysqlRowDataInfo](511) //支持batch
 
   private var lastBinlogPosition: Option[BinlogPositionInfo] = None
 

@@ -18,5 +18,5 @@ object SettingConstant {
   val TASK_RESTART_DELAY = 10
   val HASH_MAPPING_VIRTUAL_NODES_FACTOR = 32
   val CHECK_STATUS_INTERVAL = 20
-  val SINKER_FLUSH_INTERVAL = 200 //这个单位是毫秒
+  val SINKER_FLUSH_INTERVAL = 300 //这个单位是毫秒
 }

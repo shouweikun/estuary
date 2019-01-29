@@ -38,6 +38,7 @@ final class MysqlBinlogInOrderBatcherMysqlManager(
     lazy val consistentHashing = context.actorOf(new ConsistentHashingGroup(paths, virtualNodesFactor = SettingConstant.HASH_MAPPING_VIRTUAL_NODES_FACTOR).props().withDispatcher("akka.batcher-dispatcher"), routerName)
     partitionStrategy match { //暂未支持其他分区等级
       case PartitionStrategy.PRIMARY_KEY => consistentHashing
+      case PartitionStrategy.DATABASE_TABLE => consistentHashing
     }
 
 
