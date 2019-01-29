@@ -7,6 +7,7 @@ import com.neighborhood.aka.laplace.estuary.core.akkaUtil.SyncDaemonCommand.{Ext
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.web.akkaUtil.ActorRefHolder
 import com.neighborhood.aka.laplace.estuary.web.bean.TaskRequestBean
+import org.slf4j.{Logger, LoggerFactory}
 import org.springframework.jdbc.core.JdbcTemplate
 
 import scala.concurrent.Await
@@ -26,6 +27,7 @@ import scala.util.Try
   */
 trait SyncService[Bean <: TaskRequestBean] {
   implicit val timeout = akka.util.Timeout(3 seconds)
+  protected lazy val logger: Logger = LoggerFactory.getLogger(classOf[SyncService[Bean]])
   protected lazy val objectMapper: ObjectMapper = new ObjectMapper
   private lazy val requestBeanMap: ConcurrentHashMap[String, TaskRequestBean]
   = new ConcurrentHashMap[String, TaskRequestBean]()
@@ -34,7 +36,7 @@ trait SyncService[Bean <: TaskRequestBean] {
     * 入海口3存任务的表名
     *
     */
-  protected def saveTaskInfoTableName: String = "estuary3_task_info"
+  protected def saveTaskInfoTableName: String = "datacenter_trickle3.estuary3_task_info"
 
   /**
     * 重启一个syncTask
@@ -284,6 +286,7 @@ trait SyncService[Bean <: TaskRequestBean] {
     */
   protected def saveTaskInfo(syncTaskId: String, ip: String, port: String, bean: Bean, taskType: String)(f: String => Unit) = {
     val sql = s"insert into $saveTaskInfoTableName(sync_task_id,ip,port,bean,task_type) VALUES('$syncTaskId','$ip','$port','${objectMapper.writeValueAsString(bean)}','$taskType')"
+    logger.info(s"start to save task info,$sql,id:$syncTaskId")
     f(sql)
   }
 }

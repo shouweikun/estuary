@@ -38,12 +38,15 @@ final class Mysql2MysqlService extends SyncService[Mysql2MysqlRequestBean] {
   @Value("${sda.tableMapping.matadata.token}")
   private val mataDataToken: String = null
   @Autowired
-  @Qualifier("configJdbcTemplate") private lazy val jdbcTemplate: JdbcTemplate = null
-  private lazy val logger: Logger = LoggerFactory.getLogger(classOf[Mysql2MysqlService])
+  @Qualifier("configJdbcTemplate")
+  private val jdbcTemplate: JdbcTemplate = null
 
   @Autowired
   @Qualifier("restTemplate")
   private val restTemplate: RestTemplate = null
+
+  override protected lazy val logger: Logger = LoggerFactory.getLogger(classOf[Mysql2MysqlService])
+
 
   /**
     * 为Sda定制的开始方法
@@ -94,8 +97,9 @@ final class Mysql2MysqlService extends SyncService[Mysql2MysqlRequestBean] {
     logger.info(s"we get table Mapping rule:${getMappingRule.asScala.mkString(",")},id:$syncTaskId")
     val concernedFilterPattern: String = concernedDatabases.flatMap {
       databaseName =>
+        val sql = concernedTableNameSqlTemplate(databaseName)
         jdbcTemplate
-          .queryForMap(concernedTableNameSqlTemplate(databaseName))
+          .queryForMap(sql)
           .get("table_name").toString
           .split(",")
           .map(tableName => if (tableName.contains('.')) tableName else s"$databaseName.$tableName")
@@ -127,8 +131,9 @@ final class Mysql2MysqlService extends SyncService[Mysql2MysqlRequestBean] {
       .exchange(mataDataUrl, HttpMethod.GET, httpEntity, classOf[java.util.List[util.LinkedHashMap[String, String]]])
       .getBody
       .asScala
-      .withFilter(x => concernedDatabases.contains(x.get("sourceDb").toString.trim.toLowerCase)) //过滤
+      .withFilter(x => concernedDatabases.contains(x.get("sourceDb").toString.trim.toLowerCase) && x.get("newTable").toString.endsWith(x.get("sourceTable").toString)) //过滤
       .map { x => (s"${x.get("sourceDb").toString.trim.toLowerCase}.${x.get("sourceTable").toString.toLowerCase}" -> s"${x.get("newDb").toString}.${x.get("newTable").toString}") } //全部转为小写
+
       .toMap
   }
 

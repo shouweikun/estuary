@@ -26,6 +26,7 @@ import com.neighborhood.aka.laplace.estuary.mysql.task.{Mysql2MysqlTaskInfoBean,
 final class MysqlBinlogInOrderMysqlController(
                                                val totalTaskInfo: Mysql2MysqlTaskInfoBean
                                              ) extends MysqlBinlogInOrderController[MysqlSinkFunc](totalTaskInfo.taskRunningInfoBean, totalTaskInfo.sourceBean, totalTaskInfo.sinkBean) {
+  log.info(s"we get totalTaskInfo:${totalTaskInfo},id:$syncTaskId")
 
   /**
     * 1.初始化HeartBeatsListener
@@ -37,6 +38,7 @@ final class MysqlBinlogInOrderMysqlController(
     * 7.初始化positionRecorder
     */
   override final def initWorkers: Unit = {
+    log.info(s"start to init all workers,id:$syncTaskId")
     //初始化processingCounter
     log.info(s"initialize processingCounter,id:$syncTaskId")
     val processingCounter = context.actorOf(MysqlInOrderProcessingCounter.props(taskManager), processingCounterName)

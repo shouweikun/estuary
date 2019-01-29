@@ -100,7 +100,7 @@ final class MysqlBinlogInOrderFetcherManager(
     case FetcherMessage(MysqlBinlogInOrderFetcherFree) => fetcherChangeStatus(Status.FREE)
     case FetcherMessage(msg) => log.warning(s"fetcher online unhandled command:$msg,id:$syncTaskId")
     case SyncControllerMessage(MysqlBinlogInOrderFetcherSuspend) => suspend
-    case SyncControllerMessage(MysqlBinlogInOrderPowerAdapterDelayFetch(d))  =>dispatchFetchDelay(d)
+    case SyncControllerMessage(MysqlBinlogInOrderPowerAdapterDelayFetch(d)) => dispatchFetchDelay(d)
 
   }
 
@@ -149,7 +149,7 @@ final class MysqlBinlogInOrderFetcherManager(
 
 
     //构建directFetcher
-    log.info(s"start init $directFetcherName,id:$syncTaskId")
+    log.info(s"start init $directFetcherName using directFetcherTypeName:$directFetcherTypeName,id:$syncTaskId")
     context.actorOf(MysqlBinlogInOrderDirectFetcher.buildMysqlBinlogInOrderDirectFetcher(taskManager, batcher, directFetcherTypeName).withDispatcher("akka.pinned-dispatcher"), directFetcherName)
   }
 
@@ -250,7 +250,8 @@ final class MysqlBinlogInOrderFetcherManager(
 }
 
 object MysqlBinlogInOrderFetcherManager {
-  val name:String = MysqlBinlogInOrderFetcherManager.getClass.getName.stripSuffix("$")
+  val name: String = MysqlBinlogInOrderFetcherManager.getClass.getName.stripSuffix("$")
+
   def props(taskManager: MysqlSourceManagerImp with TaskManager, binlogEventBatcher: ActorRef): Props = Props(new MysqlBinlogInOrderFetcherManager(taskManager, binlogEventBatcher))
 }
 

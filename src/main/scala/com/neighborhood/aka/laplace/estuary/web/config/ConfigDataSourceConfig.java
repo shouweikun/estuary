@@ -24,7 +24,6 @@ public class ConfigDataSourceConfig {
 
 
     @Primary
-    @Lazy
     @Bean(name = "configDataSource")
     public DataSource dataSource1() {
         final String url = this.env.getProperty("spring.config.datasource.url");
@@ -40,7 +39,7 @@ public class ConfigDataSourceConfig {
     }
 
 
-    @Lazy
+
     @Bean(name = "configJdbcTemplate")
     public JdbcTemplate JdbcTemplate1(@Qualifier("configDataSource") DataSource dataSource) {
         return new JdbcTemplate(dataSource);

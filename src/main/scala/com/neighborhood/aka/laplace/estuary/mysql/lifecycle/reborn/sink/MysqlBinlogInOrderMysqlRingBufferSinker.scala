@@ -113,7 +113,6 @@ final class MysqlBinlogInOrderMysqlRingBufferSinker(
             if (!JavaCommonUtil.isEmpty(x.sql)) statement.addBatch(x.sql)
         }
         statement.executeBatch()
-        statement.executeBatch()
         connection.commit()
         statement.clearBatch()
       } catch {
