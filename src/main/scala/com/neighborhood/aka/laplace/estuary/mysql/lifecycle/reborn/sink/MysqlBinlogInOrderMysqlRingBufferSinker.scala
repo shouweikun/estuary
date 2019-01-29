@@ -110,7 +110,7 @@ final class MysqlBinlogInOrderMysqlRingBufferSinker(
         val statement = connection.createStatement()
         ringBuffer.foreach {
           x =>
-            if (!JavaCommonUtil.isEmpty(x.sql)) statement.addBatch(x.sql)
+            if(x.sql.nonEmpty) x.sql.foreach(statement.addBatch(_))
         }
         statement.executeBatch()
         connection.commit()

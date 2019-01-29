@@ -83,11 +83,11 @@ package object lifecycle {
                                     val dmlType: CanalEntry.EventType,
                                     val columnList: List[CanalEntry.Column],
                                     binlogPositionInfo: BinlogPositionInfo,
-                                    overrideSql: Option[String] = None
+                                    overrideSql: List[String] = List.empty
                                    ) {
 
 
-    val sql: String = overrideSql.getOrElse("") //todo
+    val sql: List[String] = overrideSql //todo
 
 
   }
