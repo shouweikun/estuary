@@ -140,7 +140,7 @@ trait CanalEntry2RowDataInfoMappingFormat extends CanalEntryMappingFormat[MysqlR
   protected final def mapRowValue(input: => (CanalEntry.Column, String), funcList: List[PartialFunction[(CanalEntry.Column, String), (CanalEntry.Column, String)]] = this.valueMappingFunctions): String = {
     funcList match {
       case f :: nextFuncList => {
-        lazy val nextInput = f.applyOrElse(input, input => input)
+        lazy val nextInput = f.applyOrElse(input, (input: (CanalEntry.Column, String)) => input)
         mapRowValue(nextInput, nextFuncList)
       }
       case Nil => input._2

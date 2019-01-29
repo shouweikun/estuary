@@ -8,7 +8,7 @@ import com.neighborhood.aka.laplace.estuary.core.akkaUtil.SyncDaemonCommand.Exte
 import com.neighborhood.aka.laplace.estuary.core.task.Mysql2MysqlSyncTask
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.control.{MysqlBinlogInOrderController, MysqlBinlogInOrderMysqlController}
 import com.neighborhood.aka.laplace.estuary.web.akkaUtil.ActorRefHolder
-import com.neighborhood.aka.laplace.estuary.web.bean.{Mysql2MysqlRequestBean, SdaRequestBean, TableNameMappingBean}
+import com.neighborhood.aka.laplace.estuary.web.bean.{Mysql2MysqlRequestBean, SdaRequestBean}
 import com.neighborhood.aka.laplace.estuary.web.utils.TaskBeanTransformUtil
 import org.slf4j.{Logger, LoggerFactory}
 import org.springframework.beans.factory.annotation.{Autowired, Qualifier, Value}
@@ -18,7 +18,6 @@ import org.springframework.stereotype.Service
 import org.springframework.web.client.RestTemplate
 
 import scala.collection.JavaConverters._
-import scala.collection.mutable
 
 /**
   * Created by john_liu on 2018/3/10.
@@ -84,13 +83,13 @@ final class Mysql2MysqlService extends SyncService[Mysql2MysqlRequestBean] {
     */
   private def customRequestForSda(taskRequestBean: Mysql2MysqlRequestBean): Unit = {
     val syncTaskId: String = taskRequestBean.getMysql2MysqlRunningInfoBean.getSyncTaskId
-    val concernedTableNameSqlTemplete: String => String = x => s"select xxx from $concernedConfigTableName where  yyy = '$x'"
+    val concernedTableNameSqlTemplate: String => String = x => s"select xxx from $concernedConfigTableName where  yyy = '$x'"
     val concernedDatabases: List[String] = taskRequestBean.getMysqlSourceBean.getConcernedDatabase.asScala.toList
     val getMappingRule: java.util.Map[String, String] = getAllTableMappingByDatabase(concernedDatabases.toSet).asJava //必须要是java map
     val concernedFilterPattern: String = concernedDatabases.flatMap {
       databaseName =>
         jdbcTemplate
-          .queryForMap(concernedTableNameSqlTemplete(databaseName))
+          .queryForMap(concernedTableNameSqlTemplate(databaseName))
           .get("xxx").toString
           .split(",")
           .map(tableName => if (tableName.contains('.')) tableName else s"$databaseName.$tableName")
@@ -99,6 +98,8 @@ final class Mysql2MysqlService extends SyncService[Mysql2MysqlRequestBean] {
       .mkString(",")
     taskRequestBean.getMysqlSourceBean.setFilterPattern(concernedFilterPattern) //强制设置concernedPattern
     taskRequestBean.getMysql2MysqlRunningInfoBean.setMappingFormatName("sda") //强制Sda
+    taskRequestBean.getMysql2MysqlRunningInfoBean.setFetcherNameToLoad(new util.HashMap[String, String]())
+    taskRequestBean.getMysql2MysqlRunningInfoBean.getFetcherNameToLoad.put("directFetcher", "com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.fetch.SdaMysqlBinlogInOrderDirectFetcher") //强制sda
     taskRequestBean.setSdaBean(new SdaRequestBean(getMappingRule)) //增加rule
   }
 
@@ -113,7 +114,7 @@ final class Mysql2MysqlService extends SyncService[Mysql2MysqlRequestBean] {
     map.add("accept", "*/*")
     val httpEntity: HttpEntity[Any] = new HttpEntity[Any](null, map)
     restTemplate
-      .exchange(mataDataUrl, HttpMethod.GET, httpEntity, classOf[java.util.List[util.LinkedHashMap]])
+      .exchange(mataDataUrl, HttpMethod.GET, httpEntity, classOf[java.util.List[util.LinkedHashMap[String, String]]])
       .getBody
       .asScala
       .withFilter(x => concernedDatabases.contains(x.get("sourceDb").toString.trim.toLowerCase)) //过滤

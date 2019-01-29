@@ -28,7 +28,7 @@ final class Mysql2MysqlTaskInfoManager(
     * 传入的配置
     *
     */
-  override def config: Config = _config
+  override val config: Config = _config
 
   /**
     * 任务信息bean
@@ -63,51 +63,12 @@ final class Mysql2MysqlTaskInfoManager(
   /**
     * 事件溯源的事件收集器
     */
-  override val eventCollector: Option[ActorRef] = None //todo 生成事件收集器
-
-
-  /**
-    * 是否计数，默认不计数
-    */
-  override def isCounting: Boolean = taskInfo.taskRunningInfoBean.isCounting
-
-  /**
-    * 是否计算每条数据的时间，默认不计时
-    */
-  override def isCosting: Boolean = taskInfo.taskRunningInfoBean.isCosting
-
-  /**
-    * 是否保留最新binlog位置
-    */
-  override def isProfiling: Boolean = taskInfo.taskRunningInfoBean.isProfiling
-
-  /**
-    * 是否打开功率调节器
-    */
-  override def isPowerAdapted: Boolean = taskInfo.taskRunningInfoBean.isPowerAdapted
-
-  /**
-    * 是否同步写
-    */
-  override def isSync: Boolean = true //todo
-
-  /**
-    * 是否是补录任务
-    */
-  override def isDataRemedy: Boolean = false //todo 暂时还不支持
-
-
-  /**
-    * 任务类型
-    * 由三部分组成
-    * DataSourceType-DataSyncType-DataSinkType
-    */
-  override def taskType: String = s"${sourceBean.dataSourceType}-${taskInfo.dataSyncType}-${sinkBean.dataSinkType}"
+  override lazy val eventCollector: Option[ActorRef] = None //todo 生成事件收集器
 
   /**
     * 是否启动Schema管理模块,保存元数据
     */
-  override lazy val schemaComponentIsOn: Boolean = taskInfo.taskRunningInfoBean.schemaComponentIsOn
+  override val schemaComponentIsOn: Boolean = taskInfo.taskRunningInfoBean.schemaComponentIsOn
   /**
     * 是否开启数据Schema校验对比
     * 如果Schema管理模块没有开启，不支持就不支持该功能
@@ -119,23 +80,61 @@ final class Mysql2MysqlTaskInfoManager(
   override val isNeedExecuteDDL: Boolean = taskInfo.taskRunningInfoBean.isNeedExecuteDDL
 
   /**
+    * 是否计数，默认不计数
+    */
+  override val isCounting: Boolean = taskInfo.taskRunningInfoBean.isCounting
+
+  /**
+    * 是否计算每条数据的时间，默认不计时
+    */
+  override val isCosting: Boolean = taskInfo.taskRunningInfoBean.isCosting
+
+  /**
+    * 是否保留最新binlog位置
+    */
+  override val isProfiling: Boolean = taskInfo.taskRunningInfoBean.isProfiling
+
+  /**
+    * 是否打开功率调节器
+    */
+  override val isPowerAdapted: Boolean = taskInfo.taskRunningInfoBean.isPowerAdapted
+
+  /**
+    * 是否同步写
+    */
+  override val isSync: Boolean = true //todo
+
+  /**
+    * 是否是补录任务
+    */
+  override val isDataRemedy: Boolean = false //todo 暂时还不支持
+
+  /**
+    * 任务类型
+    * 由三部分组成
+    * DataSourceType-DataSyncType-DataSinkType
+    */
+  override val taskType: String = s"${sourceBean.dataSourceType}-${taskInfo.dataSyncType}-${sinkBean.dataSinkType}"
+
+
+  /**
     * 分区模式
     *
     */
-  override def partitionStrategy: PartitionStrategy = taskInfo.taskRunningInfoBean.partitionStrategy
+  override val partitionStrategy: PartitionStrategy = taskInfo.taskRunningInfoBean.partitionStrategy
 
   /**
     * 是否阻塞式拉取
     *
     */
-  override def isBlockingFetch: Boolean = true //todo 不支持异步写
+  override val isBlockingFetch: Boolean = true //todo 不支持异步写
 
   /**
     * 同步任务开始时间 用于fetch过滤无用字段
     *
     * @return
     */
-  override def syncStartTime: Long = taskInfo.taskRunningInfoBean.syncStartTime
+  override val syncStartTime: Long = taskInfo.taskRunningInfoBean.syncStartTime
 
   /**
     * 加载的sinker的名称
