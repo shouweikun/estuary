@@ -9,6 +9,8 @@ import com.puhui.aes.AesEncryptionUtil
 import com.typesafe.config.Config
 import org.slf4j.LoggerFactory
 
+import scala.util.Try
+
 /**
   * Created by john_liu on 2019/1/13.
   *
@@ -39,7 +41,7 @@ final class CanalEntry2RowDataInfoMappingFormat4Sda(
   override def transform(x: lifecycle.EntryKeyClassifier): MysqlRowDataInfo = {
     val entry = x.entry
     val header = entry.getHeader
-    val (dbName, tableName) = tableMappingRule.getMappingName(header.getSchemaName, header.getTableName)
+    val (dbName, tableName) = Try(tableMappingRule.getMappingName(header.getSchemaName, header.getTableName)).getOrElse(throw new RuntimeException(s"${header.getSchemaName}, ${header.getTableName} cannot get dbName,tableName,id:$syncTaskId"))
     val dmlType = header.getEventType
     val columnList = x.columnList
     checkAndGetMysqlRowDataInfo(dbName, tableName, dmlType, columnList, entry)
