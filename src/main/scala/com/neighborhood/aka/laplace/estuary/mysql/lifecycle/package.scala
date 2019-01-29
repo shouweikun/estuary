@@ -74,21 +74,20 @@ package object lifecycle {
     * @param dbName             数据库名称
     * @param tableName          表名称
     * @param dmlType            DML类型
-    * @param rowData            Canal.RowData
+    * @param columnList
     * @param binlogPositionInfo 数据库位点信息
     * @param overrideSql        此项代表是否有指定的Sql，来覆盖计算出的结果
     */
   final case class MysqlRowDataInfo(val dbName: String,
                                     val tableName: String,
                                     val dmlType: CanalEntry.EventType,
-                                    val rowData: RowData,
+                                    val columnList: List[CanalEntry.Column],
                                     binlogPositionInfo: BinlogPositionInfo,
-                                    overrideSql: Option[String] = None) {
-
+                                    overrideSql: Option[String] = None
+                                   ) {
 
 
     val sql: String = overrideSql.getOrElse("") //todo
-
 
 
   }
@@ -101,6 +100,12 @@ package object lifecycle {
     lazy val dbAndTb: String = s"${entry.getHeader.getSchemaName}@${entry.getHeader.getTableName}"
     lazy val thePrimaryKey: String = generatePrimaryKey
     lazy val syncSequence: Long = syncSequence4EntryClassifier.getAndIncrement()
+    lazy val columnList: List[CanalEntry.Column] = {
+      val list = if (entry.getHeader.getEventType.equals(CanalEntry.EventType.DELETE)) rowData.
+        getBeforeColumnsList else rowData.getAfterColumnsList
+      list.asScala.toList
+    }
+
 
     override def consistentHashKey: Any = {
       partitionStrategy match {
@@ -116,16 +121,7 @@ package object lifecycle {
     private def generatePrimaryKey: String = {
       lazy val prefix = s"$dbAndTb@"
       lazy val key = Try {
-        if (entry.getHeader.getEventType.equals(CanalEntry.EventType.DELETE)) rowData.
-          getBeforeColumnsList
-          .asScala
-          .sortWith((c1, c2) => c1.getIndex < c2.getIndex)
-          .withFilter(_.getIsKey)
-          .map(_.getValue)
-          .mkString("_") else rowData
-          .getAfterColumnsList
-          .asScala
-          .sortWith((c1, c2) => c1.getIndex < c2.getIndex)
+        columnList
           .withFilter(_.getIsKey)
           .map(_.getValue)
           .mkString("_")
