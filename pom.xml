@@ -37,6 +37,11 @@
     </properties>
     <dependencies>
         <dependency>
+            <groupId>com.puhui</groupId>
+            <artifactId>puhui-aes</artifactId>
+            <version>1.1</version>
+        </dependency>
+        <dependency>
             <groupId>com.alibaba.otter</groupId>
             <artifactId>canal.server</artifactId>
             <version>${canal.version}</version>
