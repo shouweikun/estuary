@@ -1,14 +1,12 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.batch.mappings
 
 import com.alibaba.otter.canal.protocol.CanalEntry
-import com.alibaba.otter.canal.protocol.CanalEntry.{EventType, RowData}
+import com.alibaba.otter.canal.protocol.CanalEntry.EventType
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.{BinlogPositionInfo, MysqlRowDataInfo}
 import com.neighborhood.aka.laplace.estuary.mysql.schema.tablemeta.{EstuaryMysqlColumnInfo, MysqlTableSchemaHolder, _}
 import com.neighborhood.aka.laplace.estuary.mysql.utils.CanalEntryTransHelper
 
 import scala.annotation.tailrec
-import scala.collection.JavaConverters._
-import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
 /**
@@ -99,7 +97,8 @@ trait CanalEntry2RowDataInfoMappingFormat extends CanalEntryMappingFormat[MysqlR
     * @param dbName    db名称
     * @param tableName 表名称
     * @param dmlType   dml类型
-    * @param rowData   rowData
+    * @param columnList
+    * @param entry
     * @return MysqlRowDataInfo
     */
   @inline
@@ -107,17 +106,10 @@ trait CanalEntry2RowDataInfoMappingFormat extends CanalEntryMappingFormat[MysqlR
                                              dbName: String,
                                              tableName: String,
                                              dmlType: EventType,
-                                             rowData: RowData,
+                                             columnList: List[CanalEntry.Column],
                                              entry: => CanalEntry.Entry
                                            ): MysqlRowDataInfo = {
-    lazy val columnList: List[CanalEntry.Column] = {
-      val buffer = dmlType match {
-        case EventType.DELETE => rowData.getBeforeColumnsList.asScala
-        case EventType.INSERT | EventType.UPDATE => rowData.getAfterColumnsList.asScala
-        case _ => mutable.Buffer.empty
-      }
-      buffer.toList
-    }
+
     //EstuaryMysqlColumnInfo的list 方便值比较
     val estuaryColumnInfoList = columnList.map(_.toEstuaryMysqlColumnInfo)
     val sql: String = if (!checkSchema(dbName, tableName, estuaryColumnInfoList)) {
@@ -133,7 +125,7 @@ trait CanalEntry2RowDataInfoMappingFormat extends CanalEntryMappingFormat[MysqlR
       entry.getHeader.getLogfileOffset,
       entry.getHeader.getExecuteTime
     )
-    MysqlRowDataInfo(dbName, tableName, dmlType, rowData, binlogPositionInfo, Option(sql))
+    MysqlRowDataInfo(dbName, tableName, dmlType, columnList, binlogPositionInfo, Option(sql))
   }
 
   /**

@@ -25,8 +25,8 @@ final class DefaultCanalEntry2RowDataInfoMappingFormat(
     val tableName = header.getTableName
     val dbName = header.getSchemaName
     val dmlType = header.getEventType
-    val rowData = x.rowData
-    checkAndGetMysqlRowDataInfo(dbName, tableName, dmlType, rowData, entry)
+    val columnList = x.columnList
+    checkAndGetMysqlRowDataInfo(dbName, tableName, dmlType, columnList, entry)
   }
 
 

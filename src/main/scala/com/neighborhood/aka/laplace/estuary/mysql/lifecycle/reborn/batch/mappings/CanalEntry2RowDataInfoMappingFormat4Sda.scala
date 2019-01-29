@@ -39,8 +39,8 @@ final class CanalEntry2RowDataInfoMappingFormat4Sda(
     val header = entry.getHeader
     val (dbName, tableName) = tableMappingRule.getMappingName(header.getSchemaName, header.getTableName)
     val dmlType = header.getEventType
-    val rowData = x.rowData
-    checkAndGetMysqlRowDataInfo(dbName, tableName, dmlType, rowData,entry)
+    val columnList = x.columnList
+    checkAndGetMysqlRowDataInfo(dbName, tableName, dmlType, columnList,entry)
   }
 
 

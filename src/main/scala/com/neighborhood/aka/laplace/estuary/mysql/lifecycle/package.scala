@@ -74,16 +74,17 @@ package object lifecycle {
     * @param dbName             数据库名称
     * @param tableName          表名称
     * @param dmlType            DML类型
-    * @param rowData            Canal.RowData
+    * @param columnList
     * @param binlogPositionInfo 数据库位点信息
     * @param overrideSql        此项代表是否有指定的Sql，来覆盖计算出的结果
     */
   final case class MysqlRowDataInfo(val dbName: String,
                                     val tableName: String,
                                     val dmlType: CanalEntry.EventType,
-                                    val rowData: RowData,
+                                    val columnList: List[CanalEntry.Column],
                                     binlogPositionInfo: BinlogPositionInfo,
-                                    overrideSql: Option[String] = None) {
+                                    overrideSql: Option[String] = None
+                                   ) {
 
 
     val sql: String = overrideSql.getOrElse("") //todo
