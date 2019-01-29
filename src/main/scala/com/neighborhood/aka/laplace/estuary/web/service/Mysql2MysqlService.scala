@@ -2,6 +2,7 @@ package com.neighborhood.aka.laplace.estuary.web.service
 
 
 import java.net.InetAddress
+import java.util
 
 import com.neighborhood.aka.laplace.estuary.core.akkaUtil.SyncDaemonCommand.ExternalStartCommand
 import com.neighborhood.aka.laplace.estuary.core.task.Mysql2MysqlSyncTask
@@ -11,12 +12,13 @@ import com.neighborhood.aka.laplace.estuary.web.bean.{Mysql2MysqlRequestBean, Sd
 import com.neighborhood.aka.laplace.estuary.web.utils.TaskBeanTransformUtil
 import org.slf4j.{Logger, LoggerFactory}
 import org.springframework.beans.factory.annotation.{Autowired, Qualifier, Value}
-import org.springframework.http.HttpHeaders
+import org.springframework.http.{HttpEntity, HttpHeaders, HttpMethod}
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Service
 import org.springframework.web.client.RestTemplate
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable
 
 /**
   * Created by john_liu on 2018/3/10.
@@ -93,7 +95,7 @@ final class Mysql2MysqlService extends SyncService[Mysql2MysqlRequestBean] {
           .split(",")
           .map(tableName => if (tableName.contains('.')) tableName else s"$databaseName.$tableName")
     }
-      .flatMap(x => List(x, s"_${x}_new", s"_${x}_temp", s"_${x}_old"))  //增加临时表的白名单
+      .flatMap(x => List(x, s"_${x}_new", s"_${x}_temp", s"_${x}_old")) //增加临时表的白名单
       .mkString(",")
     taskRequestBean.getMysqlSourceBean.setFilterPattern(concernedFilterPattern) //强制设置concernedPattern
     taskRequestBean.getMysql2MysqlRunningInfoBean.setMappingFormatName("sda") //强制Sda
@@ -109,14 +111,13 @@ final class Mysql2MysqlService extends SyncService[Mysql2MysqlRequestBean] {
     val map = new HttpHeaders
     map.add("token", mataDataToken)
     map.add("accept", "*/*")
-    val a = restTemplate
-      .getForEntity(mataDataUrl, classOf[String], map).getBody
+    val httpEntity: HttpEntity[Any] = new HttpEntity[Any](null, map)
     restTemplate
-      .getForEntity(mataDataUrl, classOf[java.util.List[TableNameMappingBean]], map)
+      .exchange(mataDataUrl, HttpMethod.GET, httpEntity, classOf[java.util.List[util.LinkedHashMap]])
       .getBody
       .asScala
-      .withFilter(x => concernedDatabases.contains(x.getSourceDb)) //过滤
-      .map { x => (s"${x.getSourceDb.trim.toLowerCase}.${x.getSourceTable.toLowerCase}" -> s"${x.getNewDb}.${x.getNewTable}") } //全部转为小写
+      .withFilter(x => concernedDatabases.contains(x.get("sourceDb").toString.trim.toLowerCase)) //过滤
+      .map { x => (s"${x.get("sourceDb").toString.trim.toLowerCase}.${x.get("sourceTable").toString.toLowerCase}" -> s"${x.get("newDb").toString}.${x.get("newTable").toString}") } //全部转为小写
       .toMap
   }
 

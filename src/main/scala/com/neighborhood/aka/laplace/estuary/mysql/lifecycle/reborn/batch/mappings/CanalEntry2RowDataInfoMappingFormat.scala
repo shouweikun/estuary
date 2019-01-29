@@ -6,6 +6,7 @@ import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.{BinlogPositionInfo,
 import com.neighborhood.aka.laplace.estuary.mysql.schema.tablemeta.{EstuaryMysqlColumnInfo, MysqlTableSchemaHolder, _}
 import com.neighborhood.aka.laplace.estuary.mysql.utils.CanalEntryTransHelper
 
+import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -40,7 +41,7 @@ trait CanalEntry2RowDataInfoMappingFormat extends CanalEntryMappingFormat[MysqlR
     columnList.foreach {
       column =>
         if (column.hasValue) {
-          values.append(CanalEntryTransHelper.getSqlValueByMysqlType(column.getMysqlType, column.getValue))
+          values.append(mapRowValue((column, column.getValue)))
           fields.append(column.getName)
         }
     }
@@ -56,12 +57,12 @@ trait CanalEntry2RowDataInfoMappingFormat extends CanalEntryMappingFormat[MysqlR
     */
   @inline
   protected def handleDeleteEventRowDataToSql(dbName: String, tableName: String, columnList: List[CanalEntry.Column]): String = {
-    columnList.find(x => x.hasIsKey && x.getIsKey).fold { //暂时不处理无主键的
+    columnList.find(x => x.hasIsKey && x.getIsKey && x.hasValue).fold { //暂时不处理无主键的
       ""
     } {
       keyColumn =>
         val keyName = keyColumn.getName
-        val keyValue = CanalEntryTransHelper.getSqlValueByMysqlType(keyColumn.getMysqlType, keyColumn.getValue)
+        val keyValue = mapRowValue((keyColumn, keyColumn.getValue))
         s"DELETE FROM $dbName.$tableName WHERE $keyName=$keyValue"
     }
   }
@@ -127,4 +128,41 @@ trait CanalEntry2RowDataInfoMappingFormat extends CanalEntryMappingFormat[MysqlR
     )
     MysqlRowDataInfo(dbName, tableName, dmlType, rowData, binlogPositionInfo, Option(sql))
   }
+
+  /**
+    * 处理每行的值
+    *
+    * @param input    输入
+    * @param funcList 变换方法列表
+    * @return
+    */
+  @tailrec
+  protected final def mapRowValue(input: => (CanalEntry.Column, String), funcList: List[PartialFunction[(CanalEntry.Column, String), (CanalEntry.Column, String)]] = this.valueMappingFunctions): String = {
+    funcList match {
+      case f :: nextFuncList => {
+        lazy val nextInput = f.applyOrElse(input, input => input)
+        mapRowValue(nextInput, nextFuncList)
+      }
+      case Nil => input._2
+    }
+  }
+
+  /**
+    * 所有的值变换策略
+    *
+    * @note 请使用:: 来添加新方法
+    */
+  protected val valueMappingFunctions: List[PartialFunction[(CanalEntry.Column, String), (CanalEntry.Column, String)]] = List(getSqlValueBySqlType)
+
+  /**
+    * 根据sqltype 来决定是否加`'``'`
+    *
+    **/
+  protected val getSqlValueBySqlType = new PartialFunction[(CanalEntry.Column, String), (CanalEntry.Column, String)] {
+    override def isDefinedAt(x: (CanalEntry.Column, String)): Boolean = true
+
+    override def apply(v1: (CanalEntry.Column, String)): (CanalEntry.Column, String) = (v1._1, CanalEntryTransHelper.getSqlValueByMysqlType(v1._1.getMysqlType, v1._2))
+
+  }
+
 }

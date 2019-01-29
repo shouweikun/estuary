@@ -5,7 +5,7 @@ import com.alibaba.otter.canal.protocol.position.EntryPosition
 import com.neighborhood.aka.laplace.estuary.bean.key.PartitionStrategy
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.core.trans.MappingFormat
-import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.batch.mappings.{DefaultCanalEntry2RowDataInfoMappingFormat, CanalEntry2RowDataInfoMappingFormat4Sda}
+import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.batch.mappings.{CanalEntry2RowDataInfoMappingFormat4Sda, DefaultCanalEntry2RowDataInfoMappingFormat}
 import com.neighborhood.aka.laplace.estuary.mysql.schema.SdaSchemaMappingRule
 import com.neighborhood.aka.laplace.estuary.mysql.schema.tablemeta.{EstuaryMysqlColumnInfo, EstuaryMysqlTableMeta, MysqlTableSchemaHolder}
 import com.neighborhood.aka.laplace.estuary.mysql.sink.{MysqlSinkBeanImp, MysqlSinkManagerImp}
@@ -217,18 +217,25 @@ final class Mysql2MysqlTaskInfoManager(
         val columnName = x("COLUMN_NAME".toLowerCase).toString
         val mysqlType = x("DATA_TYPE".toLowerCase).toString
         val index = x("ORDINAL_POSITION".toLowerCase).toString.toInt - 1
-        (s"${x("TABLE_SCHEMA".toLowerCase)}.${x("TABLE_NAME".toLowerCase)}" -> EstuaryMysqlColumnInfo(columnName, index, mysqlType))
+        s"${x("TABLE_SCHEMA".toLowerCase)}.${x("TABLE_NAME".toLowerCase)}" -> EstuaryMysqlColumnInfo(columnName, index, mysqlType)
     }.groupBy(x => x._1) //聚类
       .map {
-      case (fullName, columns) => (fullName -> EstuaryMysqlTableMeta(fullName.split('.')(0), fullName.split('.')(1), columns.map(_._2)))
+      case (fullName, columns) => fullName -> EstuaryMysqlTableMeta(fullName.split('.')(0), fullName.split('.')(1), columns.map(_._2))
     }
     new MysqlTableSchemaHolder(map)
   }
 
+  /**
+    * 构造MappingFormat
+    *
+    * @return mappingFormat
+    */
   def buildMappingFormat: MappingFormat[_, _] = {
 
-     val default = new DefaultCanalEntry2RowDataInfoMappingFormat(partitionStrategy, syncTaskId, syncStartTime, schemaComponentIsOn, config, isCheckSinkSchema, Option(sinkMysqlTableSchemaHolder))
-    lazy val sda = new CanalEntry2RowDataInfoMappingFormat4Sda(partitionStrategy, syncTaskId, syncStartTime, schemaComponentIsOn, isCheckSinkSchema, config, Option(sinkMysqlTableSchemaHolder), tableMappingRule)
+    def default = new DefaultCanalEntry2RowDataInfoMappingFormat(partitionStrategy, syncTaskId, syncStartTime, schemaComponentIsOn, config, isCheckSinkSchema, Option(sinkMysqlTableSchemaHolder))
+
+    def sda = new CanalEntry2RowDataInfoMappingFormat4Sda(partitionStrategy, syncTaskId, syncStartTime, schemaComponentIsOn, isCheckSinkSchema, config, Option(sinkMysqlTableSchemaHolder), tableMappingRule)
+
     taskInfo.taskRunningInfoBean.batchMappingFormatName
       .map {
         name =>

@@ -1,16 +1,12 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.batch.mappings
 
-import com.alibaba.otter.canal.protocol.CanalEntry.{EventType, RowData}
 import com.neighborhood.aka.laplace.estuary.bean.key.PartitionStrategy
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle
-import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.{BinlogPositionInfo, MysqlRowDataInfo}
+import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.MysqlRowDataInfo
 import com.neighborhood.aka.laplace.estuary.mysql.schema.SdaSchemaMappingRule
 import com.neighborhood.aka.laplace.estuary.mysql.schema.tablemeta.MysqlTableSchemaHolder
-import com.neighborhood.aka.laplace.estuary.mysql.utils.CanalEntryTransHelper
 import com.typesafe.config.Config
 import org.slf4j.LoggerFactory
-
-import scala.collection.mutable.ListBuffer
 
 /**
   * Created by john_liu on 2019/1/13.

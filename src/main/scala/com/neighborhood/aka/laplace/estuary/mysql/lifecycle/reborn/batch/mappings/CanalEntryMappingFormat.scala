@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory
   */
 trait CanalEntryMappingFormat[R] extends MappingFormat[EntryKeyClassifier, R] {
 
+
   protected lazy val logger = LoggerFactory.getLogger(classOf[CanalEntryMappingFormat[R]])
 
 
