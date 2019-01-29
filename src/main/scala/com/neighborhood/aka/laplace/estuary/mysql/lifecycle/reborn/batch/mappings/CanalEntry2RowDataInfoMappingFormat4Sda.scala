@@ -31,7 +31,7 @@ final class CanalEntry2RowDataInfoMappingFormat4Sda(
                                                      override val config: Config,
                                                      override val schemaHolder: Option[MysqlTableSchemaHolder] = None,
                                                      val tableMappingRule: SdaSchemaMappingRule,
-                                                     val encryptField: Map[String, String]
+                                                     val encryptField: Map[String, Set[String]]
                                                    ) extends CanalEntry2RowDataInfoMappingFormat {
 
   override protected lazy val logger = LoggerFactory.getLogger(classOf[CanalEntry2RowDataInfoMappingFormat4Sda])
@@ -49,7 +49,10 @@ final class CanalEntry2RowDataInfoMappingFormat4Sda(
     * 加密函数
     */
   private final val aesEncrypt: PartialFunction[OperationField, OperationField] = new PartialFunction[OperationField, OperationField] {
-    override def isDefinedAt(x: OperationField): Boolean = encryptField.contains(s"${x.entry.getHeader.getSchemaName}.${x.entry.getHeader.getTableName}") && !x.value.startsWith("xy")
+    override def isDefinedAt(x: OperationField): Boolean = {
+      val fullName = s"${x.entry.getHeader.getSchemaName}.${x.entry.getHeader.getTableName}"
+      !x.value.startsWith("xy") && encryptField.contains(fullName) && encryptField(fullName).contains(x.column.getName)
+    }
 
     override def apply(v1: OperationField): OperationField = v1.copy(value = AesEncryptionUtil.encrypt(v1.value.replaceAll("\u0000", "")))
   }
