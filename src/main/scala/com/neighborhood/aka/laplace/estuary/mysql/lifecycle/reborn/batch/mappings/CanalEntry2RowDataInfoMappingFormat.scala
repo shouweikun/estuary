@@ -40,7 +40,7 @@ trait CanalEntry2RowDataInfoMappingFormat extends CanalEntryMappingFormat[MysqlR
     * @return Sql
     */
   @inline
-  protected def handleUpdateEventRowDataToSql(dbName: String, tableName: String, columnList: List[CanalEntry.Column], entry: => CanalEntry.Entry): String = {
+  protected def handleUpdateEventRowDataToSql(dbName: String, tableName: String, columnList: List[CanalEntry.Column], entry: => CanalEntry.Entry): List[String] = {
     val values = new ListBuffer[String]
     val fields = new ListBuffer[String]
     columnList.foreach {
@@ -50,7 +50,9 @@ trait CanalEntry2RowDataInfoMappingFormat extends CanalEntryMappingFormat[MysqlR
           fields.append(column.getName)
         }
     }
-    s"replace into $dbName.$tableName(${fields.mkString(",")}) VALUES (${values.mkString(",")}) "
+    val delete = handleDeleteEventRowDataToSql(dbName, tableName, columnList, entry).head
+    val insert = s"replace into $dbName.$tableName(${fields.mkString(",")}) VALUES (${values.mkString(",")}) "
+    List(delete, insert)
   }
 
   /**
@@ -61,14 +63,14 @@ trait CanalEntry2RowDataInfoMappingFormat extends CanalEntryMappingFormat[MysqlR
     * @return sql
     */
   @inline
-  protected def handleDeleteEventRowDataToSql(dbName: String, tableName: String, columnList: List[CanalEntry.Column], entry: CanalEntry.Entry): String = {
+  protected def handleDeleteEventRowDataToSql(dbName: String, tableName: String, columnList: List[CanalEntry.Column], entry: CanalEntry.Entry): List[String] = {
     columnList.find(x => x.hasIsKey && x.getIsKey && x.hasValue).fold { //暂时不处理无主键的
-      ""
+      List.empty[String]
     } {
       keyColumn =>
         val keyName = keyColumn.getName
         val keyValue = (mapRowValue((OperationField(dbName, tableName, keyColumn, keyColumn.getValue, entry))))
-        s"DELETE FROM $dbName.$tableName WHERE $keyName=$keyValue"
+        List(s"DELETE FROM $dbName.$tableName WHERE $keyName=$keyValue")
     }
   }
 
@@ -112,9 +114,9 @@ trait CanalEntry2RowDataInfoMappingFormat extends CanalEntryMappingFormat[MysqlR
 
     //EstuaryMysqlColumnInfo的list 方便值比较
     val estuaryColumnInfoList = columnList.map(_.toEstuaryMysqlColumnInfo)
-    val sql: String = if (!checkSchema(dbName, tableName, estuaryColumnInfoList)) {
+    val sql: List[String] = if (!checkSchema(dbName, tableName, estuaryColumnInfoList)) {
       logger.warn(s"check schema failed,entry:${CanalEntryTransHelper.entryToJson(entry)},id:$syncTaskId")
-      "" //返回空字符串
+      List.empty //返回空字符串
     }
     else dmlType match {
       case EventType.INSERT | EventType.UPDATE => handleUpdateEventRowDataToSql(dbName, tableName, columnList, entry)
@@ -125,7 +127,7 @@ trait CanalEntry2RowDataInfoMappingFormat extends CanalEntryMappingFormat[MysqlR
       entry.getHeader.getLogfileOffset,
       entry.getHeader.getExecuteTime
     )
-    MysqlRowDataInfo(dbName, tableName, dmlType, columnList, binlogPositionInfo, Option(sql))
+    MysqlRowDataInfo(dbName, tableName, dmlType, columnList, binlogPositionInfo, sql)
   }
 
   /**
