@@ -104,6 +104,7 @@ final class Mysql2MysqlService extends SyncService[Mysql2MysqlRequestBean] {
       .mkString(",")
     logger.info(s"we get concerned filter pattern:$concernedFilterPattern,specially considering online ddl,and override input fitler pattern id:$syncTaskId")
     val allEncryptField = getAllEncryptField(concernedDatabases)
+    logger.info(s"we get allEncryptField:${allEncryptField.asScala.mapValues(_.asScala).mkString(",")},id:$syncTaskId")
     taskRequestBean.getMysqlSourceBean.setFilterPattern(concernedFilterPattern) //强制设置concernedPattern
     logger.info(s"using sda mapping format,id:$syncTaskId")
     taskRequestBean.getMysql2MysqlRunningInfoBean.setMappingFormatName("sda") //强制Sda
