@@ -83,21 +83,27 @@ final class Mysql2MysqlService extends SyncService[Mysql2MysqlRequestBean] {
     */
   private def customRequestForSda(taskRequestBean: Mysql2MysqlRequestBean): Unit = {
     val syncTaskId: String = taskRequestBean.getMysql2MysqlRunningInfoBean.getSyncTaskId
-    val concernedTableNameSqlTemplate: String => String = x => s"select xxx from $concernedConfigTableName where  yyy = '$x'"
+    logger.info(s"start custom request 4 sda,$syncTaskId")
+    val concernedTableNameSqlTemplate: String => String = x => s"select table_name from $concernedConfigTableName where  db_name = '$x' and db_type ='mysql' "
     val concernedDatabases: List[String] = taskRequestBean.getMysqlSourceBean.getConcernedDatabase.asScala.toList
+    logger.info(s"we get concerned database:${concernedDatabases.mkString(",")},id:$syncTaskId")
     val getMappingRule: java.util.Map[String, String] = getAllTableMappingByDatabase(concernedDatabases.toSet).asJava //必须要是java map
+    logger.info(s"we get table Mapping rule:${getMappingRule.asScala.mkString(",")},id:$syncTaskId")
     val concernedFilterPattern: String = concernedDatabases.flatMap {
       databaseName =>
         jdbcTemplate
           .queryForMap(concernedTableNameSqlTemplate(databaseName))
-          .get("xxx").toString
+          .get("table_name").toString
           .split(",")
           .map(tableName => if (tableName.contains('.')) tableName else s"$databaseName.$tableName")
     }
       .flatMap(x => List(x, s"_${x}_new", s"_${x}_temp", s"_${x}_old")) //增加临时表的白名单
       .mkString(",")
+    logger.info(s"we get concerned filter pattern:$concernedFilterPattern,specially considering online ddl,and override input fitler pattern id:$syncTaskId")
     taskRequestBean.getMysqlSourceBean.setFilterPattern(concernedFilterPattern) //强制设置concernedPattern
+    logger.info(s"using sda mapping format,id:$syncTaskId")
     taskRequestBean.getMysql2MysqlRunningInfoBean.setMappingFormatName("sda") //强制Sda
+    logger.info(s"using SdaMysqlBinlogInOrderDirectFetcher,id:$syncTaskId ")
     taskRequestBean.getMysql2MysqlRunningInfoBean.setFetcherNameToLoad(new util.HashMap[String, String]())
     taskRequestBean.getMysql2MysqlRunningInfoBean.getFetcherNameToLoad.put("directFetcher", "com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.fetch.SdaMysqlBinlogInOrderDirectFetcher") //强制sda
     taskRequestBean.setSdaBean(new SdaRequestBean(getMappingRule)) //增加rule
@@ -106,7 +112,6 @@ final class Mysql2MysqlService extends SyncService[Mysql2MysqlRequestBean] {
   /**
     * 获取全部表的映射关系
     *
-    * @return
     */
   private def getAllTableMappingByDatabase(concernedDatabases: Set[String]): Map[String, String] = {
     val map = new HttpHeaders
