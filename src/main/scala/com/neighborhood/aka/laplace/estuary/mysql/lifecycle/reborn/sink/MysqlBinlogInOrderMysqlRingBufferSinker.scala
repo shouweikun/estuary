@@ -102,7 +102,7 @@ final class MysqlBinlogInOrderMysqlRingBufferSinker(
 
     if (!ringBuffer.isEmpty) {
       lastBinlogPosition = Option(ringBuffer.peek).map(_.binlogPositionInfo)
-      val connection = sinkFunc.getJdbcConnection
+      lazy val connection = sinkFunc.getJdbcConnection
       val startTime = System.currentTimeMillis()
       val elemNum = ringBuffer.elemNum
       try {
@@ -110,7 +110,7 @@ final class MysqlBinlogInOrderMysqlRingBufferSinker(
         val statement = connection.createStatement()
         ringBuffer.foreach {
           x =>
-            if(x.sql.nonEmpty) x.sql.foreach(statement.addBatch(_))
+            if (x.sql.nonEmpty) x.sql.foreach(statement.addBatch(_))
         }
         statement.executeBatch()
         connection.commit()
