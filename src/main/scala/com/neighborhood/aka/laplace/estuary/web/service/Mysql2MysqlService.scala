@@ -102,10 +102,11 @@ final class Mysql2MysqlService extends SyncService[Mysql2MysqlRequestBean] {
           .queryForList(sql)
           .asScala
           .map(_.get("table_name").toString)
-          .map(tableName => if (tableName.contains('.')) tableName else s"$databaseName.$tableName")
+          .map(tableName => if (tableName.contains('.')) tableName.split('.')(1) else s"$tableName")
+          .flatMap(x => List(s"$databaseName.$x", s"$databaseName._${x}_new", s"$databaseName._${x}_temp", s"$databaseName._${x}_old")) //增加临时表的白名单
           .toList
     }
-      .flatMap(x => List(x, s"_${x}_new", s"_${x}_temp", s"_${x}_old")) //增加临时表的白名单
+
       .mkString(",")
     logger.info(s"we get concerned filter pattern:$concernedFilterPattern,specially considering online ddl,and override input fitler pattern id:$syncTaskId")
     val allEncryptField = getAllEncryptField(concernedDatabases)
