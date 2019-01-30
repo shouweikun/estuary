@@ -1,19 +1,18 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink
 
-import akka.actor.{ActorRef, Props}
+import akka.actor.Props
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, SinkerMessage, WorkerMessage}
 import com.neighborhood.aka.laplace.estuary.core.sink.mysql.MysqlSinkFunc
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.core.util.SimpleEstuaryRingBuffer
 import com.neighborhood.aka.laplace.estuary.mysql.SettingConstant
-import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink.MysqlBinlogInOrderSinkerCommand.{MysqlInOrderSinkerCheckBatch, MysqlInOrderSinkerGetAbnormal}
+import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink.MysqlBinlogInOrderSinkerCommand.MysqlInOrderSinkerCheckBatch
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.{BinlogPositionInfo, MysqlRowDataInfo}
 import com.neighborhood.aka.laplace.estuary.mysql.sink.MysqlSinkManagerImp
 
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration._
 import scala.util.{Success, Try}
-import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink.MysqlBinlogInOrderSinkerCommand.MysqlInOrderSinkerCheckBatch
 
 /**
   * Created by john_liu on 2019/1/14.

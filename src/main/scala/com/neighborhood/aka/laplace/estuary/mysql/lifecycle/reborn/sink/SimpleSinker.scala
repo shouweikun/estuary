@@ -10,6 +10,7 @@ import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.BinlogPositionInfo
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink.MysqlBinlogInOrderSinkerCommand.MysqlInOrderSinkerGetAbnormal
 import com.neighborhood.aka.laplace.estuary.mysql.sink.MysqlSinkManagerImp
 
+import scala.annotation.tailrec
 import scala.util.{Success, Try}
 
 /**
@@ -82,7 +83,8 @@ final private[sink] class SimpleSinker(
   /**
     * 错误处理
     */
-  override def processError(e: Throwable, message: lifecycle.WorkerMessage): Unit = {
+  @tailrec
+  override final def processError(e: Throwable, message: lifecycle.WorkerMessage): Unit = {
     e.printStackTrace() //打印异常
     errorCount = errorCount + 1 //错误次数+1
     if (errorCount > errorCountThreshold) {

@@ -9,7 +9,7 @@ import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink.MysqlBin
 import com.neighborhood.aka.laplace.estuary.mysql.sink.MysqlSinkManagerImp
 
 import scala.annotation.tailrec
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 /**
   * Created by john_liu on 2019/1/14.
