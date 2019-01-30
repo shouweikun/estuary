@@ -7,6 +7,6 @@ import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.BinlogPositionInfo
   */
 package object sink {
 
-  private[sink] final case class SqlList(list: List[String], binlogPositionInfo: BinlogPositionInfo, shouldCount: Int, ts: Long = System.currentTimeMillis())
+  private[sink] final case class SqlList(list: List[String], binlogPositionInfo: Option[BinlogPositionInfo], shouldCount: Int, ts: Long = System.currentTimeMillis())
 
 }
