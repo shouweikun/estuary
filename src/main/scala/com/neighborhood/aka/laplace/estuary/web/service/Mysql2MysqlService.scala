@@ -99,10 +99,11 @@ final class Mysql2MysqlService extends SyncService[Mysql2MysqlRequestBean] {
       databaseName =>
         val sql = concernedTableNameSqlTemplate(databaseName)
         jdbcTemplate
-          .queryForMap(sql)
-          .get("table_name").toString
-          .split(",")
+          .queryForList(sql)
+          .asScala
+          .map(_.get("table_name").toString)
           .map(tableName => if (tableName.contains('.')) tableName else s"$databaseName.$tableName")
+          .toList
     }
       .flatMap(x => List(x, s"_${x}_new", s"_${x}_temp", s"_${x}_old")) //增加临时表的白名单
       .mkString(",")
