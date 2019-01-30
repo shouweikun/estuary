@@ -10,6 +10,7 @@ import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink.MysqlBin
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.{BinlogPositionInfo, MysqlRowDataInfo}
 import com.neighborhood.aka.laplace.estuary.mysql.sink.MysqlSinkManagerImp
 
+import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration._
 import scala.util.{Success, Try}
 
@@ -99,27 +100,10 @@ final class MysqlBinlogInOrderMysqlRingBufferSinker(
     * 将RingBuffer里所有的元素都形成sql 以batch的形式更新到数据库中
     */
   private def flush: Unit = {
-
     if (!ringBuffer.isEmpty) {
       lastBinlogPosition = Option(ringBuffer.peek).map(_.binlogPositionInfo)
-      val connection = sinkFunc.getJdbcConnection
-      val startTime = System.currentTimeMillis()
-      val elemNum = ringBuffer.elemNum
-      try {
-        connection.setAutoCommit(false)
-        val statement = connection.createStatement()
-        ringBuffer.foreach { x => statement.addBatch(x.sql) }
-        statement.executeBatch()
-        statement.executeBatch()
-        connection.commit()
-        statement.clearBatch()
-      } catch {
-        case e => throw e
-      } finally {
-        Try(connection.close())
-      }
-      sendCost((System.currentTimeMillis() - startTime) / elemNum)
-      sendCount(elemNum)
+      val listBuffer = new ListBuffer[String]
+      ringBuffer.foreach(x=>if(x.sql))
     }
   }
 
@@ -133,26 +117,20 @@ final class MysqlBinlogInOrderMysqlRingBufferSinker(
     */
   override var errorCount: Int = 0
 
+
+  private def initSinker: Unit = {
+    context.actorOf(SimpleSinker.props(taskManager, num).withDispatcher("akka.sinker-dispatcher"), "sinker")
+  }
+
   /**
     * 错误处理
     *
     */
-  override final def processError(e: Throwable, message: WorkerMessage): Unit = {
-    e.printStackTrace()
-    errorCount = errorCount + 1
-    if (errorCount > errorCountThreshold) {
-
-      lazy val positionInfo = Try(message.msg.asInstanceOf[MysqlRowDataInfo].binlogPositionInfo) match {
-        case Success(x) => Option(x)
-        case _ => lastBinlogPosition
-      }
-      positionRecorder.fold(log.error(s"cannot find positionRecorder when sinker$num throw error,id:$syncTaskId")) { ref => ref ! SinkerMessage(MysqlInOrderSinkerGetAbnormal(e, positionInfo)) }
-      context.become(error, true)
-    }
-  }
+  override final def processError(e: Throwable, message: WorkerMessage): Unit = {}
 
   override def preStart(): Unit = {
     super.preStart()
+    initSinker
     context.system.scheduler.schedule(SettingConstant.SINKER_FLUSH_INTERVAL milliseconds, SettingConstant.SINKER_FLUSH_INTERVAL milliseconds, self, BatcherMessage(MysqlInOrderSinkerCheckBatch))
   }
 }

@@ -1,6 +1,6 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink
 
-import akka.actor.ActorRef
+import akka.actor.{ActorRef, Props}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.SinkerMessage
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.SourceDataSinkerPrototype
@@ -91,4 +91,8 @@ private[sink] class SimpleSinker(
       context.become(error, true)
     }
   }
+}
+
+object SimpleSinker {
+  def props(taskManager: MysqlSinkManagerImp with TaskManager, num: Int): Props = Props(new SimpleSinker(taskManager, num))
 }
