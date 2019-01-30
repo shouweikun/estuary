@@ -92,10 +92,11 @@ final class Mysql2MysqlService extends SyncService[Mysql2MysqlRequestBean] {
     val concernedFilterPattern: String = concernedDatabases.flatMap {
       databaseName =>
         jdbcTemplate
-          .queryForMap(concernedTableNameSqlTemplate(databaseName))
-          .get("table_name").toString
-          .split(",")
+          .queryForList(concernedTableNameSqlTemplate(databaseName))
+          .asScala
+          .map(_.get("table_name").toString)
           .map(tableName => if (tableName.contains('.')) tableName else s"$databaseName.$tableName")
+          .toList
     }
       .flatMap(x => List(x, s"_${x}_new", s"_${x}_temp", s"_${x}_old")) //增加临时表的白名单
       .mkString(",")
