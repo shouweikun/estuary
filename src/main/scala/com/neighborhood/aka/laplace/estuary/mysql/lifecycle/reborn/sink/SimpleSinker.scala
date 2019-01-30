@@ -86,6 +86,7 @@ final private[sink] class SimpleSinker(
   @tailrec
   override final def processError(e: Throwable, message: lifecycle.WorkerMessage): Unit = {
     e.printStackTrace() //打印异常
+    log.warning(s"sinker went wrong,sqls:${message.msg},e:$e,${e.getCause},${e.getMessage},id:$syncTaskId")
     errorCount = errorCount + 1 //错误次数+1
     if (errorCount > errorCountThreshold) {
       lazy val positionInfo = Try(message.msg.asInstanceOf[SqlList].binlogPositionInfo) match {

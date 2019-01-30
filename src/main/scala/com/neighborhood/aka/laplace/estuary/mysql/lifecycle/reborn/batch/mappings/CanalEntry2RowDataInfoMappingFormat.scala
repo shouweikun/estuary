@@ -45,15 +45,16 @@ trait CanalEntry2RowDataInfoMappingFormat extends CanalEntryMappingFormat[MysqlR
     val fields = new ListBuffer[String]
     columnList.foreach {
       column =>
-        if (column.hasValue) {
-          values.append(mapRowValue((OperationField(dbName, tableName, column, column.getValue, entry))))
+        if (!column.getIsNull && column.hasValue) {
+          val value = mapRowValue((OperationField(dbName, tableName, column, column.getValue, entry)))
+          values.append(value)
           fields.append(column.getName)
         }
     }
-//    val delete = handleDeleteEventRowDataToSql(dbName, tableName, columnList, entry).head
+    //    val delete = handleDeleteEventRowDataToSql(dbName, tableName, columnList, entry).head
     val insert = s"replace into $dbName.$tableName(${fields.mkString(",")}) VALUES (${values.mkString(",")}) "
     List(
-//      delete,
+      //      delete,
       insert)
   }
 

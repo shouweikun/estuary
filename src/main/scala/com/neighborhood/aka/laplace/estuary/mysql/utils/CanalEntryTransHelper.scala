@@ -58,7 +58,8 @@ object CanalEntryTransHelper {
     * @return 返回mysql使用的value
     */
   def getSqlValueByMysqlType(mysqlType: String, value: String): String = {
-    mysqlType.toLowerCase match {
+    if(value.isEmpty) """"""""
+    else mysqlType.toLowerCase match {
       case x if (x.startsWith("char")) => value
       case x if (x.contains("int")) => value
       case x if (x.contains("bit")) => value
