@@ -31,7 +31,7 @@ final class MysqlBinlogInOrderMysqlRingBufferSinker(
   /**
     * ringBuffer
     */
-  protected lazy val ringBuffer = new SimpleEstuaryRingBuffer[MysqlRowDataInfo](511) //支持batch
+  protected lazy val ringBuffer = new SimpleEstuaryRingBuffer[MysqlRowDataInfo](255) //支持batch
 
   private var lastBinlogPosition: Option[BinlogPositionInfo] = None
 
@@ -99,30 +99,10 @@ final class MysqlBinlogInOrderMysqlRingBufferSinker(
     * 将RingBuffer里所有的元素都形成sql 以batch的形式更新到数据库中
     */
   private def flush: Unit = {
-
     if (!ringBuffer.isEmpty) {
       lastBinlogPosition = Option(ringBuffer.peek).map(_.binlogPositionInfo)
-      lazy val connection = sinkFunc.getJdbcConnection
-      val startTime = System.currentTimeMillis()
-      val elemNum = ringBuffer.elemNum
-      try {
-        connection.setAutoCommit(false)
-        val statement = connection.createStatement()
-        ringBuffer.foreach {
-          x =>
-            if (x.sql.nonEmpty) x.sql.foreach(statement.addBatch(_))
-        }
-        statement.executeBatch()
-        statement.executeBatch()
-        connection.commit()
-        statement.clearBatch()
-      } catch {
-        case e => throw e
-      } finally {
-        Try(connection.close())
-      }
-      sendCost((System.currentTimeMillis() - startTime) / elemNum)
-      sendCount(elemNum)
+      val listBuffer = new ListBuffer[String]
+      ringBuffer.foreach(x=>if(x.sql))
     }
   }
 
@@ -140,19 +120,7 @@ final class MysqlBinlogInOrderMysqlRingBufferSinker(
     * 错误处理
     *
     */
-  override final def processError(e: Throwable, message: WorkerMessage): Unit = {
-    e.printStackTrace()
-    errorCount = errorCount + 1
-    if (errorCount > errorCountThreshold) {
-
-      lazy val positionInfo = Try(message.msg.asInstanceOf[MysqlRowDataInfo].binlogPositionInfo) match {
-        case Success(x) => Option(x)
-        case _ => lastBinlogPosition
-      }
-      positionRecorder.fold(log.error(s"cannot find positionRecorder when sinker$num throw error,id:$syncTaskId")) { ref => ref ! SinkerMessage(MysqlInOrderSinkerGetAbnormal(e, positionInfo)) }
-      context.become(error, true)
-    }
-  }
+  override final def processError(e: Throwable, message: WorkerMessage): Unit = {}
 
   override def preStart(): Unit = {
     super.preStart()

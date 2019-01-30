@@ -55,17 +55,17 @@ trait SourceDataSinkerPrototype[S <: SinkFunc, -R] extends ActorPrototype with S
 
   /**
     * 处理批量Batcher转换过的数据
+    *
     * @param input batcher转换完的数据集合
     * @tparam I 类型参数 逆变
     */
-  protected def handleBatchSinkTask[I<:R](input:List[I]):Try[_]
-
+  protected def handleBatchSinkTask[I <: R](input: List[I]): Try[_]
 
 
   override def preStart(): Unit = {
 
     log.debug(s"init sinker$num,id:$syncTaskId")
-    if(sinkFunc.isTerminated)sinkFunc.start
+    if (sinkFunc.isTerminated) sinkFunc.start
   }
 
   override def postStop(): Unit = {
