@@ -50,9 +50,11 @@ trait CanalEntry2RowDataInfoMappingFormat extends CanalEntryMappingFormat[MysqlR
           fields.append(column.getName)
         }
     }
-    //    val delete = handleDeleteEventRowDataToSql(dbName, tableName, columnList, entry).head
+//    val delete = handleDeleteEventRowDataToSql(dbName, tableName, columnList, entry).head
     val insert = s"replace into $dbName.$tableName(${fields.mkString(",")}) VALUES (${values.mkString(",")}) "
-    List(insert)
+    List(
+//      delete,
+      insert)
   }
 
   /**

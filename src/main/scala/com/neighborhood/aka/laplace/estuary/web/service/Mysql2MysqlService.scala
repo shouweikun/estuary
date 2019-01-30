@@ -45,9 +45,6 @@ final class Mysql2MysqlService extends SyncService[Mysql2MysqlRequestBean] {
   @Qualifier("restTemplate")
   private val restTemplate: RestTemplate = null
 
-  override protected lazy val logger: Logger = LoggerFactory.getLogger(classOf[Mysql2MysqlService])
-
-
   /**
     * 为Sda定制的开始方法
     *
@@ -106,7 +103,6 @@ final class Mysql2MysqlService extends SyncService[Mysql2MysqlRequestBean] {
           .flatMap(x => List(s"$databaseName.$x", s"$databaseName._${x}_new", s"$databaseName._${x}_temp", s"$databaseName._${x}_old")) //增加临时表的白名单
           .toList
     }
-
       .mkString(",")
     logger.info(s"we get concerned filter pattern:$concernedFilterPattern,specially considering online ddl,and override input fitler pattern id:$syncTaskId")
     val allEncryptField = getAllEncryptField(concernedDatabases)
@@ -117,7 +113,7 @@ final class Mysql2MysqlService extends SyncService[Mysql2MysqlRequestBean] {
     logger.info(s"using SdaMysqlBinlogInOrderDirectFetcher,id:$syncTaskId ")
     taskRequestBean.getMysql2MysqlRunningInfoBean.setFetcherNameToLoad(new util.HashMap[String, String]())
     taskRequestBean.getMysql2MysqlRunningInfoBean.getFetcherNameToLoad.put("directFetcher", "com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.fetch.SdaMysqlBinlogInOrderDirectFetcher") //强制sda
-    taskRequestBean.setSdaBean(new SdaRequestBean(getMappingRule, allEncryptField)) //增加rule
+    taskRequestBean.setSdaBean(new SdaRequestBean(getMappingRule)) //增加rule
   }
 
   /**
