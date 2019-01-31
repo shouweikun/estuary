@@ -87,7 +87,7 @@ public class MysqlParserListener extends mysqlBaseListener {
      */
     @Override
     public void enterDefault_value(Default_valueContext ctx) {
-
+        //do nothing
     }
 
     @Override
@@ -412,16 +412,16 @@ public class MysqlParserListener extends mysqlBaseListener {
                 columnLength
         );
 
-        this.columnDefs.add(c);
-
         if (colOptions != null) {
             for (Column_optionsContext opt : colOptions) {
                 if (opt.primary_key() != null) {
                     this.pkColumns = new ArrayList<>();
                     this.pkColumns.add(name);
+
                 }
             }
         }
+        this.columnDefs.add(c);
     }
 
 
