@@ -2,7 +2,7 @@ package com.neighborhood.aka.laplace.estuary.mysql.schema
 
 import com.neighborhood.aka.laplace.estuary.bean.exception.schema.InvalidDdlException
 import com.neighborhood.aka.laplace.estuary.core.util.JavaCommonUtil
-import com.neighborhood.aka.laplace.estuary.mysql.schema.defs.ddl.{SchemaChange, TableAlter, TableCreate, TableDrop}
+import com.neighborhood.aka.laplace.estuary.mysql.schema.defs.ddl._
 
 import scala.collection.JavaConverters._
 
@@ -35,9 +35,27 @@ object Parser {
 
   def SchemaChangeToDdlSql(schemaChange: SchemaChange): String = ???
 
-  private def handleAlter(tableAlter: TableAlter): String = ???
+  private def handleAlter(tableAlter: TableAlter): String = {
+    val originName = s"${tableAlter.database}.${tableAlter.table}"
+    val newName = s"${tableAlter.newDatabase}.${tableAlter.newTableName}"
+    if (originName == newName) {
+      //目前只支持单条
+      tableAlter.columnMods.get(0) match {
+        case add: AddColumnMod =>
+          s"ALTER TABLE $newName ADD ${add.definition.getName} ${add.definition.getType} ${add.definition}";
+        case remove: RemoveColumnMod => s"ALTER TABLE $newName DROP ${remove.name}"
+        case change:ChangeColumnMod =>s"ALTER TABLE "
+      }
 
-  private def handleCreate(tableCreate: TableCreate): String = ???
+    }
+    else {
+      s"RENAME $originName TO $newName;"
+    }
+  }
+
+  private def handleCreate(tableCreate: TableCreate): String = {
+
+  }
 
   private def handleDrop(tableDrop: TableDrop): String = ???
 
@@ -55,7 +73,7 @@ object Parser {
   /**
     * 解析并替换库表名
     *
-    * @param ddlSql ddlSql
+    * @param ddlSql            ddlSql
     * @param defaultSchemaName 默认库名称
     * @param tableMappingRule
     * @return
