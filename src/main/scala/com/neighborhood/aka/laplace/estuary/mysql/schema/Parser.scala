@@ -28,11 +28,21 @@ object Parser {
     parseAndReplaceInternal(ddlSql, defaultSchemaName, tableMappingRule).toDdlSql
   }
 
-
+  /**
+    * 提供隐式转换
+    *
+    * @param schemaChange 生成好的SchemaChange
+    */
   private implicit class SchemaChangeToDdlSqlSyntax(schemaChange: SchemaChange) {
     def toDdlSql: String = schemaChangeToDdlSql(schemaChange)
   }
 
+  /**
+    * 从SchemaChange转换成DdlSql
+    *
+    * @param schemaChange schemaChange
+    * @return ddl sql String
+    */
   def schemaChangeToDdlSql(schemaChange: SchemaChange): String = {
     schemaChange match {
       case tableAlter: TableAlter => handleAlter(tableAlter)
@@ -42,6 +52,12 @@ object Parser {
     }
   }
 
+  /**
+    * 从Alter/Rename语句转换成ddl sql
+    *
+    * @param tableAlter tableAlter
+    * @return tableAlter
+    */
   private def handleAlter(tableAlter: TableAlter): String = {
     val originName = s"${tableAlter.database}.${tableAlter.table}"
     val newName = s"${tableAlter.newDatabase}.${tableAlter.newTableName}"
@@ -60,6 +76,12 @@ object Parser {
     }
   }
 
+  /**
+    * 创建表
+    *
+    * @param tableCreate 创建表语句-> ddl sql
+    * @return ddl sql string
+    */
   private def handleCreate(tableCreate: TableCreate): String = {
     lazy val pks = if (tableCreate.pks != null && !tableCreate.pks.isEmpty) tableCreate.pks.asScala.mkString(",") else ""
     lazy val pkGrammar = if (pks.nonEmpty)s""" , PRIMARY KEY ( $pks )""" else ""
@@ -73,6 +95,12 @@ object Parser {
 
   }
 
+  /**
+    * 处理删除语句 ddl -> ddl sql
+    *
+    * @param tableDrop
+    * @return
+    */
   private def handleDrop(tableDrop: TableDrop): String = {
     s"DROP TABLE IF EXISTS ${tableDrop.database}.${tableDrop.table}"
   }
@@ -84,7 +112,7 @@ object Parser {
     * @param schemaName 库名称
     * @return SchemaChange
     */
-   def parse(ddlSql: String, schemaName: String): List[SchemaChange] = {
+  def parse(ddlSql: String, schemaName: String): List[SchemaChange] = {
     SchemaChange.parse(schemaName, ddlSql).asScala.toList
   }
 
