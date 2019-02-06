@@ -30,10 +30,17 @@ object Parser {
 
 
   private implicit class SchemaChangeToDdlSqlSyntax(schemaChange: SchemaChange) {
-    def toDdlSql: String = SchemaChangeToDdlSql(schemaChange)
+    def toDdlSql: String = schemaChangeToDdlSql(schemaChange)
   }
 
-  def SchemaChangeToDdlSql(schemaChange: SchemaChange): String = ???
+  def schemaChangeToDdlSql(schemaChange: SchemaChange): String = {
+    schemaChange match {
+      case tableAlter: TableAlter => handleAlter(tableAlter)
+      case tableCreate: TableCreate => handleCreate(tableCreate)
+      case tableDrop: TableDrop => handleDrop(tableDrop)
+      case _ => throw new UnsupportedOperationException(s"do not support $schemaChange for now")
+    }
+  }
 
   private def handleAlter(tableAlter: TableAlter): String = {
     val originName = s"${tableAlter.database}.${tableAlter.table}"
@@ -42,9 +49,9 @@ object Parser {
       //目前只支持单条
       tableAlter.columnMods.get(0) match {
         case add: AddColumnMod =>
-          s"ALTER TABLE $newName ADD ${add.definition.getName} ${add.definition.getType} ${add.definition}";
+          s"ALTER TABLE $newName ADD ${add.definition.getName} ${add.definition.getType} ${Option(add.definition.getDefaultValue).map(x => s"DEFAULT $x").getOrElse("")}"
         case remove: RemoveColumnMod => s"ALTER TABLE $newName DROP ${remove.name}"
-        case change:ChangeColumnMod =>s"ALTER TABLE "
+        case change: ChangeColumnMod => s"ALTER TABLE $newName CHANGE ${change.definition.getName} ${change.definition.getType}"
       }
 
     }
@@ -54,10 +61,21 @@ object Parser {
   }
 
   private def handleCreate(tableCreate: TableCreate): String = {
+    lazy val pks = if (tableCreate.pks != null && !tableCreate.pks.isEmpty) tableCreate.pks.asScala.mkString(",") else ""
+    lazy val pkGrammar = if (pks.nonEmpty)s""" , PRIMARY KEY ( $pks )""" else ""
+    lazy val fieldGrammar = tableCreate.columns.asScala.map(col => s"${col.getName} ${col.getType}").mkString(",") //todo 缺乏约束默认值信息等
+    s"""CREATE TABLE IF NOT EXISTS ${tableCreate.database}.${tableCreate.table}
+       (
+       $fieldGrammar
+       ${pkGrammar}
+       )ENGINE=InnoDB DEFAULT CHARSET=utf8
+     """.stripMargin
 
   }
 
-  private def handleDrop(tableDrop: TableDrop): String = ???
+  private def handleDrop(tableDrop: TableDrop): String = {
+    s"DROP TABLE IF EXISTS ${tableDrop.database}.${tableDrop.table}"
+  }
 
   /**
     * 解析Ddl sql
@@ -66,7 +84,7 @@ object Parser {
     * @param schemaName 库名称
     * @return SchemaChange
     */
-  private def parse(ddlSql: String, schemaName: String): List[SchemaChange] = {
+   def parse(ddlSql: String, schemaName: String): List[SchemaChange] = {
     SchemaChange.parse(schemaName, ddlSql).asScala.toList
   }
 
@@ -87,15 +105,27 @@ object Parser {
         if (JavaCommonUtil.isEmpty(alter.table)) alter.table = alter.newTableName
         if (JavaCommonUtil.isEmpty(alter.newDatabase)) alter.newDatabase = alter.database
         if (JavaCommonUtil.isEmpty(alter.newTableName)) alter.newTableName = alter.table
-        (alter.database, alter.table) = tableMappingRule.getMappingName(alter.database, alter.table)
-        (alter.newDatabase, alter.newTableName) = tableMappingRule.getMappingName(alter.newDatabase, alter.newTableName)
+        val (database, table) = tableMappingRule.getMappingName(alter.database, alter.table)
+        alter.database = database
+        alter.table = table
+        val (newDatabase, newTableName) = tableMappingRule.getMappingName(alter.newDatabase, alter.newTableName)
+        alter.newDatabase = newDatabase
+        alter.newTableName = newTableName
       }
       case create: TableCreate => {
-        if (!JavaCommonUtil.isEmpty(create.likeDB) && !JavaCommonUtil.isEmpty(create.likeTable)) (create.likeDB, create.likeTable) = tableMappingRule.getMappingName(create.likeDB, create.likeTable)
-        (create.database, create.table) = tableMappingRule.getMappingName(create.database, create.table)
+        if (!JavaCommonUtil.isEmpty(create.likeDB) && !JavaCommonUtil.isEmpty(create.likeTable)) {
+          val (likeDB, likeTable) = tableMappingRule.getMappingName(create.likeDB, create.likeTable)
+          create.likeDB = likeDB
+          create.likeTable = likeTable
+        }
+        val (database, table) = tableMappingRule.getMappingName(create.database, create.table)
+        create.database = database
+        create.table = table
       }
       case drop: TableDrop => {
-        (drop.database, drop.table) = tableMappingRule.getMappingName(drop.database, drop.table)
+        val (database, table) = tableMappingRule.getMappingName(drop.database, drop.table)
+        drop.database = database
+        drop.table = table
       }
     }
 
