@@ -1,9 +1,7 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.fetch
 
 import akka.actor.{ActorRef, Props}
-import com.alibaba.otter.canal.parse.inbound.mysql.dbsync.SimpleDdlParser
 import com.alibaba.otter.canal.protocol.CanalEntry
-import com.alibaba.otter.canal.protocol.CanalEntry.EventType
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.FetcherMessage
 import com.neighborhood.aka.laplace.estuary.core.sink.mysql.MysqlSinkFunc
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.record.MysqlBinlogInOrderRecorderCommand.MysqlBinlogInOrderRecorderSaveLatestPosition
@@ -56,11 +54,13 @@ final class SdaMysqlBinlogInOrderDirectFetcher(
     val schemaChange = Parser.parseAndReplaceInternal(ddlSql, sdaDbName, rule) //只会是一条
     if (isSchemaComponentOn) schemaHolder.updateTableMeta(schemaChange) //更新Schema
     val finalDdl = schemaChange.toDdlSql
+    taskManager.wait4TheSameCount() //等待执行完毕
     log.info(s"start to execute sda finalDdl:$ddlSql,id:$syncTaskId")
     Try(sink.insertSql(finalDdl)) match {
       case Success(_) => log.info(s"ddl:$finalDdl executing success,id:$syncTaskId")
       case Failure(e) => log.warning(s"ddl:$finalDdl executing failure,e:$e,message:${e.getMessage},id:$syncTaskId")
     }
+    positionRecorder.fold(log.warning(s"can not find position recorder when sending save latest saving offset command,id:$syncTaskId"))(ref => ref ! FetcherMessage(MysqlBinlogInOrderRecorderSaveLatestPosition)) //发送保存命令
   }
 }
 
