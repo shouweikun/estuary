@@ -33,7 +33,7 @@ object Parser {
     *
     * @param schemaChange 生成好的SchemaChange
     */
-   implicit class SchemaChangeToDdlSqlSyntax(schemaChange: SchemaChange) {
+  implicit class SchemaChangeToDdlSqlSyntax(schemaChange: SchemaChange) {
     def toDdlSql: String = schemaChangeToDdlSql(schemaChange)
   }
 
@@ -67,7 +67,7 @@ object Parser {
         case add: AddColumnMod =>
           s"ALTER TABLE $newName ADD ${add.definition.getName} ${add.definition.getType} ${Option(add.definition.getDefaultValue).map(x => s"DEFAULT $x").getOrElse("")}"
         case remove: RemoveColumnMod => s"ALTER TABLE $newName DROP ${remove.name}"
-        case change: ChangeColumnMod => s"ALTER TABLE $newName CHANGE ${Option(change.name).getOrElse("")} ${change.definition.getName} ${change.definition.getType}"
+        case change: ChangeColumnMod => s"ALTER TABLE $newName CHANGE ${Option(change.name).getOrElse("")} ${change.definition.getName} ${change.definition.getType} ${Option(change.definition.getDefaultValue).map(x => s"DEFAULT $x").getOrElse("")}"
       }
 
     }
@@ -85,7 +85,7 @@ object Parser {
   private def handleCreate(tableCreate: TableCreate): String = {
     lazy val pks = if (tableCreate.pks != null && !tableCreate.pks.isEmpty) tableCreate.pks.asScala.mkString(",") else ""
     lazy val pkGrammar = if (pks.nonEmpty)s""" , PRIMARY KEY ( $pks )""" else ""
-    lazy val fieldGrammar = tableCreate.columns.asScala.map(col => s"${col.getName} ${col.getType}").mkString(",") //todo 缺乏约束默认值信息等
+    lazy val fieldGrammar = tableCreate.columns.asScala.map(col => s"${col.getName} ${col.getType} ${Option(col.getDefaultValue).map(x => s"DEFAULT $x").getOrElse("")}").mkString(",")
     s"""CREATE TABLE IF NOT EXISTS ${tableCreate.database}.${tableCreate.table}
        (
        $fieldGrammar
@@ -124,7 +124,7 @@ object Parser {
     * @param tableMappingRule
     * @return
     */
-   def parseAndReplaceInternal(ddlSql: String, defaultSchemaName: String, tableMappingRule: SdaSchemaMappingRule): SchemaChange = {
+  def parseAndReplaceInternal(ddlSql: String, defaultSchemaName: String, tableMappingRule: SdaSchemaMappingRule): SchemaChange = {
     val re = parse(ddlSql, defaultSchemaName) //这个实现涉及了对象内部变量的改变
     if (re.size > 0) throw new InvalidDdlException("only single ddl is supported")
     re.head match {
