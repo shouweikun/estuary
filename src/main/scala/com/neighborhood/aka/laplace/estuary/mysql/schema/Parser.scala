@@ -67,7 +67,7 @@ object Parser {
         case add: AddColumnMod =>
           s"ALTER TABLE $newName ADD ${add.definition.getName} ${add.definition.getType} ${Option(add.definition.getDefaultValue).map(x => s"DEFAULT $x").getOrElse("")}"
         case remove: RemoveColumnMod => s"ALTER TABLE $newName DROP ${remove.name}"
-        case change: ChangeColumnMod => s"ALTER TABLE $newName CHANGE ${change.definition.getName} ${change.definition.getType}"
+        case change: ChangeColumnMod => s"ALTER TABLE $newName CHANGE ${Option(change.name).getOrElse("")} ${change.definition.getName} ${change.definition.getType}"
       }
 
     }
