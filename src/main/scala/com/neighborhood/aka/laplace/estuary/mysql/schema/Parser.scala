@@ -33,7 +33,7 @@ object Parser {
     *
     * @param schemaChange 生成好的SchemaChange
     */
-  private implicit class SchemaChangeToDdlSqlSyntax(schemaChange: SchemaChange) {
+   implicit class SchemaChangeToDdlSqlSyntax(schemaChange: SchemaChange) {
     def toDdlSql: String = schemaChangeToDdlSql(schemaChange)
   }
 
@@ -124,7 +124,7 @@ object Parser {
     * @param tableMappingRule
     * @return
     */
-  private def parseAndReplaceInternal(ddlSql: String, defaultSchemaName: String, tableMappingRule: SdaSchemaMappingRule): SchemaChange = {
+   def parseAndReplaceInternal(ddlSql: String, defaultSchemaName: String, tableMappingRule: SdaSchemaMappingRule): SchemaChange = {
     val re = parse(ddlSql, defaultSchemaName) //这个实现涉及了对象内部变量的改变
     if (re.size > 0) throw new InvalidDdlException("only single ddl is supported")
     re.head match {
