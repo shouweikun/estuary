@@ -9,7 +9,7 @@ import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.BinlogPositionInfo
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.batch.MysqlBinlogInOrderBatcherCommand.MysqlBinlogInOrderBatcherCheckHeartbeats
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.batch.MysqlBinlogInOrderBatcherEvent.MysqlBinlogInOrderBatcherHeartbeatsChecked
-import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.batch.imp.MysqlBinlogInOrderMysqlSpecialInfoSender
+import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.batch.imp.{MysqlBinlogInOrderMysqlSpecialInfoSender, MysqlBinlogInOrderMysqlSpecialInfoSender4Sda}
 import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlSourceManagerImp
 import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2MysqlTaskInfoManager
 
@@ -56,10 +56,12 @@ abstract class MysqlBinlogInOrderSpecialInfoSender[R](
     * 同步任务id
     */
   override val syncTaskId: String = taskManager.syncTaskId
+
   /**
     * 错位次数阈值
     */
   override def errorCountThreshold: Int = 1
+
   /**
     * 错位次数
     */
@@ -139,6 +141,7 @@ object MysqlBinlogInOrderSpecialInfoSender {
     */
   def buildMysqlBinlogInOrderSpecialInfoSender(name: String, taskManager: MysqlSourceManagerImp with TaskManager, sinker: ActorRef): Props = name match {
     case MysqlBinlogInOrderMysqlSpecialInfoSender.name => MysqlBinlogInOrderMysqlSpecialInfoSender.props(taskManager.asInstanceOf[Mysql2MysqlTaskInfoManager], sinker)
+    case MysqlBinlogInOrderMysqlSpecialInfoSender4Sda.name => MysqlBinlogInOrderMysqlSpecialInfoSender4Sda.props(taskManager.asInstanceOf[Mysql2MysqlTaskInfoManager], sinker)
     case _ => throw new WorkerInitialFailureException(s"cannot build MysqlBinlogInOrderSpecialInfoSender name item match $name")
   }
 }
