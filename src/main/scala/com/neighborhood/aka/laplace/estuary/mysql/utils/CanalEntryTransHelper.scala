@@ -62,7 +62,6 @@ object CanalEntryTransHelper {
       case x if (x.startsWith("char")) => value
       case x if (x.contains("int")) => value
       case x if (x.contains("bit")) => value
-      case x if (x.contains("long")) => value
       case x if (x.contains("float")) => value
       case x if (x.contains("decimal")) => value
       case x if (x.contains("double")) => value
