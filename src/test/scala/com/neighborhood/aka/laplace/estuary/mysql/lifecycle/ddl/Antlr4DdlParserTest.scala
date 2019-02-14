@@ -14,7 +14,7 @@ class Sda4DdlParserTest extends UnitSpec {
   val alterTable1 = "ALTER TABLE a.a ADD col1 text DEFAULT 'hello';"
 
 
-  "test 1" should "successfully handle Alter table" in {
+  "test 1" should "successfully handle Alter table add Column" in {
     val schemaChange = Parser.parseAndReplace(alterTable1, "a_map", schemaMappingRule)
     assert(schemaChange.isInstanceOf[TableAlter])
     val tableAlter = schemaChange.asInstanceOf[TableAlter]
@@ -27,4 +27,7 @@ class Sda4DdlParserTest extends UnitSpec {
     assert(addColumnMod.definition.getType == "text")
     assert(addColumnMod.definition.getDefaultValue == "'hello'")
   }
+
+
+  "test 2" should "successfully handle Alter Table change "
 }
