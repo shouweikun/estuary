@@ -18,7 +18,7 @@ final class MysqlBinlogInOrderMysqlSpecialInfoSender4Sda(
   /**
     * 心跳表名称
     */
-  private val heartBeatCheckTableNames: List[String] = taskManager.concernedDatabase.map(x => s"${x}_mysql")
+  private val heartBeatCheckTableNames: List[String] = taskManager.concernedDatabase.map(x => s"heartbeat.${x}_mysql")
   /**
     * mysqlSinkFunc
     */
@@ -40,8 +40,6 @@ final class MysqlBinlogInOrderMysqlSpecialInfoSender4Sda(
       .map { tableName => s"replace into $tableName (id,create_time,consume_position) VALUES(1,NOW(),'$binlogPositionInfo')" }
       .map(sql => if (!sink.isTerminated) sink.insertSql(sql)) //绝对要扔出异常！！！！)
   }
-
-
 }
 
 object MysqlBinlogInOrderMysqlSpecialInfoSender4Sda {
