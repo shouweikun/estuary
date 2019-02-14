@@ -34,6 +34,8 @@ public class MysqlParserListener extends mysqlBaseListener {
 
     private ArrayList<String> pkColumns;
 
+    private String defaultValue;
+
     MysqlParserListener(String currentDatabase, TokenStream tokenStream) {
         this.pkColumns = null; // null indicates no change in primary keys
         this.schemaChanges = new ArrayList<>();
@@ -83,11 +85,17 @@ public class MysqlParserListener extends mysqlBaseListener {
     /**
      * {@inheritDoc}
      * <p>
-     * <p>The default implementation does nothing.</p>
+     * <p>只处理Literal类型</p>
      */
     @Override
     public void enterDefault_value(Default_valueContext ctx) {
-        //do nothing
+        String defaultValue = null;
+        try {
+            defaultValue = ctx.literal().getText();
+        } catch (NullPointerException e) {
+
+        }
+        this.defaultValue = defaultValue;
     }
 
     @Override
@@ -411,7 +419,8 @@ public class MysqlParserListener extends mysqlBaseListener {
                 enumValues,
                 columnLength
         );
-
+        c.setDefaultValue(defaultValue); //默认值
+        defaultValue = null;
         if (colOptions != null) {
             for (Column_optionsContext opt : colOptions) {
                 if (opt.primary_key() != null) {
@@ -424,6 +433,10 @@ public class MysqlParserListener extends mysqlBaseListener {
         this.columnDefs.add(c);
     }
 
+    @Override
+    public void exitDefault_value(Default_valueContext ctx) {
+        super.exitDefault_value(ctx);
+    }
 
     @Override
     public void exitRename_table_spec(Rename_table_specContext ctx) {
