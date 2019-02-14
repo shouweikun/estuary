@@ -36,7 +36,7 @@ final case class MysqlTaskInfoBeanImp(
                                        val batcherNameToLoad: Map[String, String],
                                        val batcherNum: Int = 23,
                                        val batchMappingFormatName: Option[String] = None,
-                                       val isCheckSinkSchema:Boolean = false
+                                       val isCheckSinkSchema:Boolean = true
                                      ) extends BaseExtractBean {
 
   /**

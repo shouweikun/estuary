@@ -1,5 +1,8 @@
 package com.neighborhood.aka.laplace.estuary.mysql.schema
 
+import com.alibaba.otter.canal.protocol.CanalEntry
+import com.neighborhood.aka.laplace.estuary.mysql.schema.defs.columndef.ColumnDef
+
 /**
   * Created by john_liu on 2019/1/23.
   */
@@ -25,6 +28,20 @@ package object tablemeta {
     */
   final case class EstuaryMysqlTableMeta(schemaName: String, tableName: String, columns: List[EstuaryMysqlColumnInfo]) {
     val columnNum = columns.size
+    val columnInfoMap = columns.map(x => (x.name -> x)).toMap
+  }
+
+
+  implicit final class ColumnDefEstuaryMysqlColumnInfoSyntax(column: ColumnDef) {
+    def toEstuaryMysqlColumnInfo: EstuaryMysqlColumnInfo = {
+      EstuaryMysqlColumnInfo(column.getName, column.getPos, column.getType)
+    }
+  }
+
+  implicit final class CanalColumnEstuaryMysqlColumnInfoSyntax(column: CanalEntry.Column) {
+    def toEstuaryMysqlColumnInfo: EstuaryMysqlColumnInfo = {
+      EstuaryMysqlColumnInfo(name = column.getName, index = column.getIndex, mysqlType = column.getMysqlType)
+    }
   }
 
 }

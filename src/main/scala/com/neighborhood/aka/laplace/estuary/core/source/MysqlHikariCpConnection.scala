@@ -3,7 +3,7 @@ package com.neighborhood.aka.laplace.estuary.core.source
 import com.mysql.jdbc.Connection
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
 
-import scala.util.Try
+import scala.util.{Success, Try}
 
 /**
   * Created by john_liu on 2019/1/11.
@@ -38,7 +38,8 @@ final class MysqlHikariCpConnection(
     try {
       connection.createStatement().executeUpdate(sql)
     } catch {
-      case e => throw e
+      case e =>
+        throw e
     }
     finally {
       connection.close()
@@ -52,21 +53,25 @@ final class MysqlHikariCpConnection(
     * @param sqls 待插入的Sql
     * @return 插入结果
     */
-  def insertBatchSql(sqls: List[String]): Try[List[Int]] = Try {
+  def insertBatchSql(sqls: List[String]): Try[List[Int]] = if (sqls.isEmpty) Success(List.empty) else Try {
+
     val conn = ds.getConnection()
     try {
       conn.setAutoCommit(false)
       val statement = conn.createStatement()
-      sqls.foreach(sql => ds.getConnection.createStatement().addBatch(sql))
+      sqls.foreach(sql => statement.addBatch(sql))
       val re = statement.executeBatch()
       conn.commit()
       statement.clearBatch()
       re.toList
     } catch {
-      case e => throw e
+      case e =>
+        e.printStackTrace()
+        throw e
     } finally {
       conn.close()
     }
+
 
   }
 

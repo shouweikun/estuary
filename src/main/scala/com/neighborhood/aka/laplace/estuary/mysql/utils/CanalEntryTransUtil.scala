@@ -102,7 +102,7 @@ object CanalEntryTransUtil {
     */
   def parseStoreValue(entry: CanalEntry.Entry)(syncTaskId: String = "unknown") = {
     def parseError = {
-      throw new StoreValueParseFailureException(s"parse row data:${CanalEntryJsonHelper.headerToJson(entry.getHeader)} error,id:${syncTaskId}")
+      throw new StoreValueParseFailureException(s"parse row data:${CanalEntryTransHelper.headerToJson(entry.getHeader)} error,id:${syncTaskId}")
     }
 
     Try(CanalEntry.RowChange.parseFrom(entry.getStoreValue)).getOrElse(parseError)

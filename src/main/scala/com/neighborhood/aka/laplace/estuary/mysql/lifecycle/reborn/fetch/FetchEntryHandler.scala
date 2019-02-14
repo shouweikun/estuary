@@ -2,16 +2,12 @@ package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.fetch
 
 import com.alibaba.otter.canal.protocol.CanalEntry
 import com.neighborhood.aka.laplace.estuary.bean.exception.fetch.{EmptyEntryException, NullOfDataSourceConnectionException}
-import com.neighborhood.aka.laplace.estuary.bean.exception.schema.UpsertSchemaIntoDatabaseFailureException
-import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.BinlogPositionInfo
-import com.neighborhood.aka.laplace.estuary.mysql.schema.storage.MysqlSchemaHandler
 import com.neighborhood.aka.laplace.estuary.mysql.source.{MysqlConnection, MysqlSourceManagerImp}
-import com.neighborhood.aka.laplace.estuary.mysql.utils.{CanalEntryJsonHelper, CanalEntryTransUtil, MysqlBinlogParser}
+import com.neighborhood.aka.laplace.estuary.mysql.utils.{CanalEntryTransUtil, MysqlBinlogParser}
 import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
 
 /**
   * Created by john_liu on 2018/7/3.
@@ -41,10 +37,6 @@ final class FetchEntryHandler(
     */
   lazy val binlogParser: MysqlBinlogParser = taskManager.binlogParser
   /**
-    * schema信息处理
-    */
-  lazy val mysqlSchemaHandler = taskManager.mysqlSchemaHandler
-  /**
     * 日志
     */
   val log = LoggerFactory.getLogger(s"FetchEntryHandler-$syncTaskId")
@@ -64,14 +56,12 @@ final class FetchEntryHandler(
     *
     * @param batchCount
     * @param mysqlConnection
-    * @param mysqlSchemaHandler
     * @param binlogParser
     * @return
     */
   def blockingHandleFetchTask(batchCount: Long = this.batchCount)
                              (
                                mysqlConnection: Option[MysqlConnection],
-                               mysqlSchemaHandler: MysqlSchemaHandler = this.mysqlSchemaHandler,
                                binlogParser: MysqlBinlogParser = this.binlogParser
                              ): List[(CanalEntry.Entry, Long)] = {
     lazy val conn = mysqlConnection.getOrElse(throw new NullOfDataSourceConnectionException(s"mysqlConnection is null when fetch data,id:$syncTaskId"))
@@ -85,7 +75,6 @@ final class FetchEntryHandler(
         lazy val entry = entryAndCost._1
         lazy val nextAcc = entryAndCost :: acc
         if (CanalEntryTransUtil.isDdl(entry)) {
-          if(schemaComponentIsOn)JudgeAndhandleDdl(entry)(mysqlSchemaHandler)
           nextAcc
         } else loopFetch(nextAcc)
 
@@ -95,31 +84,6 @@ final class FetchEntryHandler(
     loopFetch()
   }
 
-  /**
-    * 非阻塞式數據拉取
-    * 當沒有數據會返回None
-    *
-    * @param mysqlConnection
-    * @param mysqlSchemaHandler
-    * @param binlogParser
-    * @return
-    */
-
-  def nonblockingHandleFetchTask(
-                                  mysqlConnection: => Option[MysqlConnection],
-                                  mysqlSchemaHandler: MysqlSchemaHandler = this.mysqlSchemaHandler,
-                                  binlogParser: MysqlBinlogParser = this.binlogParser
-                                )(implicit ec: ExecutionContext = null): Future[(CanalEntry.Entry, Long)] = {
-    val startTs = System.currentTimeMillis()
-    lazy val entryAndCost = mysqlConnection.fold(throw new NullOfDataSourceConnectionException("mysql Connection is null when nonblockingHandleFetchTask"))(conn => nonBlockingFetchOne(conn, binlogParser)(ec))
-    entryAndCost.map {
-      case (entry) =>
-        //處理ddl
-        if (CanalEntryTransUtil.isDdl(entry)) JudgeAndhandleDdl(entry)(mysqlSchemaHandler)
-        lazy val endTimestamp = System.currentTimeMillis()
-        (entry, endTimestamp)
-    }
-  }
 
   /**
     * 拉取一条符合要求的entry
@@ -159,26 +123,6 @@ final class FetchEntryHandler(
                                  )(implicit ec: ExecutionContext = null): Future[CanalEntry.Entry] = {
 
     mysqlConnection.nonBlockingFetch(filterEntry)(binlogParser)(ec)
-  }
-
-  /**
-    * 更新schema信息
-    * 1.成功就继续
-    * 2.失败抛出
-    *
-    * @throws UpsertSchemaIntoDatabaseFailureException
-    */
-  private def JudgeAndhandleDdl(entry: => CanalEntry.Entry)(mysqlSchemaHandler: MysqlSchemaHandler = this.mysqlSchemaHandler): Unit = {
-    lazy val ddlSql = CanalEntryTransUtil.parseStoreValue(entry)(syncTaskId).getSql
-    lazy val binlogPositionInfo = BinlogPositionInfo(entry.getHeader.getLogfileName, entry.getHeader.getLogfileOffset, entry.getHeader.getExecuteTime)
-    lazy val isExpired = (entry.getHeader.getExecuteTime <= taskStartTime)
-
-    def handleDdl = mysqlSchemaHandler.upsertSchema(ddlSql, entry.getHeader.getSchemaName, binlogPositionInfo) match {
-      case Success(_) => log.info(s"${CanalEntryJsonHelper.headerToJson(entry.getHeader)},ddl:$ddlSql has been successfully upserted,id:$syncTaskId")
-      case Failure(e) => throw new UpsertSchemaIntoDatabaseFailureException(s"${CanalEntryJsonHelper.headerToJson(entry.getHeader)},ddl:$ddlSql upserted failed,id:$syncTaskId", e)
-    }
-
-    if (isExpired) log.warn(s"expired ddl cause its ${entry.getHeader.getExecuteTime} is earlier than syncTask start time:$taskStartTime,id:$syncTaskId") else handleDdl
   }
 
   /**

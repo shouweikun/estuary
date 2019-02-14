@@ -5,7 +5,7 @@ import com.alibaba.otter.canal.protocol.CanalEntry
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.FetcherMessage
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.count.MysqlBinlogInOrderProcessingCounterCommand.MysqlBinlogInOrderProcessingCounterUpdateCount
-import com.neighborhood.aka.laplace.estuary.mysql.utils.{CanalEntryJsonHelper, CanalEntryTransUtil}
+import com.neighborhood.aka.laplace.estuary.mysql.utils.{CanalEntryTransHelper, CanalEntryTransUtil}
 
 import scala.util.Try
 
@@ -53,7 +53,7 @@ final class MysqlBinlogInOrderFetcherCounter(
       entry.getEntryType == CanalEntry.EntryType.TRANSACTIONEND || CanalEntryTransUtil.isDdl(entry.getHeader.getEventType)
     ) 1 else rowCount
     //如果还是出现了rowCount为零的情况，输出错误日志以待分析原因
-    if (actRowCount <= 0) log.error(s"Oops,Actual Row Count:$actRowCount,eventType:${CanalEntryJsonHelper.headerToJson(entry.getHeader)},$syncTaskId")
+    if (actRowCount <= 0) log.error(s"Oops,Actual Row Count:$actRowCount,eventType:${CanalEntryTransHelper.headerToJson(entry.getHeader)},$syncTaskId")
     //向计数器发送计数
     counter.fold(log.error("processingManager cannot be null")) { ref => ref ! FetcherMessage(MysqlBinlogInOrderProcessingCounterUpdateCount(actRowCount)) }
     //向功率调节器发送计数

@@ -32,12 +32,13 @@ final class MysqlBinlogInOrderBatcherMysqlManager(
     val name = MysqlBinlogInOrderMysqlPrimaryKeyManager.name
     val paths: List[String] = (1 to batcherNum).map {
       index =>
-        MysqlBinlogInOrderBatcherPrimaryKeyManager.buildMysqlBinlogInOrderBatcherPrimaryKeyManager(name, taskManager, taskManager.sinkerList(index - 1), num)
+        MysqlBinlogInOrderBatcherPrimaryKeyManager.buildMysqlBinlogInOrderBatcherPrimaryKeyManager(name, taskManager, taskManager.sinkerList(index - 1), index)
     }.map(context.actorOf(_)).map(_.path.toString).toList
     lazy val roundRobin = context.actorOf(new RoundRobinGroup(paths).props().withDispatcher("akka.batcher-dispatcher"), "router")
     lazy val consistentHashing = context.actorOf(new ConsistentHashingGroup(paths, virtualNodesFactor = SettingConstant.HASH_MAPPING_VIRTUAL_NODES_FACTOR).props().withDispatcher("akka.batcher-dispatcher"), routerName)
     partitionStrategy match { //暂未支持其他分区等级
       case PartitionStrategy.PRIMARY_KEY => consistentHashing
+      case PartitionStrategy.DATABASE_TABLE => consistentHashing
     }
 
 

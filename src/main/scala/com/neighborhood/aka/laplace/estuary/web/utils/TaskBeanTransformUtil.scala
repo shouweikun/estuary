@@ -45,6 +45,7 @@ object TaskBeanTransformUtil {
       isProfiling = requestRunningBean.isProfiling,
       isPowerAdapted = requestRunningBean.isPowerAdapted,
       isCheckSinkSchema = requestRunningBean.isCheckSinkSchema,
+      schemaComponentIsOn = requestRunningBean.isSchemaComponentIsOn,
       partitionStrategy = requestRunningBean.getPartitionStrategy,
       startPosition = Option(requestRunningBean.getStartPosition),
       batcherNum = requestRunningBean.getBatcherNum,

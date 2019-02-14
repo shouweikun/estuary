@@ -37,6 +37,7 @@ hi,大家好 失踪人口回归
 - Restful服务:Spring Boot
 - Json序列化/反序列化:Jackson
 - 数据库连接池 HikariCP
+- ANTLR4 SQL PARSER(specially thanks to [maxwell](https://github.com/zendesk/maxwell]))
 
 #### 功能域划分
  功能域目前拆解成两个大部分，分别是`同步域`和`元数据管理域` 
@@ -192,15 +193,20 @@ schema读取和更新的三个层次
 8. 双写备份和精准快照恢复
 
 #### 使用
-
+ > 在这假定你使用Idea进行开发
+```j
+ 将ANTLR的文件夹指定为source folder
+ mvn compile
+```
+ ```
+ cp application.properties.templete  application.properties
+ cp application.conf.templete  application.conf 
+编辑文件来配置你的属性
+```
 ```
 mvn package
 ```
- ```
-cp application.properties.templete  application.properties
-cp application.conf.templete  application.conf 
-编辑文件来配置你的属性
-```
+
  ```
 ./bin/start
 ```

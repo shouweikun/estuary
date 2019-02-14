@@ -470,7 +470,7 @@ object MysqlBinlogInOrderDirectFetcher {
     */
   def buildMysqlBinlogInOrderDirectFetcher(taskManager: MysqlSourceManagerImp with TaskManager,
                                            downStream: ActorRef, name: String): Props = name match {
-    case SimpleMysqlBinlogInOrderDirectFetcher.name => SimpleMysqlBinlogInOrderDirectFetcher.props(taskManager.asInstanceOf[MysqlSinkManagerImp with MysqlSourceManagerImp with TaskManager], downStream)
+    case SimpleMysqlBinlogInOrderDirectFetcher.name => SimpleMysqlBinlogInOrderDirectFetcher.props(taskManager.asInstanceOf[Mysql2MysqlTaskInfoManager], downStream)
     case SdaMysqlBinlogInOrderDirectFetcher.name => SdaMysqlBinlogInOrderDirectFetcher.props(taskManager.asInstanceOf[Mysql2MysqlTaskInfoManager], downStream)
     case DefaultMysqlBinlogInOrderDirectFetcher.name => DefaultMysqlBinlogInOrderDirectFetcher.props(taskManager, downStream)
     case _ => DefaultMysqlBinlogInOrderDirectFetcher.props(taskManager, downStream)

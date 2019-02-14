@@ -94,10 +94,6 @@ trait TaskManager {
     */
   def taskType: String
 
-  /**
-    * 是否启动Schema管理模块
-    */
-  def schemaComponentIsOn: Boolean
 
   /**
     * 分区模式
@@ -328,6 +324,7 @@ trait TaskManager {
 
   /**
     * 等待sinkCount == fetchCount == batchCount
+    * 默认等待一分钟
     */
   @tailrec
   final def wait4TheSameCount(startTime: Long = System.currentTimeMillis()): Unit = {

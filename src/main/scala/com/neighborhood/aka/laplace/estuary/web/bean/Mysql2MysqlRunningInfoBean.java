@@ -176,6 +176,7 @@ public class Mysql2MysqlRunningInfoBean {
         this.fetcherNameToLoad = fetcherNameToLoad;
     }
 
+
     public Map<String, String> getBatcherNameToLoad() {
         return batcherNameToLoad;
     }
