@@ -7,7 +7,7 @@ import com.neighborhood.aka.laplace.estuary.bean.exception.snapshot.UnmatchedTas
 import com.neighborhood.aka.laplace.estuary.core.snapshot.SnapshotStateMachine
 import com.neighborhood.aka.laplace.estuary.core.snapshot.SnapshotStateMachine.{Mysql2KafkaSnapshotTask, Mysql2KafkaSnapshotTaskInfo, SnapshotTaskInfo}
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
-import com.neighborhood.aka.laplace.estuary.mysql.utils.CanalEntryJsonHelper
+import com.neighborhood.aka.laplace.estuary.mysql.utils.CanalEntryTransHelper
 import org.slf4j.LoggerFactory
 
 /**
@@ -90,7 +90,7 @@ class MysqlSnapshotStateMachine(
       logger.info(s"accumulating data is done,entry:${
         entryOption
           .map(_.getHeader)
-          .map(CanalEntryJsonHelper.headerToJson(_))
+          .map(CanalEntryTransHelper.headerToJson(_))
       },id:$syncTaskId")
     } else entryOption
       .map(_.getHeader.getExecuteTime)

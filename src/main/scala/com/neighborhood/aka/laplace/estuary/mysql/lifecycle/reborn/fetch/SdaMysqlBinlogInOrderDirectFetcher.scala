@@ -1,11 +1,15 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.fetch
 
 import akka.actor.{ActorRef, Props}
-import com.alibaba.otter.canal.parse.inbound.mysql.dbsync.SimpleDdlParser
 import com.alibaba.otter.canal.protocol.CanalEntry
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.FetcherMessage
 import com.neighborhood.aka.laplace.estuary.core.sink.mysql.MysqlSinkFunc
+import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.record.MysqlBinlogInOrderRecorderCommand.MysqlBinlogInOrderRecorderSaveLatestPosition
+import com.neighborhood.aka.laplace.estuary.mysql.schema.{Parser, SdaSchemaMappingRule}
 import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2MysqlTaskInfoManager
-import com.neighborhood.aka.laplace.estuary.mysql.utils.CanalEntryTransUtil
+import com.neighborhood.aka.laplace.estuary.mysql.utils.{CanalEntryTransHelper, CanalEntryTransUtil}
+
+import scala.util.{Failure, Success, Try}
 
 /**
   * Created by john_liu on 2019/1/16.
@@ -18,17 +22,46 @@ final class SdaMysqlBinlogInOrderDirectFetcher(
                                                 override val taskManager: Mysql2MysqlTaskInfoManager,
                                                 override val downStream: ActorRef) extends MysqlBinlogInOrderDirectFetcher(taskManager, downStream) {
 
-  lazy val sink: MysqlSinkFunc = taskManager.sink
+  private lazy val sink: MysqlSinkFunc = taskManager.sink
 
-  lazy val rule: Map[String, String] = taskManager.tableMappingRule
+  private lazy val rule: SdaSchemaMappingRule = taskManager.tableMappingRule
 
+  private lazy val positionRecorder: Option[ActorRef] = taskManager.positionRecorder
+
+  private lazy val schemaHolder = taskManager.sinkMysqlTableSchemaHolder
+
+  private lazy val isSchemaComponentOn = taskManager.schemaComponentIsOn
+
+  /**
+    * SDA专用DDL处理
+    *
+    * 不论对于何种ddl,都会尝试发起SDA改名，如果未能找到,警告，并使用原始名称进行执行
+    * 1. 获取ddl
+    * 2.改名
+    * 3.更新Schema
+    * 4.转换成DDl Sql String
+    * 5.执行
+    *
+    * @note 执行失败是被忽略的，这么做的理由是让失败暴露在数据写入的部分，这样防止一些可以忽略的执行失败阻碍程序正常运行流程
+    * @param entry
+    * @author neighborhood.aka.laplace
+    */
   override protected def executeDdl(entry: CanalEntry.Entry): Unit = {
+    assert(CanalEntryTransUtil.isDdl(entry))
+    import com.neighborhood.aka.laplace.estuary.mysql.schema.Parser.SchemaChangeToDdlSqlSyntax
+    log.info(s"try to execute ddl:${CanalEntryTransHelper.headerToJson(entry.getHeader)},id:$syncTaskId")
     val ddlSql = CanalEntryTransUtil.parseStoreValue(entry)(syncTaskId).getSql
-
-    taskManager.wait4TheSameCount() //必须要等到same count
-    val ddlResult = SimpleDdlParser.parse(ddlSql, entry.getHeader.getSchemaName)
-    //todo
-    if (sink.isTerminated) sink.insertSql(ddlSql) //出现异常的话一定要暴露出来
+    val sdaDbName = rule.getDatabaseMappingName(entry.getHeader.getSchemaName).get
+    val schemaChange = Parser.parseAndReplace(ddlSql, sdaDbName, rule) //只会是一条
+    if (isSchemaComponentOn) schemaHolder.updateTableMeta(schemaChange) //更新Schema
+    val finalDdl = schemaChange.toDdlSql
+    taskManager.wait4TheSameCount() //等待执行完毕
+    log.info(s"start to execute sda finalDdl:$ddlSql,id:$syncTaskId")
+    Try(sink.insertSql(finalDdl)) match {
+      case Success(_) => log.info(s"ddl:$finalDdl executing success,id:$syncTaskId")
+      case Failure(e) => log.warning(s"ddl:$finalDdl executing failure,e:$e,message:${e.getMessage},id:$syncTaskId")
+    }
+    positionRecorder.fold(log.warning(s"can not find position recorder when sending save latest saving offset command,id:$syncTaskId"))(ref => ref ! FetcherMessage(MysqlBinlogInOrderRecorderSaveLatestPosition)) //发送保存命令
   }
 }
 

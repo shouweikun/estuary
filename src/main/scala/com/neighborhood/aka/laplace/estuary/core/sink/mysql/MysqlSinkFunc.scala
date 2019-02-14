@@ -1,7 +1,7 @@
 package com.neighborhood.aka.laplace.estuary.core.sink.mysql
 
 import com.neighborhood.aka.laplace.estuary.core.sink.SinkFunc
-import com.neighborhood.aka.laplace.estuary.core.source.MysqlHikariCpConnection
+import com.neighborhood.aka.laplace.estuary.core.source.{MysqlHikariCpConnection, MysqlJdbcConnection}
 
 import scala.util.Try
 
@@ -39,5 +39,10 @@ final class MysqlSinkFunc(
   def insertBatchSql(sqls: List[String]): Try[List[Int]] = mysqlHikariCpConnection.insertBatchSql(sqls)
 
   def getJdbcConnection: java.sql.Connection = mysqlHikariCpConnection.getConnection
+
+  def queryAsScalaList(sql: String): List[Map[String, AnyRef]] = {
+    import MysqlJdbcConnection._
+    getJdbcConnection.selectSqlAndClose(sql)
+  }
 
 }

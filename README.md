@@ -1,5 +1,5 @@
 # estuary
-基于Akka实现的数据实时流式同步的应用
+基于Akka实现的高性能数据实时流式同步的应用
 
 
 hi,大家好 失踪人口回归 
@@ -37,6 +37,7 @@ hi,大家好 失踪人口回归
 - Restful服务:Spring Boot
 - Json序列化/反序列化:Jackson
 - 数据库连接池 HikariCP
+- ANTLR4 SQL PARSER(specially thanks to [maxwell](https://github.com/zendesk/maxwell]))
 
 #### 功能域划分
  功能域目前拆解成两个大部分，分别是`同步域`和`元数据管理域` 
@@ -178,6 +179,7 @@ schema读取和更新的三个层次
  - 实现的在同步任务的每一个流程的细粒度定制
  - 实现了应对复杂schema信息变化的元数据管理(2.x支持，3.x还需要做一些适配调整)
  - 完备的代码抽象
+ - 动态组件指定(再启动任务时灵活指定组件)
 
 
 #### todo
@@ -191,15 +193,20 @@ schema读取和更新的三个层次
 8. 双写备份和精准快照恢复
 
 #### 使用
-
+ > 在这假定你使用Idea进行开发
+```j
+ 将ANTLR的文件夹指定为source folder
+ mvn compile
+```
+ ```
+ cp application.properties.templete  application.properties
+ cp application.conf.templete  application.conf 
+编辑文件来配置你的属性
+```
 ```
 mvn package
 ```
- ```
-cp application.properties.templete  application.properties
-cp application.conf.templete  application.conf 
-编辑文件来配置你的属性
-```
+
  ```
 ./bin/start
 ```
@@ -272,5 +279,46 @@ cp application.conf.templete  application.conf
       "username": "string"
     }
   }
+}
+```
+```json
+//一个样例
+
+{
+	"mysql2MysqlRunningInfoBean": {
+		"batcherNum": 31,
+		"offsetZkServers": "nbhd.aka.laplace.zookeeper.com:2181",
+		"partitionStrategy": "PRIMARY_KEY",
+		"syncTaskId": "nbhd",
+		"sinkerNameToLoad": {
+			"sinker": "com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink.MysqlBinlogInOrderMysqlRingBufferSinker" //推荐使用这个
+		},
+		"startPosition": {
+			"timestamp": 1548126793000 //binlog会从这个时间点消费
+		}
+	},
+	"mysqlSinkBean": {
+		"credential": {
+			"address": "localhost",
+			"defaultDatabase": "",
+			"password": "123456",
+			"port": 3306,
+			"username": "root"
+		}
+	},
+	"mysqlSourceBean": {
+		"concernedDatabase": [
+			"xxx"
+		],
+		"filterPattern": "xxx\\.yyy", //白名单过滤
+		"master": {
+			"address": "localhost",
+			"defaultDatabase": "",
+			"password": "123456",
+			"port": 3306,
+			"username": "root"
+		}
+	}
+
 }
 ```

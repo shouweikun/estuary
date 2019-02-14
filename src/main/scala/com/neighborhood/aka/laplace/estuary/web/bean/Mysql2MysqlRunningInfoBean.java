@@ -23,6 +23,7 @@ public class Mysql2MysqlRunningInfoBean {
     private boolean isCosting = true;
     private boolean isProfiling = true;
     private boolean isPowerAdapted = true;
+    private boolean checkSinkSchema = false;
     private PartitionStrategy partitionStrategy = PartitionStrategy.PRIMARY_KEY;
     private Map<String, String> controllerNameToLoad;
     private Map<String, String> sinkerNameToLoad;
@@ -30,6 +31,14 @@ public class Mysql2MysqlRunningInfoBean {
     private Map<String, String> batcherNameToLoad;
     private int batcherNum = 23;
     private String mappingFormatName;
+
+    public boolean isCheckSinkSchema() {
+        return checkSinkSchema;
+    }
+
+    public void setCheckSinkSchema(boolean checkSinkSchema) {
+        this.checkSinkSchema = checkSinkSchema;
+    }
 
     public String getMappingFormatName() {
         return mappingFormatName;
@@ -166,6 +175,7 @@ public class Mysql2MysqlRunningInfoBean {
     public void setFetcherNameToLoad(Map<String, String> fetcherNameToLoad) {
         this.fetcherNameToLoad = fetcherNameToLoad;
     }
+
 
     public Map<String, String> getBatcherNameToLoad() {
         return batcherNameToLoad;

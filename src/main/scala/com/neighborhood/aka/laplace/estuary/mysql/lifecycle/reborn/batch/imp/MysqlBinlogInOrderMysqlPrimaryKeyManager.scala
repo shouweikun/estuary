@@ -38,7 +38,9 @@ final class MysqlBinlogInOrderMysqlPrimaryKeyManager(
     */
   override protected def initBatchers: Unit = {
     val sinkerList = taskManager.sinkerList
-    val paths = (0 until batcherNum).map { index => MysqlBinlogInOrderBatcher.buildMysqlBinlogInOrderBatcher(MysqlBinlogInOrderMysqlBatcher.name, taskManager, sinkerList(index), index)
+    val paths = (0 until batcherNum).map { index =>
+      val i = if (partitionStrategy == PartitionStrategy.DATABASE_TABLE) num-1 else index
+      MysqlBinlogInOrderBatcher.buildMysqlBinlogInOrderBatcher(MysqlBinlogInOrderMysqlBatcher.name, taskManager, sinkerList(i), index)
     }.map(context.actorOf(_)).map(_.path.toString).toList
 
     lazy val roundRobin = context.actorOf(new RoundRobinGroup(paths).props().withDispatcher("akka.batcher-dispatcher"), "router")

@@ -21,6 +21,7 @@ class App {
 
 }
 
+
 object App {
   def main(args: Array[String]): Unit = {
     SpringApplication.run(classOf[App])

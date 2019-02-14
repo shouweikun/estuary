@@ -9,4 +9,6 @@ object MysqlBinlogInOrderRecorderCommand {
 
   case object MysqlBinlogInOrderRecorderSavePosition extends MysqlBinlogInOrderRecorderCommand
 
+  case object MysqlBinlogInOrderRecorderSaveLatestPosition extends MysqlBinlogInOrderRecorderCommand
+
 }

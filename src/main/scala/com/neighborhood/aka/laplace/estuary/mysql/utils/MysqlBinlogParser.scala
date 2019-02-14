@@ -9,7 +9,7 @@ import com.taobao.tddl.dbsync.binlog.LogEvent
   */
 final class MysqlBinlogParser extends LogEventConvert {
 
-  private var filterTimestamp: Long = Long.MaxValue
+  private var filterTimestamp: Long = 0
    start()
 
   def parse(eventOption: Option[LogEvent]): Option[CanalEntry.Entry] = eventOption.flatMap {
@@ -23,14 +23,7 @@ final class MysqlBinlogParser extends LogEventConvert {
       }
   }
 
-  @deprecated
-  def parseAndProfilingIfNecessary(event: LogEvent, necessary: Boolean): Option[CanalEntry.Entry] = {
 
-    if (necessary) {
-
-    }
-    parse(Option(event))
-  }
 
   def setFilterTimestamp(ts: Long) = this.filterTimestamp = ts
 }

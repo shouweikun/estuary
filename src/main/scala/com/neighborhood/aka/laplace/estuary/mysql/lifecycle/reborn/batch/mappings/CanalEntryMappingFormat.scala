@@ -3,7 +3,6 @@ package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.batch.mappin
 import com.neighborhood.aka.laplace.estuary.bean.key.PartitionStrategy
 import com.neighborhood.aka.laplace.estuary.core.trans.MappingFormat
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.EntryKeyClassifier
-import com.neighborhood.aka.laplace.estuary.mysql.schema.storage.MysqlSchemaHandler
 import com.typesafe.config.Config
 import org.slf4j.LoggerFactory
 
@@ -12,7 +11,8 @@ import org.slf4j.LoggerFactory
   */
 trait CanalEntryMappingFormat[R] extends MappingFormat[EntryKeyClassifier, R] {
 
-  protected val logger = LoggerFactory.getLogger(classOf[CanalEntryMappingFormat[R]])
+
+  protected lazy val logger = LoggerFactory.getLogger(classOf[CanalEntryMappingFormat[R]])
 
 
   /**
@@ -31,16 +31,6 @@ trait CanalEntryMappingFormat[R] extends MappingFormat[EntryKeyClassifier, R] {
     * 任务开始时间
     */
   def syncStartTime: Long
-
-//  /**
-//    * 对应的batcher编号
-//    */
-//  def num: Int
-
-  /**
-    * 元数据信息处理器
-    */
-  def mysqlSchemaHandler: MysqlSchemaHandler
 
   /**
     * 是否开启Schema管理

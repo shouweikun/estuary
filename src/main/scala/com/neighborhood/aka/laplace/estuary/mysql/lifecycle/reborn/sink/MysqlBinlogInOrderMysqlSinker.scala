@@ -31,7 +31,7 @@ final class MysqlBinlogInOrderMysqlSinker(
     * @param input batcher转换完的数据
     * @tparam I 类型参数 逆变
     */
-  override protected def handleSinkTask[I <: MysqlRowDataInfo](input: I): Try[_] = this.sinkFunc.insertSql(input.sql).flatMap(r => if (r == 0) Success(r) else Failure(new java.sql.SQLException(s"estuary insert data failed,cause re ==$r,which is not 0,id:$syncTaskId")))
+  override protected def handleSinkTask[I <: MysqlRowDataInfo](input: I): Try[_] = this.sinkFunc.insertBatchSql(input.sql)
 
   /**
     * 处理批量Batcher转换过的数据
@@ -40,7 +40,7 @@ final class MysqlBinlogInOrderMysqlSinker(
     * @tparam I 类型参数 逆变
     */
 
-  override protected def handleBatchSinkTask[I <: MysqlRowDataInfo](input: List[I]): Try[_] = this.sinkFunc.insertBatchSql(input.map(_.sql)).flatMap(r => if (r.exists(x => x != 0)) Failure(new java.sql.SQLException(s"estuary insert batch data failed,cause contains re ==$r,which is not 0,id:$syncTaskId")) else Success(r))
+  override protected def handleBatchSinkTask[I <: MysqlRowDataInfo](input: List[I]): Try[_] = this.sinkFunc.insertBatchSql(input.flatMap(_.sql))
 
 
   override def receive: Receive = {

@@ -17,7 +17,7 @@ import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.batch.MysqlBi
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.batch.imp.MysqlBinlogInOrderBatcherMysqlManager
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.{BinlogPositionInfo, DatabaseAndTableNameClassifier}
 import com.neighborhood.aka.laplace.estuary.mysql.source.{MysqlConnection, MysqlSourceManagerImp}
-import com.neighborhood.aka.laplace.estuary.mysql.utils.{CanalEntryJsonHelper, CanalEntryTransUtil}
+import com.neighborhood.aka.laplace.estuary.mysql.utils.{CanalEntryTransHelper, CanalEntryTransUtil}
 
 /**
   * Created by john_liu on 2018/5/8.
@@ -125,7 +125,7 @@ abstract class MysqlBinlogInOrderBatcherManager[B <: SinkFunc](
     else if (isDml) dispatchDmlEntry(entry)
     else if (isDdl) dispatchDdlEntry(entry)
     else throw new UnsupportedEntryException(s"${
-      CanalEntryJsonHelper.headerToJson(entry.getHeader)
+      CanalEntryTransHelper.headerToJson(entry.getHeader)
     } is not supported,id:$syncTaskId")
   }
 
@@ -152,7 +152,7 @@ abstract class MysqlBinlogInOrderBatcherManager[B <: SinkFunc](
     */
   private def dispatchDdlEntry(entry: CanalEntry.Entry): Unit = {
     log.info(s"dispatch ddl entry:${
-      CanalEntryJsonHelper.headerToJson(entry.getHeader)
+      CanalEntryTransHelper.headerToJson(entry.getHeader)
     },id:$syncTaskId")
     router.fold(log.error(s"batcher router cannot be found,id:$syncTaskId"))(ref => ref ! DatabaseAndTableNameClassifier(entry))
   }

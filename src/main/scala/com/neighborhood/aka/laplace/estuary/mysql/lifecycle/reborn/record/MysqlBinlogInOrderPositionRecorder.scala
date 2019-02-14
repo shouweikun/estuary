@@ -3,10 +3,10 @@ package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.record
 import akka.actor.Props
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.SourceDataPositionRecorder
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, SinkerMessage, SyncControllerMessage}
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, FetcherMessage, SinkerMessage, SyncControllerMessage}
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.BinlogPositionInfo
-import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.record.MysqlBinlogInOrderRecorderCommand.MysqlBinlogInOrderRecorderSavePosition
+import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.record.MysqlBinlogInOrderRecorderCommand.{MysqlBinlogInOrderRecorderSaveLatestPosition, MysqlBinlogInOrderRecorderSavePosition}
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink.MysqlBinlogInOrderSinkerCommand.MysqlInOrderSinkerGetAbnormal
 import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlSourceManagerImp
 import com.neighborhood.aka.laplace.estuary.mysql.utils.LogPositionHandler
@@ -52,10 +52,11 @@ final class MysqlBinlogInOrderPositionRecorder(
   override val syncTaskId: String = taskManager.syncTaskId
 
   override def receive: Receive = {
-
     case BatcherMessage(x: BinlogPositionInfo) => updateOffset(x)
     case SyncControllerMessage(MysqlBinlogInOrderRecorderSavePosition) => saveOffset
-    case SinkerMessage(MysqlInOrderSinkerGetAbnormal(e, offset)) => saveOffsetWhenError(e,offset)
+    case SinkerMessage(MysqlInOrderSinkerGetAbnormal(e, offset)) => saveOffsetWhenError(e, offset)
+    case FetcherMessage(MysqlBinlogInOrderRecorderSaveLatestPosition) => saveLatestOffset
+    case MysqlBinlogInOrderRecorderSaveLatestPosition => saveLatestOffset
     case x: BinlogPositionInfo => updateOffset(x)
   }
 

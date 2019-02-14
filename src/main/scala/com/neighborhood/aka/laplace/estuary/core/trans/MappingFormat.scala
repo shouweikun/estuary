@@ -6,6 +6,7 @@ package com.neighborhood.aka.laplace.estuary.core.trans
 trait MappingFormat[A, B] {
 
 
+
   /**
     * 拼接json用
     */

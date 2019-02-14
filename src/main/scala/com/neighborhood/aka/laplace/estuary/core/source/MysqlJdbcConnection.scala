@@ -5,6 +5,7 @@ import java.sql._
 import org.slf4j.LoggerFactory
 
 import scala.annotation.tailrec
+import scala.util.Try
 
 /**
   * Created by john_liu on 2018/6/19.
@@ -64,13 +65,13 @@ final class MysqlJdbcConnection(
     * 复用之前的方法
     */
   @throws[SQLException]
-  def resultSetMetaDataToArrayList(rs: ResultSet): List[Map[String, Any]] = {
+  def resultSetMetaDataToArrayList(rs: ResultSet): List[Map[String, AnyRef]] = {
 
     val rsmd: ResultSetMetaData = rs.getMetaData
     val fieldList = (1 to rsmd.getColumnCount).map(index => (index, rsmd.getColumnName(index).toLowerCase.trim))
 
     @tailrec
-    def loopBuildList(acc: List[Map[String, Any]] = List.empty): List[Map[String, Any]] = {
+    def loopBuildList(acc: List[Map[String, AnyRef]] = List.empty): List[Map[String, AnyRef]] = {
       if (rs.next()) {
         lazy val row = fieldList.map {
           case (index, fieldName) =>
@@ -91,7 +92,7 @@ final class MysqlJdbcConnection(
     * SELECT
     */
   @throws[SQLException]
-  def selectSql(sql: String): List[Map[String, Any]] = {
+  def selectSql(sql: String): List[Map[String, AnyRef]] = {
     logger.info(sql)
     if (!isConnected) connect()
     conn.fold(throw new SQLException("connection is not connected,is null")) {
@@ -103,9 +104,9 @@ final class MysqlJdbcConnection(
   }
 
   @throws[SQLException]
-  def selectSqlAndClose(sql: String): List[Map[String, Any]] = {
+  def selectSqlAndClose(sql: String): List[Map[String, AnyRef]] = {
     val re = selectSql(sql)
-    this.disconnect()
+    Try(this.disconnect())
     re
   }
 
@@ -163,8 +164,18 @@ final class MysqlJdbcConnection(
     //    if (!isConnected) connect() //因为是在一个事务中使用，所以不能尝试重连
     conn.fold(throw new SQLException("connection is not connected,is null"))(_.commit())
   }
+
+  def setConnection(connection: Connection): Unit = {
+    conn = Option(connection)
+  }
 }
 
 object MysqlJdbcConnection {
 
+  implicit def MysqlJdbcConnectionHolder(connection: Connection): MysqlJdbcConnection = {
+    val re = new MysqlJdbcConnection
+    re.setConnection(connection)
+    re.flag = true
+    re
+  }
 }
