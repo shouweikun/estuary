@@ -3,6 +3,7 @@ package com.neighborhood.aka.laplace.estuary.mysql.schema
 import com.neighborhood.aka.laplace.estuary.bean.exception.schema.InvalidDdlException
 import com.neighborhood.aka.laplace.estuary.core.util.JavaCommonUtil
 import com.neighborhood.aka.laplace.estuary.mysql.schema.defs.ddl._
+import org.slf4j.LoggerFactory
 
 import scala.collection.JavaConverters._
 
@@ -15,17 +16,51 @@ import scala.collection.JavaConverters._
   * @author neighborhood.aka.laplace
   */
 object Parser {
+  private lazy val logger = LoggerFactory.getLogger(Parser.getClass)
 
   /**
-    * 解析sql 并进行库表名替换
+    * 解析并替换库表名
     *
-    * @param ddlSql
+    * @param ddlSql            ddlSql
+    * @param defaultSchemaName 默认库名称
     * @param tableMappingRule
     * @return
     */
-  def parseAndReplace(ddlSql: String, defaultSchemaName: String, tableMappingRule: SdaSchemaMappingRule): String = {
+  def parseAndReplace(ddlSql: String, defaultSchemaName: String, tableMappingRule: SdaSchemaMappingRule): SchemaChange = {
+    logger.info(s"start parse and replace ddl:$ddlSql,defaultSchemaName:$defaultSchemaName")
+    val re = parse(ddlSql, defaultSchemaName) //这个实现涉及了对象内部变量的改变
+    if (re.size > 1) throw new InvalidDdlException("only single ddl is supported")
+    re.head match {
+      case alter: TableAlter => {
+        if (JavaCommonUtil.isEmpty(alter.database)) alter.database = alter.newDatabase
+        if (JavaCommonUtil.isEmpty(alter.table)) alter.table = alter.newTableName
+        if (JavaCommonUtil.isEmpty(alter.newDatabase)) alter.newDatabase = alter.database
+        if (JavaCommonUtil.isEmpty(alter.newTableName)) alter.newTableName = alter.table
+        val (database, table) = tableMappingRule.getMappingName(alter.database, alter.table)
+        alter.database = database
+        alter.table = table
+        val (newDatabase, newTableName) = tableMappingRule.getMappingName(alter.newDatabase, alter.newTableName)
+        alter.newDatabase = newDatabase
+        alter.newTableName = newTableName
+      }
+      case create: TableCreate => {
+        if (!JavaCommonUtil.isEmpty(create.likeDB) && !JavaCommonUtil.isEmpty(create.likeTable)) {
+          val (likeDB, likeTable) = tableMappingRule.getMappingName(create.likeDB, create.likeTable)
+          create.likeDB = likeDB
+          create.likeTable = likeTable
+        }
+        val (database, table) = tableMappingRule.getMappingName(create.database, create.table)
+        create.database = database
+        create.table = table
+      }
+      case drop: TableDrop => {
+        val (database, table) = tableMappingRule.getMappingName(drop.database, drop.table)
+        drop.database = database
+        drop.table = table
+      }
+    }
 
-    parseAndReplaceInternal(ddlSql, defaultSchemaName, tableMappingRule).toDdlSql
+    re.head
   }
 
   /**
@@ -114,50 +149,6 @@ object Parser {
     */
   def parse(ddlSql: String, schemaName: String): List[SchemaChange] = {
     SchemaChange.parse(schemaName, ddlSql).asScala.toList
-  }
-
-  /**
-    * 解析并替换库表名
-    *
-    * @param ddlSql            ddlSql
-    * @param defaultSchemaName 默认库名称
-    * @param tableMappingRule
-    * @return
-    */
-  def parseAndReplaceInternal(ddlSql: String, defaultSchemaName: String, tableMappingRule: SdaSchemaMappingRule): SchemaChange = {
-    val re = parse(ddlSql, defaultSchemaName) //这个实现涉及了对象内部变量的改变
-    if (re.size > 0) throw new InvalidDdlException("only single ddl is supported")
-    re.head match {
-      case alter: TableAlter => {
-        if (JavaCommonUtil.isEmpty(alter.database)) alter.database = alter.newDatabase
-        if (JavaCommonUtil.isEmpty(alter.table)) alter.table = alter.newTableName
-        if (JavaCommonUtil.isEmpty(alter.newDatabase)) alter.newDatabase = alter.database
-        if (JavaCommonUtil.isEmpty(alter.newTableName)) alter.newTableName = alter.table
-        val (database, table) = tableMappingRule.getMappingName(alter.database, alter.table)
-        alter.database = database
-        alter.table = table
-        val (newDatabase, newTableName) = tableMappingRule.getMappingName(alter.newDatabase, alter.newTableName)
-        alter.newDatabase = newDatabase
-        alter.newTableName = newTableName
-      }
-      case create: TableCreate => {
-        if (!JavaCommonUtil.isEmpty(create.likeDB) && !JavaCommonUtil.isEmpty(create.likeTable)) {
-          val (likeDB, likeTable) = tableMappingRule.getMappingName(create.likeDB, create.likeTable)
-          create.likeDB = likeDB
-          create.likeTable = likeTable
-        }
-        val (database, table) = tableMappingRule.getMappingName(create.database, create.table)
-        create.database = database
-        create.table = table
-      }
-      case drop: TableDrop => {
-        val (database, table) = tableMappingRule.getMappingName(drop.database, drop.table)
-        drop.database = database
-        drop.table = table
-      }
-    }
-
-    re.head
   }
 
 
