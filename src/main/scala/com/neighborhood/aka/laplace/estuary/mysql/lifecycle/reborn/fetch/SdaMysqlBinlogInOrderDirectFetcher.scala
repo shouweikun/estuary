@@ -47,11 +47,12 @@ final class SdaMysqlBinlogInOrderDirectFetcher(
     * @author neighborhood.aka.laplace
     */
   override protected def executeDdl(entry: CanalEntry.Entry): Unit = {
+    assert(CanalEntryTransUtil.isDdl(entry))
     import com.neighborhood.aka.laplace.estuary.mysql.schema.Parser.SchemaChangeToDdlSqlSyntax
     log.info(s"try to execute ddl:${CanalEntryTransHelper.headerToJson(entry.getHeader)},id:$syncTaskId")
     val ddlSql = CanalEntryTransUtil.parseStoreValue(entry)(syncTaskId).getSql
     val sdaDbName = rule.getDatabaseMappingName(entry.getHeader.getSchemaName).get
-    val schemaChange = Parser.parseAndReplaceInternal(ddlSql, sdaDbName, rule) //只会是一条
+    val schemaChange = Parser.parseAndReplace(ddlSql, sdaDbName, rule) //只会是一条
     if (isSchemaComponentOn) schemaHolder.updateTableMeta(schemaChange) //更新Schema
     val finalDdl = schemaChange.toDdlSql
     taskManager.wait4TheSameCount() //等待执行完毕

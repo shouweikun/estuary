@@ -402,8 +402,8 @@ abstract class MysqlBinlogInOrderController[B <: SinkFunc](override val taskBean
 
   = {
     log.info(s"syncController processing postStop ,id:$syncTaskId")
-    if (!schedulingCommandPool.isShutdown) Try(schedulingCommandPool.shutdown())
-    TaskManager.removeTaskManager(syncTaskId)
+    if (!schedulingCommandPool.isShutdown) Try(schedulingCommandPool.shutdownNow())
+    TaskManager.removeTaskManager(syncTaskId) // 这步很必要
     if (!resourceManager.sink.isTerminated) resourceManager.sink.close
     if (resourceManager.source.isConnected) resourceManager.source.disconnect()
 
