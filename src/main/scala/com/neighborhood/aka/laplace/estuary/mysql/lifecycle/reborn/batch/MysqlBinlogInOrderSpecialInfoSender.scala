@@ -66,6 +66,10 @@ abstract class MysqlBinlogInOrderSpecialInfoSender[R](
     * 错位次数
     */
   override var errorCount: Int = 0
+  /**
+    * 当前binlogPositionInfo
+    */
+  protected var currentBinlogPositionInfo: Option[BinlogPositionInfo] = None
 
   /**
     * 错误处理
@@ -73,9 +77,9 @@ abstract class MysqlBinlogInOrderSpecialInfoSender[R](
   override def processError(e: Throwable, message: lifecycle.WorkerMessage): Unit = ???
 
   override def receive: Receive = {
-    case BatcherMessage(x: BinlogPositionInfo) => sendBinlogPositionInfo(x)
+    case BatcherMessage(x: BinlogPositionInfo) => sendBinlogPositionInfoAndRecord(x)
     case BatcherMessage(MysqlBinlogInOrderBatcherCheckHeartbeats) => sendHeartBeats
-    case x: BinlogPositionInfo => sendBinlogPositionInfo(x)
+    case x: BinlogPositionInfo => sendBinlogPositionInfoAndRecord(x)
   }
 
   /**
@@ -83,7 +87,11 @@ abstract class MysqlBinlogInOrderSpecialInfoSender[R](
     *
     * @param x
     */
-  private def sendBinlogPositionInfo(x: BinlogPositionInfo): Unit = positionRecorder.fold(log.warning(s"cannot find positionRecorder when sending BinlogPositionInfo ,id:$syncTaskId"))(ref => ref ! BatcherMessage(x))
+  private def sendBinlogPositionInfoAndRecord(x: BinlogPositionInfo): Unit = {
+    currentBinlogPositionInfo = Option(x)
+    positionRecorder
+      .fold(log.warning(s"cannot find positionRecorder when sending BinlogPositionInfo ,id:$syncTaskId"))(ref => ref ! BatcherMessage(x))
+  }
 
   /**
     * 发送心跳
