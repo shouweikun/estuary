@@ -112,9 +112,9 @@ object Parser {
       //目前只支持单条
       tableAlter.columnMods.get(0) match {
         case add: AddColumnMod =>
-          s"ALTER TABLE $newName ADD ${add.definition.getName} ${add.definition.getType} ${getSigned(add.definition)} ${Option(add.definition.getDefaultValue).map(x => s"DEFAULT $x").getOrElse("")}"
-        case remove: RemoveColumnMod => s"ALTER TABLE $newName DROP ${remove.name}"
-        case change: ChangeColumnMod => s"ALTER TABLE $newName CHANGE ${Option(change.name).getOrElse("")} ${change.definition.getName} ${change.definition.getType} ${getSigned(change.definition)} ${Option(change.definition.getDefaultValue).map(x => s"DEFAULT $x").getOrElse("")}"
+          s"ALTER TABLE $newName ADD COLUMN ${add.definition.getName} ${add.definition.getType} ${getSigned(add.definition)} ${Option(add.definition.getDefaultValue).map(x => s"DEFAULT $x").getOrElse("")}"
+        case remove: RemoveColumnMod => s"ALTER TABLE $newName DROP COLUMN ${remove.name}"
+        case change: ChangeColumnMod => s"ALTER TABLE $newName CHANGE COLUMN ${Option(change.name).getOrElse("")} ${change.definition.getName} ${change.definition.getType} ${getSigned(change.definition)} ${Option(change.definition.getDefaultValue).map(x => s"DEFAULT $x").getOrElse("")}"
       }
 
     }

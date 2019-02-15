@@ -22,7 +22,6 @@ import scala.util.Try
   */
 final class MysqlBinlogInOrderMysqlSinkerSinkByNameManager(override val taskManager: MysqlSinkManagerImp with TaskManager) extends MysqlBinlogInOrderSinkerManager(taskManager) {
 
-  private val sinkTypeName = sinkerNameToLoad.get(sinkerName).getOrElse(MysqlBinlogInOrderMysqlSinker.name)
   /**
     * position记录器
     */
@@ -30,6 +29,7 @@ final class MysqlBinlogInOrderMysqlSinkerSinkByNameManager(override val taskMana
 
   override val sinkerName: String = "sinker"
 
+  private val sinkTypeName = sinkerNameToLoad.get(sinkerName).getOrElse(MysqlBinlogInOrderMysqlSinker.name)
   private var sinkerNumInc = 0
 
   override def online: Receive = {
