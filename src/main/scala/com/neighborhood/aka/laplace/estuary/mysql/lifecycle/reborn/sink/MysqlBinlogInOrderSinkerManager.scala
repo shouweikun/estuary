@@ -46,7 +46,7 @@ abstract class MysqlBinlogInOrderSinkerManager(
   /**
     * 位置管理器
     */
-   lazy val positonRecorder: Option[ActorRef] = taskManager.positionRecorder
+  lazy val positonRecorder: Option[ActorRef] = taskManager.positionRecorder
 
   override def receive: Receive = {
     case SyncControllerMessage(MysqlInOrderSinkerStart) => start
@@ -146,6 +146,7 @@ abstract class MysqlBinlogInOrderSinkerManager(
 object MysqlBinlogInOrderSinkerManager {
   def buildMysqlBinlogInOrderMysqlSinkerManager(taskManager: MysqlSinkManagerImp with TaskManager, name: String): Props = name match {
     case MysqlBinlogInOrderMysqlSinkerManager.name => MysqlBinlogInOrderMysqlSinkerManager.props(taskManager)
+    case MysqlBinlogInOrderMysqlSinkerSinkByNameManager.name => MysqlBinlogInOrderMysqlSinkerSinkByNameManager.props(taskManager)
     case _ => throw new WorkerInitialFailureException(s"cannot build MysqlBinlogInOrderMysqlSinkerManager name item match $name")
   }
 }
