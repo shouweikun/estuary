@@ -13,7 +13,6 @@ import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink.MysqlBin
 import com.neighborhood.aka.laplace.estuary.mysql.sink.MysqlSinkManagerImp
 
 import scala.annotation.tailrec
-import scala.util.{Success, Try}
 import scala.util.Try
 
 /**
@@ -86,6 +85,7 @@ final private[sink] class SimpleSinker(
   /**
     * 错误处理
     */
+  @tailrec
   override def processError(e: Throwable, message: lifecycle.WorkerMessage): Unit = {
     log.error(s"sink throws error:$e,${e.getCause}.${e.getMessage},id:$syncTaskId")
     lazy val binlogPositionInfo: Option[BinlogPositionInfo] = message.msg.asInstanceOf[SqlList].binlogPositionInfo
