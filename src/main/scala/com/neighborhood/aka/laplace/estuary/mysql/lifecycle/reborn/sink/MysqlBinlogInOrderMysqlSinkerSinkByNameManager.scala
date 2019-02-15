@@ -30,6 +30,8 @@ final class MysqlBinlogInOrderMysqlSinkerSinkByNameManager(override val taskMana
 
   override val sinkerName: String = "sinker"
 
+  private var sinkerNumInc = 0
+
   override def online: Receive = {
     case x@SinkerMessage(_: MysqlInOrderSinkerGetAbnormal) => send2Recorder(x)
     case m@BatcherMessage(x: MysqlRowDataInfo) => getOrCreateSinker(s"${x.dbName}.${x.tableName}") ! m
@@ -44,14 +46,20 @@ final class MysqlBinlogInOrderMysqlSinkerSinkByNameManager(override val taskMana
     log.info(s"MysqlBinlogInOrderMysqlSinkByNameSinkerManager init sinkers,sinkerName:$sinkTypeName,id:$syncTaskId")
     log.warning(s"Sink by name currently is a special case,which is not a good design,considering a new imp,id:$syncTaskId")
     val sinkerList = (1 to sinkerNum).map(_ => self).toList
-    //      .map(index => MysqlBinlogInOrderSinker.buildMysqlBinlogInOrderSinker(sinkTypeName, taskManager, index).withDispatcher("akka.sinker-dispatcher")).map(context.actorOf(_)).toList
     taskManager.sinkerList = sinkerList
     log.info(s"sinkList has been updated into taskManager,id:$syncTaskId")
   }
 
+  /**
+    * 通过db.tb获取sinker
+    *
+    * @param dbAndTbName
+    * @return
+    */
   private def getOrCreateSinker(dbAndTbName: String): ActorRef = context.child(dbAndTbName).getOrElse {
     val theSender = sender()
-    val index = Try(theSender.path.name.toCharArray.last.toInt).getOrElse(theSender.hashCode())
+    val index = sinkerNumInc
+    sinkerNumInc = sinkerNumInc + 1
     context.actorOf(MysqlBinlogInOrderSinker.buildMysqlBinlogInOrderSinker(sinkTypeName, taskManager, index).withDispatcher("akka.sinker-dispatcher"), dbAndTbName)
   }
 }
