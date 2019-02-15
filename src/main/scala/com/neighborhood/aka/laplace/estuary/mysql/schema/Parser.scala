@@ -2,6 +2,7 @@ package com.neighborhood.aka.laplace.estuary.mysql.schema
 
 import com.neighborhood.aka.laplace.estuary.bean.exception.schema.InvalidDdlException
 import com.neighborhood.aka.laplace.estuary.core.util.JavaCommonUtil
+import com.neighborhood.aka.laplace.estuary.mysql.schema.defs.columndef.{ColumnDef, IntColumnDef}
 import com.neighborhood.aka.laplace.estuary.mysql.schema.defs.ddl._
 import org.slf4j.LoggerFactory
 
@@ -17,6 +18,17 @@ import scala.collection.JavaConverters._
   */
 object Parser {
   private lazy val logger = LoggerFactory.getLogger(Parser.getClass)
+
+  /**
+    * 解析Ddl sql
+    *
+    * @param ddlSql     待解析的ddl sql
+    * @param schemaName 库名称
+    * @return SchemaChange
+    */
+  def parse(ddlSql: String, schemaName: String): List[SchemaChange] = {
+    SchemaChange.parse(schemaName, ddlSql).asScala.toList
+  }
 
   /**
     * 解析并替换库表名
@@ -140,16 +152,12 @@ object Parser {
     s"DROP TABLE IF EXISTS ${tableDrop.database}.${tableDrop.table}"
   }
 
-  /**
-    * 解析Ddl sql
-    *
-    * @param ddlSql     待解析的ddl sql
-    * @param schemaName 库名称
-    * @return SchemaChange
-    */
-  def parse(ddlSql: String, schemaName: String): List[SchemaChange] = {
-    SchemaChange.parse(schemaName, ddlSql).asScala.toList
-  }
+  private def transColumnDefToFieldGrammar(columnDef: ColumnDef): String = {
 
+    columnDef match {
+      case  c:IntColumnDef => ???
+    }
+    ???
+  }
 
 }

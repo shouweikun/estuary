@@ -2,15 +2,16 @@ package com.neighborhood.aka.laplace.estuary.mysql.schema.defs.columndef;
 
 import java.math.BigDecimal;
 
-public class DecimalColumnDef extends ColumnDef {
-	public DecimalColumnDef(String name, String type, int pos) {
-		super(name, type, pos);
-	}
+public class DecimalColumnDef extends ColumnDefWithDecimalLength {
 
-	@Override
-	public String toSQL(Object value) {
-		BigDecimal d = (BigDecimal) value;
+    public DecimalColumnDef(String name, String type, int pos, Integer precision, Integer scale) {
+        super(name, type, pos, precision, scale);
+    }
 
-		return d.toEngineeringString();
-	}
+    @Override
+    public String toSQL(Object value) {
+        BigDecimal d = (BigDecimal) value;
+
+        return d.toEngineeringString();
+    }
 }
