@@ -6,7 +6,7 @@ import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.SourceDataP
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, FetcherMessage, SinkerMessage, SyncControllerMessage}
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.BinlogPositionInfo
-import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.record.MysqlBinlogInOrderRecorderCommand.{MysqlBinlogInOrderRecorderSaveLatestPosition, MysqlBinlogInOrderRecorderSavePosition}
+import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.record.MysqlBinlogInOrderRecorderCommand.{MysqlBinlogInOrderRecorderEnsurePosition, MysqlBinlogInOrderRecorderSaveLatestPosition, MysqlBinlogInOrderRecorderSavePosition}
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink.MysqlBinlogInOrderSinkerCommand.MysqlInOrderSinkerGetAbnormal
 import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlSourceManagerImp
 import com.neighborhood.aka.laplace.estuary.mysql.utils.LogPositionHandler
@@ -33,9 +33,15 @@ final class MysqlBinlogInOrderPositionRecorder(
   /**
     * 任务开始位置
     *
+    *
     * @return
     */
-  override def startPosition: Option[BinlogPositionInfo] = getSaveOffset
+  lazy val startPosition: Option[BinlogPositionInfo] = {
+    while (getSaveOffset.isEmpty) {
+      Thread.sleep(200)
+    }
+    getSaveOffset
+  }
 
 
   override protected def saveOffsetInternal(offset: BinlogPositionInfo): Unit = Try {
@@ -55,6 +61,7 @@ final class MysqlBinlogInOrderPositionRecorder(
     case BatcherMessage(x: BinlogPositionInfo) => updateOffset(x)
     case SyncControllerMessage(MysqlBinlogInOrderRecorderSavePosition) => saveOffset
     case SinkerMessage(MysqlInOrderSinkerGetAbnormal(e, offset)) => saveOffsetWhenError(e, offset)
+    case SinkerMessage(MysqlBinlogInOrderRecorderEnsurePosition(offset)) =>
     case FetcherMessage(MysqlBinlogInOrderRecorderSaveLatestPosition) => saveLatestOffset
     case MysqlBinlogInOrderRecorderSaveLatestPosition => saveLatestOffset
     case x: BinlogPositionInfo => updateOffset(x)
