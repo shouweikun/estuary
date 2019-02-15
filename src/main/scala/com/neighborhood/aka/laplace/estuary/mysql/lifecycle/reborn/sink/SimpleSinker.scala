@@ -1,16 +1,18 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink
 
 import akka.actor.{ActorRef, Props}
+import com.neighborhood.aka.laplace.estuary.bean.exception.sink.SinkerAbnormalException
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.SinkerMessage
 import com.neighborhood.aka.laplace.estuary.core.sink.mysql.MysqlSinkFunc
 import com.neighborhood.aka.laplace.estuary.core.task.{SinkManager, TaskManager}
 import com.neighborhood.aka.laplace.estuary.mysql.SettingConstant
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.BinlogPositionInfo
+import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.record.MysqlBinlogInOrderRecorderCommand.MysqlBinlogInOrderRecorderEnsurePosition
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink.MysqlBinlogInOrderSinkerCommand.MysqlInOrderSinkerGetAbnormal
 import com.neighborhood.aka.laplace.estuary.mysql.sink.MysqlSinkManagerImp
 
-import scala.util.{Success, Try}
+import scala.util.Try
 
 /**
   * Created by john_liu on 2019/1/30.
@@ -83,15 +85,23 @@ final private[sink] class SimpleSinker(
     * 错误处理
     */
   override def processError(e: Throwable, message: lifecycle.WorkerMessage): Unit = {
-    e.printStackTrace() //打印异常
-    errorCount = errorCount + 1 //错误次数+1
+    log.error(s"sink throws error:$e,${e.getCause}.${e.getMessage},id:$syncTaskId")
+    lazy val binlogPositionInfo: Option[BinlogPositionInfo] = message.msg.asInstanceOf[SqlList].binlogPositionInfo
+    val isNoCountError = Option(e.getMessage).map {
+      message =>
+        message.toLowerCase.startsWith("table") &&
+          message.toLowerCase.contains("doesn't exist") &&
+          (e.getSuppressed.exists(x => x.isInstanceOf[com.mysql.jdbc.exceptions.jdbc4.MySQLSyntaxErrorException]))
+    }.getOrElse(false) //对于表不存在的情况，不予计数
+    if (!isNoCountError) errorCount = errorCount + 1 //错误次数+1
+    binlogPositionInfo.fold {
+      throw new SinkerAbnormalException(s"fatal,sinker process error,besides the binlogPositionInfo is null,IMPOSSIBLE,plz check,id:$syncTaskId")
+    } {
+      info => positionRecorder.fold(log.error(s"cannot find positionRecorder when sinker$num throw error,id:$syncTaskId"))(ref => ref ! SinkerMessage(MysqlBinlogInOrderRecorderEnsurePosition(info)))
+    }
     if (errorCount > errorCountThreshold) {
-      lazy val positionInfo = Try(message.msg.asInstanceOf[SqlList].binlogPositionInfo) match {
-        case Success(x) => x
-        case _ => lastBinlogPosition
-      }
       positionRecorder.fold(log.error(s"cannot find positionRecorder when sinker$num throw error,id:$syncTaskId")) {
-        ref => ref ! SinkerMessage(MysqlInOrderSinkerGetAbnormal(e, positionInfo))
+        ref => ref ! SinkerMessage(MysqlInOrderSinkerGetAbnormal(e, binlogPositionInfo))
       }
       context.become(error, true)
     } else {

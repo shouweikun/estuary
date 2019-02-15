@@ -10,4 +10,5 @@ trait ComparableOffset[ComparableOffset] {
   def compare(other: ComparableOffset, smaller: Boolean): ComparableOffset = {
     if (compare(other) ^ smaller) other else this.asInstanceOf[ComparableOffset]
   }
+
 }

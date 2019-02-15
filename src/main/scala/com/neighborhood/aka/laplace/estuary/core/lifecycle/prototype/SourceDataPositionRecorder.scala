@@ -2,6 +2,7 @@ package com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype
 
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.PositionRecorder
 import com.neighborhood.aka.laplace.estuary.core.offset.ComparableOffset
+import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.BinlogPositionInfo
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
@@ -13,7 +14,6 @@ import scala.collection.mutable
 trait SourceDataPositionRecorder[A <: ComparableOffset[A]] extends ActorPrototype with PositionRecorder {
   private val queneMaxSize = 10
   private lazy val quene: mutable.Queue[A] = new mutable.Queue[A]()
-  lazy val logger = LoggerFactory.getLogger(classOf[SourceDataPositionRecorder[A]])
 
   protected def error: Receive = {
     case _ =>
@@ -23,10 +23,10 @@ trait SourceDataPositionRecorder[A <: ComparableOffset[A]] extends ActorPrototyp
 
   def destination: String = this.syncTaskId
 
-  private var latestOffset: Option[A] = startPosition
-  private var lastSavedOffset: Option[A] = startPosition
-  private var scheduledSavedOffset: Option[A] = startPosition
-  private var schedulingSavedOffset: Option[A] = startPosition
+  private var latestOffset: Option[A] = None
+  private var lastSavedOffset: Option[A] = None
+  private var scheduledSavedOffset: Option[A] = None
+  private var schedulingSavedOffset: Option[A] = None
 
   def updateOffset(offset: A): Unit
   = {
@@ -35,7 +35,7 @@ trait SourceDataPositionRecorder[A <: ComparableOffset[A]] extends ActorPrototyp
   }
 
   def saveOffset: Unit = {
-    logger.info(s"start saveOffset,id:$syncTaskId")
+    log.info(s"start saveOffset,id:$syncTaskId")
     scheduledSavedOffset.map(saveOffsetInternal(_))
     scheduledSavedOffset.map(updateQuene(_))
     scheduledSavedOffset = schedulingSavedOffset
@@ -69,6 +69,18 @@ trait SourceDataPositionRecorder[A <: ComparableOffset[A]] extends ActorPrototyp
     saveOffset
   }
 
+  /**
+    * 确保当前保存的position比curr 小
+    *
+    * @param curr 比较的offset
+    */
+  def ensureOffset(curr: A): Unit = {
+    log.warning(s"start to ensure offset,id:$syncTaskId")
+    val matchOffset = getMatchOffset(curr).getOrElse(throw new RuntimeException(s"cannot find match offset when ensure offset,id:$syncTaskId"))
+    scheduledSavedOffset = scheduledSavedOffset.map(offset => offset.compare(matchOffset, true))
+    log.warning(s"ensure offset,now is ${scheduledSavedOffset},id:$syncTaskId")
+  }
+
   protected def saveOffsetInternal(offset: A): Unit
 
   protected def getSaveOffset: Option[A]
@@ -89,4 +101,17 @@ trait SourceDataPositionRecorder[A <: ComparableOffset[A]] extends ActorPrototyp
   }
 
   private def getMatchOffset(offset: A): Option[A] = quene.reverse.dequeueFirst(offset.compare(_))
+
+  /**
+    * 在preStart里面初始化，避免引用逃逸
+    */
+  override def preStart(): Unit = {
+    super.preStart()
+    log.info(s"positionRecorder process preStart,id:$syncTaskId")
+    latestOffset = startPosition
+    lastSavedOffset = startPosition
+    scheduledSavedOffset = startPosition
+    schedulingSavedOffset = startPosition
+    startPosition.map(quene.enqueue(_))
+  }
 }
