@@ -18,8 +18,8 @@ class Sda4DdlParserTest extends UnitSpec {
   val alterTable4 = "alter table `a`.`a` add column `c_double` double(10,2) unsigned not null Default '1.00' COMMENT 'c' AFTER `afterCol`"
   val alterTable5 = "alter table `a`.`a` add column `c_decimal` decimal(10,2) unsigned not null Default '1.00' COMMENT 'c' AFTER `afterCol`"
   val alterTable6 = "alter table `a`.`a` drop column `drop`"
-  val alterTable7 = "alter table `a`.`a` CHANGE column `foo` bar varchar(255) unsigned default 'foo' not null comment 'c'"
-
+  val alterTable7 = "alter table `a`.`a` CHANGE column `foo` bar varchar(255)  default 'foo' not null comment 'c'"
+  val alterTable8 = "alter table `a`.`a` MODIFY column bar varchar(255)  default 'foo' not null comment 'c'"
 
   "test 1" should "successfully handle Alter table with column add" in {
     val schemaChange = Parser.parseAndReplace(alterTable1, "a_map", schemaMappingRule)
@@ -134,6 +134,28 @@ class Sda4DdlParserTest extends UnitSpec {
     assert(changeColumnMod.definition.getName == "bar")
     assert(changeColumnMod.definition.getType == "varchar")
     assert(changeColumnMod.definition.getFullType == "varchar")
+    assert(changeColumnMod.definition.getDefaultValue == "'foo'")
+    assert(changeColumnMod.definition.getComment == "c")
+    val ddl = schemaChange.toDdlSql
+    assert(ddl.trim == "ALTER TABLE a_map.a_map CHANGE COLUMN foo bar varchar  DEFAULT 'foo'")
+  }
 
+  "test 8" should "successfully handle table alter with column change" in {
+    val schemaChange = Parser.parseAndReplace(alterTable8, "a_map", schemaMappingRule)
+    assert(schemaChange.isInstanceOf[TableAlter])
+    val tableAlter = schemaChange.asInstanceOf[TableAlter]
+    assert(tableAlter.database == "a_map")
+    assert(tableAlter.table == "a_map")
+    assert(tableAlter.newDatabase == "a_map")
+    assert(tableAlter.newTableName == "a_map")
+    val changeColumnMod = tableAlter.columnMods.get(0).asInstanceOf[ChangeColumnMod]
+    assert(changeColumnMod.name == "bar")
+    assert(changeColumnMod.definition.getName == "bar")
+    assert(changeColumnMod.definition.getType == "varchar")
+    assert(changeColumnMod.definition.getFullType == "varchar")
+    assert(changeColumnMod.definition.getDefaultValue == "'foo'")
+    assert(changeColumnMod.definition.getComment == "c")
+    val ddl = schemaChange.toDdlSql
+    assert(ddl.trim == "ALTER TABLE a_map.a_map MODIFY COLUMN   bar varchar  DEFAULT 'foo'")
   }
 }
