@@ -1,7 +1,7 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.ddl
 
 import com.neighborhood.aka.laplace.estuary.UnitSpec
-import com.neighborhood.aka.laplace.estuary.mysql.schema.defs.ddl.{AddColumnMod, RemoveColumnMod, TableAlter}
+import com.neighborhood.aka.laplace.estuary.mysql.schema.defs.ddl.{AddColumnMod, ChangeColumnMod, RemoveColumnMod, TableAlter}
 import com.neighborhood.aka.laplace.estuary.mysql.schema.{Parser, SdaSchemaMappingRule}
 import com.neighborhood.aka.laplace.estuary.mysql.schema.Parser.SchemaChangeToDdlSqlSyntax
 
@@ -18,6 +18,8 @@ class Sda4DdlParserTest extends UnitSpec {
   val alterTable4 = "alter table `a`.`a` add column `c_double` double(10,2) unsigned not null Default '1.00' COMMENT 'c' AFTER `afterCol`"
   val alterTable5 = "alter table `a`.`a` add column `c_decimal` decimal(10,2) unsigned not null Default '1.00' COMMENT 'c' AFTER `afterCol`"
   val alterTable6 = "alter table `a`.`a` drop column `drop`"
+  val alterTable7 = "alter table `a`.`a` CHANGE column `foo` bar varchar(255) unsigned default 'foo' not null comment 'c'"
+
 
   "test 1" should "successfully handle Alter table with column add" in {
     val schemaChange = Parser.parseAndReplace(alterTable1, "a_map", schemaMappingRule)
@@ -117,5 +119,21 @@ class Sda4DdlParserTest extends UnitSpec {
     assert(removeColumnMod.name == "drop")
     val ddl = schemaChange.toDdlSql
     assert(ddl.trim == "ALTER TABLE a_map.a_map DROP COLUMN drop")
+  }
+
+  "test 7" should "successfully handle table alter with column change" in {
+    val schemaChange = Parser.parseAndReplace(alterTable7, "a_map", schemaMappingRule)
+    assert(schemaChange.isInstanceOf[TableAlter])
+    val tableAlter = schemaChange.asInstanceOf[TableAlter]
+    assert(tableAlter.database == "a_map")
+    assert(tableAlter.table == "a_map")
+    assert(tableAlter.newDatabase == "a_map")
+    assert(tableAlter.newTableName == "a_map")
+    val changeColumnMod = tableAlter.columnMods.get(0).asInstanceOf[ChangeColumnMod]
+    assert(changeColumnMod.name == "foo")
+    assert(changeColumnMod.definition.getName == "bar")
+    assert(changeColumnMod.definition.getType == "varchar")
+    assert(changeColumnMod.definition.getFullType == "varchar")
+
   }
 }
