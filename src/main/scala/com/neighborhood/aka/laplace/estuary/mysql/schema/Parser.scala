@@ -2,7 +2,7 @@ package com.neighborhood.aka.laplace.estuary.mysql.schema
 
 import com.neighborhood.aka.laplace.estuary.bean.exception.schema.InvalidDdlException
 import com.neighborhood.aka.laplace.estuary.core.util.JavaCommonUtil
-import com.neighborhood.aka.laplace.estuary.mysql.schema.defs.columndef.{ColumnDef, IntColumnDef}
+import com.neighborhood.aka.laplace.estuary.mysql.schema.defs.columndef.{BigIntColumnDef, ColumnDef, IntColumnDef}
 import com.neighborhood.aka.laplace.estuary.mysql.schema.defs.ddl._
 import org.slf4j.LoggerFactory
 
@@ -112,9 +112,9 @@ object Parser {
       //目前只支持单条
       tableAlter.columnMods.get(0) match {
         case add: AddColumnMod =>
-          s"ALTER TABLE $newName ADD ${add.definition.getName} ${add.definition.getType} ${Option(add.definition.getDefaultValue).map(x => s"DEFAULT $x").getOrElse("")}"
+          s"ALTER TABLE $newName ADD ${add.definition.getName} ${add.definition.getType} ${getSigned(add.definition)} ${Option(add.definition.getDefaultValue).map(x => s"DEFAULT $x").getOrElse("")}"
         case remove: RemoveColumnMod => s"ALTER TABLE $newName DROP ${remove.name}"
-        case change: ChangeColumnMod => s"ALTER TABLE $newName CHANGE ${Option(change.name).getOrElse("")} ${change.definition.getName} ${change.definition.getType} ${Option(change.definition.getDefaultValue).map(x => s"DEFAULT $x").getOrElse("")}"
+        case change: ChangeColumnMod => s"ALTER TABLE $newName CHANGE ${Option(change.name).getOrElse("")} ${change.definition.getName} ${change.definition.getType} ${getSigned(change.definition)} ${Option(change.definition.getDefaultValue).map(x => s"DEFAULT $x").getOrElse("")}"
       }
 
     }
@@ -132,7 +132,7 @@ object Parser {
   private def handleCreate(tableCreate: TableCreate): String = {
     lazy val pks = if (tableCreate.pks != null && !tableCreate.pks.isEmpty) tableCreate.pks.asScala.mkString(",") else ""
     lazy val pkGrammar = if (pks.nonEmpty)s""" , PRIMARY KEY ( $pks )""" else ""
-    lazy val fieldGrammar = tableCreate.columns.asScala.map(col => s"${col.getName} ${col.getType} ${Option(col.getDefaultValue).map(x => s"DEFAULT $x").getOrElse("")}").mkString(",")
+    lazy val fieldGrammar = tableCreate.columns.asScala.map(col => s"${col.getName} ${col.getType} ${getSigned(col)} ${Option(col.getDefaultValue).map(x => s"DEFAULT $x").getOrElse("")}").mkString(",")
     s"""CREATE TABLE IF NOT EXISTS ${tableCreate.database}.${tableCreate.table}
        (
        $fieldGrammar
@@ -152,12 +152,17 @@ object Parser {
     s"DROP TABLE IF EXISTS ${tableDrop.database}.${tableDrop.table}"
   }
 
-  private def transColumnDefToFieldGrammar(columnDef: ColumnDef): String = {
-
-    columnDef match {
-      case  c:IntColumnDef => ???
-    }
-    ???
+  /**
+    * 是否需要加unsigned
+    *
+    * @param columnDef
+    * @return
+    */
+  private def getSigned(columnDef: ColumnDef): String = columnDef match {
+    case c: IntColumnDef => if (!c.isSigned) "unsigned" else ""
+    case c: BigIntColumnDef => if (!c.isSigned) "unsigned" else ""
+    case _ => ""
   }
+
 
 }

@@ -358,6 +358,7 @@ public class MysqlParserListener extends mysqlBaseListener {
         Long columnLength = null;
         Boolean longStringFlag = false;
         String colType = null, colCharset = null;
+        Integer precision = null, scale = null;
         String[] enumValues = null;
         List<Column_optionsContext> colOptions = null;
         boolean signed = true;
@@ -373,6 +374,12 @@ public class MysqlParserListener extends mysqlBaseListener {
             columnLength = extractColumnLength(dctx.generic_type().length());
         } else if (dctx.signed_type() != null) {
             colType = dctx.signed_type().col_type.getText();
+            if (dctx.signed_type().decimal_length() != null) {
+                precision = Integer.valueOf(dctx.signed_type().decimal_length().INTEGER_LITERAL(0).getText());
+                if (dctx.signed_type().decimal_length().INTEGER_LITERAL().size() == 2) {
+                    scale = Integer.valueOf(dctx.signed_type().decimal_length().INTEGER_LITERAL(1).getText());
+                }
+            }
             signed = isSigned(dctx.signed_type().int_flags());
             colOptions = dctx.signed_type().column_options();
 
@@ -414,19 +421,25 @@ public class MysqlParserListener extends mysqlBaseListener {
                 name,
                 colCharset,
                 colType.toLowerCase(),
+                precision,
+                scale,
                 -1,
                 signed,
                 enumValues,
                 columnLength
         );
         c.setDefaultValue(defaultValue); //默认值
-        defaultValue = null;
+        defaultValue = null; //清空
         if (colOptions != null) {
             for (Column_optionsContext opt : colOptions) {
                 if (opt.primary_key() != null) {
                     this.pkColumns = new ArrayList<>();
                     this.pkColumns.add(name);
 
+                }
+                if (opt.COMMENT() != null && opt.string_literal() != null) {
+                    String comment = unquote_literal(opt.string_literal().getText());
+                    c.setComment(comment);
                 }
             }
         }
