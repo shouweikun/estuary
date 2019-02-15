@@ -32,7 +32,7 @@ public abstract class ColumnDef {
 
     public static ColumnDef build(String name, String charset, String type, Integer precision, Integer scale,
                                   int pos, boolean signed, String enumValues[], Long columnLength) {
-        switch(type) {
+        switch (type) {
             case "tinyint":
             case "smallint":
             case "mediumint":
@@ -178,6 +178,13 @@ public abstract class ColumnDef {
                 return type;
         }
     }
+
+    public String getFullType() {
+        if (this instanceof ColumnDefWithDecimalLength) {
+            return ((ColumnDefWithDecimalLength) this).getTypeWithPrecision();
+        } else return type;
+    }
+
 
     public void setType(String type) {
         this.type = type;
