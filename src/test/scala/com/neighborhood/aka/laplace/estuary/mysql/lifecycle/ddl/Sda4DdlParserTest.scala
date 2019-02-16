@@ -10,7 +10,7 @@ import com.neighborhood.aka.laplace.estuary.mysql.schema.Parser.SchemaChangeToDd
   */
 class Sda4DdlParserTest extends UnitSpec {
 
-  val mappingRuleMap = Map("a.a" -> "a_map.a_map", "b.b" -> "b_map.b_map")
+  val mappingRuleMap = Map("a.a" -> "a_map.a_map", "a.b" -> "a_map.b_map")
   val schemaMappingRule = new SdaSchemaMappingRule(mappingRuleMap)
   val alterTable1 = "ALTER TABLE a.a ADD col1 text DEFAULT 'hello';"
   val alterTable2 = "ALTER TABLE `a`.`a` ADD column `col1` int(11) comment 'c' AFTER `afterCol`"
@@ -20,7 +20,12 @@ class Sda4DdlParserTest extends UnitSpec {
   val alterTable6 = "alter table `a`.`a` drop column `drop`"
   val alterTable7 = "alter table `a`.`a` CHANGE column `foo` bar varchar(255)  default 'foo' not null comment 'c'"
   val alterTable8 = "alter table `a`.`a` MODIFY column bar varchar(255)  default 'foo' not null comment 'c'"
-
+  val alterTable9 = "alter table `a`.`a` CHANGE column `foo` bar decimal(10,2)  default '1.00' not null comment 'c'"
+  val alterTable10 = "alter table `a`.`a` MODIFY column bar double(10,2)  default '1.00' not null comment 'c'"
+  val renameTable11 = "rename table a.a to a.b"
+  val renameTable12 = "rename table a to b"
+  val renameTable13 = "rename table a.a to b"
+  val renameTable14 = "rename table a to a.b"
   "test 1" should "successfully handle Alter table with column add" in {
     val schemaChange = Parser.parseAndReplace(alterTable1, "a_map", schemaMappingRule)
     assert(schemaChange.isInstanceOf[TableAlter])
@@ -157,5 +162,95 @@ class Sda4DdlParserTest extends UnitSpec {
     assert(changeColumnMod.definition.getComment == "c")
     val ddl = schemaChange.toDdlSql
     assert(ddl.trim == "ALTER TABLE a_map.a_map MODIFY COLUMN   bar varchar  DEFAULT 'foo'")
+  }
+
+  "test 9" should "successfully handle table alter with column change" in {
+    val schemaChange = Parser.parseAndReplace(alterTable9, "a_map", schemaMappingRule)
+    assert(schemaChange.isInstanceOf[TableAlter])
+    val tableAlter = schemaChange.asInstanceOf[TableAlter]
+    assert(tableAlter.database == "a_map")
+    assert(tableAlter.table == "a_map")
+    assert(tableAlter.newDatabase == "a_map")
+    assert(tableAlter.newTableName == "a_map")
+    val changeColumnMod = tableAlter.columnMods.get(0).asInstanceOf[ChangeColumnMod]
+    assert(changeColumnMod.name == "foo")
+    assert(changeColumnMod.definition.getName == "bar")
+    assert(changeColumnMod.definition.getType == "decimal")
+    assert(changeColumnMod.definition.getFullType == "decimal(10,2)")
+    assert(changeColumnMod.definition.getDefaultValue == "'1.00'")
+    assert(changeColumnMod.definition.getComment == "c")
+    val ddl = schemaChange.toDdlSql
+    assert(ddl.trim == "ALTER TABLE a_map.a_map CHANGE COLUMN foo  bar decimal(10,2)  DEFAULT '1.00'")
+  }
+
+  "test 10" should "successfully handle table alter with column change" in {
+    val schemaChange = Parser.parseAndReplace(alterTable10, "a_map", schemaMappingRule)
+    assert(schemaChange.isInstanceOf[TableAlter])
+    val tableAlter = schemaChange.asInstanceOf[TableAlter]
+    assert(tableAlter.database == "a_map")
+    assert(tableAlter.table == "a_map")
+    assert(tableAlter.newDatabase == "a_map")
+    assert(tableAlter.newTableName == "a_map")
+    val changeColumnMod = tableAlter.columnMods.get(0).asInstanceOf[ChangeColumnMod]
+    assert(changeColumnMod.name == "bar")
+    assert(changeColumnMod.definition.getName == "bar")
+    assert(changeColumnMod.definition.getType == "double")
+    assert(changeColumnMod.definition.getFullType == "double(10,2)")
+    assert(changeColumnMod.definition.getDefaultValue == "'1.00'")
+    assert(changeColumnMod.definition.getComment == "c")
+    val ddl = schemaChange.toDdlSql
+    assert(ddl.trim == "ALTER TABLE a_map.a_map MODIFY COLUMN   bar double(10,2)  DEFAULT '1.00'")
+  }
+
+  "test 11" should "successfully handle table raname with all full name" in {
+    val schemaChange = Parser.parseAndReplace(renameTable11, "a_map", schemaMappingRule)
+    assert(schemaChange.isInstanceOf[TableAlter])
+    val tableAlter = schemaChange.asInstanceOf[TableAlter]
+    assert(tableAlter.database == "a_map")
+    assert(tableAlter.table == "a_map")
+    assert(tableAlter.newDatabase == "a_map")
+    assert(tableAlter.newTableName == "b_map")
+    assert(tableAlter.columnMods.isEmpty)
+    val ddl = schemaChange.toDdlSql
+    assert(ddl.trim == "RENAME a_map.a_map TO a_map.b_map;")
+  }
+
+  "test 12" should "successfully handle table raname with only table name" in {
+    val schemaChange = Parser.parseAndReplace(renameTable12, "a", schemaMappingRule)
+    assert(schemaChange.isInstanceOf[TableAlter])
+    val tableAlter = schemaChange.asInstanceOf[TableAlter]
+    assert(tableAlter.database == "a_map")
+    assert(tableAlter.table == "a_map")
+    assert(tableAlter.newDatabase == "a_map")
+    assert(tableAlter.newTableName == "b_map")
+    assert(tableAlter.columnMods.isEmpty)
+    val ddl = schemaChange.toDdlSql
+    assert(ddl.trim == "RENAME a_map.a_map TO a_map.b_map;")
+  }
+
+  "test 13" should "successfully handle table raname with partial table db name" in {
+    val schemaChange = Parser.parseAndReplace(renameTable13, "a", schemaMappingRule)
+    assert(schemaChange.isInstanceOf[TableAlter])
+    val tableAlter = schemaChange.asInstanceOf[TableAlter]
+    assert(tableAlter.database == "a_map")
+    assert(tableAlter.table == "a_map")
+    assert(tableAlter.newDatabase == "a_map")
+    assert(tableAlter.newTableName == "b_map")
+    assert(tableAlter.columnMods.isEmpty)
+    val ddl = schemaChange.toDdlSql
+    assert(ddl.trim == "RENAME a_map.a_map TO a_map.b_map;")
+  }
+
+  "test 14" should "successfully handle table raname with partial table db name" in {
+    val schemaChange = Parser.parseAndReplace(renameTable14, "a", schemaMappingRule)
+    assert(schemaChange.isInstanceOf[TableAlter])
+    val tableAlter = schemaChange.asInstanceOf[TableAlter]
+    assert(tableAlter.database == "a_map")
+    assert(tableAlter.table == "a_map")
+    assert(tableAlter.newDatabase == "a_map")
+    assert(tableAlter.newTableName == "b_map")
+    assert(tableAlter.columnMods.isEmpty)
+    val ddl = schemaChange.toDdlSql
+    assert(ddl.trim == "RENAME a_map.a_map TO a_map.b_map;")
   }
 }

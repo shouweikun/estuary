@@ -34,7 +34,7 @@ object Parser {
     * 解析并替换库表名
     *
     * @param ddlSql            ddlSql
-    * @param defaultSchemaName 默认库名称
+    * @param defaultSchemaName 默认库名称 这里传源库名称
     * @param tableMappingRule
     * @return
     */
