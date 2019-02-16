@@ -45,7 +45,7 @@ class Sda4DdlParserTest extends UnitSpec {
     assert(addColumnMod.definition.getType == "text")
     assert(addColumnMod.definition.getDefaultValue == "'hello'")
     val ddl = schemaChange.toDdlSql
-    assert(ddl == "ALTER TABLE a_map.a_map ADD col1 text  DEFAULT 'hello'")
+    assert(ddl == "ALTER TABLE a_map.a_map ADD COLUMN col1 text  DEFAULT 'hello'")
   }
 
   "test 2" should "successfully handle Alter table with column add" in {
@@ -148,7 +148,7 @@ class Sda4DdlParserTest extends UnitSpec {
     assert(changeColumnMod.definition.getDefaultValue == "'foo'")
     assert(changeColumnMod.definition.getComment == "c")
     val ddl = schemaChange.toDdlSql
-    assert(ddl.trim == "ALTER TABLE a_map.a_map CHANGE COLUMN foo bar varchar  DEFAULT 'foo'")
+    assert(ddl.trim == "ALTER TABLE a_map.a_map CHANGE COLUMN foo  bar varchar  DEFAULT 'foo'")
   }
 
   "test 8" should "successfully handle table alter with column change" in {
