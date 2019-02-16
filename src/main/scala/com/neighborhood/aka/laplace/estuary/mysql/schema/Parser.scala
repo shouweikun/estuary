@@ -2,6 +2,7 @@ package com.neighborhood.aka.laplace.estuary.mysql.schema
 
 import com.neighborhood.aka.laplace.estuary.bean.exception.schema.InvalidDdlException
 import com.neighborhood.aka.laplace.estuary.core.util.JavaCommonUtil
+import com.neighborhood.aka.laplace.estuary.mysql.schema.defs.columndef.{BigIntColumnDef, ColumnDef, IntColumnDef}
 import com.neighborhood.aka.laplace.estuary.mysql.schema.defs.ddl._
 import org.slf4j.LoggerFactory
 
@@ -19,10 +20,30 @@ object Parser {
   private lazy val logger = LoggerFactory.getLogger(Parser.getClass)
 
   /**
+    * 提供隐式转换
+    *
+    * @param schemaChange 生成好的SchemaChange
+    */
+  implicit class SchemaChangeToDdlSqlSyntax(schemaChange: SchemaChange) {
+    def toDdlSql: String = schemaChangeToDdlSql(schemaChange)
+  }
+
+  /**
+    * 解析Ddl sql
+    *
+    * @param ddlSql     待解析的ddl sql
+    * @param schemaName 库名称
+    * @return SchemaChange
+    */
+  def parse(ddlSql: String, schemaName: String): List[SchemaChange] = {
+    SchemaChange.parse(schemaName, ddlSql).asScala.toList
+  }
+
+  /**
     * 解析并替换库表名
     *
     * @param ddlSql            ddlSql
-    * @param defaultSchemaName 默认库名称
+    * @param defaultSchemaName 默认库名称 这里传源库名称
     * @param tableMappingRule
     * @return
     */
@@ -63,14 +84,6 @@ object Parser {
     re.head
   }
 
-  /**
-    * 提供隐式转换
-    *
-    * @param schemaChange 生成好的SchemaChange
-    */
-  implicit class SchemaChangeToDdlSqlSyntax(schemaChange: SchemaChange) {
-    def toDdlSql: String = schemaChangeToDdlSql(schemaChange)
-  }
 
   /**
     * 从SchemaChange转换成DdlSql
@@ -100,9 +113,13 @@ object Parser {
       //目前只支持单条
       tableAlter.columnMods.get(0) match {
         case add: AddColumnMod =>
-          s"ALTER TABLE $newName ADD ${add.definition.getName} ${add.definition.getType} ${Option(add.definition.getDefaultValue).map(x => s"DEFAULT $x").getOrElse("")}"
-        case remove: RemoveColumnMod => s"ALTER TABLE $newName DROP ${remove.name}"
-        case change: ChangeColumnMod => s"ALTER TABLE $newName CHANGE ${Option(change.name).getOrElse("")} ${change.definition.getName} ${change.definition.getType} ${Option(change.definition.getDefaultValue).map(x => s"DEFAULT $x").getOrElse("")}"
+          s"ALTER TABLE $newName ADD COLUMN ${add.definition.getName} ${add.definition.getFullType} ${getSigned(add.definition)} ${Option(add.definition.getDefaultValue).map(x => s"DEFAULT $x").getOrElse("")}"
+        case remove: RemoveColumnMod => s"ALTER TABLE $newName DROP COLUMN ${remove.name}"
+        case change: ChangeColumnMod => {
+          val oldColumnName = Option(change.name).flatMap(x => if (x != change.definition.getName) Option(x) else None).getOrElse("")
+          val actionName = if (oldColumnName.isEmpty) "MODIFY" else "CHANGE"
+          s"ALTER TABLE $newName $actionName COLUMN $oldColumnName  ${change.definition.getName} ${change.definition.getFullType} ${getSigned(change.definition)} ${Option(change.definition.getDefaultValue).map(x => s"DEFAULT $x").getOrElse("")}"
+        }
       }
 
     }
@@ -120,7 +137,7 @@ object Parser {
   private def handleCreate(tableCreate: TableCreate): String = {
     lazy val pks = if (tableCreate.pks != null && !tableCreate.pks.isEmpty) tableCreate.pks.asScala.mkString(",") else ""
     lazy val pkGrammar = if (pks.nonEmpty)s""" , PRIMARY KEY ( $pks )""" else ""
-    lazy val fieldGrammar = tableCreate.columns.asScala.map(col => s"${col.getName} ${col.getType} ${Option(col.getDefaultValue).map(x => s"DEFAULT $x").getOrElse("")}").mkString(",")
+    lazy val fieldGrammar = tableCreate.columns.asScala.map(col => s"${col.getName} ${col.getFullType} ${getSigned(col)} ${Option(col.getDefaultValue).map(x => s"DEFAULT $x").getOrElse("")}").mkString(",")
     s"""CREATE TABLE IF NOT EXISTS ${tableCreate.database}.${tableCreate.table}
        (
        $fieldGrammar
@@ -137,18 +154,20 @@ object Parser {
     * @return
     */
   private def handleDrop(tableDrop: TableDrop): String = {
-    s"DROP TABLE IF EXISTS ${tableDrop.database}.${tableDrop.table}"
+    val ifExists = if (tableDrop.ifExists) "IF EXISTS " else ""
+    s"DROP TABLE $ifExists ${tableDrop.database}.${tableDrop.table}"
   }
 
   /**
-    * 解析Ddl sql
+    * 是否需要加unsigned
     *
-    * @param ddlSql     待解析的ddl sql
-    * @param schemaName 库名称
-    * @return SchemaChange
+    * @param columnDef
+    * @return
     */
-  def parse(ddlSql: String, schemaName: String): List[SchemaChange] = {
-    SchemaChange.parse(schemaName, ddlSql).asScala.toList
+  private def getSigned(columnDef: ColumnDef): String = columnDef match {
+    case c: IntColumnDef => if (!c.isSigned) "unsigned" else ""
+    case c: BigIntColumnDef => if (!c.isSigned) "unsigned" else ""
+    case _ => ""
   }
 
 

@@ -54,6 +54,7 @@ final class MysqlTableSchemaHolder(
   /**
     * 处理创建表
     * 支持like 语句
+    * 如果Schema 缓存中存在 key ，则不更新
     *
     * @param create
     */
@@ -66,7 +67,7 @@ final class MysqlTableSchemaHolder(
       if (!JavaCommonUtil.isEmpty(create.likeTable)) tableSchemas = tableSchemas + (key -> tableSchemaFromLikeTable)
       else {
         val columnInfoList = create.columns.asScala.map(_.toEstuaryMysqlColumnInfo).toList
-        EstuaryMysqlTableMeta(dbName, tableName, columnInfoList)
+        tableSchemas = tableSchemas.updated(key, EstuaryMysqlTableMeta(dbName, tableName, columnInfoList))
       }
     }
   }
@@ -88,9 +89,9 @@ final class MysqlTableSchemaHolder(
       mods match {
         case hd :: tl => hd match {
           case add: AddColumnMod => loopBuild(tl, add.definition.toEstuaryMysqlColumnInfo :: acc)
-          case remove: RemoveColumnMod => loopBuild(tl, acc.filter(x => x.name == remove.name))
+          case remove: RemoveColumnMod => loopBuild(tl, acc.filterNot(x => x.name == remove.name))
           case change: ChangeColumnMod => loopBuild(
-            tl, acc.map { column => if (column.name == change.definition.getName) change.definition.toEstuaryMysqlColumnInfo else column })
+            tl, acc.map { column => if (column.name == change.name) change.definition.toEstuaryMysqlColumnInfo else column })
         }
         case Nil => acc
       }
