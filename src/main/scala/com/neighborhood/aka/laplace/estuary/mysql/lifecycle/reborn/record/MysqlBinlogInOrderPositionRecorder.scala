@@ -45,7 +45,7 @@ final class MysqlBinlogInOrderPositionRecorder(
 
 
   override protected def saveOffsetInternal(offset: BinlogPositionInfo): Unit = Try {
-    logger.info(s"start save offset internal,offset:$offset,id:$syncTaskId")
+    log.info(s"start save offset internal,offset:$offset,id:$syncTaskId")
     logPositionHandler.persistLogPosition(destination, offset.toLogPosition)
   }.failed.foreach(e => log.warning(s"cannot save logPosition,cause:$e,message:${e.getMessage},id:$syncTaskId"))
 

@@ -4,6 +4,7 @@ public abstract class ColumnDef {
     protected String name;
     protected String type;
     protected String defaultValue;
+    protected String comment;
 
     protected int pos;
 
@@ -29,7 +30,8 @@ public abstract class ColumnDef {
         return value;
     }
 
-    public static ColumnDef build(String name, String charset, String type, int pos, boolean signed, String enumValues[], Long columnLength) {
+    public static ColumnDef build(String name, String charset, String type, Integer precision, Integer scale,
+                                  int pos, boolean signed, String enumValues[], Long columnLength) {
         switch (type) {
             case "tinyint":
             case "smallint":
@@ -63,9 +65,9 @@ public abstract class ColumnDef {
                 return new GeometryColumnDef(name, type, pos);
             case "float":
             case "double":
-                return new FloatColumnDef(name, type, pos);
+                return new FloatColumnDef(name, type, pos, precision, scale);
             case "decimal":
-                return new DecimalColumnDef(name, type, pos);
+                return new DecimalColumnDef(name, type, pos, precision, scale);
             case "date":
                 return new DateColumnDef(name, type, pos);
             case "datetime":
@@ -177,6 +179,13 @@ public abstract class ColumnDef {
         }
     }
 
+    public String getFullType() {
+        if (this instanceof ColumnDefWithDecimalLength) {
+            return ((ColumnDefWithDecimalLength) this).getTypeWithPrecision();
+        } else return type;
+    }
+
+
     public void setType(String type) {
         this.type = type;
     }
@@ -207,5 +216,13 @@ public abstract class ColumnDef {
 
     public void setPos(int i) {
         this.pos = i;
+    }
+
+    public String getComment() {
+        return comment;
+    }
+
+    public void setComment(String comment) {
+        this.comment = comment;
     }
 }
