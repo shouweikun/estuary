@@ -54,6 +54,7 @@ final class MysqlTableSchemaHolder(
   /**
     * 处理创建表
     * 支持like 语句
+    * 如果Schema 缓存中存在 key ，则不更新
     *
     * @param create
     */
@@ -66,7 +67,7 @@ final class MysqlTableSchemaHolder(
       if (!JavaCommonUtil.isEmpty(create.likeTable)) tableSchemas = tableSchemas + (key -> tableSchemaFromLikeTable)
       else {
         val columnInfoList = create.columns.asScala.map(_.toEstuaryMysqlColumnInfo).toList
-        EstuaryMysqlTableMeta(dbName, tableName, columnInfoList)
+        tableSchemas = tableSchemas.updated(key, EstuaryMysqlTableMeta(dbName, tableName, columnInfoList))
       }
     }
   }

@@ -290,6 +290,6 @@ class Sda4DdlParserTest extends UnitSpec {
     assert(tableDrop.table == "a_map")
     assert(tableDrop.ifExists)
     val ddl = schemaChange.toDdlSql
-    assert(ddl.trim == "DROP TABLE IF EXISTS  a_map.a_map"a)
+    assert(ddl.trim == "DROP TABLE IF EXISTS  a_map.a_map")
   }
 }

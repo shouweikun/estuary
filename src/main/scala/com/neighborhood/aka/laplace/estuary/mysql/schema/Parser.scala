@@ -20,6 +20,15 @@ object Parser {
   private lazy val logger = LoggerFactory.getLogger(Parser.getClass)
 
   /**
+    * 提供隐式转换
+    *
+    * @param schemaChange 生成好的SchemaChange
+    */
+  implicit class SchemaChangeToDdlSqlSyntax(schemaChange: SchemaChange) {
+    def toDdlSql: String = schemaChangeToDdlSql(schemaChange)
+  }
+
+  /**
     * 解析Ddl sql
     *
     * @param ddlSql     待解析的ddl sql
@@ -75,14 +84,6 @@ object Parser {
     re.head
   }
 
-  /**
-    * 提供隐式转换
-    *
-    * @param schemaChange 生成好的SchemaChange
-    */
-  implicit class SchemaChangeToDdlSqlSyntax(schemaChange: SchemaChange) {
-    def toDdlSql: String = schemaChangeToDdlSql(schemaChange)
-  }
 
   /**
     * 从SchemaChange转换成DdlSql
