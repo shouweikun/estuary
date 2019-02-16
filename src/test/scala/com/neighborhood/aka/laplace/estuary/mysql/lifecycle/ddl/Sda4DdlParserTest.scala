@@ -1,12 +1,15 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.ddl
 
 import com.neighborhood.aka.laplace.estuary.UnitSpec
-import com.neighborhood.aka.laplace.estuary.mysql.schema.defs.ddl.{AddColumnMod, ChangeColumnMod, RemoveColumnMod, TableAlter}
+import com.neighborhood.aka.laplace.estuary.mysql.schema.defs.ddl._
 import com.neighborhood.aka.laplace.estuary.mysql.schema.{Parser, SdaSchemaMappingRule}
 import com.neighborhood.aka.laplace.estuary.mysql.schema.Parser.SchemaChangeToDdlSqlSyntax
 
 /**
   * Created by john_liu on 2019/2/14.
+  * 目前完成了
+  * Alter Table
+  * Rename Table
   */
 class Sda4DdlParserTest extends UnitSpec {
 
@@ -26,6 +29,9 @@ class Sda4DdlParserTest extends UnitSpec {
   val renameTable12 = "rename table a to b"
   val renameTable13 = "rename table a.a to b"
   val renameTable14 = "rename table a to a.b"
+  val dropTable15 = "drop table a.a"
+  val dropTable16 = "drop table b"
+  val dropTable17 = "drop table if exists a.a"
   "test 1" should "successfully handle Alter table with column add" in {
     val schemaChange = Parser.parseAndReplace(alterTable1, "a_map", schemaMappingRule)
     assert(schemaChange.isInstanceOf[TableAlter])
@@ -252,5 +258,38 @@ class Sda4DdlParserTest extends UnitSpec {
     assert(tableAlter.columnMods.isEmpty)
     val ddl = schemaChange.toDdlSql
     assert(ddl.trim == "RENAME a_map.a_map TO a_map.b_map;")
+  }
+
+  "test 15" should "successfully handle table drop with full name" in {
+    val schemaChange = Parser.parseAndReplace(dropTable15, "a", schemaMappingRule)
+    assert(schemaChange.isInstanceOf[TableDrop])
+    val tableDrop = schemaChange.asInstanceOf[TableDrop]
+    assert(tableDrop.database == "a_map")
+    assert(tableDrop.table == "a_map")
+    assert(!tableDrop.ifExists)
+    val ddl = schemaChange.toDdlSql
+    assert(ddl.trim == "DROP TABLE  a_map.a_map")
+  }
+
+  "test 16" should "successfully handle table drop only with table name" in {
+    val schemaChange = Parser.parseAndReplace(dropTable16, "a", schemaMappingRule)
+    assert(schemaChange.isInstanceOf[TableDrop])
+    val tableDrop = schemaChange.asInstanceOf[TableDrop]
+    assert(tableDrop.database == "a_map")
+    assert(tableDrop.table == "b_map")
+    assert(!tableDrop.ifExists)
+    val ddl = schemaChange.toDdlSql
+    assert(ddl.trim == "DROP TABLE  a_map.b_map")
+  }
+
+  "test 17" should "successfully handle table drop only with if exists" in {
+    val schemaChange = Parser.parseAndReplace(dropTable17, "a", schemaMappingRule)
+    assert(schemaChange.isInstanceOf[TableDrop])
+    val tableDrop = schemaChange.asInstanceOf[TableDrop]
+    assert(tableDrop.database == "a_map")
+    assert(tableDrop.table == "a_map")
+    assert(tableDrop.ifExists)
+    val ddl = schemaChange.toDdlSql
+    assert(ddl.trim == "DROP TABLE IF EXISTS  a_map.a_map"a)
   }
 }

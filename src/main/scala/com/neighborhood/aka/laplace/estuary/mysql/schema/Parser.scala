@@ -153,7 +153,8 @@ object Parser {
     * @return
     */
   private def handleDrop(tableDrop: TableDrop): String = {
-    s"DROP TABLE IF EXISTS ${tableDrop.database}.${tableDrop.table}"
+    val ifExists = if (tableDrop.ifExists) "IF EXISTS " else ""
+    s"DROP TABLE $ifExists ${tableDrop.database}.${tableDrop.table}"
   }
 
   /**
