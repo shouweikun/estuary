@@ -47,7 +47,7 @@ final class SdaMysqlBinlogInOrderDirectFetcher(
     * @author neighborhood.aka.laplace
     */
   override protected def executeDdl(entry: CanalEntry.Entry): Unit = {
-    assert(CanalEntryTransUtil.isDdl(entry))
+    assert(CanalEntryTransUtil.isDdl(entry)) //确认是ddl
     import com.neighborhood.aka.laplace.estuary.mysql.schema.Parser.SchemaChangeToDdlSqlSyntax
     log.info(s"try to execute ddl:${CanalEntryTransHelper.headerToJson(entry.getHeader)},id:$syncTaskId")
     val ddlSql = CanalEntryTransUtil.parseStoreValue(entry)(syncTaskId).getSql
@@ -57,11 +57,12 @@ final class SdaMysqlBinlogInOrderDirectFetcher(
     val finalDdl = schemaChange.toDdlSql
     taskManager.wait4TheSameCount() //等待执行完毕
     log.info(s"start to execute sda finalDdl:$ddlSql,id:$syncTaskId")
-    Try(sink.insertSql(finalDdl)) match {
+    val execution = Try(sink.insertSql(finalDdl))
+    execution match {
       case Success(_) => log.info(s"ddl:$finalDdl executing success,id:$syncTaskId")
-      case Failure(e) => log.warning(s"ddl:$finalDdl executing failure,e:$e,message:${e.getMessage},id:$syncTaskId")
+      case Failure(e) => log.error(s"ddl:$finalDdl executing failure,e:$e,message:${e.getMessage},id:$syncTaskId")
     }
-    positionRecorder.fold(log.warning(s"can not find position recorder when sending save latest saving offset command,id:$syncTaskId"))(ref => ref ! FetcherMessage(MysqlBinlogInOrderRecorderSaveLatestPosition)) //发送保存命令
+    if (execution.isSuccess) positionRecorder.fold(log.warning(s"can not find position recorder when sending save latest saving offset command,id:$syncTaskId"))(ref => ref ! FetcherMessage(MysqlBinlogInOrderRecorderSaveLatestPosition)) //发送保存命令
   }
 }
 
