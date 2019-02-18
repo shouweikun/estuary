@@ -2,7 +2,7 @@ package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.ddl
 
 import com.neighborhood.aka.laplace.estuary.UnitSpec
 import com.neighborhood.aka.laplace.estuary.mysql.schema.Parser
-import com.neighborhood.aka.laplace.estuary.mysql.schema.tablemeta.MysqlTableSchemaHolder
+import com.neighborhood.aka.laplace.estuary.mysql.schema.tablemeta.{EstuaryMysqlColumnInfo, MysqlTableSchemaHolder}
 
 /**
   * Created by john_liu on 2019/2/16.
@@ -49,6 +49,15 @@ final class SchemaHolderTest extends UnitSpec {
   val drop10Sql = s"drop table $databaseName.$drop10TableName"
   lazy val drop10 = Parser.parse(drop10Sql, databaseName).head
 
+  private def checkSchema(dbName: String, tableName: String, columnList: List[EstuaryMysqlColumnInfo]): Boolean = {
+    Option(schemaHolder)
+      .flatMap(_.getTableMetaByFullName(s"$dbName.$tableName"))
+      .map { tableMeta =>
+        columnList
+          .forall(x => tableMeta.columnInfoMap.contains(x.name))
+      }.getOrElse(false)
+  }
+
 
   "test 1" should "add table schema info into schemaHolder" in {
     schemaHolder.updateTableMeta(create1)
@@ -59,7 +68,7 @@ final class SchemaHolderTest extends UnitSpec {
     assert(tableMeta.columnInfoMap.contains("id"))
   }
 
-  "test 2" should "add table schema info schemaHodler with create if not exists" in {
+  "test 2" should "add table schema info schemaHolder with create if not exists" in {
     schemaHolder.updateTableMeta(create2)
     val tableMetaOption = schemaHolder.getTableMetaByFullName(s"$databaseName.$create2TableName")
     assert(tableMetaOption.isDefined)
@@ -134,5 +143,26 @@ final class SchemaHolderTest extends UnitSpec {
     schemaHolder.updateTableMeta(drop10)
     val tableMetaOption = schemaHolder.getTableMetaByFullName(s"$databaseName.$drop10TableName")
     assert(tableMetaOption.isEmpty)
+  }
+
+  "test 11" should "check schema success " in {
+    schemaHolder.updateTableMeta(create1)
+    val check = checkSchema(databaseName, create1TableName, List(EstuaryMysqlColumnInfo("id", -1, "int")))
+    assert(check)
+  }
+
+  "test 12" should "check schema success though actual field count more than the field list count " in {
+    schemaHolder.updateTableMeta(alter6)
+    val check1 = checkSchema(databaseName, create1TableName, List(EstuaryMysqlColumnInfo("id", -1, "int")))
+    val check2 = checkSchema(databaseName, create1TableName, List(EstuaryMysqlColumnInfo("col1", -1, "int")))
+    assert(check1)
+    assert(check2)
+  }
+
+  "test 13" should "check schema failed" in {
+    val check1 = checkSchema(databaseName, create1TableName, List(EstuaryMysqlColumnInfo("id1", -1, "int")))
+    val check2 = checkSchema(databaseName, create1TableName, List(EstuaryMysqlColumnInfo("col2", -1, "int")))
+    assert(!check1)
+    assert(!check2)
   }
 }
