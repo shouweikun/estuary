@@ -76,7 +76,8 @@ abstract class KafkaSinkFunc[K, V](kafkaBean: KafkaBean[K, V]) extends SinkFunc 
     *
     * @param promise 使用promise 封装
     */
-  private class defaultCallback(promise: Promise[RecordMetadata]) extends Callback {
+
+  protected class defaultCallback(promise: Promise[RecordMetadata]) extends Callback {
     override def onCompletion(metadata: RecordMetadata, exception: Exception): Unit = {
       if (exception == null) {
         promise.success(metadata)
