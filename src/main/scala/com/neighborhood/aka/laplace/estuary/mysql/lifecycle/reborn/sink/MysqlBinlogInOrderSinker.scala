@@ -1,6 +1,7 @@
 package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink
 
-import akka.actor.Props
+import akka.actor.SupervisorStrategy.Escalate
+import akka.actor.{OneForOneStrategy, Props}
 import com.neighborhood.aka.laplace.estuary.bean.exception.other.WorkerInitialFailureException
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.SinkerMessage
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.SourceDataSinkerPrototype
@@ -83,6 +84,23 @@ abstract class MysqlBinlogInOrderSinker[B <: SinkFunc, R: ClassTag](
     */
   protected def sendCost(cost: => Long): Unit = if (isCosting) this.powerAdapter.fold(log.warning(s"cannot find powerAdapter when sinker sending cost,id:$syncTaskId"))(ref => ref ! SinkerMessage(MysqlBinlogInOrderPowerAdapterUpdateCost(cost)))
 
+
+  override def supervisorStrategy = {
+    OneForOneStrategy() {
+      case e: Exception => {
+        log.error(s"sinker crashed,exception:$e,cause:${e.getCause},processing SupervisorStrategy,id:$syncTaskId")
+        Escalate
+      }
+      case error: Error => {
+        log.error(s"sinker crashed,error:$error,cause:${error.getCause},processing SupervisorStrategy,id:$syncTaskId")
+        Escalate
+      }
+      case e => {
+        log.error(s"sinker crashed,throwable:$e,cause:${e.getCause},processing SupervisorStrategy,id:$syncTaskId")
+        Escalate
+      }
+    }
+  }
 }
 
 object MysqlBinlogInOrderSinker {
