@@ -5,11 +5,11 @@ import java.util.concurrent.atomic.AtomicLong
 
 import akka.routing.ConsistentHashingRouter.ConsistentHashable
 import com.alibaba.otter.canal.protocol.CanalEntry
-import com.alibaba.otter.canal.protocol.CanalEntry.{EventType, RowData}
+import com.alibaba.otter.canal.protocol.CanalEntry.RowData
 import com.alibaba.otter.canal.protocol.position.{EntryPosition, LogPosition}
 import com.neighborhood.aka.laplace.estuary.bean.key.PartitionStrategy
 import com.neighborhood.aka.laplace.estuary.core.offset.ComparableOffset
-import scala.collection.mutable
+
 import scala.util.Try
 
 /**
@@ -19,6 +19,9 @@ package object lifecycle {
   private lazy val syncSequence4EntryClassifier = new AtomicLong(1)
 
   final case class BinlogPositionInfo(journalName: String, offset: Long, timestamp: Long = 0) extends ComparableOffset[BinlogPositionInfo] {
+
+    val createTime = System.currentTimeMillis()
+
     override def equals(obj: scala.Any): Boolean = {
       if (!obj.isInstanceOf[BinlogPositionInfo]) false else {
         lazy val theObj = obj.asInstanceOf[BinlogPositionInfo]

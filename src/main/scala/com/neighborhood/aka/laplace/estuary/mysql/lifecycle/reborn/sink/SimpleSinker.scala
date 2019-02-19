@@ -96,24 +96,27 @@ final private[sink] class SimpleSinker(
           (e.getSuppressed.exists(x => x.isInstanceOf[com.mysql.jdbc.exceptions.jdbc4.MySQLSyntaxErrorException]))
     }.getOrElse(false) //对于表不存在的情况，不予计数
     if (!isNoCountError) errorCount = errorCount + 1 //错误次数+1
-    binlogPositionInfo.fold {
-      throw new SinkerAbnormalException(s"fatal,sinker process error,besides the binlogPositionInfo is null,IMPOSSIBLE,plz check,id:$syncTaskId")
-    } {
-      info => positionRecorder.fold(log.error(s"cannot find positionRecorder when sinker$num throw error,id:$syncTaskId"))(ref => ref ! SinkerMessage(MysqlBinlogInOrderRecorderEnsurePosition(info)))
-    }
-    if (errorCount > errorCountThreshold) {
-      positionRecorder.fold(log.error(s"cannot find positionRecorder when sinker$num throw error,id:$syncTaskId")) {
-        ref => ref ! SinkerMessage(MysqlInOrderSinkerGetAbnormal(e, binlogPositionInfo))
+    binlogPositionInfo.foreach { info =>
+      lazy val curr = System.currentTimeMillis()
+      val timeout = curr - info.timestamp > 2 * 60 * 1000 && binlogPositionInfo.map(_.timestamp).map(ts => curr - ts > 2 * 60 * 1000).getOrElse(true)
+      binlogPositionInfo.fold {
+        throw new SinkerAbnormalException(s"fatal,sinker process error,besides the binlogPositionInfo is null,IMPOSSIBLE,plz check,id:$syncTaskId")
+      } {
+        info => positionRecorder.fold(log.error(s"cannot find positionRecorder when sinker$num throw error,id:$syncTaskId"))(ref => ref ! SinkerMessage(MysqlBinlogInOrderRecorderEnsurePosition(info)))
       }
-      context.become(error, true)
-    } else {
-      Thread.sleep(SettingConstant.FAILURE_RETRY_BACKOFF)
-      if (handleSinkTask(message.msg.asInstanceOf[SqlList]).isFailure) processError(e, message)
-      else errorCount = 0
+      if (errorCount > errorCountThreshold || timeout) {
+        positionRecorder.fold(log.error(s"cannot find positionRecorder when sinker$num throw error,id:$syncTaskId")) {
+          ref => ref ! SinkerMessage(MysqlInOrderSinkerGetAbnormal(e, binlogPositionInfo))
+        }
+        context.become(error, true)
+      } else {
+        Thread.sleep(SettingConstant.FAILURE_RETRY_BACKOFF)
+        if (handleSinkTask(message.msg.asInstanceOf[SqlList]).isFailure) processError(e, message)
+        else errorCount = 0
+      }
     }
   }
-}
 
-object SimpleSinker {
-  def props(taskManager: MysqlSinkManagerImp with TaskManager, num: Int): Props = Props(new SimpleSinker(taskManager, num))
-}
+  object SimpleSinker {
+    def props(taskManager: MysqlSinkManagerImp with TaskManager, num: Int): Props = Props(new SimpleSinker(taskManager, num))
+  }
