@@ -51,8 +51,8 @@ final class MysqlTableSchemaHolder(
     */
   def updateTableMeta(schemaChange: SchemaChange, sinkFunc: MysqlSinkFunc): Unit = {
     schemaChange match {
-      case tableAlter: TableAlter => handleTableAlter(tableAlter)
-      case tableCreate: TableCreate => handleTableCreate(tableCreate)
+      case tableAlter: TableAlter => handleTableAlter(tableAlter,Option(sinkFunc))
+      case tableCreate: TableCreate => handleTableCreate(tableCreate,Option(sinkFunc))
       case tableTruncate: TableTruncate => //do nothing
       case tableDrop: TableDrop => handleTableDrop(tableDrop)
       case _ => //do nothing
