@@ -135,10 +135,15 @@ object Parser {
     * @return ddl sql string
     */
   private def handleCreate(tableCreate: TableCreate): String = {
+    lazy val ifNotExists: String = if (tableCreate.ifNotExists) "IF NOT EXISTS" else ""
     lazy val pks = if (tableCreate.pks != null && !tableCreate.pks.isEmpty) tableCreate.pks.asScala.mkString(",") else ""
     lazy val pkGrammar = if (pks.nonEmpty)s""" , PRIMARY KEY ( $pks )""" else ""
-    lazy val fieldGrammar = tableCreate.columns.asScala.map(col => s"${col.getName} ${col.getFullType} ${getSigned(col)} ${Option(col.getDefaultValue).map(x => s"DEFAULT $x").getOrElse("")}").mkString(",")
-    s"""CREATE TABLE IF NOT EXISTS ${tableCreate.database}.${tableCreate.table}
+    lazy val fieldGrammar = tableCreate
+      .columns
+      .asScala
+      .map { col => s"${col.getName} ${col.getFullType} ${getSigned(col)} ${Option(col.getDefaultValue).map(x => s"DEFAULT $x").getOrElse("")}"
+      }.mkString(",")
+    s"""CREATE TABLE $ifNotExists ${tableCreate.database}.${tableCreate.table}
        (
        $fieldGrammar
        ${pkGrammar}
