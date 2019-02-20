@@ -334,6 +334,11 @@
             <artifactId>spring-core</artifactId>
             <version>4.3.13.RELEASE</version>
         </dependency>
+        <dependency>
+            <groupId>org.scala-lang.modules</groupId>
+            <artifactId>scala-java8-compat_2.11</artifactId>
+            <version>0.8.0</version>
+        </dependency>
         <!--start scalatest-->
         <!--<dependency>-->
         <!--<groupId>com.finup.cif</groupId>-->

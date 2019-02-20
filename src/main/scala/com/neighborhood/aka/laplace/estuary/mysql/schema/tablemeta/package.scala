@@ -26,7 +26,7 @@ package object tablemeta {
     * @param tableName  表名称
     * @param columns    列
     */
-  final case class EstuaryMysqlTableMeta(schemaName: String, tableName: String, columns: List[EstuaryMysqlColumnInfo]) {
+  final case class EstuaryMysqlTableMeta(schemaName: String, tableName: String, columns: List[EstuaryMysqlColumnInfo],   createTableSql: Option[String] = None) {
     val columnNum = columns.size
     val columnInfoMap = columns.map(x => (x.name -> x)).toMap
   }

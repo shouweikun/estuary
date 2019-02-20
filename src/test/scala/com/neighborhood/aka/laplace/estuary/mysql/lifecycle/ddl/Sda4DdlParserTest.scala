@@ -4,6 +4,7 @@ import com.neighborhood.aka.laplace.estuary.UnitSpec
 import com.neighborhood.aka.laplace.estuary.mysql.schema.defs.ddl._
 import com.neighborhood.aka.laplace.estuary.mysql.schema.{Parser, SdaSchemaMappingRule}
 import com.neighborhood.aka.laplace.estuary.mysql.schema.Parser.SchemaChangeToDdlSqlSyntax
+import scala.collection.JavaConverters._
 
 /**
   * Created by john_liu on 2019/2/14.
@@ -32,6 +33,22 @@ class Sda4DdlParserTest extends UnitSpec {
   val dropTable15 = "drop table a.a"
   val dropTable16 = "drop table b"
   val dropTable17 = "drop table if exists a.a"
+  val createTable18 =
+    """create table a.a(
+         tutorial_id INT NOT NULL AUTO_INCREMENT,
+         tutorial_title VARCHAR(100) NOT NULL,
+       tutorial_author VARCHAR(40) NOT NULL,
+         submission_date DATE,
+         PRIMARY KEY ( tutorial_id )
+      );""".stripMargin
+  val createTable19 =
+    """create table a(
+         tutorial_id INT NOT NULL AUTO_INCREMENT,
+         tutorial_title VARCHAR(100) NOT NULL,
+       tutorial_author VARCHAR(40) NOT NULL,
+         submission_date DATE,
+         PRIMARY KEY ( tutorial_id )
+      );""".stripMargin
   "test 1" should "successfully handle Alter table with column add" in {
     val schemaChange = Parser.parseAndReplace(alterTable1, "a_map", schemaMappingRule)
     assert(schemaChange.isInstanceOf[TableAlter])
@@ -144,11 +161,11 @@ class Sda4DdlParserTest extends UnitSpec {
     assert(changeColumnMod.name == "foo")
     assert(changeColumnMod.definition.getName == "bar")
     assert(changeColumnMod.definition.getType == "varchar")
-    assert(changeColumnMod.definition.getFullType == "varchar")
+    assert(changeColumnMod.definition.getFullType == "varchar(255)")
     assert(changeColumnMod.definition.getDefaultValue == "'foo'")
     assert(changeColumnMod.definition.getComment == "c")
     val ddl = schemaChange.toDdlSql
-    assert(ddl.trim == "ALTER TABLE a_map.a_map CHANGE COLUMN foo  bar varchar  DEFAULT 'foo'")
+    assert(ddl.trim == "ALTER TABLE a_map.a_map CHANGE COLUMN foo  bar varchar(255)  DEFAULT 'foo'")
   }
 
   "test 8" should "successfully handle table alter with column change" in {
@@ -163,11 +180,11 @@ class Sda4DdlParserTest extends UnitSpec {
     assert(changeColumnMod.name == "bar")
     assert(changeColumnMod.definition.getName == "bar")
     assert(changeColumnMod.definition.getType == "varchar")
-    assert(changeColumnMod.definition.getFullType == "varchar")
+    assert(changeColumnMod.definition.getFullType == "varchar(255)")
     assert(changeColumnMod.definition.getDefaultValue == "'foo'")
     assert(changeColumnMod.definition.getComment == "c")
     val ddl = schemaChange.toDdlSql
-    assert(ddl.trim == "ALTER TABLE a_map.a_map MODIFY COLUMN   bar varchar  DEFAULT 'foo'")
+    assert(ddl.trim == "ALTER TABLE a_map.a_map MODIFY COLUMN   bar varchar(255)  DEFAULT 'foo'")
   }
 
   "test 9" should "successfully handle table alter with column change" in {
@@ -291,5 +308,44 @@ class Sda4DdlParserTest extends UnitSpec {
     assert(tableDrop.ifExists)
     val ddl = schemaChange.toDdlSql
     assert(ddl.trim == "DROP TABLE IF EXISTS  a_map.a_map")
+  }
+
+  "test 18" should "successfully handle table create with full name" in {
+    val schemaChange = Parser.parseAndReplace(createTable18, "a", schemaMappingRule)
+    assert(schemaChange.isInstanceOf[TableCreate])
+    val tableCreate = schemaChange.asInstanceOf[TableCreate]
+    assert(tableCreate.database == "a_map")
+    assert(tableCreate.table == "a_map")
+    assert(tableCreate.ifNotExists == false)
+    val cols = tableCreate.columns.asScala.map(_.getName).toSet
+    assert(cols.size == 4)
+    assert(cols.contains("tutorial_id"))
+    assert(cols.contains("tutorial_title"))
+    assert(cols.contains("submission_date"))
+    assert(cols.contains("tutorial_author"))
+    assert(tableCreate.pks.size == 1)
+    assert(tableCreate.pks.get(0) == "tutorial_id")
+    assert(tableCreate.likeDB == null)
+    assert(tableCreate.likeTable == null)
+  }
+
+
+  "test 19" should "successfully handle table create with table name" in {
+    val schemaChange = Parser.parseAndReplace(createTable18, "a", schemaMappingRule)
+    assert(schemaChange.isInstanceOf[TableCreate])
+    val tableCreate = schemaChange.asInstanceOf[TableCreate]
+    assert(tableCreate.database == "a_map")
+    assert(tableCreate.table == "a_map")
+    assert(tableCreate.ifNotExists == false)
+    val cols = tableCreate.columns.asScala.map(_.getName).toSet
+    assert(cols.size == 4)
+    assert(cols.contains("tutorial_id"))
+    assert(cols.contains("tutorial_title"))
+    assert(cols.contains("submission_date"))
+    assert(cols.contains("tutorial_author"))
+    assert(tableCreate.pks.size == 1)
+    assert(tableCreate.pks.get(0) == "tutorial_id")
+    assert(tableCreate.likeDB == null)
+    assert(tableCreate.likeTable == null)
   }
 }

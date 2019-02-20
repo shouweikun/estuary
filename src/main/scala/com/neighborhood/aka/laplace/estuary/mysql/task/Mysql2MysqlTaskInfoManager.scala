@@ -206,12 +206,7 @@ final class Mysql2MysqlTaskInfoManager(
   def buildMysqlTableSchemaHolderFromSink: MysqlTableSchemaHolder = {
     //这么做的理由是获取sink端的databaseName,防止由于source 和sink tableName对应不上的问题
     val dbs = concernedDatabase.map(x => Option(tableMappingRule).flatMap(_.getDatabaseMappingName(x)).getOrElse(x)) //如果匹配不到sda的，就使用原来的
-      .map(x => s"'$x'")
-      .mkString(",")
-
-    val sql = s"select a.TABLE_SCHEMA, a.TABLE_NAME,b.COLUMN_NAME,b.DATA_TYPE,b.ORDINAL_POSITION from INFORMATION_SCHEMA.TABLES a join INFORMATION_SCHEMA.COLUMNS b ON (a.TABLE_NAME = b.TABLE_NAME) where a.TABLE_SCHEMA in ( $dbs )"
-    val map = sink
-      .queryAsScalaList(sql).map {
+    val map = MysqlTableSchemaHolder.getTableSchemasByDbName(dbs, sink).map {
       x =>
         val columnName = x("COLUMN_NAME".toLowerCase).toString
         val mysqlType = x("DATA_TYPE".toLowerCase).toString
@@ -221,7 +216,8 @@ final class Mysql2MysqlTaskInfoManager(
       .map {
       case (fullName, columns) => fullName -> EstuaryMysqlTableMeta(fullName.split('.')(0), fullName.split('.')(1), columns.map(_._2))
     }
-    new MysqlTableSchemaHolder(map)
+    val createSqlMap = map.mapValues { tableMeta => tableMeta.copy(createTableSql = MysqlTableSchemaHolder.getCreateTableSql(tableMeta.schemaName, tableMeta.tableName, sink)) }
+    new MysqlTableSchemaHolder(createSqlMap)
   }
 
   /**

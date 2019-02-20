@@ -180,6 +180,8 @@ public abstract class ColumnDef {
     }
 
     public String getFullType() {
+        final String type = getType();
+        if(  type.equals("varchar")) return "varchar(255)";
         if (this instanceof ColumnDefWithDecimalLength) {
             return ((ColumnDefWithDecimalLength) this).getTypeWithPrecision();
         } else return type;
