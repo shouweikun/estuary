@@ -1,11 +1,14 @@
 package com.neighborhood.aka.laplace.estuary.mysql.schema
 
 import com.neighborhood.aka.laplace.estuary.bean.exception.schema.InvalidDdlException
+import com.neighborhood.aka.laplace.estuary.core.sink.mysql.MysqlSinkFunc
 import com.neighborhood.aka.laplace.estuary.core.util.JavaCommonUtil
 import com.neighborhood.aka.laplace.estuary.mysql.schema.defs.columndef.{BigIntColumnDef, ColumnDef, IntColumnDef}
 import com.neighborhood.aka.laplace.estuary.mysql.schema.defs.ddl._
+import com.neighborhood.aka.laplace.estuary.mysql.schema.tablemeta.MysqlTableSchemaHolder
 import org.slf4j.LoggerFactory
 
+import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 
 /**
@@ -26,6 +29,8 @@ object Parser {
     */
   implicit class SchemaChangeToDdlSqlSyntax(schemaChange: SchemaChange) {
     def toDdlSql: String = schemaChangeToDdlSql(schemaChange)
+
+    def toDdlSqlWithSink(sink: => Option[MysqlSinkFunc] = None): String = schemaChangeToDdlSql(schemaChange, sink)
   }
 
   /**
@@ -65,7 +70,8 @@ object Parser {
         alter.newTableName = newTableName
       }
       case create: TableCreate => {
-        if (!JavaCommonUtil.isEmpty(create.likeDB) && !JavaCommonUtil.isEmpty(create.likeTable)) {
+        if (!JavaCommonUtil.isEmpty(create.likeTable)) {
+          if (JavaCommonUtil.isEmpty(create.likeDB)) create.likeDB = defaultSchemaName //强行defaultSchemaName
           val (likeDB, likeTable) = tableMappingRule.getMappingName(create.likeDB, create.likeTable)
           create.likeDB = likeDB
           create.likeTable = likeTable
@@ -91,10 +97,10 @@ object Parser {
     * @param schemaChange schemaChange
     * @return ddl sql String
     */
-  def schemaChangeToDdlSql(schemaChange: SchemaChange): String = {
+  def schemaChangeToDdlSql(schemaChange: SchemaChange, sink: => Option[MysqlSinkFunc] = None): String = {
     schemaChange match {
       case tableAlter: TableAlter => handleAlter(tableAlter)
-      case tableCreate: TableCreate => handleCreate(tableCreate)
+      case tableCreate: TableCreate => handleCreate(tableCreate, sink)
       case tableDrop: TableDrop => handleDrop(tableDrop)
       case _ => throw new UnsupportedOperationException(s"do not support $schemaChange for now")
     }
@@ -134,22 +140,28 @@ object Parser {
     * @param tableCreate 创建表语句-> ddl sql
     * @return ddl sql string
     */
-  private def handleCreate(tableCreate: TableCreate): String = {
-    lazy val ifNotExists: String = if (tableCreate.ifNotExists) "IF NOT EXISTS" else ""
-    lazy val pks = if (tableCreate.pks != null && !tableCreate.pks.isEmpty) tableCreate.pks.asScala.mkString(",") else ""
-    lazy val pkGrammar = if (pks.nonEmpty)s""" , PRIMARY KEY ( $pks )""" else ""
-    lazy val fieldGrammar = tableCreate
-      .columns
-      .asScala
-      .map { col => s"${col.getName} ${col.getFullType} ${getSigned(col)} ${Option(col.getDefaultValue).map(x => s"DEFAULT $x").getOrElse("")}"
-      }.mkString(",")
-    s"""CREATE TABLE $ifNotExists ${tableCreate.database}.${tableCreate.table}
+  @tailrec
+  private def handleCreate(tableCreate: TableCreate, sink: => Option[MysqlSinkFunc] = None): String = {
+    if (!JavaCommonUtil.isEmpty(tableCreate.likeTable)) {
+      val likeTableCreate = MysqlTableSchemaHolder.getCreateTableSql(tableCreate.likeDB, tableCreate.likeTable, sink.get).get
+      val tc = parse(likeTableCreate, tableCreate.likeDB).head.asInstanceOf[TableCreate]
+      handleCreate(tc) //处理like情况
+    } else {
+      lazy val ifNotExists: String = if (tableCreate.ifNotExists) "IF NOT EXISTS" else ""
+      lazy val pks = if (tableCreate.pks != null && !tableCreate.pks.isEmpty) tableCreate.pks.asScala.mkString(",") else ""
+      lazy val pkGrammar = if (pks.nonEmpty)s""" , PRIMARY KEY ( $pks )""" else ""
+      lazy val fieldGrammar = tableCreate
+        .columns
+        .asScala
+        .map { col => s"${col.getName} ${col.getFullType} ${getSigned(col)} ${Option(col.getDefaultValue).map(x => s"DEFAULT $x").getOrElse("")}"
+        }.mkString(",")
+      s"""CREATE TABLE $ifNotExists ${tableCreate.database}.${tableCreate.table}
        (
        $fieldGrammar
        ${pkGrammar}
        )ENGINE=InnoDB DEFAULT CHARSET=utf8
      """.stripMargin
-
+    }
   }
 
   /**
