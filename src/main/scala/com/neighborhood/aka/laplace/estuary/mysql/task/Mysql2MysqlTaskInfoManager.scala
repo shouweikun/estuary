@@ -11,6 +11,7 @@ import com.neighborhood.aka.laplace.estuary.mysql.schema.tablemeta.{EstuaryMysql
 import com.neighborhood.aka.laplace.estuary.mysql.sink.{MysqlSinkBeanImp, MysqlSinkManagerImp}
 import com.neighborhood.aka.laplace.estuary.mysql.source.{MysqlSourceBeanImp, MysqlSourceManagerImp}
 import com.typesafe.config.Config
+import org.slf4j.LoggerFactory
 
 import scala.util.Try
 
@@ -24,6 +25,8 @@ final class Mysql2MysqlTaskInfoManager(
                                         taskInfoBean: Mysql2MysqlTaskInfoBean,
                                         _config: Config
                                       ) extends MysqlSinkManagerImp with MysqlSourceManagerImp with TaskManager {
+
+  override protected lazy val logger = LoggerFactory.getLogger(classOf[Mysql2MysqlTaskInfoManager])
   /**
     * 传入的配置
     *
@@ -181,7 +184,10 @@ final class Mysql2MysqlTaskInfoManager(
   /**
     * sda专用属性,table对应规则
     */
-  lazy val tableMappingRule: SdaSchemaMappingRule = new SdaSchemaMappingRule(taskInfo.sdaBean.map(_.tableMappingRule).getOrElse(Map.empty))
+  lazy val tableMappingRule: SdaSchemaMappingRule = {
+    logger.info(s"start to build tableMapping rule,id:$syncTaskId")
+    new SdaSchemaMappingRule(taskInfo.sdaBean.map(_.tableMappingRule).getOrElse(Map.empty))
+  }
 
 
   /**
@@ -194,8 +200,12 @@ final class Mysql2MysqlTaskInfoManager(
     * 初始化/启动
     */
   override def start: Unit = {
+    logger.info(s"mysql 2 mysql task manager  processing start ,id:$syncTaskId")
+    startSink
+    startSource
     tableMappingRule
     sinkMysqlTableSchemaHolder
+    batchMappingFormat
   }
 
   /**
@@ -203,6 +213,7 @@ final class Mysql2MysqlTaskInfoManager(
     * 当与资源管理器eg:SinkManager和SourceManager绑定时，将资源关闭交给这个方法
     */
   override def close: Unit = Try {
+    logger.info(s"mysql 2 mysql task manager processing start,id:$syncTaskId")
     closeSource
     closeSink
   }
@@ -213,9 +224,10 @@ final class Mysql2MysqlTaskInfoManager(
     * @return
     */
   def buildMysqlTableSchemaHolderFromSink: MysqlTableSchemaHolder = {
+    logger.info(s"start to build table schema holder,id:$syncTaskId")
     //这么做的理由是获取sink端的databaseName,防止由于source 和sink tableName对应不上的问题
     val dbs = concernedDatabase.map(x => Option(tableMappingRule).flatMap(_.getDatabaseMappingName(x)).getOrElse(x)) //如果匹配不到sda的，就使用原来的
-    val map = MysqlTableSchemaHolder.getTableSchemasByDbName(dbs, sink).map {
+    val createSqlMap = MysqlTableSchemaHolder.getTableSchemasByDbName(dbs, sink).map {
       x =>
         val columnName = x("COLUMN_NAME".toLowerCase).toString
         val mysqlType = x("DATA_TYPE".toLowerCase).toString
@@ -224,8 +236,10 @@ final class Mysql2MysqlTaskInfoManager(
     }.groupBy(x => x._1) //聚类
       .map {
       case (fullName, columns) => fullName -> EstuaryMysqlTableMeta(fullName.split('.')(0), fullName.split('.')(1), columns.map(_._2))
+    }.map { case (tableName, tableMeta) =>
+      val sql = MysqlTableSchemaHolder.getCreateTableSql(tableMeta.schemaName, tableMeta.tableName, sink)
+      (tableName -> tableMeta.copy(createTableSql = sql))
     }
-    val createSqlMap = map.mapValues { tableMeta => tableMeta.copy(createTableSql = MysqlTableSchemaHolder.getCreateTableSql(tableMeta.schemaName, tableMeta.tableName, sink)) }
     new MysqlTableSchemaHolder(createSqlMap)
   }
 

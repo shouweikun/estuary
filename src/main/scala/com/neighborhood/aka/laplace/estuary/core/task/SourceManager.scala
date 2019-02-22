@@ -29,7 +29,14 @@ trait SourceManager[S <: DataSourceConnection] {
   def buildSource: S
 
   /**
+    * 开始,默认是开始
+    */
+  def startSource: Unit = source.connect()
+
+  /**
     * 停止所有资源
     */
-  def closeSource:Unit = Try{if(source.isConnected)source.disconnect()}
+  def closeSource: Unit = Try {
+    if (source.isConnected) source.disconnect()
+  }
 }

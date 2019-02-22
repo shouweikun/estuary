@@ -6,6 +6,8 @@ import com.neighborhood.aka.laplace.estuary.core.task.SinkManager
 
 /**
   * Created by john_liu on 2019/1/15.
+  *
+  * @author neighborhood.aka.laplace
   */
 trait MysqlSinkManagerImp extends SinkManager[MysqlSinkFunc] {
   /**
