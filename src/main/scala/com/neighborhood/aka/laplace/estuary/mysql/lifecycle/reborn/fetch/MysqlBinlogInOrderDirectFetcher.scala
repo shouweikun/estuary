@@ -308,7 +308,8 @@ abstract class MysqlBinlogInOrderDirectFetcher(
     */
   private def sendDataTask(entry: => CanalEntry.Entry, cost: Long): Unit = {
     if (CanalEntryTransUtil.isDdl(entry)) {
-      if (isNeedExecuteDDl) executeDdl(entry)
+      if (isNeedExecuteDDl)
+        executeDdl(entry)
     }
     else {
       sendEntry(entry)

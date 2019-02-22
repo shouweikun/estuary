@@ -118,7 +118,8 @@ trait CanalEntry2RowDataInfoMappingFormat extends CanalEntryMappingFormat[MysqlR
     //EstuaryMysqlColumnInfo的list 方便值比较
     val estuaryColumnInfoList = columnList.map(_.toEstuaryMysqlColumnInfo)
     val sql: List[String] = if (!checkSchema(dbName, tableName, estuaryColumnInfoList)) {
-      logger.warn(s"check schema failed,entry:${CanalEntryTransHelper.entryToJson(entry)},id:$syncTaskId")
+     // logger.warn(s"check schema failed,entry:${CanalEntryTransHelper.headerToJson(entry.getHeader)},id:$syncTaskId")
+      println("f")
       List.empty //返回空字符串
     }
     else dmlType match {
