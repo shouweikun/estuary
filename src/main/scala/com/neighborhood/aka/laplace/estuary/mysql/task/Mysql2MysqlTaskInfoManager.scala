@@ -189,6 +189,15 @@ final class Mysql2MysqlTaskInfoManager(
     */
   lazy val sinkMysqlTableSchemaHolder: MysqlTableSchemaHolder = buildMysqlTableSchemaHolderFromSink
 
+
+  /**
+    * 初始化/启动
+    */
+  override def start: Unit = {
+    tableMappingRule
+    sinkMysqlTableSchemaHolder
+  }
+
   /**
     * 关闭
     * 当与资源管理器eg:SinkManager和SourceManager绑定时，将资源关闭交给这个方法
