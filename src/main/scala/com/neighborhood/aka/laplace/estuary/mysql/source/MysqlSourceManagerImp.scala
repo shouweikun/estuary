@@ -9,13 +9,18 @@ import com.alibaba.otter.canal.protocol.position.EntryPosition
 import com.neighborhood.aka.laplace.estuary.core.task.SourceManager
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.fetch.{FetchContextInitializer, FetchEntryHandler}
 import com.neighborhood.aka.laplace.estuary.mysql.utils.{LogPositionHandler, MysqlBinlogParser}
+import org.slf4j.LoggerFactory
 
 import scala.util.Try
 
 /**
   * Created by john_liu on 2019/1/10.
+  *
+  * @author neighborhood.aka.laplace
+  * @note 增加新资源，一定要在开始方法里面添加
   */
 trait MysqlSourceManagerImp extends SourceManager[MysqlConnection] {
+  protected lazy val logger = LoggerFactory.getLogger(classOf[MysqlSourceManagerImp])
 
   /**
     * 每次打包大小
@@ -89,7 +94,6 @@ trait MysqlSourceManagerImp extends SourceManager[MysqlConnection] {
     * 是否需要执行ddl
     */
   def isNeedExecuteDDL: Boolean
-
 
 
   def binlogParser: MysqlBinlogParser = binlogParser_
@@ -181,6 +185,17 @@ trait MysqlSourceManagerImp extends SourceManager[MysqlConnection] {
     if (source.isConnected) source.disconnect()
     if (binlogParser.isStart) binlogParser.stop()
     if (logPositionHandler.isStart) logPositionHandler.close()
+  }
+
+  /**
+    * 开始
+    */
+  override def startSource = {
+    logger.info(s"start source,id:$syncTaskId")
+    source
+    binlogParser.start()
+    logPositionHandler.start()
+    fetchContextInitializer
   }
 }
 

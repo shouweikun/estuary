@@ -37,14 +37,16 @@ class LogPositionHandler(
                         ) extends PositionHandler[EntryPosition] {
   val logger = LoggerFactory.getLogger(classOf[LogPositionHandler])
   private val logPositionManager = manager
-  manager.start()
 
-  def isStart:Boolean = manager.isStart
-  def close():Unit = manager.stop()
+  def start() = manager.start()
+
+  def isStart: Boolean = manager.isStart
+
+  def close(): Unit = manager.stop()
+
   /**
     *
     * @param destination 其实就是taskid 作为zk记录的标识
-    *
     * @return 保存的zk
     */
   def getLatestIndexBy(destination: String = this.destination): LogPosition = manager.getLatestIndexBy(destination)
