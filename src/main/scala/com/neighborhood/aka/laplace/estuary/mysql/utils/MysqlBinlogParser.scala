@@ -10,7 +10,7 @@ import com.taobao.tddl.dbsync.binlog.LogEvent
 final class MysqlBinlogParser extends LogEventConvert {
 
   private var filterTimestamp: Long = 0
-   start()
+
 
   def parse(eventOption: Option[LogEvent]): Option[CanalEntry.Entry] = eventOption.flatMap {
     event =>
