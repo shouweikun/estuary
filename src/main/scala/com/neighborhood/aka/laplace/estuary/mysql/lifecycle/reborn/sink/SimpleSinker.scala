@@ -87,8 +87,9 @@ final private[sink] class SimpleSinker(
     */
   @tailrec
   override def processError(e: Throwable, message: lifecycle.WorkerMessage): Unit = {
-    log.error(s"sink throws error:$e,${e.getCause}.${e.getMessage},id:$syncTaskId")
-    lazy val binlogPositionInfo: Option[BinlogPositionInfo] = message.msg.asInstanceOf[SqlList].binlogPositionInfo
+    val sqlList = message.msg.asInstanceOf[SqlList]
+    log.error(s"sinker throws error:$e,${e.getCause}.${e.getMessage},sqlList:$sqlList,id:$syncTaskId")
+    lazy val binlogPositionInfo: Option[BinlogPositionInfo] = sqlList.binlogPositionInfo
     val timeout = binlogPositionInfo.map { info =>
       lazy val curr = System.currentTimeMillis()
       curr - info.timestamp > 2 * 60 * 1000 && binlogPositionInfo.map(_.timestamp).map(ts => curr - ts > 2 * 60 * 1000).getOrElse(true)
