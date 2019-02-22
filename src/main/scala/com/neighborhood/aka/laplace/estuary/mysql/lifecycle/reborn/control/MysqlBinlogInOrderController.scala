@@ -394,6 +394,7 @@ abstract class MysqlBinlogInOrderController[B <: SinkFunc](override val taskBean
     controllerChangeStatus(Status.OFFLINE)
     log.info(s"start init all workers,id:$syncTaskId")
     initWorkers
+    taskManager.start
     TaskManager.putTaskManager(syncTaskId, taskManager)
   }
 
