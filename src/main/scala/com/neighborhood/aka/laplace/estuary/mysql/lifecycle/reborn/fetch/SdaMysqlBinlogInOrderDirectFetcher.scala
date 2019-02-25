@@ -60,8 +60,43 @@ final class SdaMysqlBinlogInOrderDirectFetcher(
     log.info(s"start to execute sda finalDdl:$ddlSql,id:$syncTaskId")
     val execution = Try(sink.insertSql(finalDdl))
     execution match {
-      case Success(_) => log.info(s"ddl:$finalDdl executing success,id:$syncTaskId")
-      case Failure(e) => log.error(s"ddl:$finalDdl executing failure,e:$e,message:${e.getMessage},id:$syncTaskId")
+      case Success(_) => log.info(
+        s"""
+           |
+           |
+           |
+           |
+           |
+           |
+           |
+           |
+           |
+           |ddl:$finalDdl executing success,id:$syncTaskId
+           |
+           |
+           |
+           |
+           |
+           |
+           |
+           |
+         """.stripMargin)
+      case Failure(e) => log.error(
+        s"""
+           |
+           |
+           |
+           |
+           |
+           |
+           |ddl:$finalDdl executing failure,e:$e,message:${e.getMessage},id:$syncTaskId
+           |
+           |
+           |
+           |
+           |
+           |
+         """.stripMargin)
     }
     if (execution.isSuccess) positionRecorder.fold(log.warning(s"can not find position recorder when sending save latest saving offset command,id:$syncTaskId"))(ref => ref ! FetcherMessage(MysqlBinlogInOrderRecorderSaveLatestPosition)) //发送保存命令
   }
