@@ -145,6 +145,8 @@ object Parser {
     if (!JavaCommonUtil.isEmpty(tableCreate.likeTable)) {
       val likeTableCreate = MysqlTableSchemaHolder.getCreateTableSql(tableCreate.likeDB, tableCreate.likeTable, sink.get).get
       val tc = parse(likeTableCreate, tableCreate.likeDB).head.asInstanceOf[TableCreate]
+      tc.table = tableCreate.table
+      tc.database = tableCreate.database //保证新的Table create的数据库 表名称的正确性
       handleCreate(tc) //处理like情况
     } else {
       lazy val ifNotExists: String = if (tableCreate.ifNotExists) "IF NOT EXISTS" else ""
