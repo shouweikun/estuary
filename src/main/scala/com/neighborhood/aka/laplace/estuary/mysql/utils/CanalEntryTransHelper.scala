@@ -56,6 +56,7 @@ object CanalEntryTransHelper {
     * @param mysqlType mysql类型
     * @param value     原始value
     * @return 返回mysql使用的value
+    *
     */
   def getSqlValueByMysqlType(mysqlType: String, value: String): String = {
     if(value.isEmpty) """"""""
@@ -66,6 +67,7 @@ object CanalEntryTransHelper {
       case x if (x.contains("float")) => value
       case x if (x.contains("double")) => value
       case x if (x.contains("bigint")) => value
+      case x if(x.contains("decimal")) => value
       case _ => s""""${value.replaceAll("\\\\","\\\\\\\\").replaceAll("\"","""\\"""")}"""" //add escape char handler
     }
   }
