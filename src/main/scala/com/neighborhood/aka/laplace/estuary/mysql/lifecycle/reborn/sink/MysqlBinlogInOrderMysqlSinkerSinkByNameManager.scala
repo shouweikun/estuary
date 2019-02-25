@@ -57,7 +57,6 @@ final class MysqlBinlogInOrderMysqlSinkerSinkByNameManager(override val taskMana
     * @return
     */
   private def getOrCreateSinker(dbAndTbName: String): ActorRef = context.child(dbAndTbName).getOrElse {
-    val theSender = sender()
     val index = sinkerNumInc
     sinkerNumInc = sinkerNumInc + 1
     context.actorOf(MysqlBinlogInOrderSinker.buildMysqlBinlogInOrderSinker(sinkTypeName, taskManager, index).withDispatcher("akka.sinker-dispatcher"), dbAndTbName)
