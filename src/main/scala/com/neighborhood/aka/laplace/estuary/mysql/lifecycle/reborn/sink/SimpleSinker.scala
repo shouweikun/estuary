@@ -71,7 +71,8 @@ final private[sink] class SimpleSinker(
     */
   override protected def handleSinkTask[I <: SqlList](input: I): Try[_] = {
     lastBinlogPosition = input.binlogPositionInfo
-    sinkFunc.insertBatchSql(input.list)
+    if (input.list == 1) sinkFunc.insertSql(input.list.head)
+    else sinkFunc.insertBatchSql(input.list)
   }
 
   /**
@@ -92,7 +93,7 @@ final private[sink] class SimpleSinker(
     lazy val binlogPositionInfo: Option[BinlogPositionInfo] = sqlList.binlogPositionInfo
     val timeout = binlogPositionInfo.map { info =>
       lazy val curr = System.currentTimeMillis()
-      curr - info.timestamp > 2 * 60 * 1000 && binlogPositionInfo.map(_.timestamp).map(ts => curr - ts > 2 * 60 * 1000).getOrElse(true)
+      curr - sqlList.ts > 2 * 60 * 1000 && (curr - info.timestamp > 2 * 60 * 1000)
     }.getOrElse(true)
     lazy val isNoCountError = Option(e.getMessage).map {
       message =>
