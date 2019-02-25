@@ -66,7 +66,7 @@ object CanalEntryTransHelper {
       case x if (x.contains("float")) => value
       case x if (x.contains("double")) => value
       case x if (x.contains("bigint")) => value
-      case _ => s""""${value.replaceAll("\\","""\\""").replaceAll("\"","""\\"""")}"""" //add escape char handler
+      case _ => s""""${value.replaceAll("\\\\","\\\\\\\\").replaceAll("\"","""\\"""")}"""" //add escape char handler
     }
   }
 
