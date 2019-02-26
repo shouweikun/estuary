@@ -291,7 +291,7 @@ mvn package
 		"partitionStrategy": "PRIMARY_KEY",
 		"syncTaskId": "nbhd",
 		"sinkerNameToLoad": {
-			"sinker": com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink.mysql.MysqlBinlogInOrderMysqlRingBufferSinker //推荐使用这个
+			"sinker":"com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink.mysql.MysqlBinlogInOrderMysqlRingBufferSinker" //推荐使用这个
 		},
 		"startPosition": {
 			"timestamp": 1548126793000 //binlog会从这个时间点消费
