@@ -1,4 +1,4 @@
-package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink
+package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink.mysql
 
 import akka.actor.{ActorRef, Props}
 import com.neighborhood.aka.laplace.estuary.bean.exception.sink.SinkerAbnormalException
@@ -10,6 +10,7 @@ import com.neighborhood.aka.laplace.estuary.mysql.SettingConstant
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.BinlogPositionInfo
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.record.MysqlBinlogInOrderRecorderCommand.MysqlBinlogInOrderRecorderEnsurePosition
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink.MysqlBinlogInOrderSinkerCommand.MysqlInOrderSinkerGetAbnormal
+import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink.{MysqlBinlogInOrderSinker, SqlList}
 import com.neighborhood.aka.laplace.estuary.mysql.sink.MysqlSinkManagerImp
 
 import scala.annotation.tailrec

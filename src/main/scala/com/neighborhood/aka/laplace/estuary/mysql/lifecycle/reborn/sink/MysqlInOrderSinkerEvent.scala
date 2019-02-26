@@ -7,7 +7,7 @@ sealed trait MysqlInOrderSinkerEvent
 object MysqlInOrderSinkerEvent {
   case object MysqlInOrderSinkerStarted extends MysqlInOrderSinkerEvent
 
-  case object MysqlInOrderSinkerOffsetSaved extends MysqlInOrderSinkerEvent
+
 
   case object MysqlInOrderSinkerGetAbnormal extends MysqlInOrderSinkerEvent
 }

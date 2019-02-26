@@ -85,7 +85,7 @@ trait CanalEntry2KafkaMessageMappingFormat extends CanalEntryMappingFormat[Kafka
       * 对DML 进行必要的schema信息校验，以判断这条数据是否有效
       */
     if (schemaComponentIsOn && CanalEntryTransUtil.isDml(eventType)) {
-      //todo
+      //todo schema 校验
     }
 
     tempJsonKey.setAppName(appName)

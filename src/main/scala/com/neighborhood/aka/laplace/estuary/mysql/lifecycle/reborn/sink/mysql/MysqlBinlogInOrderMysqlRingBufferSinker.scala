@@ -1,4 +1,4 @@
-package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink
+package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink.mysql
 
 import akka.actor.Props
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, SinkerMessage, WorkerMessage}
@@ -7,6 +7,7 @@ import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.core.util.SimpleEstuaryRingBuffer
 import com.neighborhood.aka.laplace.estuary.mysql.SettingConstant
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink.MysqlBinlogInOrderSinkerCommand.MysqlInOrderSinkerCheckBatch
+import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink.{MysqlBinlogInOrderSinker, SqlList}
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.{BinlogPositionInfo, MysqlRowDataInfo}
 import com.neighborhood.aka.laplace.estuary.mysql.sink.MysqlSinkManagerImp
 

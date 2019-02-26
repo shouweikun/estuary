@@ -9,7 +9,7 @@ import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.count.MysqlIn
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.fetch.MysqlBinlogInOrderFetcherManager
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.listen.MysqlConnectionInOrderListener
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.record.MysqlBinlogInOrderPositionRecorder
-import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink.{MysqlBinlogInOrderMysqlSinkerManager, MysqlBinlogInOrderSinkerManager}
+import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink.MysqlBinlogInOrderSinkerManager
 import com.neighborhood.aka.laplace.estuary.mysql.task.{Mysql2MysqlTaskInfoBean, Mysql2MysqlTaskInfoManager}
 
 /**

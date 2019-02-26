@@ -9,6 +9,7 @@ import com.neighborhood.aka.laplace.estuary.core.sink.SinkFunc
 import com.neighborhood.aka.laplace.estuary.core.task.{SinkManager, TaskManager}
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.adapt.MysqlBinlogInOrderPowerAdapterCommand.MysqlBinlogInOrderPowerAdapterUpdateCost
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.count.MysqlBinlogInOrderProcessingCounterCommand.MysqlBinlogInOrderProcessingCounterUpdateCount
+import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink.mysql.{MysqlBinlogInOrderMysqlRingBufferSinker, MysqlBinlogInOrderMysqlSinker}
 import com.neighborhood.aka.laplace.estuary.mysql.sink.MysqlSinkManagerImp
 
 import scala.reflect.ClassTag
@@ -51,6 +52,10 @@ abstract class MysqlBinlogInOrderSinker[B <: SinkFunc, R: ClassTag](
     * 计数器
     */
   lazy val processingCounter = taskManager.processingCounter
+  /**
+    * 位置记录器
+    */
+  lazy val positionRecorder = taskManager.positionRecorder
   /**
     * 是否计数
     */
