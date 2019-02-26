@@ -12,6 +12,8 @@ import scala.util.Try
 
 /**
   * Created by john_liu on 2019/1/15.
+  *
+  * @author neighborhood.aka.laplace
   */
 final class MysqlBinlogInOrderMysqlSpecialInfoSender(
                                                       override val taskManager: MysqlSinkManagerImp with MysqlSourceManagerImp with TaskManager,

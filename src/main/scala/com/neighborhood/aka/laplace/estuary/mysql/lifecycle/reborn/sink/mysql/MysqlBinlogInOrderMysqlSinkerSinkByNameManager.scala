@@ -1,13 +1,12 @@
-package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink
+package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink.mysql
 
 import akka.actor.{ActorRef, Props}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, SinkerMessage}
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.MysqlRowDataInfo
+import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink.MysqlBinlogInOrderSinker
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink.MysqlBinlogInOrderSinkerCommand.MysqlInOrderSinkerGetAbnormal
 import com.neighborhood.aka.laplace.estuary.mysql.sink.MysqlSinkManagerImp
-
-import scala.util.Try
 
 /**
   * Created by john_liu on 2019/1/14.

@@ -1,10 +1,11 @@
-package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink
+package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink.mysql
 
 import akka.actor.{ActorRef, Props}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, WorkerMessage}
 import com.neighborhood.aka.laplace.estuary.core.sink.mysql.MysqlSinkFunc
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.MysqlRowDataInfo
+import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink.MysqlBinlogInOrderSinker
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink.MysqlBinlogInOrderSinkerCommand.MysqlInOrderSinkerGetAbnormal
 import com.neighborhood.aka.laplace.estuary.mysql.sink.MysqlSinkManagerImp
 
@@ -22,7 +23,7 @@ final class MysqlBinlogInOrderMysqlSinker(
                                            override val num: Int
                                          ) extends MysqlBinlogInOrderSinker[MysqlSinkFunc, MysqlRowDataInfo](taskManager) {
 
-  lazy val positionRecorder: Option[ActorRef] = taskManager.positionRecorder
+
 
   /**
     * 处理Batcher转换过的数据

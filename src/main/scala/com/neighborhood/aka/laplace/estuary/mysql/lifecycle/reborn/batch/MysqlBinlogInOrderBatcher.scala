@@ -90,11 +90,11 @@ abstract class MysqlBinlogInOrderBatcher[R](
   protected def send2Sinker(message: => Any) = sinker ! message
 
   @inline
-  protected def sendCostingMessage(cost: Long) = if (isCosting) powerAdapter.fold(throw new WorkerCannotFindException(s"cannot find powerAdapter,id:$syncTaskId")
+  protected def sendCostingMessage(cost: => Long) = if (isCosting) powerAdapter.fold(throw new WorkerCannotFindException(s"cannot find powerAdapter,id:$syncTaskId")
   )(ref => ref ! BatcherMessage(MysqlBinlogInOrderPowerAdapterUpdateCost(cost)))
 
   @inline
-  protected def sendCountingMessage(count: Int = 1) = if (isCounting) processingCounter.fold(throw new WorkerCannotFindException(s"cannot find processCounter,id:$syncTaskId"))(ref => ref ! BatcherMessage(MysqlBinlogInOrderProcessingCounterUpdateCount(count)))
+  protected def sendCountingMessage(count: => Int = 1) = if (isCounting) processingCounter.fold(throw new WorkerCannotFindException(s"cannot find processCounter,id:$syncTaskId"))(ref => ref ! BatcherMessage(MysqlBinlogInOrderProcessingCounterUpdateCount(count)))
 
   /**
     * 错位次数阈值

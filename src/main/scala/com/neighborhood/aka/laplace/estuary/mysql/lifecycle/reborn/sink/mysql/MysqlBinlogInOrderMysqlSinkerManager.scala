@@ -1,7 +1,8 @@
-package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink
+package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink.mysql
 
 import akka.actor.{ActorRef, Props}
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
+import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink.MysqlBinlogInOrderSinker
 import com.neighborhood.aka.laplace.estuary.mysql.sink.MysqlSinkManagerImp
 
 /**

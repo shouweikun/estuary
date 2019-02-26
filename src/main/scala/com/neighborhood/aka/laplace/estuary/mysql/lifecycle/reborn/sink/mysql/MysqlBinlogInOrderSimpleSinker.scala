@@ -1,7 +1,6 @@
-package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink
+package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink.mysql
 
 import akka.actor.{Actor, ActorLogging}
-import com.neighborhood.aka.laplace.estuary.core.sink.SinkFunc
 import com.neighborhood.aka.laplace.estuary.core.sink.mysql.MysqlSinkFunc
 
 /**
