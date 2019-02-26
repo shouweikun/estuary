@@ -23,7 +23,7 @@ final class MysqlBinlogInOrderMysqlSinker(
                                            override val num: Int
                                          ) extends MysqlBinlogInOrderSinker[MysqlSinkFunc, MysqlRowDataInfo](taskManager) {
 
-  lazy val positionRecorder: Option[ActorRef] = taskManager.positionRecorder
+
 
   /**
     * 处理Batcher转换过的数据

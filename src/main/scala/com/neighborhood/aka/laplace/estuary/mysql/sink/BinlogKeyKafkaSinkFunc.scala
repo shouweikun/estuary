@@ -1,14 +1,14 @@
-package com.neighborhood.aka.laplace.estuary.core.sink.kafka
+package com.neighborhood.aka.laplace.estuary.mysql.sink
 
-import com.neighborhood.aka.laplace.estuary.bean.datasink.BaseDataJsonKeyKafkaBeanImp
-import com.neighborhood.aka.laplace.estuary.bean.key.BaseDataJsonKey
+import com.neighborhood.aka.laplace.estuary.bean.key.BinlogKey
+import com.neighborhood.aka.laplace.estuary.core.sink.kafka.KafkaSinkFunc
 
 /**
   * Created by john_liu on 2019/2/19.
   *
   * @author neighborhood.aka.laplace
   */
-final class BaseJsonKeyKafkaSinkFunc(kafkaBean: BaseDataJsonKeyKafkaBeanImp) extends KafkaSinkFunc[BaseDataJsonKey, String](kafkaBean) {
+final class BinlogKeyKafkaSinkFunc(kafkaBean: BinlogKeyKafkaBeanImp) extends KafkaSinkFunc[BinlogKey, String](kafkaBean) {
 
   private val specificTopics: Map[String, String] = kafkaBean.specificTopics
   private val ddlTopic = kafkaBean.ddlTopic

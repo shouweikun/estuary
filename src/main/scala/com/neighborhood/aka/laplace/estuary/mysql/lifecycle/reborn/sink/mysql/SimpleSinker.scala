@@ -31,7 +31,7 @@ final private[sink] class SimpleSinker(
 
   var lastBinlogPosition: Option[BinlogPositionInfo] = None
 
-  lazy val positionRecorder: Option[ActorRef] = taskManager.positionRecorder
+
 
   /**
     * 资源管理器

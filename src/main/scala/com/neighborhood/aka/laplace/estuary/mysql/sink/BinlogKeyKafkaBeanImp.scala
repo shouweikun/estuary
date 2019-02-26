@@ -1,12 +1,13 @@
-package com.neighborhood.aka.laplace.estuary.bean.datasink
+package com.neighborhood.aka.laplace.estuary.mysql.sink
 
-import com.neighborhood.aka.laplace.estuary.bean.key.{BaseDataJsonKey, JsonKeySerializer, MultipleJsonKeyPartitioner}
+import com.neighborhood.aka.laplace.estuary.bean.datasink.KafkaBean
+import com.neighborhood.aka.laplace.estuary.bean.key.{BinlogKey, JsonKeySerializer, MultipleJsonKeyPartitioner}
 import org.apache.kafka.common.serialization.StringSerializer
 
 /**
   * Created by john_liu on 2019/2/19.
   */
-case class BaseDataJsonKeyKafkaBeanImp(
+final case class BinlogKeyKafkaBeanImp(
                                         override val bootstrapServers: String,
 
                                         /**
@@ -35,4 +36,4 @@ case class BaseDataJsonKeyKafkaBeanImp(
                                         /**
                                           * value Serializer类
                                           */
-                                        override val valueSerializer: String = classOf[StringSerializer].getName) extends KafkaBean[BaseDataJsonKey, String]
+                                        override val valueSerializer: String = classOf[StringSerializer].getName) extends KafkaBean[BinlogKey, String]

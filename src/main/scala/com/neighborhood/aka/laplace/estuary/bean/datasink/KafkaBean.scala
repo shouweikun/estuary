@@ -2,6 +2,7 @@ package com.neighborhood.aka.laplace.estuary.bean.datasink
 
 
 import com.neighborhood.aka.laplace.estuary.bean.key._
+import com.neighborhood.aka.laplace.estuary.core.sink.kafka.KafkaSinkFunc
 import com.neighborhood.aka.laplace.estuary.core.sink.mysql.MysqlSinkFunc
 
 /**
@@ -11,7 +12,7 @@ import com.neighborhood.aka.laplace.estuary.core.sink.mysql.MysqlSinkFunc
   * @tparam K 消息Key的类型
   * @tparam V 消息Value的类型
   */
-trait KafkaBean[K, V] extends DataSinkBean[MysqlSinkFunc] {
+trait KafkaBean[K, V] extends DataSinkBean[KafkaSinkFunc[K,V]] {
   //  override var dataSinkType: DataSinkType = DataSinkType.KAFKA
   override val dataSinkType: String = SinkDataType.KAFKA.toString
 

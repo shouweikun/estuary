@@ -47,7 +47,7 @@ final class MysqlBinlogInorderKafkaSinker(
 
   override def receive: Receive = {
     case BatcherMessage(x: KafkaMessage) => handleSinkTask(x)
-    case BatcherMessage(x: List[_]) if (x.head.isInstanceOf[KafkaMessage]) => handleBatchSinkTask(x)
+    case BatcherMessage(x: List[_]) if (x.head.isInstanceOf[KafkaMessage]) => handleBatchSinkTask(x.asInstanceOf[List[KafkaMessage]])
     case BatcherMessage(x: MysqlInOrderSinkerGetAbnormal) => context.become(error, true)
 
   }
