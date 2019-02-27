@@ -1,20 +1,19 @@
-package com.neighborhood.aka.laplace.estuary.mysql.task
+package com.neighborhood.aka.laplace.estuary.mysql.task.mysql
 
 import java.util.Date
 
 import com.alibaba.otter.canal.protocol.position.EntryPosition
 import com.neighborhood.aka.laplace.estuary.bean.identity.{BaseExtractBean, DataSyncType}
 import com.neighborhood.aka.laplace.estuary.bean.key.PartitionStrategy
-import com.neighborhood.aka.laplace.estuary.core.trans.MappingFormat
 
 /**
   * Created by john_liu on 2019/1/13.
   *
-  * mysql为数据源的任务信息Bean
+  * mysql2Mysql的任务信息Bean
   *
   * @author neighborhood.aka.laplace
   */
-final case class MysqlTaskInfoBeanImp(
+final case class Mysql2MysqlTaskInfoBeanImp(
                                        val syncTaskId: String,
                                        val offsetZkServers: String
                                      )(

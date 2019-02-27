@@ -3,12 +3,15 @@ package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink
 import akka.actor.SupervisorStrategy.Escalate
 import akka.actor.{OneForOneStrategy, Props}
 import com.neighborhood.aka.laplace.estuary.bean.exception.other.WorkerInitialFailureException
+import com.neighborhood.aka.laplace.estuary.bean.key.BinlogKey
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.SinkerMessage
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.SourceDataSinkerPrototype
 import com.neighborhood.aka.laplace.estuary.core.sink.SinkFunc
+import com.neighborhood.aka.laplace.estuary.core.sink.kafka.KafkaSinkFunc
 import com.neighborhood.aka.laplace.estuary.core.task.{SinkManager, TaskManager}
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.adapt.MysqlBinlogInOrderPowerAdapterCommand.MysqlBinlogInOrderPowerAdapterUpdateCost
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.count.MysqlBinlogInOrderProcessingCounterCommand.MysqlBinlogInOrderProcessingCounterUpdateCount
+import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink.kafka.MysqlBinlogInorderKafkaSinker
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink.mysql.{MysqlBinlogInOrderMysqlRingBufferSinker, MysqlBinlogInOrderMysqlSinker}
 import com.neighborhood.aka.laplace.estuary.mysql.sink.MysqlSinkManagerImp
 
@@ -123,6 +126,7 @@ object MysqlBinlogInOrderSinker {
     name match {
       case MysqlBinlogInOrderMysqlSinker.name => MysqlBinlogInOrderMysqlSinker.props(taskManager.asInstanceOf[MysqlSinkManagerImp with TaskManager], num)
       case MysqlBinlogInOrderMysqlRingBufferSinker.name => MysqlBinlogInOrderMysqlRingBufferSinker.props(taskManager.asInstanceOf[MysqlSinkManagerImp with TaskManager], num)
+      case MysqlBinlogInorderKafkaSinker.name => MysqlBinlogInorderKafkaSinker.props(taskManager.asInstanceOf[SinkManager[KafkaSinkFunc[BinlogKey, String]] with TaskManager], num)
       case _ => throw new WorkerInitialFailureException(s"cannot build MysqlBinlogInOrderSinker name item match $name")
     }
   }

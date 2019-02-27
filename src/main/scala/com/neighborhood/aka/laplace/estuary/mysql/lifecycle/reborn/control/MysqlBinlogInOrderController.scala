@@ -28,7 +28,7 @@ import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.listen.MysqlB
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.record.MysqlBinlogInOrderRecorderCommand.MysqlBinlogInOrderRecorderSavePosition
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink.MysqlBinlogInOrderSinkerCommand
 import com.neighborhood.aka.laplace.estuary.mysql.source.{MysqlConnection, MysqlSourceManagerImp}
-import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2MysqlTaskInfoBean
+import com.neighborhood.aka.laplace.estuary.mysql.task.mysql.Mysql2MysqlAllTaskInfoBean
 import org.I0Itec.zkclient.exception.ZkTimeoutException
 
 import scala.concurrent.duration._
@@ -469,7 +469,7 @@ object MysqlBinlogInOrderController {
     */
   def buildMysqlBinlogInOrderController(taskInfoBean: BaseExtractBean, name: String): Props = {
     name match {
-      case MysqlBinlogInOrderMysqlController.name => MysqlBinlogInOrderMysqlController.props(taskInfoBean.asInstanceOf[Mysql2MysqlTaskInfoBean])
+      case MysqlBinlogInOrderMysqlController.name => MysqlBinlogInOrderMysqlController.props(taskInfoBean.asInstanceOf[Mysql2MysqlAllTaskInfoBean])
       case _ => throw new WorkerInitialFailureException(s"cannot build MysqlBinlogInOrderController name item match $name")
     }
   }
