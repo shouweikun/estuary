@@ -6,6 +6,7 @@ import java.util.concurrent.locks.ReentrantLock
 import com.mongodb.client.MongoCursor
 import com.mongodb.{MongoCredential, _}
 import com.neighborhood.aka.laplace.estuary.bean.credential.MongoCredentialBean
+import com.neighborhood.aka.laplace.estuary.bean.resource.MongoSourceBean
 import com.neighborhood.aka.laplace.estuary.core.source.DataSourceConnection
 import com.neighborhood.aka.laplace.estuary.mongo.source.MongoConnection._
 import org.bson.{BsonTimestamp, Document}
@@ -21,7 +22,7 @@ import scala.util.Try
   * @note mongo链接 ，用于oplog访问
   */
 final class MongoConnection(
-                             private val mongoBeanImp: MongoSourceBeanImp
+                             private val mongoBeanImp: MongoSourceBean
                            ) extends DataSourceConnection {
 
   private var mongoClient: MongoClient = null

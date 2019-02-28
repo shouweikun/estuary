@@ -3,26 +3,39 @@ package com.neighborhood.aka.laplace.estuary.mongo.task.kafka
 import akka.actor.ActorRef
 import com.neighborhood.aka.laplace.estuary.bean.identity.BaseExtractBean
 import com.neighborhood.aka.laplace.estuary.bean.key.PartitionStrategy
-import com.neighborhood.aka.laplace.estuary.bean.resource.DataSourceBase
+import com.neighborhood.aka.laplace.estuary.bean.support.KafkaMessage
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.core.trans.MappingFormat
+import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.OplogClassifier
 import com.neighborhood.aka.laplace.estuary.mongo.sink.{OplogKeyKafkaBeanImp, OplogKeyKafkaSinkManagerImp}
-import com.neighborhood.aka.laplace.estuary.mongo.source.{MongoConnection, MongoSourceManagerImp}
+import com.neighborhood.aka.laplace.estuary.mongo.source.{MongoSourceBeanImp, MongoSourceManagerImp}
 import com.typesafe.config.Config
+import org.slf4j.{Logger, LoggerFactory}
 
 /**
   * Created by john_liu on 2019/2/27.
+  *
+  * @author neighborhood.aka.laplace
   */
-final class Mongo2KafkaTaskInfoManager extends OplogKeyKafkaSinkManagerImp with MongoSourceManagerImp with TaskManager {
+final class Mongo2KafkaTaskInfoManager(
+                                        private val allTaskInfoBean: Mongo2KafkaAllTaskInfoBean,
+                                        _config: Config
+                                      ) extends OplogKeyKafkaSinkManagerImp with MongoSourceManagerImp with TaskManager {
+  override protected lazy val logger: Logger = LoggerFactory.getLogger(classOf[Mongo2KafkaTaskInfoManager])
   /**
     * 数据汇bean
     */
-  override def sinkBean: OplogKeyKafkaBeanImp = ???
+  override val sinkBean: OplogKeyKafkaBeanImp = allTaskInfoBean.sinkBean
+
+  /**
+    * 数据源bean
+    */
+  override lazy val sourceBean: MongoSourceBeanImp = allTaskInfoBean.sourceBean
 
   /**
     * batch转换模块
     */
-  override def batchMappingFormat: Option[MappingFormat[_, _]] = ???
+  override lazy val batchMappingFormat: Option[MappingFormat[OplogClassifier, KafkaMessage]] = ???
 
   /**
     * 事件溯源的事件收集器
@@ -32,14 +45,14 @@ final class Mongo2KafkaTaskInfoManager extends OplogKeyKafkaSinkManagerImp with 
   /**
     * 任务信息bean
     */
-  override def taskInfo: BaseExtractBean = ???
+  override lazy val taskInfo: BaseExtractBean = allTaskInfoBean.taskRunningInfoBean
 
   /**
     * 传入的配置
     *
     * @return
     */
-  override def config: Config = ???
+  override lazy val config: Config = _config
 
   /**
     * 是否计数，默认不计数
@@ -119,15 +132,15 @@ final class Mongo2KafkaTaskInfoManager extends OplogKeyKafkaSinkManagerImp with 
     */
   override def sinkerNum: Int = ???
 
-  /**
-    * 数据源bean
-    */
-  override def sourceBean: DataSourceBase[MongoConnection] = ???
 
   /**
-    * 构建数据源
-    *
-    * @return source
+    * 初始化/启动
     */
-  override def buildSource: MongoConnection = ???
+  override def start: Unit = {
+
+  }
+
+  private def buildMappingFormat: MappingFormat[OplogClassifier, KafkaMessage] = {
+    ???
+  }
 }

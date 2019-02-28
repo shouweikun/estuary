@@ -1,30 +1,29 @@
-package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.fetch
+package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.fetch
 
 /**
   * Created by john_liu on 2018/10/10.
   */
-sealed trait MysqlBinlogInOrderFetcherCommand
+sealed trait OplogFetcherCommand
 
-object MysqlBinlogInOrderFetcherCommand {
+object OplogFetcherCommand {
+  case object MysqlBinlogInOrderFetcherStart extends OplogFetcherCommand
 
-  case object MysqlBinlogInOrderFetcherStart extends MysqlBinlogInOrderFetcherCommand
+  case object MysqlBinlogInOrderFetcherRestart extends OplogFetcherCommand
 
-  case object MysqlBinlogInOrderFetcherRestart extends MysqlBinlogInOrderFetcherCommand
+  case object MysqlBinlogInOrderFetcherSuspend extends OplogFetcherCommand
 
-  case object MysqlBinlogInOrderFetcherSuspend extends MysqlBinlogInOrderFetcherCommand
+  case object MysqlBinlogInOrderFetcherBusy extends OplogFetcherCommand
 
-  case object MysqlBinlogInOrderFetcherBusy extends MysqlBinlogInOrderFetcherCommand
+  case object MysqlBinlogInOrderFetcherFree extends OplogFetcherCommand
 
-  case object MysqlBinlogInOrderFetcherFree extends MysqlBinlogInOrderFetcherCommand
+  case object MysqlBinlogInOrderResume extends OplogFetcherCommand
 
-  case object MysqlBinlogInOrderResume extends MysqlBinlogInOrderFetcherCommand
+  case object MysqlBinlogInOrderFetcherPrefetch extends OplogFetcherCommand
 
-  case object MysqlBinlogInOrderFetcherPrefetch extends MysqlBinlogInOrderFetcherCommand
+  case object MysqlBinlogInOrderFetcherFetch extends OplogFetcherCommand
 
-  case object MysqlBinlogInOrderFetcherFetch extends MysqlBinlogInOrderFetcherCommand
+  case object MysqlBinlogInOrderFetcherNonBlockingFetch extends OplogFetcherCommand
 
-  case object MysqlBinlogInOrderFetcherNonBlockingFetch extends MysqlBinlogInOrderFetcherCommand
-
-  case class MysqlBinlogInOrderFetcherUpdateDelay(delay: Long) extends MysqlBinlogInOrderFetcherCommand
+  case class MysqlBinlogInOrderFetcherUpdateDelay(delay: Long) extends OplogFetcherCommand
 
 }

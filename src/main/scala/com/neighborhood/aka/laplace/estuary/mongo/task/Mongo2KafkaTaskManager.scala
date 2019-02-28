@@ -1,4 +1,4 @@
-package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.task
+package com.neighborhood.aka.laplace.estuary.mongo.task
 
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 
