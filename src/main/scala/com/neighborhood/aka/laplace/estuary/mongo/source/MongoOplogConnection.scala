@@ -12,6 +12,7 @@ import org.bson.{BsonTimestamp, Document}
 import org.slf4j.LoggerFactory
 
 import scala.collection.JavaConverters._
+import scala.util.Try
 
 /**
   * Created by john_liu on 2019/2/27.
@@ -94,13 +95,28 @@ final class MongoConnection(
     iterator
   }
 
+  def findRealDocForUpdate(oplog: Oplog): Option[Document] = {
+    val o = oplog.getCurrentDocument
+    if ("u".equals(oplog.getOperateType()) && o != null && o.containsKey("$set")) {
+      logger.warn(s"try to handle update event for oplog id:${oplog.getId},ts:${oplog.getTimestamp.getTime}${oplog.getTimestamp.getTime}")
+      val o2Iter: MongoCursor[Document] = mongoClient
+        .getDatabase(oplog.getDbName())
+        .getCollection(oplog.getTableName())
+        .find(oplog.getWhereCondition())
+        .iterator()
+      Try(o2Iter.next()).toOption
+    } else None
+  }
+
   /**
     * 初始化mongoClient
     * 构建mongoClient
     *
     * @return mongoClient
     */
-  private def initDbInstance: MongoClient = {
+  private def initDbInstance: MongoClient
+
+  = {
     logger.info("start init mongo client")
     // mongo3.4.0 读取数据时, 对于有replication set 复本集的collection是使用从库策略
     // http://www.jianshu.com/p/d4c3c9752e7e
@@ -122,7 +138,9 @@ final class MongoConnection(
     * @param list           认证信息
     * @return 构建好的认证模式
     */
-  private def createCredential(credentialMode: String, list: List[MongoCredentialBean]): List[MongoCredential] = {
+  private def createCredential(credentialMode: String, list: List[MongoCredentialBean]): List[MongoCredential]
+
+  = {
     def credentialFunc: (String, String, Array[Char]) => MongoCredential = (name: String, database: String, password: Array[Char]) => credentialMode match {
       case mongoBeanImp.SCRAM_SHA_1 => MongoCredential.createScramSha1Credential(name, database, password)
       case mongoBeanImp.MONGODB_CR => MongoCredential.createMongoCRCredential(name, database, password)
@@ -140,7 +158,9 @@ final class MongoConnection(
     * @param mongoOffset 开始的mongoOffset
     * @return 构建好的查询条件对象
     */
-  private def prepareOplogQuery(mongoOffset: MongoOffset): BasicDBObject = {
+  private def prepareOplogQuery(mongoOffset: MongoOffset): BasicDBObject
+
+  = {
     logger.info("start preapare oplog query")
     val query = new BasicDBObject();
     logger.info(s"query start from ${mongoOffset.mongoTsSecond}:${mongoOffset.mongoTsInc}")
