@@ -16,8 +16,8 @@ import scala.collection.JavaConverters._
 /**
   * Created by john_liu on 2019/2/27.
   *
-  *
   * @author neighborhood.aka.laplace
+  * @note mongo链接 ，用于oplog访问
   */
 final class MongoConnection(
                              private val mongoBeanImp: MongoBeanImp
@@ -70,8 +70,8 @@ final class MongoConnection(
 
   override def fork: MongoConnection = new MongoConnection(mongoBeanImp)
 
-  def getOplogIterator(mongoOffset: MongoOffset = MongoOffset((System.currentTimeMillis() / 1000).toInt, 0)):MongoCursor[Document] = {
-    logger.info("start to get oplog iterator" )
+  def getOplogIterator(mongoOffset: MongoOffset = MongoOffset((System.currentTimeMillis() / 1000).toInt, 0)): MongoCursor[Document] = {
+    logger.info("start to get oplog iterator")
     lock.lock()
     try {
       if (!connectStatus.get()) connect()
