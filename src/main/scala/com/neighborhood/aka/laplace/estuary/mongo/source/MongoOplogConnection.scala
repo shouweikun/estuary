@@ -21,7 +21,7 @@ import scala.util.Try
   * @note mongo链接 ，用于oplog访问
   */
 final class MongoConnection(
-                             private val mongoBeanImp: MongoBeanImp
+                             private val mongoBeanImp: MongoSourceBeanImp
                            ) extends DataSourceConnection {
 
   private var mongoClient: MongoClient = null

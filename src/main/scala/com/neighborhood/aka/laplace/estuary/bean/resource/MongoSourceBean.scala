@@ -1,14 +1,14 @@
 package com.neighborhood.aka.laplace.estuary.bean.resource
 
 import com.neighborhood.aka.laplace.estuary.bean.credential.MongoCredentialBean
-import com.neighborhood.aka.laplace.estuary.mongo.source.MongoOplogConnection
+import com.neighborhood.aka.laplace.estuary.mongo.source.MongoConnection
 
 /**
   * Created by john_liu on 2018/4/25.
   *
   * @author neighborhood.aka.laplace
   */
-trait MongoSourceBean extends DataSourceBase[MongoOplogConnection] {
+trait MongoSourceBean extends DataSourceBase[MongoConnection] {
   override val dataSourceType = SourceDataType.MONGO.toString  //数据源类型
   val MONGODB_CR = "MONGODB-CR"
   val SCRAM_SHA_1 = "SCRAM-SHA-1"

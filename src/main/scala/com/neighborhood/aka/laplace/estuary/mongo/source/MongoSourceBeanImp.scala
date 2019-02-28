@@ -8,7 +8,7 @@ import com.neighborhood.aka.laplace.estuary.bean.resource.MongoSourceBean
   *
   * @author neighborhood.aka.laplace
   */
-final case class MongoBeanImp(
+final case class MongoSourceBeanImp(
                                override val authMechanism: String,
                                override val mongoCredentials: List[MongoCredentialBean],
                                override val hosts: List[String],
