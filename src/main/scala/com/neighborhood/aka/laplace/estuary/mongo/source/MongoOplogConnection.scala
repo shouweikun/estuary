@@ -96,6 +96,7 @@ final class MongoConnection(
   }
 
   def findRealDocForUpdate(oplog: Oplog): Option[Document] = {
+    assert(this.isConnected, "cannot find real doc cause connection is not ready or disconnected")
     val o = oplog.getCurrentDocument
     if ("u".equals(oplog.getOperateType()) && o != null && o.containsKey("$set")) {
       logger.warn(s"try to handle update event for oplog id:${oplog.getId},ts:${oplog.getTimestamp.getTime}${oplog.getTimestamp.getTime}")
