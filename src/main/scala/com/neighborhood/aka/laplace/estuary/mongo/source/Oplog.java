@@ -1,4 +1,4 @@
-package com.neighborhood.aka.laplace.estuary.bean.support;
+package com.neighborhood.aka.laplace.estuary.mongo.source;
 
 import com.neighborhood.aka.laplace.estuary.core.util.JavaCommonUtil;
 import org.bson.BsonTimestamp;
