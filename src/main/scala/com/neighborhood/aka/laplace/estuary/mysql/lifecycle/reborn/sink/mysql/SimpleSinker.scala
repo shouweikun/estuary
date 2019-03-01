@@ -32,7 +32,6 @@ final private[sink] class SimpleSinker(
   var lastBinlogPosition: Option[BinlogPositionInfo] = None
 
 
-
   /**
     * 资源管理器
     */
@@ -57,7 +56,7 @@ final private[sink] class SimpleSinker(
 
   override def receive: Receive = {
     case m@SinkerMessage(x: SqlList) => {
-//      handleSinkTask(x).failed.foreach(processError(_, m))
+      handleSinkTask(x).failed.foreach(processError(_, m))
       sendCount(x.shouldCount)
       sendCost((System.currentTimeMillis() - x.ts) / x.shouldCount)
     }

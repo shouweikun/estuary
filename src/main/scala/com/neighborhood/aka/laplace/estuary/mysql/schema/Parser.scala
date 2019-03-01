@@ -116,18 +116,19 @@ object Parser {
     val originName = s"${tableAlter.database}.${tableAlter.table}"
     val newName = s"${tableAlter.newDatabase}.${tableAlter.newTableName}"
     if (originName == newName) {
-      //目前只支持单条
-      tableAlter.columnMods.get(0) match {
-        case add: AddColumnMod =>
-          s"ALTER TABLE $newName ADD COLUMN ${add.definition.getName} ${add.definition.getFullType} ${getSigned(add.definition)} ${Option(add.definition.getDefaultValue).map(x => s"DEFAULT $x").getOrElse("")}"
-        case remove: RemoveColumnMod => s"ALTER TABLE $newName DROP COLUMN ${remove.name}"
-        case change: ChangeColumnMod => {
-          val oldColumnName = Option(change.name).flatMap(x => if (x != change.definition.getName) Option(x) else None).getOrElse("")
-          val actionName = if (oldColumnName.isEmpty) "MODIFY" else "CHANGE"
-          s"ALTER TABLE $newName $actionName COLUMN $oldColumnName  ${change.definition.getName} ${change.definition.getFullType} ${getSigned(change.definition)} ${Option(change.definition.getDefaultValue).map(x => s"DEFAULT $x").getOrElse("")}"
-        }
-      }
+      tableAlter.columnMods.asScala.map {
+        mod =>
+          mod match {
+            case add: AddColumnMod =>
 
+            case remove: RemoveColumnMod => s"ALTER TABLE $newName DROP COLUMN ${remove.name}"
+            case change: ChangeColumnMod => {
+              val oldColumnName = Option(change.name).flatMap(x => if (x != change.definition.getName) Option(x) else None).getOrElse("")
+              val actionName = if (oldColumnName.isEmpty) "MODIFY" else "CHANGE"
+              s"ALTER TABLE $newName $actionName COLUMN $oldColumnName  ${change.definition.getName} ${change.definition.getFullType} ${getSigned(change.definition)} ${Option(change.definition.getDefaultValue).map(x => s"DEFAULT $x").getOrElse("")}"
+            }
+          }
+      }.mkString(";")
     }
     else {
       s"RENAME $originName TO $newName;"
