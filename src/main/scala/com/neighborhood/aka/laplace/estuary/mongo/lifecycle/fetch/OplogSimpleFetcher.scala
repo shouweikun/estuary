@@ -1,17 +1,19 @@
 package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.fetch
 
-import akka.actor.{Actor, ActorRef}
+import akka.actor.ActorRef
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.SyncControllerMessage
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.DataSourceFetcherPrototype
 import com.neighborhood.aka.laplace.estuary.core.task.{SourceManager, TaskManager}
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.fetch.OplogFetcherCommand._
+import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.util.OplogOffsetHandler
 import com.neighborhood.aka.laplace.estuary.mongo.source.{MongoConnection, MongoSourceManagerImp}
 
 /**
   * Created by john_liu on 2019/2/28.
   *
   * 處理oplog 拉取的actor
+  *
   * @author neighborhood.aka.laplace
   */
 final class OplogSimpleFetcher(
@@ -28,12 +30,45 @@ final class OplogSimpleFetcher(
     */
   override val syncTaskId: String = taskManager.syncTaskId
 
+  val isCounting = taskManager.isCounting
 
-  override def receive: Receive = {
-    case SyncControllerMessage(MysqlBinlogInOrderFetcherStart) =>
+  lazy val powerAdapter = taskManager.powerAdapter
+
+  lazy val processingCounter = taskManager.processingCounter
+
+  val batchNum: Long = taskManager.batchThreshold
+  /**
+    * 位置处理器
+    */
+  private lazy val logPositionHandler: OplogOffsetHandler = taskManager.positionHandler
+  private lazy val simpleFetchModule: SimpleFetchModule = {
+    val offset = Option(logPositionHandler.findStartPosition(connection))
+    new SimpleFetchModule(connection, offset, syncTaskId)
   }
 
-  private def start:Unit =
+  private var lastFetchTimestamp = System.currentTimeMillis()
+
+
+  override def receive: Receive = {
+    case SyncControllerMessage(MysqlBinlogInOrderFetcherStart) => start
+    case SyncControllerMessage(MysqlBinlogInOrderFetcherFetch) => handleFetchTask
+  }
+
+  private def start: Unit = {
+    simpleFetchModule
+  }
+
+  private def handleFetchTask: Unit = {
+    simpleFetchModule.fetch.foreach {
+      doc =>
+        val curr = System.currentTimeMillis()
+        sendData(doc)
+        lastFetchTimestamp = curr
+    }
+  }
+
+  private def sendData(data: Any) = downStream ! data
+
   /**
     * 错位次数阈值
     */
