@@ -90,10 +90,16 @@ trait CanalEntry2RowDataInfoMappingFormat extends CanalEntryMappingFormat[MysqlR
     else schemaHolder
       .flatMap(_.getTableMetaByFullName(s"$dbName.$tableName"))
       .map { tableMeta =>
-        columnList
+        val re = columnList
           .forall(x => tableMeta.columnInfoMap.contains(x.name))
+        if(!re){
+         val list = tableMeta.columns.map(_.name).diff(columnList.map(_.name))
+          logger.info(list.mkString(","))
+        }
+        re
       }
       .getOrElse(false)
+
   }
 
   /**
