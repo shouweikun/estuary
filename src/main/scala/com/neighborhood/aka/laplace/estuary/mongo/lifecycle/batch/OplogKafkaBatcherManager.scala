@@ -1,24 +1,24 @@
-package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.batch.mappingFormat
+package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.batch
 
-import akka.actor.{ActorRef, AllForOneStrategy}
 import akka.actor.SupervisorStrategy.Escalate
+import akka.actor.{ActorRef, AllForOneStrategy}
 import com.neighborhood.aka.laplace.estuary.bean.key.OplogKey
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, FetcherMessage, SyncControllerMessage}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.SourceDataBatcherManagerPrototype
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status.Status
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, FetcherMessage, SyncControllerMessage}
 import com.neighborhood.aka.laplace.estuary.core.sink.kafka.KafkaSinkFunc
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.OplogClassifier
-import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.batch.mappingFormat.OplogBatcherCommand.{OplogBatcherCheckHeartbeats, OplogBatcherStart}
+import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.batch.OplogBatcherCommand.{OplogBatcherCheckHeartbeats, OplogBatcherStart}
 import com.neighborhood.aka.laplace.estuary.mongo.source.{MongoConnection, MongoSourceManagerImp}
 import org.bson.Document
 
 /**
   * Created by john_liu on 2019/3/1.
   */
-final class OplogBatcherManager(
+final class OplogKafkaBatcherManager(
                            override val taskManager: MongoSourceManagerImp with TaskManager,
                            override val sinker: ActorRef
 

@@ -1,4 +1,4 @@
-package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.batch.mappingFormat
+package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.batch
 
 /**
   * Created by john_liu on 2018/10/10.
