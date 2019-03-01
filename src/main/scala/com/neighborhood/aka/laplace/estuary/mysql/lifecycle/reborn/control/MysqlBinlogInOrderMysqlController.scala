@@ -11,7 +11,6 @@ import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.listen.MysqlC
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.record.MysqlBinlogInOrderPositionRecorder
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink.mysql.{MysqlBinlogInOrderMysqlSinkerManager, MysqlBinlogInOrderSinkerManager}
 import com.neighborhood.aka.laplace.estuary.mysql.task.mysql.{Mysql2MysqlAllTaskInfoBean, Mysql2MysqlTaskInfoManager}
-import com.neighborhood.aka.laplace.estuary.mysql.task.{Mysql2MysqlTaskInfoBean, Mysql2MysqlTaskInfoManager}
 
 /**
   * Created by john_liu on 2019/1/15.

@@ -4,7 +4,6 @@ import com.neighborhood.aka.laplace.estuary.bean.credential.MysqlCredentialBean
 import com.neighborhood.aka.laplace.estuary.mysql.sink.MysqlSinkBeanImp
 import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlSourceBeanImp
 import com.neighborhood.aka.laplace.estuary.mysql.task.mysql.{Mysql2MysqlAllTaskInfoBean, Mysql2MysqlTaskInfoBeanImp, SdaBean}
-import com.neighborhood.aka.laplace.estuary.mysql.task.{Mysql2MysqlTaskInfoBean, MysqlTaskInfoBeanImp, SdaBean}
 import com.neighborhood.aka.laplace.estuary.web.bean.{Mysql2MysqlRequestBean, MysqlCredentialRequestBean}
 
 object TaskBeanTransformUtil {

@@ -1,7 +1,7 @@
 package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.batch.mappingFormat
 
 import com.neighborhood.aka.laplace.estuary.bean.key.OplogKey
-import com.neighborhood.aka.laplace.estuary.bean.support.{ConKafkaMessage, KafkaMessage, NilKafkaMessage}
+import com.neighborhood.aka.laplace.estuary.bean.support.KafkaMessage
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle
 import com.neighborhood.aka.laplace.estuary.mongo.source.MongoConnection
 import org.bson.Document
