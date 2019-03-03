@@ -2,12 +2,14 @@ package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.fetch
 
 import akka.actor.{ActorRef, Props}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.{FetcherMessage, SyncControllerMessage}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.DataSourceFetcherPrototype
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.{FetcherMessage, SyncControllerMessage}
 import com.neighborhood.aka.laplace.estuary.core.task.{SourceManager, TaskManager}
+import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.adapt.OplogPowerAdapterCommand.OplogPowerAdapterUpdateCost
+import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.count.OplogProcessingCounterCommand.OplogProcessingCounterUpdateCount
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.fetch.OplogFetcherCommand._
-import com.neighborhood.aka.laplace.estuary.mongo.util.OplogOffsetHandler
 import com.neighborhood.aka.laplace.estuary.mongo.source.{MongoConnection, MongoSourceManagerImp}
+import com.neighborhood.aka.laplace.estuary.mongo.util.OplogOffsetHandler
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
@@ -81,9 +83,9 @@ final class SimpleOplogFetcher(
       doc =>
         val curr = System.currentTimeMillis()
         sendData(doc)
-        lastFetchTimestamp = curr
-        sendCost(System.currentTimeMillis())
+        sendCost(System.currentTimeMillis() - lastFetchTimestamp)
         sendCount(1)
+        lastFetchTimestamp = curr //更新一下时间
     }
 
 
@@ -91,9 +93,9 @@ final class SimpleOplogFetcher(
 
   private def sendData(data: Any) = downStream ! data
 
-  private def sendCount(count: Long = 1l) = ???
+  private def sendCount(count: Long = 1l) = powerAdapter.map(ref => ref ! FetcherMessage(OplogProcessingCounterUpdateCount(count)))
 
-  private def sendCost(cost: Long = 1l) = ???
+  private def sendCost(cost: Long = 1l) = powerAdapter.map(ref => ref ! FetcherMessage(OplogPowerAdapterUpdateCost(cost)))
 
   /**
     *
