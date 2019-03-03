@@ -2,7 +2,7 @@ package com.neighborhood.aka.laplace.estuary.mongo.source
 
 import com.neighborhood.aka.laplace.estuary.bean.resource.{DataSourceBase, MongoSourceBean}
 import com.neighborhood.aka.laplace.estuary.core.task.SourceManager
-import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.util.OplogOffsetHandler
+import com.neighborhood.aka.laplace.estuary.mongo.util.OplogOffsetHandler
 
 /**
   * Created by john_liu on 2019/2/28.

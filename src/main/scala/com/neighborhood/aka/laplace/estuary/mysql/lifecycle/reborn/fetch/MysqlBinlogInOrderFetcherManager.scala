@@ -28,7 +28,6 @@ final class MysqlBinlogInOrderFetcherManager(
                                               override val taskManager: MysqlSourceManagerImp with TaskManager,
                                               val binlogEventBatcher: ActorRef
                                             ) extends SourceDataFetcherManagerPrototype {
-  val directFetcherName: String = "directFetcher"
 
   implicit private lazy val ec = context.dispatcher
   /**
@@ -48,12 +47,7 @@ final class MysqlBinlogInOrderFetcherManager(
     */
   override val batcher: ActorRef = binlogEventBatcher
 
-  /**
-    * 数据拉取
-    *
-    * @return
-    */
-  def directFetcher: Option[ActorRef] = context.child(directFetcherName)
+
 
   /**
     * 快照判断

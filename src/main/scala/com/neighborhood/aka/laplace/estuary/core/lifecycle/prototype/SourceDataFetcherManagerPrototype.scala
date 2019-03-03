@@ -9,6 +9,8 @@ import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
   * Created by john_liu on 2018/5/20.
   */
 trait SourceDataFetcherManagerPrototype extends ActorPrototype with SourceDataFetcher {
+  val directFetcherName: String = "directFetcher"
+
   /**
     * 是否是最上层的manager
     */
@@ -24,6 +26,11 @@ trait SourceDataFetcherManagerPrototype extends ActorPrototype with SourceDataFe
     * 任务信息管理器
     */
   def taskManager: TaskManager
+
+  /**
+    * 直接fetcher
+    */
+  def directFetcher: Option[ActorRef] = context.child(directFetcherName)
 
   /**
     * 初始化Fetcher域下相关组件

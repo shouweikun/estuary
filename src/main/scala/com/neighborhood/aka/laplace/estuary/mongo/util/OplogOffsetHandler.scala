@@ -1,4 +1,4 @@
-package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.util
+package com.neighborhood.aka.laplace.estuary.mongo.util
 
 import com.neighborhood.aka.laplace.estuary.core.source.DataSourceConnection
 import com.neighborhood.aka.laplace.estuary.core.task.PositionHandler

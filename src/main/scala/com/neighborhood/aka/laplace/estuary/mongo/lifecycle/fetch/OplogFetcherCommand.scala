@@ -6,24 +6,24 @@ package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.fetch
 sealed trait OplogFetcherCommand
 
 object OplogFetcherCommand {
-  case object MysqlBinlogInOrderFetcherStart extends OplogFetcherCommand
+  case object OplogFetcherStart extends OplogFetcherCommand
 
-  case object MysqlBinlogInOrderFetcherRestart extends OplogFetcherCommand
+  case object OplogFetcherRestart extends OplogFetcherCommand
 
-  case object MysqlBinlogInOrderFetcherSuspend extends OplogFetcherCommand
+  case object OplogFetcherSuspend extends OplogFetcherCommand
 
-  case object MysqlBinlogInOrderFetcherBusy extends OplogFetcherCommand
+  case object OplogFetcherBusy extends OplogFetcherCommand
 
-  case object MysqlBinlogInOrderFetcherFree extends OplogFetcherCommand
+  case object OplogFetcherFree extends OplogFetcherCommand
 
-  case object MysqlBinlogInOrderResume extends OplogFetcherCommand
+  case object OplogResume extends OplogFetcherCommand
 
-  case object MysqlBinlogInOrderFetcherPrefetch extends OplogFetcherCommand
+  case object OplogFetcherPrefetch extends OplogFetcherCommand
 
-  case object MysqlBinlogInOrderFetcherFetch extends OplogFetcherCommand
+  case object OplogFetcherFetch extends OplogFetcherCommand
 
-  case object MysqlBinlogInOrderFetcherNonBlockingFetch extends OplogFetcherCommand
+  case object OplogFetcherNonBlockingFetch extends OplogFetcherCommand
 
-  case class MysqlBinlogInOrderFetcherUpdateDelay(delay: Long) extends OplogFetcherCommand
+  case class OplogFetcherUpdateDelay(delay: Long) extends OplogFetcherCommand
 
 }
