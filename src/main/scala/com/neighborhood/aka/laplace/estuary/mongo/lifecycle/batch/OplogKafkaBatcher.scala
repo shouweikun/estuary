@@ -38,9 +38,8 @@ final class OplogKafkaBatcher(override val taskManager: TaskManager,
     val kafkaMessage = transAndSend(oplogClassifier)
     if (!kafkaMessage.isAbnormal) {
       sendCost(kafkaMessage.baseDataJsonKey.msgSyncUsedTime)
-      sendCount(1)
     }
-
+    sendCount(1)
   }
 
   @inline
@@ -50,8 +49,10 @@ final class OplogKafkaBatcher(override val taskManager: TaskManager,
     kafkaMessage
   }
 
+  @inline
   private def sendCost(cost: Long): Unit = powerAdapter.map(ref => ref ! BatcherMessage(OplogPowerAdapterUpdateCost(cost)))
 
+  @inline
   private def sendCount(count: Long): Unit = processingCounter.map(ref => ref ! BatcherMessage(OplogProcessingCounterUpdateCount(count: Long)))
 
   /**
