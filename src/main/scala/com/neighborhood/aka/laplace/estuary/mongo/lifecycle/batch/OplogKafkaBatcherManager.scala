@@ -2,7 +2,8 @@ package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.batch
 
 import akka.actor.SupervisorStrategy.Escalate
 import akka.actor.{ActorRef, AllForOneStrategy}
-import com.neighborhood.aka.laplace.estuary.bean.key.OplogKey
+import akka.routing.{ConsistentHashingGroup, RoundRobinGroup}
+import com.neighborhood.aka.laplace.estuary.bean.key.{OplogKey, PartitionStrategy}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.SourceDataBatcherManagerPrototype
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status
@@ -13,16 +14,17 @@ import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.OplogClassifier
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.batch.OplogBatcherCommand.{OplogBatcherCheckHeartbeats, OplogBatcherStart}
 import com.neighborhood.aka.laplace.estuary.mongo.source.{MongoConnection, MongoSourceManagerImp}
+import com.neighborhood.aka.laplace.estuary.mysql.SettingConstant
 import org.bson.Document
 
 /**
   * Created by john_liu on 2019/3/1.
   */
 final class OplogKafkaBatcherManager(
-                           override val taskManager: MongoSourceManagerImp with TaskManager,
-                           override val sinker: ActorRef
+                                      override val taskManager: MongoSourceManagerImp with TaskManager,
+                                      override val sinker: ActorRef
 
-                         ) extends SourceDataBatcherManagerPrototype[MongoConnection, KafkaSinkFunc[OplogKey, String]] {
+                                    ) extends SourceDataBatcherManagerPrototype[MongoConnection, KafkaSinkFunc[OplogKey, String]] {
 
   val partitionStrategy = taskManager.partitionStrategy
 
@@ -49,24 +51,41 @@ final class OplogKafkaBatcherManager(
     */
   override lazy val syncTaskId: String = taskManager.syncTaskId
 
+  val batcherNum = taskManager.batcherNum
+  val batcherNameToLoad = taskManager.batcherNameToLoad
+
   /**
     * 初始化Batchers
     */
   override protected def initBatchers: Unit = {
-    //todo
+    taskManager.wait4SinkerList() //必须要等待,一定要等sinkerList创建完毕才行
+    //val batcherTypeName = taskManager.batcherNameToLoad.get(batcherName).getOrElse(OplogKafkaBatcher.name) // todo 支持动态加载
+    val paths: List[String] = (1 to batcherNum).map {
+      index => OplogKafkaBatcher.props(taskManager, taskManager.sinkerList(index - 1), index)
+    }.map(context.actorOf(_)).map(_.path.toString).toList
+    lazy val roundRobin = context.actorOf(new RoundRobinGroup(paths).props().withDispatcher("akka.batcher-dispatcher"), "router")
+    lazy val consistentHashing = context.actorOf(new ConsistentHashingGroup(paths, virtualNodesFactor = SettingConstant.HASH_MAPPING_VIRTUAL_NODES_FACTOR).props().withDispatcher("akka.batcher-dispatcher"), routerName)
+    partitionStrategy match { //暂未支持其他分区等级
+      case PartitionStrategy.PRIMARY_KEY => consistentHashing
+      case PartitionStrategy.DATABASE_TABLE => consistentHashing
+    }
+    //    val specialInfoSenderTypeName = batcherNameToLoad.get(specialInfoSenderName).getOrElse(MysqlBinlogInOrderMysqlSpecialInfoSender.name) //todo 动态加载能力
+    val props = OplogKafkaSpecialInfoSender.props(taskManager.sinkerList.head, taskManager)
+    context.actorOf(props, specialInfoSenderName)
   }
 
+
   override def receive: Receive = {
-    case SyncControllerMessage(OplogBatcherStart) =>
+    case SyncControllerMessage(OplogBatcherStart) => start
   }
 
   def online: Receive = {
     case doc: Document => dispatchDoc(doc)
     case FetcherMessage(doc: Document) => dispatchDoc(doc)
-    case SyncControllerMessage(OplogBatcherCheckHeartbeats) =>
+    case SyncControllerMessage(OplogBatcherCheckHeartbeats) => dispatchHeartbeatMessage
   }
 
-  private def switch2Online: Unit = {
+  private def start: Unit = {
     log.info(s"batcher manager switch 2 online,id:$syncTaskId")
     context.become(online, true)
     batcherChangeStatus(Status.ONLINE)

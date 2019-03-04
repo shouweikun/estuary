@@ -23,6 +23,8 @@ trait SourceDataBatcherManagerPrototype[A <: DataSourceConnection, B <: SinkFunc
     */
   val routerName: String = "router"
 
+  val batcherName:String = "batcher"
+
   /**
     * 事件收集器
     */

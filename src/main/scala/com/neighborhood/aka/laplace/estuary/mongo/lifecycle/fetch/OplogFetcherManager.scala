@@ -44,7 +44,11 @@ final class OplogFetcherManager(override val taskManager: TaskManager,
     case SyncControllerMessage(OplogFetcherStart) => start
   }
 
-  def online: Receive = ???
+  def online: Receive = {
+    case m@SyncControllerMessage(OplogFetcherUpdateDelay(_)) => dispatchFetchDelayMessage(m)
+  }
+
+  private def dispatchFetchDelayMessage(m: Any): Unit = directFetcher.map(ref => ref ! m)
 
   private def start: Unit = {
     log.info(s"oplog fetcher manager start,id:$syncTaskId")
