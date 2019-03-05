@@ -114,7 +114,7 @@ final class Mysql2MysqlService extends SyncService[Mysql2MysqlRequestBean] {
     taskRequestBean.getMysql2MysqlRunningInfoBean.setFetcherNameToLoad(new util.HashMap[String, String]())
     taskRequestBean.getMysql2MysqlRunningInfoBean.getFetcherNameToLoad.put("directFetcher", "com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.fetch.SdaMysqlBinlogInOrderDirectFetcher") //强制sda
     taskRequestBean.getMysql2MysqlRunningInfoBean.setBatcherNameToLoad(new util.HashMap[String, String]())
-    taskRequestBean.getMysql2MysqlRunningInfoBean.getFetcherNameToLoad.put("directFetcher", "com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.fetch.SdaMysqlBinlogInOrderDirectFetcher") //强制sda
+    taskRequestBean.getMysql2MysqlRunningInfoBean.getBatcherNameToLoad.put("specialInfoSender", "com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.batch.imp.MysqlBinlogInOrderMysqlSpecialInfoSender4Sda") //强制sda
     taskRequestBean.setSdaBean(new SdaRequestBean(getMappingRule, allEncryptField)) //增加rule
   }
 

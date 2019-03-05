@@ -1,6 +1,5 @@
 package com.neighborhood.aka.laplace.estuary.mysql.sink
 
-import com.neighborhood.aka.laplace.estuary.bean.datasink.DataSinkBean
 import com.neighborhood.aka.laplace.estuary.bean.key.BinlogKey
 import com.neighborhood.aka.laplace.estuary.core.sink.kafka.KafkaSinkFunc
 import com.neighborhood.aka.laplace.estuary.core.task.SinkManager
