@@ -1,6 +1,6 @@
 package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.fetch
 
-import akka.actor.ActorRef
+import akka.actor.{ActorRef, Props}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{FetcherMessage, SyncControllerMessage}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.SourceDataFetcherManagerPrototype
@@ -71,4 +71,8 @@ final class OplogFetcherManager(override val taskManager: TaskManager,
     * 错误处理
     */
   override def processError(e: Throwable, message: lifecycle.WorkerMessage): Unit = ???
+}
+
+object OplogFetcherManager {
+  def props( taskManager: TaskManager, batcher: ActorRef):Props = Props(new OplogFetcherManager(taskManager,batcher))
 }

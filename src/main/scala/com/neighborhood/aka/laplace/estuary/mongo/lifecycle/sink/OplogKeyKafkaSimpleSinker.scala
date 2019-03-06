@@ -1,5 +1,6 @@
 package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink
 
+import akka.actor.Props
 import com.neighborhood.aka.laplace.estuary.bean.key.OplogKey
 import com.neighborhood.aka.laplace.estuary.bean.support.KafkaMessage
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
@@ -90,4 +91,8 @@ final class OplogKeyKafkaSimpleSinker(
     * 错误处理
     */
   override def processError(e: Throwable, message: lifecycle.WorkerMessage): Unit = ???
+}
+
+object OplogKeyKafkaSimpleSinker {
+  def props(taskManager: OplogKeyKafkaSinkManagerImp with TaskManager, num: Int): Props = Props(new OplogKeyKafkaSimpleSinker(taskManager, num))
 }

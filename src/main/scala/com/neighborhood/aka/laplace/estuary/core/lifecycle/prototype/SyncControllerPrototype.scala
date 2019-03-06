@@ -61,6 +61,9 @@ trait SyncControllerPrototype[A <: DataSourceConnection, B <: SinkFunc] extends 
     */
   def taskManager: TaskManager
 
+
+  def resourceManager: SourceManager[A] with SinkManager[B]
+
   /**
     * 在线模式
     *
@@ -74,7 +77,7 @@ trait SyncControllerPrototype[A <: DataSourceConnection, B <: SinkFunc] extends 
     * @return 构造好的资源管理器
     *
     */
-   def buildManager: SourceManager[A] with SinkManager[B] with TaskManager
+  def buildManager: SourceManager[A] with SinkManager[B] with TaskManager
 
   /**
     * 利用监督机制重启

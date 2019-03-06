@@ -112,7 +112,7 @@ trait SourceDataSinkerManagerPrototype[B <: SinkFunc] extends ActorPrototype wit
     */
   override def preStart(): Unit = {
     sinkerChangeStatus(Status.OFFLINE)
-
+    initSinkers
 
   }
 

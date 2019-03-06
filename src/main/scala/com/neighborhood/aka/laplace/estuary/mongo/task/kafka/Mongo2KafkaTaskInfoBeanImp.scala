@@ -7,7 +7,7 @@ import com.neighborhood.aka.laplace.estuary.bean.identity.{BaseExtractBean, Data
 /**
   * Created by john_liu on 2019/2/28.
   */
-final case class Mongo2KafkaTaskInfoBeanImp(syncTaskId: String) extends BaseExtractBean {
+final case class Mongo2KafkaTaskInfoBeanImp(syncTaskId: String)(val isCosting: Boolean = true) extends BaseExtractBean {
 
   /**
     * 数据同步形式
