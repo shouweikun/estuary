@@ -29,6 +29,7 @@ import com.neighborhood.aka.laplace.estuary.mongo.source.{MongoConnection, Mongo
 import com.neighborhood.aka.laplace.estuary.mongo.task.kafka.{Mongo2KafkaAllTaskInfoBean, Mongo2KafkaTaskInfoBeanImp, Mongo2KafkaTaskInfoManager}
 import org.I0Itec.zkclient.exception.ZkTimeoutException
 
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 import scala.concurrent.duration._
 import scala.util.Try
 
@@ -42,6 +43,10 @@ final class Oplog2KafkaController(
                                  ) extends SyncControllerPrototype[MongoConnection, KafkaSinkFunc[OplogKey, String]] {
 
   protected val schedulingCommandPool: ExecutorService = Executors.newFixedThreadPool(3)
+  /**
+    * 必须要用这个，保证重启后，之前的定时发送任务都没了
+    */
+  implicit protected val scheduleTaskPool: ExecutionContextExecutor = ExecutionContext.fromExecutor(schedulingCommandPool)
   override val taskBean: Mongo2KafkaTaskInfoBeanImp = allTaskInfoBean.taskRunningInfoBean
   override val sourceBean: MongoSourceBeanImp = allTaskInfoBean.sourceBean
 
