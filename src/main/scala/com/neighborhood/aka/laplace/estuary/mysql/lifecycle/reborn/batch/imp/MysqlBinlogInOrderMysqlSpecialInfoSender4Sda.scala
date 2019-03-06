@@ -40,6 +40,10 @@ final class MysqlBinlogInOrderMysqlSpecialInfoSender4Sda(
       .map { tableName => s"replace into $tableName (id,create_time,consume_position) VALUES(1,NOW(),'$binlogPositionInfo')" }
       .map(sql => if (!sink.isTerminated) sink.insertSql(sql)) //绝对要扔出异常！！！！)
   }
+
+  override def preStart(): Unit = {
+    log.info(s"${MysqlBinlogInOrderMysqlSpecialInfoSender4Sda.name} preStart,id:$syncTaskId")
+  }
 }
 
 object MysqlBinlogInOrderMysqlSpecialInfoSender4Sda {
