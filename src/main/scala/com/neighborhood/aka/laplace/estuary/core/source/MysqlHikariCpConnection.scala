@@ -36,6 +36,7 @@ final class MysqlHikariCpConnection(
   def insertSql(sql: String): Try[Int] = Try {
     val connection = ds.getConnection
     try {
+      connection.setAutoCommit(true)
       connection.createStatement().executeUpdate(sql)
     } catch {
       case e =>

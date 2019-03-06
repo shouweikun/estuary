@@ -34,7 +34,7 @@ final class MysqlSinkFunc(
     */
   override def isTerminated: Boolean = !mysqlHikariCpConnection.isConnected
 
-  def insertSql(sql: String): Try[Int] = mysqlHikariCpConnection.insertSql(sql)
+  def insertSql(sql: String): Int = mysqlHikariCpConnection.insertSql(sql).get
 
   def insertBatchSql(sqls: List[String]): Try[List[Int]] = mysqlHikariCpConnection.insertBatchSql(sqls)
 

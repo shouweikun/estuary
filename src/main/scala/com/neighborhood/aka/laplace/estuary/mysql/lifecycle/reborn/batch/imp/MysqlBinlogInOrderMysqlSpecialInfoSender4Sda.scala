@@ -3,8 +3,8 @@ package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.batch.imp
 import akka.actor.{ActorRef, Props}
 import com.neighborhood.aka.laplace.estuary.core.sink.mysql.MysqlSinkFunc
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
-import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.{BinlogPositionInfo, MysqlRowDataInfo}
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.batch.MysqlBinlogInOrderSpecialInfoSender
+import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.{BinlogPositionInfo, MysqlRowDataInfo}
 import com.neighborhood.aka.laplace.estuary.mysql.sink.MysqlSinkManagerImp
 import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlSourceManagerImp
 
@@ -37,8 +37,11 @@ final class MysqlBinlogInOrderMysqlSpecialInfoSender4Sda(
   override protected def buildAndSendDummyHeartbeatMessage(dbNameList: Iterable[String])(sinker: ActorRef): Unit = {
     val binlogPositionInfo = this.currentBinlogPositionInfo.getOrElse(BinlogPositionInfo("", 0, 0))
     heartBeatCheckTableNames
-      .map { tableName => s"replace into $tableName (id,create_time,consume_position) VALUES(1,NOW(),'$binlogPositionInfo')" }
-      .map(sql => if (!sink.isTerminated) sink.insertSql(sql)) //绝对要扔出异常！！！！)
+      .map { tableName => List(s"replace into $tableName (id,create_time,consume_position) VALUES(1,NOW(),'$binlogPositionInfo')") }
+      .map { sqls =>
+        if (!sink.isTerminated)sqls.foreach { sql => sink.insertSql(sql) }
+      }
+    //绝对要扔出异常！！！！)
   }
 
   override def preStart(): Unit = {

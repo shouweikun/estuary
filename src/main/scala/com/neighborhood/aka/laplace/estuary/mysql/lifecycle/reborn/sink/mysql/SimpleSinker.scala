@@ -56,7 +56,7 @@ final private[sink] class SimpleSinker(
 
   override def receive: Receive = {
     case m@SinkerMessage(x: SqlList) => {
-      handleSinkTask(x).failed.foreach(processError(_, m))
+     handleSinkTask(x).failed.foreach(processError(_, m))
       sendCount(x.shouldCount)
       sendCost((System.currentTimeMillis() - x.ts) / x.shouldCount)
     }
@@ -71,7 +71,7 @@ final private[sink] class SimpleSinker(
     */
   override protected def handleSinkTask[I <: SqlList](input: I): Try[_] = {
     lastBinlogPosition = input.binlogPositionInfo
-    if (input.list == 1) sinkFunc.insertSql(input.list.head)
+    if (input.list == 1) Try(sinkFunc.insertSql(input.list.head))
     else sinkFunc.insertBatchSql(input.list)
   }
 

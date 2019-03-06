@@ -99,8 +99,7 @@ abstract class MysqlBinlogInOrderSpecialInfoSender[R](
   protected def sendHeartBeats: Unit = {
     val concernedDbNames = concernedDbName
     val ignoredDbNames = ignoredDbName
-
-
+    log.info(s"try to send heartbeats,concernList:${concernedDbNames.mkString(",")},ignored:${ignoredDbName.mkString(",")},id:$syncTaskId")
     (concernedDbNames.size > 0, ignoredDbNames.size > 0) match {
       case (true, _) => buildAndSendDummyHeartbeatMessage(concernedDbNames)(sinker)
       case (_, true) => buildAndSendDummyHeartbeatMessage(mysqlDatabaseNameList.diff(ignoredDbNames))(sinker)
