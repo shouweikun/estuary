@@ -2,6 +2,8 @@ package com.neighborhood.aka.laplace.estuary.web.bean;
 
 /**
  * Created by john_liu on 2019/3/7.
+ *
+ * @author neighborhood.aka.lapalce
  */
 public class Mongo2KafkaTaskRequestBean {
 
