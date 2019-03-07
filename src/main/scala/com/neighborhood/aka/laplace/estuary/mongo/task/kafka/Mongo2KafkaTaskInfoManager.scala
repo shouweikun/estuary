@@ -1,12 +1,12 @@
 package com.neighborhood.aka.laplace.estuary.mongo.task.kafka
 
 import akka.actor.ActorRef
-import com.neighborhood.aka.laplace.estuary.bean.identity.BaseExtractBean
 import com.neighborhood.aka.laplace.estuary.bean.key.PartitionStrategy
 import com.neighborhood.aka.laplace.estuary.bean.support.KafkaMessage
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.core.trans.MappingFormat
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.OplogClassifier
+import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.batch.mappingFormat.Oplog2KafkaMessageMappingFormat
 import com.neighborhood.aka.laplace.estuary.mongo.sink.{OplogKeyKafkaBeanImp, OplogKeyKafkaSinkManagerImp}
 import com.neighborhood.aka.laplace.estuary.mongo.source.{MongoSourceBeanImp, MongoSourceManagerImp}
 import com.typesafe.config.Config
@@ -35,17 +35,17 @@ final class Mongo2KafkaTaskInfoManager(
   /**
     * batch转换模块
     */
-  override lazy val batchMappingFormat: Option[MappingFormat[OplogClassifier, KafkaMessage]] = ???
+  override lazy val batchMappingFormat: Option[MappingFormat[OplogClassifier, KafkaMessage]] = Option(buildMappingFormat)
 
   /**
     * 事件溯源的事件收集器
     */
-  override def eventCollector: Option[ActorRef] = ???
+  override def eventCollector: Option[ActorRef] = None //todo
 
   /**
     * 任务信息bean
     */
-  override lazy val taskInfo: BaseExtractBean = allTaskInfoBean.taskRunningInfoBean
+  override lazy val taskInfo: Mongo2KafkaTaskInfoBeanImp = allTaskInfoBean.taskRunningInfoBean
 
   /**
     * 传入的配置
@@ -57,22 +57,22 @@ final class Mongo2KafkaTaskInfoManager(
   /**
     * 是否计数，默认不计数
     */
-  override def isCounting: Boolean = ???
+  override val isCounting: Boolean = taskInfo.isCounting
 
   /**
     * 是否计算每条数据的时间，默认不计时
     */
-  override def isCosting: Boolean = ???
+  override val isCosting: Boolean = taskInfo.isCosting
 
   /**
     * 是否保留最新binlog位置
     */
-  override def isProfiling: Boolean = ???
+  override val isProfiling: Boolean = taskInfo.isProfiling
 
   /**
     * 是否打开功率调节器
     */
-  override def isPowerAdapted: Boolean = ???
+  override val isPowerAdapted: Boolean = taskInfo.isPowerAdapted
 
   /**
     * 是否同步写
@@ -89,58 +89,61 @@ final class Mongo2KafkaTaskInfoManager(
     * 由三部分组成
     * DataSourceType-DataSyncType-DataSinkType
     */
-  override def taskType: String = ???
+  override val taskType: String = s"${sourceBean.dataSourceType}-${taskInfo.dataSyncType}-${sinkBean.dataSinkType}"
 
   /**
     * 分区模式
     *
     * @return
     */
-  override def partitionStrategy: PartitionStrategy = ???
+  override val partitionStrategy: PartitionStrategy = taskInfo.partitionStrategy
 
   /**
     * 是否阻塞式拉取
     *
     * @return
     */
-  override def isBlockingFetch: Boolean = ???
+  override val isBlockingFetch: Boolean = ???
 
   /**
     * 同步任务开始时间 用于fetch过滤无用字段
     *
     * @return
     */
-  override def syncStartTime: Long = ???
+  override val syncStartTime: Long = taskInfo.syncStartTime
 
   /**
     * 同步任务标识
     */
-  override def syncTaskId: String = ???
+  override val syncTaskId: String = taskInfo.syncTaskId
 
   /**
     * 打包阈值
     */
-  override def batchThreshold: Long = ???
+  override val batchThreshold: Long = taskInfo.syncStartTime
 
   /**
     * batcher的数量
     */
-  override def batcherNum: Int = ???
+  override val batcherNum: Int = taskInfo.batcherNum
 
   /**
     * sinker的数量
     */
-  override def sinkerNum: Int = ???
+  override val sinkerNum: Int = taskInfo.sinkerNum
 
 
   /**
     * 初始化/启动
     */
   override def start: Unit = {
-
+    logger.info(s"task manager start,id:$syncTaskId")
+    startSource
+    startSink
   }
 
   private def buildMappingFormat: MappingFormat[OplogClassifier, KafkaMessage] = {
-    ???
+    logger.info(s"start to build build mapping formart,id:$syncTaskId")
+    new Oplog2KafkaMessageMappingFormat(source, syncTaskId)
   }
 }
