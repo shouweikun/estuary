@@ -14,7 +14,7 @@ import scala.collection.JavaConverters._
 object TaskBeanTransformUtil {
 
   def convertMongo2KafkaRequest2Mongo2KafkaTaskInfo(request: Mongo2KafkaTaskRequestBean): Mongo2KafkaAllTaskInfoBean = {
-    val mongoSource = mongoSourceRequestBeanToMongoSourceBean(request.getMongoSourceRequest)
+    val mongoSource = mongoSourceRequestBeanToMongoSourceBean(request.getMongoSource)
     val oplogKeyKafkaSink = OplogKafkaSinkRequestBeanToKafkaSinkBean(request.getKafkaSink)
     val runningInfo = mongo2KafkaRunningInfoRequestBean2Mongo2KafkaTaskInfoBean(request.getMongo2KafkaRunningInfo)
     Mongo2KafkaAllTaskInfoBean(oplogKeyKafkaSink, mongoSource, runningInfo)

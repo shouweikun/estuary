@@ -8,7 +8,7 @@ package com.neighborhood.aka.laplace.estuary.web.bean;
 public class Mongo2KafkaTaskRequestBean extends TaskRequestBean{
 
     private Mongo2KafkaRunningInfoRequestBean mongo2KafkaRunningInfo;
-    private MongoSourceRequestBean mongoSourceRequest;
+    private MongoSourceRequestBean mongoSource;
     private KafkaSinkRequestBean kafkaSink;
 
     public Mongo2KafkaRunningInfoRequestBean getMongo2KafkaRunningInfo() {
@@ -19,12 +19,12 @@ public class Mongo2KafkaTaskRequestBean extends TaskRequestBean{
         this.mongo2KafkaRunningInfo = mongo2KafkaRunningInfo;
     }
 
-    public MongoSourceRequestBean getMongoSourceRequest() {
-        return mongoSourceRequest;
+    public MongoSourceRequestBean getMongoSource() {
+        return mongoSource;
     }
 
-    public void setMongoSourceRequest(MongoSourceRequestBean mongoSourceRequest) {
-        this.mongoSourceRequest = mongoSourceRequest;
+    public void setMongoSource(MongoSourceRequestBean mongoSource) {
+        this.mongoSource = mongoSource;
     }
 
     public KafkaSinkRequestBean getKafkaSink() {
