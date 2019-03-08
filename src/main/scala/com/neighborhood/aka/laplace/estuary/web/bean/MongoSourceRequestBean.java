@@ -5,7 +5,7 @@ import java.util.List;
 /**
  * Created by john_liu on 2019/3/7.
  */
-public class MongoSourceBean {
+public class MongoSourceRequestBean {
 
     private String authMechanism;
     private List<MongoCredentialRequestBean> mongoCredentials;

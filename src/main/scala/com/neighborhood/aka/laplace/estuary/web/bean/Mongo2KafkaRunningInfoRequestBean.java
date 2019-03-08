@@ -8,12 +8,12 @@ import java.util.Map;
 /**
  * Created by john_liu on 2019/3/7.
  */
-public class Mongo2KafkaRunningInfoBean {
+public class Mongo2KafkaRunningInfoRequestBean {
 
 
     private String syncTaskId;
     private long syncStartTime;
-    private int mongoTsSecond = 0;
+    private int mongoTsSecond = (int)(System.currentTimeMillis()/1000);
     private int mongoTsInc = 0;
     private List<String> mysqlDatabaseNameList;
     private long batchThreshold = 1;

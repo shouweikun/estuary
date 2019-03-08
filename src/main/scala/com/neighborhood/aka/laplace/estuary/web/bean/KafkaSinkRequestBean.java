@@ -5,7 +5,7 @@ import java.util.Map;
 /**
  * Created by john_liu on 2019/3/7.
  */
-public class KafkaSinkBean {
+public class KafkaSinkRequestBean {
     private String bootstrapServers;
     private String topic;
     private String ddlTopic;

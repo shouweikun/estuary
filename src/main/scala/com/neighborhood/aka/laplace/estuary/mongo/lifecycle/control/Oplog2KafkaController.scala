@@ -3,7 +3,7 @@ package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.control
 import java.util.concurrent.{ExecutorService, Executors}
 
 import akka.actor.SupervisorStrategy.Escalate
-import akka.actor.{ActorRef, AllForOneStrategy}
+import akka.actor.{ActorRef, AllForOneStrategy, Props}
 import com.neighborhood.aka.laplace.estuary.bean.exception.control.WorkerCannotFindException
 import com.neighborhood.aka.laplace.estuary.bean.key.OplogKey
 import com.neighborhood.aka.laplace.estuary.core.akkaUtil.SyncDaemonCommand.{ExternalRestartCommand, ExternalStartCommand}
@@ -237,12 +237,12 @@ final class Oplog2KafkaController(
     log.info(s"power Control ON,id:$syncTaskId")
 
     //启动positionRecorder
-//    context
-//      .child(positionRecorderName)
-//      .fold {
-//        log.error(s"$positionRecorderName is null,id:$syncTaskId")
-//        throw new WorkerCannotFindException(s"$positionRecorderName is null,id:$syncTaskId")
-//      } { ref => scheduleSaveCommand(ref) }
+    //    context
+    //      .child(positionRecorderName)
+    //      .fold {
+    //        log.error(s"$positionRecorderName is null,id:$syncTaskId")
+    //        throw new WorkerCannotFindException(s"$positionRecorderName is null,id:$syncTaskId")
+    //      } { ref => scheduleSaveCommand(ref) }
   }
 
 
@@ -445,4 +445,8 @@ final class Oplog2KafkaController(
     }
   }
 
+}
+
+object Oplog2KafkaController {
+  def props(allTaskInfoBean: Mongo2KafkaAllTaskInfoBean): Props = Props(new Oplog2KafkaController(allTaskInfoBean))
 }
