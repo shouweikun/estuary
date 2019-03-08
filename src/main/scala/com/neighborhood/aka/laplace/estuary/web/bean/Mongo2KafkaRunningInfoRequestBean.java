@@ -15,15 +15,11 @@ public class Mongo2KafkaRunningInfoRequestBean {
     private long syncStartTime;
     private int mongoTsSecond = (int)(System.currentTimeMillis()/1000);
     private int mongoTsInc = 0;
-    private List<String> mysqlDatabaseNameList;
     private long batchThreshold = 1;
-    private boolean schemaComponentIsOn;
-    private boolean isNeedExecuteDDL;
     private boolean isCounting = true;
     private boolean isCosting = true;
     private boolean isProfiling = true;
     private boolean isPowerAdapted = true;
-    private boolean checkSinkSchema = false;
     private PartitionStrategy partitionStrategy = PartitionStrategy.PRIMARY_KEY;
     private Map<String, String> controllerNameToLoad;
     private Map<String, String> sinkerNameToLoad;
@@ -57,13 +53,6 @@ public class Mongo2KafkaRunningInfoRequestBean {
         this.mongoTsInc = mongoTsInc;
     }
 
-    public boolean isCheckSinkSchema() {
-        return checkSinkSchema;
-    }
-
-    public void setCheckSinkSchema(boolean checkSinkSchema) {
-        this.checkSinkSchema = checkSinkSchema;
-    }
 
     public String getMappingFormatName() {
         return mappingFormatName;
@@ -91,13 +80,7 @@ public class Mongo2KafkaRunningInfoRequestBean {
     }
 
 
-    public List<String> getMysqlDatabaseNameList() {
-        return mysqlDatabaseNameList;
-    }
 
-    public void setMysqlDatabaseNameList(List<String> mysqlDatabaseNameList) {
-        this.mysqlDatabaseNameList = mysqlDatabaseNameList;
-    }
 
     public long getBatchThreshold() {
         return batchThreshold;
@@ -105,22 +88,6 @@ public class Mongo2KafkaRunningInfoRequestBean {
 
     public void setBatchThreshold(long batchThreshold) {
         this.batchThreshold = batchThreshold;
-    }
-
-    public boolean isSchemaComponentIsOn() {
-        return schemaComponentIsOn;
-    }
-
-    public void setSchemaComponentIsOn(boolean schemaComponentIsOn) {
-        this.schemaComponentIsOn = schemaComponentIsOn;
-    }
-
-    public boolean isNeedExecuteDDL() {
-        return isNeedExecuteDDL;
-    }
-
-    public void setNeedExecuteDDL(boolean needExecuteDDL) {
-        isNeedExecuteDDL = needExecuteDDL;
     }
 
     public boolean isCounting() {
