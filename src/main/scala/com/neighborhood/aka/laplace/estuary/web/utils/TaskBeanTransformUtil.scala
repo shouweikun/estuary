@@ -14,9 +14,9 @@ import scala.collection.JavaConverters._
 object TaskBeanTransformUtil {
 
   def convertMongo2KafkaRequest2Mongo2KafkaTaskInfo(request: Mongo2KafkaTaskRequestBean): Mongo2KafkaAllTaskInfoBean = {
-    val mongoSource = mongoSourceRequestBeanToMongoSourceBean(request.getMongoSourceRequestBean)
-    val oplogKeyKafkaSink = OplogKafkaSinkRequestBeanToKafkaSinkBean(request.getKafkaSinkRequestBean)
-    val runningInfo = mongo2KafkaRunningInfoRequestBean2Mongo2KafkaTaskInfoBean(request.getMongo2KafkaRunningInfoRequestBean)
+    val mongoSource = mongoSourceRequestBeanToMongoSourceBean(request.getMongoSourceRequest)
+    val oplogKeyKafkaSink = OplogKafkaSinkRequestBeanToKafkaSinkBean(request.getKafkaSink)
+    val runningInfo = mongo2KafkaRunningInfoRequestBean2Mongo2KafkaTaskInfoBean(request.getMongo2KafkaRunningInfo)
     Mongo2KafkaAllTaskInfoBean(oplogKeyKafkaSink, mongoSource, runningInfo)
   }
 
@@ -89,7 +89,10 @@ object TaskBeanTransformUtil {
       mongoOffset = MongoOffset(
         mongoTsSecond = mongo2KafkaRunningInfoRequestBean.getMongoTsSecond,
         mongoTsInc = mongo2KafkaRunningInfoRequestBean.getMongoTsInc
-      )
+      ),
+      batcherNum = if (mongo2KafkaRunningInfoRequestBean.getBatcherNum <= 0) 15 else mongo2KafkaRunningInfoRequestBean.getBatcherNum,
+      sinkerNum = if (mongo2KafkaRunningInfoRequestBean.getSinkerNum <= 0) 15 else mongo2KafkaRunningInfoRequestBean.getBatcherNum
+
     )
   }
 

@@ -7,31 +7,31 @@ package com.neighborhood.aka.laplace.estuary.web.bean;
  */
 public class Mongo2KafkaTaskRequestBean extends TaskRequestBean{
 
-    private Mongo2KafkaRunningInfoRequestBean mongo2KafkaRunningInfoRequestBean;
-    private MongoSourceRequestBean mongoSourceRequestBean;
-    private KafkaSinkRequestBean kafkaSinkRequestBean;
+    private Mongo2KafkaRunningInfoRequestBean mongo2KafkaRunningInfo;
+    private MongoSourceRequestBean mongoSourceRequest;
+    private KafkaSinkRequestBean kafkaSink;
 
-    public Mongo2KafkaRunningInfoRequestBean getMongo2KafkaRunningInfoRequestBean() {
-        return mongo2KafkaRunningInfoRequestBean;
+    public Mongo2KafkaRunningInfoRequestBean getMongo2KafkaRunningInfo() {
+        return mongo2KafkaRunningInfo;
     }
 
-    public void setMongo2KafkaRunningInfoRequestBean(Mongo2KafkaRunningInfoRequestBean mongo2KafkaRunningInfoRequestBean) {
-        this.mongo2KafkaRunningInfoRequestBean = mongo2KafkaRunningInfoRequestBean;
+    public void setMongo2KafkaRunningInfo(Mongo2KafkaRunningInfoRequestBean mongo2KafkaRunningInfo) {
+        this.mongo2KafkaRunningInfo = mongo2KafkaRunningInfo;
     }
 
-    public MongoSourceRequestBean getMongoSourceRequestBean() {
-        return mongoSourceRequestBean;
+    public MongoSourceRequestBean getMongoSourceRequest() {
+        return mongoSourceRequest;
     }
 
-    public void setMongoSourceRequestBean(MongoSourceRequestBean mongoSourceRequestBean) {
-        this.mongoSourceRequestBean = mongoSourceRequestBean;
+    public void setMongoSourceRequest(MongoSourceRequestBean mongoSourceRequest) {
+        this.mongoSourceRequest = mongoSourceRequest;
     }
 
-    public KafkaSinkRequestBean getKafkaSinkRequestBean() {
-        return kafkaSinkRequestBean;
+    public KafkaSinkRequestBean getKafkaSink() {
+        return kafkaSink;
     }
 
-    public void setKafkaSinkRequestBean(KafkaSinkRequestBean kafkaSinkRequestBean) {
-        this.kafkaSinkRequestBean = kafkaSinkRequestBean;
+    public void setKafkaSink(KafkaSinkRequestBean kafkaSink) {
+        this.kafkaSink = kafkaSink;
     }
 }

@@ -21,10 +21,10 @@ class Mongo2KafkaService extends SyncService[Mongo2KafkaTaskRequestBean] {
     */
   override protected def startNewOneTask(taskRequestBean: Mongo2KafkaTaskRequestBean): String = {
     val taskInfo = TaskBeanTransformUtil.convertMongo2KafkaRequest2Mongo2KafkaTaskInfo(taskRequestBean)
-    ActorRefHolder.syncDaemon ! ExternalStartCommand(Mongo2KafkaSyncTask(Oplog2KafkaController.props(taskInfo), taskRequestBean.getMongo2KafkaRunningInfoRequestBean.getSyncTaskId))
+    ActorRefHolder.syncDaemon ! ExternalStartCommand(Mongo2KafkaSyncTask(Oplog2KafkaController.props(taskInfo), taskRequestBean.getMongo2KafkaRunningInfo.getSyncTaskId))
     s"""
       {
-       "syncTaskId":"${taskRequestBean.getMongo2KafkaRunningInfoRequestBean.getSyncTaskId}",
+       "syncTaskId":"${taskRequestBean.getMongo2KafkaRunningInfo.getSyncTaskId}",
        "status":"submitted"
       }
     """.stripMargin
