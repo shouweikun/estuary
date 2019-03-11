@@ -10,6 +10,7 @@ import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.fetch.MysqlBi
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.listen.MysqlConnectionInOrderListener
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.record.MysqlBinlogInOrderPositionRecorder
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink.mysql.{MysqlBinlogInOrderMysqlSinkerManager, MysqlBinlogInOrderSinkerManager}
+import com.neighborhood.aka.laplace.estuary.mysql.task.mysql.{Mysql2MysqlAllTaskInfoBean, Mysql2MysqlTaskInfoManager}
 import com.neighborhood.aka.laplace.estuary.mysql.task.{Mysql2MysqlTaskInfoBean, Mysql2MysqlTaskInfoManager}
 
 /**
@@ -24,7 +25,7 @@ import com.neighborhood.aka.laplace.estuary.mysql.task.{Mysql2MysqlTaskInfoBean,
   * @author neighborhood.aka.laplace
   */
 final class MysqlBinlogInOrderMysqlController(
-                                               val totalTaskInfo: Mysql2MysqlTaskInfoBean
+                                               val totalTaskInfo: Mysql2MysqlAllTaskInfoBean
                                              ) extends MysqlBinlogInOrderController[MysqlSinkFunc](totalTaskInfo.taskRunningInfoBean, totalTaskInfo.sourceBean, totalTaskInfo.sinkBean) {
   log.info(s"we get totalTaskInfo:${totalTaskInfo},id:$syncTaskId")
 
@@ -97,5 +98,5 @@ final class MysqlBinlogInOrderMysqlController(
 object MysqlBinlogInOrderMysqlController {
   val name = MysqlBinlogInOrderMysqlController.getClass.getName.stripSuffix("$")
 
-  def props(totalTaskInfo: Mysql2MysqlTaskInfoBean): Props = Props(new MysqlBinlogInOrderMysqlController(totalTaskInfo))
+  def props(totalTaskInfo: Mysql2MysqlAllTaskInfoBean): Props = Props(new MysqlBinlogInOrderMysqlController(totalTaskInfo))
 }

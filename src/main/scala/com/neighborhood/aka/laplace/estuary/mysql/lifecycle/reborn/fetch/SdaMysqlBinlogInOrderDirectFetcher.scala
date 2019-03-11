@@ -6,7 +6,7 @@ import com.neighborhood.aka.laplace.estuary.core.lifecycle.FetcherMessage
 import com.neighborhood.aka.laplace.estuary.core.sink.mysql.MysqlSinkFunc
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.record.MysqlBinlogInOrderRecorderCommand.MysqlBinlogInOrderRecorderSaveLatestPosition
 import com.neighborhood.aka.laplace.estuary.mysql.schema.{Parser, SdaSchemaMappingRule}
-import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2MysqlTaskInfoManager
+import com.neighborhood.aka.laplace.estuary.mysql.task.mysql.Mysql2MysqlTaskInfoManager
 import com.neighborhood.aka.laplace.estuary.mysql.utils.{CanalEntryTransHelper, CanalEntryTransUtil}
 
 import scala.util.{Failure, Success, Try}

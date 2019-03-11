@@ -73,7 +73,7 @@ trait CanalEntry2RowDataInfoMappingFormat extends CanalEntryMappingFormat[MysqlR
       keyColumn =>
         val keyName = keyColumn.getName
         val keyValue = (mapRowValue((OperationField(dbName, tableName, keyColumn, keyColumn.getValue, entry))))
-        List(s"DELETE FROM $dbName.$tableName WHERE $keyName=$keyValue")
+        List(s"DELETE FROM `$dbName`.`$tableName` WHERE $keyName=$keyValue")
     }
   }
 
@@ -94,7 +94,7 @@ trait CanalEntry2RowDataInfoMappingFormat extends CanalEntryMappingFormat[MysqlR
           .forall(x => tableMeta.columnInfoMap.contains(x.name))
         if(!re){
          val list = tableMeta.columns.map(_.name).diff(columnList.map(_.name))
-          logger.info(list.mkString(","))
+          logger.warn(list.mkString(","))
         }
         re
       }

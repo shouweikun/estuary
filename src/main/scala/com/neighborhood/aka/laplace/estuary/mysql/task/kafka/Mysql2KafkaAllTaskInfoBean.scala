@@ -1,22 +1,21 @@
-package com.neighborhood.aka.laplace.estuary.mysql.task
+package com.neighborhood.aka.laplace.estuary.mysql.task.kafka
 
 import java.util.Date
 
 import com.neighborhood.aka.laplace.estuary.bean.identity.BaseExtractBean
-import com.neighborhood.aka.laplace.estuary.mysql.sink.MysqlSinkBeanImp
+import com.neighborhood.aka.laplace.estuary.mysql.sink.BinlogKeyKafkaBeanImp
 import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlSourceBeanImp
 
 /**
-  * Created by john_liu on 2019/1/15.
+  * Created by john_liu on 2019/2/27.
   *
   * @author neighborhood.aka.laplace
   */
-final case class Mysql2MysqlTaskInfoBean(
-                                          val sourceBean: MysqlSourceBeanImp,
-                                          val sinkBean: MysqlSinkBeanImp,
-                                          val taskRunningInfoBean: MysqlTaskInfoBeanImp,
-                                          val sdaBean:Option[SdaBean] =None
-                                        ) extends BaseExtractBean {
+final case class Mysql2KafkaAllTaskInfoBean(
+                                             sinkBean: BinlogKeyKafkaBeanImp,
+                                             sourceBean: MysqlSourceBeanImp,
+                                             taskRunningInfoBean: Mysql2KafkaTaskInfoBeanImp
+                                           )extends BaseExtractBean {
 
 
   /**

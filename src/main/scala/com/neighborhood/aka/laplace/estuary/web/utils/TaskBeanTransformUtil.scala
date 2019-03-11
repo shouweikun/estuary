@@ -3,13 +3,13 @@ package com.neighborhood.aka.laplace.estuary.web.utils
 import com.neighborhood.aka.laplace.estuary.bean.credential.MysqlCredentialBean
 import com.neighborhood.aka.laplace.estuary.mysql.sink.MysqlSinkBeanImp
 import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlSourceBeanImp
-import com.neighborhood.aka.laplace.estuary.mysql.task.{Mysql2MysqlTaskInfoBean, MysqlTaskInfoBeanImp, SdaBean}
+import com.neighborhood.aka.laplace.estuary.mysql.task.mysql.{Mysql2MysqlAllTaskInfoBean, Mysql2MysqlTaskInfoBeanImp, SdaBean}
 import com.neighborhood.aka.laplace.estuary.web.bean.{Mysql2MysqlRequestBean, MysqlCredentialRequestBean}
 
 object TaskBeanTransformUtil {
 
 
-  def convertMysql2MysqlRequest2Mysql2MysqlTaskInfo(request: Mysql2MysqlRequestBean): Mysql2MysqlTaskInfoBean = {
+  def convertMysql2MysqlRequest2Mysql2MysqlTaskInfo(request: Mysql2MysqlRequestBean): Mysql2MysqlAllTaskInfoBean = {
     import scala.collection.JavaConverters._
     val requestMysqlSourceBean = request.getMysqlSourceBean
     val requestMysqlSinkBean = request.getMysqlSinkBean
@@ -35,7 +35,7 @@ object TaskBeanTransformUtil {
       maximumPoolSize = Option(math.max(requestRunningBean.getBatcherNum + 3, requestMysqlSinkBean.getMaximumPoolSize))
     )
 
-    val runningInfoBean = MysqlTaskInfoBeanImp(
+    val runningInfoBean = Mysql2MysqlTaskInfoBeanImp(
       syncTaskId = requestRunningBean.getSyncTaskId,
       offsetZkServers = requestRunningBean.getOffsetZkServers
     )(
@@ -59,7 +59,7 @@ object TaskBeanTransformUtil {
     val tableMappingRule = Option(request.getSdaBean).map(_.getTableMappingRule.asScala.toMap[String, String]).getOrElse(Map.empty)
     val encryptionField = Option(request.getSdaBean).map(_.getEncryptField.asScala.mapValues(_.asScala.toSet).toMap[String, Set[String]]).getOrElse(Map.empty)
     val sdaBean = Option(SdaBean(tableMappingRule, encryptionField))
-    Mysql2MysqlTaskInfoBean(sourceBean = mysqlSourceBean, sinkBean = mysqlSinkBean, taskRunningInfoBean = runningInfoBean, sdaBean = sdaBean)
+    Mysql2MysqlAllTaskInfoBean(sourceBean = mysqlSourceBean, sinkBean = mysqlSinkBean, taskRunningInfoBean = runningInfoBean, sdaBean = sdaBean)
   }
 
 

@@ -7,7 +7,7 @@ import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mysql.schema.Parser
 import com.neighborhood.aka.laplace.estuary.mysql.sink.MysqlSinkManagerImp
 import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlSourceManagerImp
-import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2MysqlTaskInfoManager
+import com.neighborhood.aka.laplace.estuary.mysql.task.mysql.Mysql2MysqlTaskInfoManager
 import com.neighborhood.aka.laplace.estuary.mysql.utils.CanalEntryTransUtil
 
 /**

@@ -15,7 +15,7 @@ import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.adapt.MysqlBi
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.fetch.MysqlBinlogInOrderFetcherCommand._
 import com.neighborhood.aka.laplace.estuary.mysql.sink.MysqlSinkManagerImp
 import com.neighborhood.aka.laplace.estuary.mysql.source.{MysqlConnection, MysqlSourceManagerImp}
-import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2MysqlTaskInfoManager
+import com.neighborhood.aka.laplace.estuary.mysql.task.mysql.Mysql2MysqlTaskInfoManager
 import com.neighborhood.aka.laplace.estuary.mysql.utils.CanalEntryTransUtil
 
 import scala.concurrent.ExecutionContextExecutor

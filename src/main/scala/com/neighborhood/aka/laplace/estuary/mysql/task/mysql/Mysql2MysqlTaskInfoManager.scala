@@ -1,4 +1,4 @@
-package com.neighborhood.aka.laplace.estuary.mysql.task
+package com.neighborhood.aka.laplace.estuary.mysql.task.mysql
 
 import akka.actor.ActorRef
 import com.alibaba.otter.canal.protocol.position.EntryPosition
@@ -22,7 +22,7 @@ import scala.util.Try
   * @author neighborhood.aka.laplace
   */
 final class Mysql2MysqlTaskInfoManager(
-                                        taskInfoBean: Mysql2MysqlTaskInfoBean,
+                                        taskInfoBean: Mysql2MysqlAllTaskInfoBean,
                                         _config: Config
                                       ) extends MysqlSinkManagerImp with MysqlSourceManagerImp with TaskManager {
 
@@ -36,7 +36,7 @@ final class Mysql2MysqlTaskInfoManager(
   /**
     * 任务信息bean
     */
-  override val taskInfo: Mysql2MysqlTaskInfoBean = taskInfoBean
+  override val taskInfo: Mysql2MysqlAllTaskInfoBean = taskInfoBean
   /**
     * 数据汇bean
     */
@@ -271,7 +271,7 @@ final class Mysql2MysqlTaskInfoManager(
 
 object Mysql2MysqlTaskInfoManager {
   def apply(
-             taskInfoBean: Mysql2MysqlTaskInfoBean,
+             taskInfoBean: Mysql2MysqlAllTaskInfoBean,
              _config: Config
            ): Mysql2MysqlTaskInfoManager = new Mysql2MysqlTaskInfoManager(taskInfoBean, _config)
 }

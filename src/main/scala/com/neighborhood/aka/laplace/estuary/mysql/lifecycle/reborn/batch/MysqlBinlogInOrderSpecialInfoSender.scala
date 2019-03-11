@@ -11,7 +11,7 @@ import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.batch.MysqlBi
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.batch.MysqlBinlogInOrderBatcherEvent.MysqlBinlogInOrderBatcherHeartbeatsChecked
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.batch.imp.{MysqlBinlogInOrderMysqlSpecialInfoSender, MysqlBinlogInOrderMysqlSpecialInfoSender4Sda}
 import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlSourceManagerImp
-import com.neighborhood.aka.laplace.estuary.mysql.task.Mysql2MysqlTaskInfoManager
+import com.neighborhood.aka.laplace.estuary.mysql.task.mysql.Mysql2MysqlTaskInfoManager
 
 /**
   * Created by john_liu on 2019/1/9.
