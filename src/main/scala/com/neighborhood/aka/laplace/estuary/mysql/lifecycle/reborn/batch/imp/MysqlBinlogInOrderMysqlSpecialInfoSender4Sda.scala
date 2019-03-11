@@ -18,7 +18,7 @@ final class MysqlBinlogInOrderMysqlSpecialInfoSender4Sda(
   /**
     * 心跳表名称
     */
-  private val heartBeatCheckTableNames: List[String] = taskManager.concernedDatabase.map(x => s"heartbeat.${x}_mysql")
+  private val heartBeatCheckTableNames: List[String] = taskManager.concernedDatabase.map(x => s"`heartbeat`.`${x}_mysql`")
   /**
     * mysqlSinkFunc
     */
