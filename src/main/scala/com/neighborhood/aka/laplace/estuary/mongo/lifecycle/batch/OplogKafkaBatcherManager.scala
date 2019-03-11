@@ -50,8 +50,13 @@ final class OplogKafkaBatcherManager(
     * 同步任务id
     */
   override lazy val syncTaskId: String = taskManager.syncTaskId
-
+  /**
+    * batcher数量
+    */
   val batcherNum = taskManager.batcherNum
+  /**
+    * batcher组件动态加载
+    */
   val batcherNameToLoad = taskManager.batcherNameToLoad
 
   /**
@@ -179,5 +184,5 @@ final class OplogKafkaBatcherManager(
 }
 
 object OplogKafkaBatcherManager {
-  def props(taskManager: MongoSourceManagerImp with TaskManager, sinker: ActorRef):Props = Props(new OplogKafkaBatcherManager(taskManager,sinker))
+  def props(taskManager: MongoSourceManagerImp with TaskManager, sinker: ActorRef): Props = Props(new OplogKafkaBatcherManager(taskManager, sinker))
 }

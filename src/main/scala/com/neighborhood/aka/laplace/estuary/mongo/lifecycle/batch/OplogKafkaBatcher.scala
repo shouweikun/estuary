@@ -16,9 +16,10 @@ import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.count.OplogProcessin
   *
   * @author neighborhood.aka.laplace
   */
-final class OplogKafkaBatcher(override val taskManager: TaskManager,
-                              override val sinker: ActorRef,
-                              override val num: Int
+final class OplogKafkaBatcher(
+                               override val taskManager: TaskManager,
+                               override val sinker: ActorRef,
+                               override val num: Int
                              ) extends SourceDataBatcherPrototype[OplogClassifier, KafkaMessage] {
   override val mappingFormat: MappingFormat[OplogClassifier, KafkaMessage] = taskManager.batchMappingFormat.get.asInstanceOf[MappingFormat[OplogClassifier, KafkaMessage]]
 
