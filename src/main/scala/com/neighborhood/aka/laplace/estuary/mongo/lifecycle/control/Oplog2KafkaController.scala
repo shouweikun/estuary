@@ -109,7 +109,10 @@ final class Oplog2KafkaController(
     * @return 构造好的资源管理器
     *
     */
-  override def buildManager: Mongo2KafkaTaskInfoManager = ???
+  override def buildManager: Mongo2KafkaTaskInfoManager = {
+    log.info(s"start to build Mongo2KafkaTaskInfoManager,id:$syncTaskId")
+    new Mongo2KafkaTaskInfoManager(allTaskInfoBean, context.system.settings.config)
+  }
 
   /**
     * 初始化workers
@@ -150,11 +153,11 @@ final class Oplog2KafkaController(
     //初始化batcher
     log.info(s"initialize batcher,id:$syncTaskId")
     val oplogBatcher = context
-      .actorOf(OplogKafkaBatcherManager.props(taskManager, oplogSinker).withDispatcher("akka.batcher-dispatcher"), "binlogBatcher")
+      .actorOf(OplogKafkaBatcherManager.props(taskManager, oplogSinker).withDispatcher("akka.batcher-dispatcher"), batcherName)
 
     // 初始化binlogFetcher
     log.info(s"initialize fetcher,id:$syncTaskId")
-    context.actorOf(OplogFetcherManager.props(resourceManager, oplogBatcher).withDispatcher("akka.fetcher-dispatcher"), "binlogFetcher")
+    context.actorOf(OplogFetcherManager.props(resourceManager, oplogBatcher).withDispatcher("akka.fetcher-dispatcher"),fetcherName)
 
   }
 

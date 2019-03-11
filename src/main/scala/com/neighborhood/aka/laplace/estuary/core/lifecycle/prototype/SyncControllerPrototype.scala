@@ -23,10 +23,10 @@ trait SyncControllerPrototype[A <: DataSourceConnection, B <: SinkFunc] extends 
   /**
     * 用于动态传参加载类和获取ActorRef
     */
-  final val sinkerName: String = "binlogSinker"
-  final val fetcherName: String = "binlogFetcher"
-  final val batcherName: String = "binlogBatcher"
-  final val listenerName: String = "heartBeatsListener"
+  final val sinkerName: String = "sourceSinker"
+  final val fetcherName: String = "sourceFetcher"
+  final val batcherName: String = "sourceBatcher"
+  final val listenerName: String = "heartbeatsListener"
   final val powerAdapterName: String = "powerAdapter"
   final val processingCounterName: String = "processingCounter"
   final val positionRecorderName: String = "positionRecorder"

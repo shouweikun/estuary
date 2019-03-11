@@ -15,8 +15,10 @@ import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status
   * @author neighborhood.aka.laplace
   * @note
   */
-final class OplogFetcherManager(override val taskManager: TaskManager,
-                                override val batcher: ActorRef) extends SourceDataFetcherManagerPrototype {
+final class OplogFetcherManager(
+                                 override val taskManager: TaskManager,
+                                 override val batcher: ActorRef
+                               ) extends SourceDataFetcherManagerPrototype {
   /**
     * 是否是最上层的manager
     */
@@ -74,5 +76,5 @@ final class OplogFetcherManager(override val taskManager: TaskManager,
 }
 
 object OplogFetcherManager {
-  def props( taskManager: TaskManager, batcher: ActorRef):Props = Props(new OplogFetcherManager(taskManager,batcher))
+  def props(taskManager: TaskManager, batcher: ActorRef): Props = Props(new OplogFetcherManager(taskManager, batcher))
 }
