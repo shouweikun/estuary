@@ -59,7 +59,7 @@ final class OplogSinkerManager(
     * @return
     */
   override protected def online: Receive = {
-    case _ => SyncControllerMessage()
+    //case _ => SyncControllerMessage()
     case _ => //暂时不做其他处理
   }
 
