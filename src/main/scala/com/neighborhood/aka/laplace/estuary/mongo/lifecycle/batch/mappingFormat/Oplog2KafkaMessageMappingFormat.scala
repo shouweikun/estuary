@@ -10,6 +10,8 @@ import org.bson.Document
 /**
   * Created by john_liu on 2019/2/28.
   *
+  * 将Oplog转化为kafkaMessage的MappingFormat
+  *
   * @author neighborhood.aka.laplace
   */
 final class Oplog2KafkaMessageMappingFormat(
@@ -17,7 +19,11 @@ final class Oplog2KafkaMessageMappingFormat(
                                              override val syncTaskId: String
                                            ) extends OplogMappingFormat[KafkaMessage] {
 
-
+  /**
+    *
+    * @param x
+    * @return
+    */
   override def transform(x: lifecycle.OplogClassifier): KafkaMessage = {
     val oplog = x.toOplog
     val oplogKey = new OplogKey(oplog)

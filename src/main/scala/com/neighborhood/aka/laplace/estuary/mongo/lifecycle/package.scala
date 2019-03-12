@@ -21,11 +21,13 @@ package object lifecycle {
     override def consistentHashKey: Any = key
 
     lazy val ns = doc.get("ns")
-    lazy val id = Option(doc.get("h")).getOrElse("-1")
+    lazy val mod = Option(doc.get("h")).getOrElse("")
+    lazy val id = Option(doc.get("o")).map(_.asInstanceOf[Document]).map(_.get("_id")).getOrElse("")
     lazy val key: AnyRef = partitionStrategy match {
       case PartitionStrategy.DATABASE_TABLE => ns
       case PartitionStrategy.PRIMARY_KEY => id
-      case _ => id //其他的都是id
+      case PartitionStrategy.MOD => mod
+      case PartitionStrategy.TRANSACTION => throw new UnsupportedOperationException("transcation partition strategy is not supported")
     }
 
     def toOplog = new Oplog(doc)

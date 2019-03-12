@@ -69,6 +69,11 @@ final class SimpleOplogFetcher(
     case SyncControllerMessage(OplogFetcherStart) => start
   }
 
+  /**
+    * 开始
+    * 1.启动simpleFetchModule构建oplog拉取链接
+    * 2.发送fetch命令
+    */
   private def start: Unit = {
     log.info(s"OplogSimpleFetcher start,id:$syncTaskId")
     simpleFetchModule.start()
@@ -93,14 +98,28 @@ final class SimpleOplogFetcher(
 
   }
 
+  /**
+    * 发送数据
+    * @param data
+    */
   private def sendData(data: Any) = downStream ! data
 
+  /**
+    * 计数
+    * @param count 数量
+    * @return
+    */
   private def sendCount(count: Long = 1l) = processingCounter.map(ref => ref ! FetcherMessage(OplogProcessingCounterUpdateCount(count)))
 
+  /**
+    * 计时
+    * @param cost
+    * @return
+    */
   private def sendCost(cost: Long = 1l) = powerAdapter.map(ref => ref ! FetcherMessage(OplogPowerAdapterUpdateCost(cost)))
 
   /**
-    *
+    * 构建fetch命令
     * @param ref
     * @param delay
     * @param message

@@ -14,6 +14,7 @@ import scala.util.Try
   * 專門用於數據拉取的類
   *
   * 注意，在这个类的实现中 `mongoConnection` 的生命周期和`所有权`不归此类管理而是taskmanager统一管理
+  * 目前使用是封装在oplogFetcher中的
   *
   * @author neighborhood.aka.laplace
   * @note 线程不安全
@@ -27,6 +28,10 @@ final class SimpleFetchModule(
   private var iterator: Option[MongoCursor[Document]] = None
   private var isStart_ = false
 
+  /**
+    * 开始
+    * 构建fetch oplog的iter
+    */
   def start(): Unit = {
     logger.info(s"simple fetch module start,id:$syncTaskId")
     assert(mongoConnection.isConnected)
@@ -34,6 +39,10 @@ final class SimpleFetchModule(
     isStart_ = true
   }
 
+  /**
+    * 拉取数据
+    * @return
+    */
   def fetch: Option[Document] = iterator.fold(throw new RuntimeException(s"iter is null when fetch oplog doc,id:$syncTaskId")) { iter => if (iter.hasNext) Option(iter.next()) else None }
 
   /**
@@ -47,12 +56,18 @@ final class SimpleFetchModule(
   }
 
 
+  /**
+    * 重连
+    */
   def reconnect: Unit = {
     logger.info(s"simple fetch module try to restart,id:$syncTaskId")
     close()
     start()
   }
 
+  /**
+    * 是否启动
+    */
   def isStart = isStart_
 
 }
