@@ -28,3 +28,6 @@ final case class MongoOffset(
 
 }
 
+object MongoOffset {
+  def now = MongoOffset((System.currentTimeMillis() / 1000).toInt, 0)
+}

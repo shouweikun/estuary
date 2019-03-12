@@ -8,7 +8,7 @@ import com.neighborhood.aka.laplace.estuary.core.trans.MappingFormat
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.OplogClassifier
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.batch.mappingFormat.Oplog2KafkaMessageMappingFormat
 import com.neighborhood.aka.laplace.estuary.mongo.sink.{OplogKeyKafkaBeanImp, OplogKeyKafkaSinkManagerImp}
-import com.neighborhood.aka.laplace.estuary.mongo.source.{MongoSourceBeanImp, MongoSourceManagerImp}
+import com.neighborhood.aka.laplace.estuary.mongo.source.{MongoOffset, MongoSourceBeanImp, MongoSourceManagerImp}
 import com.typesafe.config.Config
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -33,19 +33,25 @@ final class Mongo2KafkaTaskInfoManager(
   override lazy val sourceBean: MongoSourceBeanImp = allTaskInfoBean.sourceBean
 
   /**
+    * 任务信息bean
+    */
+  override lazy val taskInfo: Mongo2KafkaTaskInfoBeanImp = allTaskInfoBean.taskRunningInfoBean
+
+  /**
     * batch转换模块
     */
   override lazy val batchMappingFormat: Option[MappingFormat[OplogClassifier, KafkaMessage]] = Option(buildMappingFormat)
+
+  override val offsetZookeeperServer: String = ???
+
+  override val startMongoOffset: Option[MongoOffset] = Option(taskInfo.mongoOffset)
 
   /**
     * 事件溯源的事件收集器
     */
   override def eventCollector: Option[ActorRef] = None //todo
 
-  /**
-    * 任务信息bean
-    */
-  override lazy val taskInfo: Mongo2KafkaTaskInfoBeanImp = allTaskInfoBean.taskRunningInfoBean
+
 
   /**
     * 传入的配置

@@ -2,6 +2,7 @@ package com.neighborhood.aka.laplace.estuary.mongo.util
 
 import java.util.concurrent.atomic.AtomicBoolean
 
+import com.alibaba.fastjson.JSON
 import com.neighborhood.aka.laplace.estuary.core.source.DataSourceConnection
 import com.neighborhood.aka.laplace.estuary.core.task.PositionHandler
 import com.neighborhood.aka.laplace.estuary.core.util.zookeeper.EstuaryStringZookeeperManager
@@ -16,7 +17,9 @@ import com.neighborhood.aka.laplace.estuary.mongo.source.MongoOffset
   * @author neighborhood.aka.laplace
   */
 final class OplogOffsetHandler(
-                                private val zkManager: EstuaryStringZookeeperManager
+                                private val zkManager: EstuaryStringZookeeperManager,
+                                private val syncTaskId: String,
+                                private val inputMongoOffset: Option[MongoOffset] = None
                               ) extends PositionHandler[MongoOffset] {
 
   private val connectionStatus = new AtomicBoolean()
@@ -34,10 +37,37 @@ final class OplogOffsetHandler(
   }
 
   override def persistLogPosition(destination: String, logPosition: MongoOffset): Unit = {
+    val value =
+      s"""
+         {
+         "mongoTsSecond":${logPosition.mongoTsSecond},
+         "mongoTsInc":${logPosition.mongoTsInc}
+         }
+       """.stripMargin
+    zkManager.persistStringBy(destination, value)
+  }
+
+  override def getlatestIndexBy(destination: String): MongoOffset = {
+    Option(zkManager.getStringBy(destination))
+      .map {
+        str =>
+          val js = JSON.parseObject(str)
+          val second = js.get("mongoTsSecond").toString.toInt
+          val inc = js.get("mongoTsInc").toString.toInt
+          MongoOffset(second, inc)
+      }.getOrElse(null)
 
   }
 
-  override def getlatestIndexBy(destination: String): MongoOffset = ???
-
-  override def findStartPosition(conn: DataSourceConnection): MongoOffset = ???
+  /**
+    * 事实上没用上conn
+    *
+    * @param conn
+    * @return
+    */
+  override def findStartPosition(conn: DataSourceConnection): MongoOffset = {
+    Option(getlatestIndexBy(syncTaskId))
+      .orElse(inputMongoOffset)
+      .getOrElse(MongoOffset.now)
+  }
 }
