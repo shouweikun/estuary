@@ -11,6 +11,15 @@ import com.neighborhood.aka.laplace.estuary.mongo.source.MongoOffset
   * @author neighborhood.aka.laplace
   */
 final class OplogOffsetHandler extends PositionHandler[MongoOffset]{
+
+
+
+  override def start(): Unit = ???
+
+  override def isStart: Boolean = ???
+
+  override def close(): Unit = ???
+
   override def persistLogPosition(destination: String, logPosition: MongoOffset): Unit = ???
 
   override def getlatestIndexBy(destination: String): MongoOffset = ???
