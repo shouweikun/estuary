@@ -166,7 +166,7 @@ final class MongoConnection(
     logger.info("start prepare oplog query")
     val query = new BasicDBObject();
     logger.info(s"query start from ${mongoOffset.mongoTsSecond}:${mongoOffset.mongoTsInc}")
-    query.put("ts", ("$gte", new BsonTimestamp(mongoOffset.mongoTsSecond, mongoOffset.mongoTsInc)))
+    query.put("ts", new BasicDBObject("$gte", new BsonTimestamp(mongoOffset.mongoTsSecond, mongoOffset.mongoTsInc)))
     query.put("op", new BasicDBObject("$in", List("i", "u", "d").asJava))
 
     /*
