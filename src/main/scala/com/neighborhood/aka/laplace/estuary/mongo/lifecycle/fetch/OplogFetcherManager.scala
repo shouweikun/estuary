@@ -59,6 +59,40 @@ final class OplogFetcherManager(
     context.become(online, true)
   }
 
+  override def preStart(): Unit
+
+  = {
+    log.info(s"fetcherManger switch to offline,id:$syncTaskId")
+    context.become(receive, true)
+    initFetchers
+    //状态置为offline
+    fetcherChangeStatus(Status.OFFLINE)
+  }
+
+  override def postRestart(reason: Throwable): Unit
+
+  = {
+    log.info(s"fetcherManger processing postRestart,id:$syncTaskId")
+    super.postRestart(reason)
+
+  }
+
+  override def postStop(): Unit
+
+  = {
+    log.info(s"fetcherManger processing postStop,id:$syncTaskId")
+  }
+
+  override def preRestart(reason: Throwable, message: Option[Any]): Unit
+
+  = {
+    log.info(s"fetcherManger processing preRestart,id:$syncTaskId")
+    context.become(receive, true)
+    fetcherChangeStatus(Status.RESTARTING)
+    super.preRestart(reason, message)
+    log.info(s"fetcherManger processing preRestart complete,id:$syncTaskId")
+  }
+
   /**
     * 错位次数阈值
     */

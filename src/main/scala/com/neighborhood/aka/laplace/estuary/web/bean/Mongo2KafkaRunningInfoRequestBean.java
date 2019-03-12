@@ -28,6 +28,15 @@ public class Mongo2KafkaRunningInfoRequestBean {
     private int batcherNum = 23;
     private int sinkerNum = 23;
     private String mappingFormatName;
+    private String OffsetZookeeperServers;
+
+    public String getOffsetZookeeperServers() {
+        return OffsetZookeeperServers;
+    }
+
+    public void setOffsetZookeeperServers(String offsetZookeeperServers) {
+        OffsetZookeeperServers = offsetZookeeperServers;
+    }
 
     public int getSinkerNum() {
         return sinkerNum;

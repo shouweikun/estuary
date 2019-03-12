@@ -42,7 +42,7 @@ final class Mongo2KafkaTaskInfoManager(
     */
   override lazy val batchMappingFormat: Option[MappingFormat[OplogClassifier, KafkaMessage]] = Option(buildMappingFormat)
 
-  override val offsetZookeeperServer: String = ???
+  override val offsetZookeeperServer: String =taskInfo.offsetZookeeperServer
 
   override val startMongoOffset: Option[MongoOffset] = Option(taskInfo.mongoOffset)
 
@@ -106,10 +106,10 @@ final class Mongo2KafkaTaskInfoManager(
 
   /**
     * 是否阻塞式拉取
-    *
+    *@todo
     * @return
     */
-  override val isBlockingFetch: Boolean = ???
+  override val isBlockingFetch: Boolean = true
 
   /**
     * 同步任务开始时间 用于fetch过滤无用字段

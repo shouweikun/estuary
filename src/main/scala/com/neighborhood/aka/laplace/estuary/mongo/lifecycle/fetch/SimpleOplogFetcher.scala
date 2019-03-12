@@ -3,7 +3,7 @@ package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.fetch
 import akka.actor.{ActorRef, Props}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.DataSourceFetcherPrototype
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.{FetcherMessage, SyncControllerMessage}
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, FetcherMessage, SyncControllerMessage}
 import com.neighborhood.aka.laplace.estuary.core.task.{SourceManager, TaskManager}
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.adapt.OplogPowerAdapterCommand.OplogPowerAdapterUpdateCost
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.count.OplogProcessingCounterCommand.OplogProcessingCounterUpdateCount
@@ -62,15 +62,17 @@ final class SimpleOplogFetcher(
 
 
   override def receive: Receive = {
-    case SyncControllerMessage(OplogFetcherStart) => start
-    case m@SyncControllerMessage(OplogFetcherFetch) => Try(handleFetchTask).failed.foreach(e => processError(e, m))
+    case FetcherMessage(OplogFetcherStart) => start
+    case m@FetcherMessage(OplogFetcherFetch) => Try(handleFetchTask).failed.foreach(e => processError(e, m))
     case FetcherMessage(OplogFetcherUpdateDelay(x)) => delay = x
     case SyncControllerMessage(OplogFetcherUpdateDelay(x)) => delay = x
+    case SyncControllerMessage(OplogFetcherStart) => start
   }
 
   private def start: Unit = {
     log.info(s"OplogSimpleFetcher start,id:$syncTaskId")
-    simpleFetchModule
+    simpleFetchModule.start()
+    sendFetchMessage(self, delay, OplogFetcherFetch)
   }
 
   /**

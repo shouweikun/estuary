@@ -48,7 +48,6 @@ final class MysqlBinlogInOrderFetcherManager(
   override val batcher: ActorRef = binlogEventBatcher
 
 
-
   /**
     * 快照判断
     *
@@ -94,7 +93,7 @@ final class MysqlBinlogInOrderFetcherManager(
     case FetcherMessage(MysqlBinlogInOrderFetcherFree) => fetcherChangeStatus(Status.FREE)
     case FetcherMessage(msg) => log.warning(s"fetcher online unhandled command:$msg,id:$syncTaskId")
     case SyncControllerMessage(MysqlBinlogInOrderFetcherSuspend) => suspend
-    case SyncControllerMessage(MysqlBinlogInOrderPowerAdapterDelayFetch(d))  =>dispatchFetchDelay(d)
+    case SyncControllerMessage(MysqlBinlogInOrderPowerAdapterDelayFetch(d)) => dispatchFetchDelay(d)
 
   }
 
@@ -220,26 +219,6 @@ final class MysqlBinlogInOrderFetcherManager(
     fetcherChangeStatus(Status.RESTARTING)
     super.preRestart(reason, message)
     log.info(s"fetcherManger processing preRestart complete,id:$syncTaskId")
-  }
-
-  override def supervisorStrategy = {
-    AllForOneStrategy() {
-      case e: Exception => {
-        fetcherChangeStatus(Status.ERROR)
-        log.error(s"fetcherManager crashed,exception:$e,cause:${e.getCause},processing SupervisorStrategy,id:$syncTaskId")
-        Escalate
-      }
-      case error: Error => {
-        fetcherChangeStatus(Status.ERROR)
-        log.error(s"fetcherManager crashed,error:$error,cause:${error.getCause},processing SupervisorStrategy,id:$syncTaskId")
-        Escalate
-      }
-      case e => {
-        log.error(s"fetcherManager crashed,throwable:$e,cause:${e.getCause},processing SupervisorStrategy,id:$syncTaskId")
-        fetcherChangeStatus(Status.ERROR)
-        Escalate
-      }
-    }
   }
 }
 

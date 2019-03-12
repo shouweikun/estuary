@@ -1,6 +1,7 @@
 package com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype
 
-import akka.actor.ActorRef
+import akka.actor.SupervisorStrategy.Escalate
+import akka.actor.{ActorRef, AllForOneStrategy}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.{SourceDataFetcher, Status}
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
@@ -71,6 +72,26 @@ trait SourceDataFetcherManagerPrototype extends ActorPrototype with SourceDataFe
     context.become(receive)
     fetcherChangeStatus(Status.RESTARTING)
     super.preRestart(reason, message)
+  }
+
+  override def supervisorStrategy = {
+    AllForOneStrategy() {
+      case e: Exception => {
+        fetcherChangeStatus(Status.ERROR)
+        log.error(s"fetcherManager crashed,exception:$e,cause:${e.getCause},processing SupervisorStrategy,id:$syncTaskId")
+        Escalate
+      }
+      case error: Error => {
+        fetcherChangeStatus(Status.ERROR)
+        log.error(s"fetcherManager crashed,error:$error,cause:${error.getCause},processing SupervisorStrategy,id:$syncTaskId")
+        Escalate
+      }
+      case e => {
+        log.error(s"fetcherManager crashed,throwable:$e,cause:${e.getCause},processing SupervisorStrategy,id:$syncTaskId")
+        fetcherChangeStatus(Status.ERROR)
+        Escalate
+      }
+    }
   }
 
 }

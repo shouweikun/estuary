@@ -36,7 +36,7 @@ final class OplogKeyKafkaSimpleSinker(
   /**
     * sinkFunc
     */
-  override val sinkFunc: KafkaSinkFunc[OplogKey, String] = sinkManger.sink
+  override lazy val sinkFunc: KafkaSinkFunc[OplogKey, String] = sinkManger.sink
 
 
   val processingCounter = taskManager.processingCounter

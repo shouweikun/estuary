@@ -22,8 +22,10 @@ final class Mongo2KafkaController {
 
   @ApiOperation(value = "开始一个新的mysql2mysql任务", httpMethod = "POST", notes = "")
   @RequestMapping(value = Array("/new/sync"), method = Array(RequestMethod.POST))
-  def createNewSyncTask(@RequestBody requestBody:Mongo2KafkaTaskRequestBean ) = {
-    ???
+  def createNewSyncTask(@RequestBody requestBody: Mongo2KafkaTaskRequestBean) = {
+    ValidationUtils.notblank(requestBody.getMongo2KafkaRunningInfo.getSyncTaskId,"syncTaskId cannot be null")
+    ValidationUtils.notblank(requestBody.getMongo2KafkaRunningInfo.getOffsetZookeeperServers,"offsetZookeeperServers cannot be null")
+    mongo2KafkaService.startNewOneTaskKeepConfig(requestBody.getMongo2KafkaRunningInfo.getSyncTaskId, requestBody)
   }
 
 

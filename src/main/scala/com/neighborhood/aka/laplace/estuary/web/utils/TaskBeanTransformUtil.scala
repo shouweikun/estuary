@@ -84,7 +84,8 @@ object TaskBeanTransformUtil {
 
   private def mongo2KafkaRunningInfoRequestBean2Mongo2KafkaTaskInfoBean(mongo2KafkaRunningInfoRequestBean: Mongo2KafkaRunningInfoRequestBean): Mongo2KafkaTaskInfoBeanImp = {
     Mongo2KafkaTaskInfoBeanImp(
-      syncTaskId = mongo2KafkaRunningInfoRequestBean.getSyncTaskId
+      syncTaskId = mongo2KafkaRunningInfoRequestBean.getSyncTaskId,
+      offsetZookeeperServer = mongo2KafkaRunningInfoRequestBean.getOffsetZookeeperServers
     )(
       mongoOffset = MongoOffset(
         mongoTsSecond = mongo2KafkaRunningInfoRequestBean.getMongoTsSecond,

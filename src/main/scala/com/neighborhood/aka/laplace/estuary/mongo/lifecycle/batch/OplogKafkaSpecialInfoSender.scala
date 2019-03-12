@@ -29,7 +29,9 @@ final class OplogKafkaSpecialInfoSender(
     case BatcherMessage(OplogBatcherCommand.OplogBatcherCheckHeartbeats) => buildAndSendHeartbeatMessage
   }
 
-  def buildAndSendHeartbeatMessage: Unit = ???
+  def buildAndSendHeartbeatMessage: Unit = {
+    log.warning("buildAndSendHeartbeatMessage should be implemented")
+  }
 
   /**
     * 错位次数阈值

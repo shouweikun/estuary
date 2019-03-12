@@ -35,7 +35,7 @@ final class MongoConnection(
       mongoClient = initDbInstance
       connectStatus.set(true)
     } catch {
-      case e => throw e
+      case e:Exception => throw e
     }
     finally lock.unlock()
   }
@@ -49,7 +49,7 @@ final class MongoConnection(
       logger.info("try to connect a new mongoConnection")
       connect()
     } catch {
-      case e => throw e
+      case e: Exception => throw e
     }
     finally lock.unlock()
     logger.info("reconnect mongo connection success")
@@ -78,7 +78,7 @@ final class MongoConnection(
     try {
       if (!connectStatus.get()) connect()
     } catch {
-      case e => throw e
+      case e: Exception => throw e
     } finally lock.unlock()
     val iterator = mongoClient
       .getDatabase("local")
@@ -182,7 +182,7 @@ final class MongoConnection(
       val ignoredTable = mongoBeanImp.ignoredNs.toSet.asJava
       query.put("ns", new BasicDBObject("$nin", ignoredTable))
     }
-    logger.info(s"mongo query:${query.toJson}")
+//    logger.info(s"mongo query:${query.toJson}")
     query
   }
 
