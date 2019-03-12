@@ -95,7 +95,7 @@ final class SimpleOplogFetcher(
 
   private def sendData(data: Any) = downStream ! data
 
-  private def sendCount(count: Long = 1l) = powerAdapter.map(ref => ref ! FetcherMessage(OplogProcessingCounterUpdateCount(count)))
+  private def sendCount(count: Long = 1l) = processingCounter.map(ref => ref ! FetcherMessage(OplogProcessingCounterUpdateCount(count)))
 
   private def sendCost(cost: Long = 1l) = powerAdapter.map(ref => ref ! FetcherMessage(OplogPowerAdapterUpdateCost(cost)))
 

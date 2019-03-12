@@ -1,5 +1,6 @@
 package com.neighborhood.aka.laplace.estuary.mongo.source
 
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.ReentrantLock
 
@@ -35,7 +36,7 @@ final class MongoConnection(
       mongoClient = initDbInstance
       connectStatus.set(true)
     } catch {
-      case e:Exception => throw e
+      case e: Exception => throw e
     }
     finally lock.unlock()
   }
@@ -88,9 +89,9 @@ final class MongoConnection(
       //                .addOption(Bytes.QUERYOPTION_SLAVEOK)
       .oplogReplay(true)
       //                    .batchSize(1) //设置batchSize会让tail失效?
-      .noCursorTimeout(true) //avoid timeout if you are working on big data
+      .noCursorTimeout(false) //avoid timeout if you are working on big data
       //                .maxTime(3,TimeUnit.SECONDS)
-      //                .maxAwaitTime(3, TimeUnit.SECONDS)//还是应该有超时时间, 待测试.
+      .maxAwaitTime(15, TimeUnit.SECONDS) //还是应该有超时时间, 待测试.
       .sort(new BasicDBObject("$natural", 1))
       .iterator()
     iterator
@@ -182,7 +183,7 @@ final class MongoConnection(
       val ignoredTable = mongoBeanImp.ignoredNs.toSet.asJava
       query.put("ns", new BasicDBObject("$nin", ignoredTable))
     }
-//    logger.info(s"mongo query:${query.toJson}")
+    //    logger.info(s"mongo query:${query.toJson}")
     query
   }
 

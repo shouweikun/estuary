@@ -23,8 +23,8 @@ final class OplogKafkaBatcher(
                              ) extends SourceDataBatcherPrototype[OplogClassifier, KafkaMessage] {
   override val mappingFormat: MappingFormat[OplogClassifier, KafkaMessage] = taskManager.batchMappingFormat.get.asInstanceOf[MappingFormat[OplogClassifier, KafkaMessage]]
 
-  val processingCounter = taskManager.processingCounter
-  val powerAdapter = taskManager.powerAdapter
+  lazy val processingCounter = taskManager.processingCounter
+  lazy val powerAdapter = taskManager.powerAdapter
   /**
     * 同步任务id
     */
@@ -32,7 +32,7 @@ final class OplogKafkaBatcher(
 
   override def receive: Receive = {
     case BatcherMessage(oplogClassifier: OplogClassifier) => handleBatchTask(oplogClassifier)
-    case oplogClassifier: OplogClassifier => transAndSend(oplogClassifier)
+    case oplogClassifier: OplogClassifier => handleBatchTask(oplogClassifier)
   }
 
   private def handleBatchTask(oplogClassifier: OplogClassifier): Unit = {

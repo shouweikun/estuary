@@ -51,7 +51,7 @@ final class OplogKeyKafkaSimpleSinker(
     */
   override protected def handleSinkTask[I <: KafkaMessage](input: I): Try[_] = Try {
     if (!input.isAbnormal) {
-      sink.send(input.baseDataJsonKey.asInstanceOf[OplogKey], input.jsonValue, new OplogSinkCallback)
+      //sink.send(input.baseDataJsonKey.asInstanceOf[OplogKey], input.jsonValue, new OplogSinkCallback)
       sendCost(System.currentTimeMillis() - input.baseDataJsonKey.msgSyncStartTime)
     }
     sendCount(1)
