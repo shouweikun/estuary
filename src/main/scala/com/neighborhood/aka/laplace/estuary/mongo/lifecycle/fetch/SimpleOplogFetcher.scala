@@ -55,10 +55,13 @@ final class SimpleOplogFetcher(
   private lazy val logPositionHandler: OplogOffsetHandler = taskManager.positionHandler
   /**
     * 拉取模块
+    *
+    * 在构建的时候有副作用，必须要把拿到的startPosition更新回去，不是一个好的设计
     */
   private lazy val simpleFetchModule: SimpleFetchModule = {
-    val offset = Option(logPositionHandler.findStartPosition(connection))
-    new SimpleFetchModule(connection, offset, syncTaskId)
+    val offset = logPositionHandler.findStartPosition(connection)
+    logPositionHandler.persistLogPosition(syncTaskId, offset) //必须要更新回去，很重要！！！
+    new SimpleFetchModule(connection, Option(offset), syncTaskId)
   }
 
 
