@@ -35,8 +35,10 @@ final class OplogFetcherManager(
     */
   override val syncTaskId: String = taskManager.syncTaskId
 
-
-  var lastActive: Long = System.currentTimeMillis()
+  /**
+    * 上一次活跃的时间
+    */
+  private var lastActive: Long = System.currentTimeMillis()
 
   /**
     * 初始化Fetcher域下相关组件
@@ -64,10 +66,14 @@ final class OplogFetcherManager(
     case OplogFetcherBusy => fetcherChangeStatus(Status.BUSY)
   }
 
+  /**
+    * 处理检查活跃性任务
+    *
+    */
   private def handleCheckActiveTask: Unit = {
     val now = System.currentTimeMillis()
     val diff = now - lastActive
-    if (diff > 60 * 1000) throw new RuntimeException(s"$diff seconds passed ,but direct fetcher has no response,id:$syncTaskId")
+    if (diff > 90 * 1000) throw new RuntimeException(s"$diff seconds passed which gt 90s ,but direct fetcher has no response,id:$syncTaskId")
     dispatchMessageToDirectFetcher(OplogFetcherCheckActive)
     context.system.scheduler.scheduleOnce(SettingConstant.CHECK_ACTIVE_INTERVAL second, self, OplogFetcherCheckActive)
   }

@@ -1,7 +1,7 @@
 package com.neighborhood.aka.laplace.estuary.web.controller
 
-import com.neighborhood.aka.laplace.estuary.web.bean.{Mongo2KafkaTaskRequestBean, TaskRequestBean}
-import com.neighborhood.aka.laplace.estuary.web.service.{Mongo2KafkaService, SyncService}
+import com.neighborhood.aka.laplace.estuary.web.bean.Mongo2KafkaTaskRequestBean
+import com.neighborhood.aka.laplace.estuary.web.service.Mongo2KafkaService
 import com.neighborhood.aka.laplace.estuary.web.utils.ValidationUtils
 import io.swagger.annotations.ApiOperation
 import org.springframework.beans.factory.annotation.{Autowired, Qualifier}
