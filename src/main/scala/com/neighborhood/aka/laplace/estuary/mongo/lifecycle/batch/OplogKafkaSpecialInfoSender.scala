@@ -1,6 +1,8 @@
 package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.batch
 
 import akka.actor.{ActorRef, Props}
+import com.neighborhood.aka.laplace.estuary.bean.key.OplogKey
+import com.neighborhood.aka.laplace.estuary.bean.support.KafkaMessage
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.BatcherMessage
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.SourceDataSpecialBatcherPrototype
@@ -31,6 +33,12 @@ final class OplogKafkaSpecialInfoSender(
 
   def buildAndSendHeartbeatMessage: Unit = {
     log.warning("buildAndSendHeartbeatMessage should be implemented")
+
+//    val dummyValue: String = ???
+//    val dummyKey: OplogKey = ???
+//
+//    val dummyKafkaMessage: KafkaMessage = KafkaMessage(dummyKey, dummyValue)
+//    sinker ! dummyKafkaMessage
   }
 
   /**
