@@ -26,4 +26,6 @@ object OplogFetcherCommand {
 
   case class OplogFetcherUpdateDelay(delay: Long) extends OplogFetcherCommand
 
+  case object OplogFetcherCheckActive extends OplogFetcherCommand
+
 }

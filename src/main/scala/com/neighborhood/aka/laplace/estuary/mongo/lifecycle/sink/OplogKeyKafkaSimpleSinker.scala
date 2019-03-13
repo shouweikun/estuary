@@ -4,13 +4,14 @@ import akka.actor.Props
 import com.neighborhood.aka.laplace.estuary.bean.key.OplogKey
 import com.neighborhood.aka.laplace.estuary.bean.support.KafkaMessage
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, SinkerMessage}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.SourceDataSinkerPrototype
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, SinkerMessage}
 import com.neighborhood.aka.laplace.estuary.core.sink.kafka.KafkaSinkFunc
-import com.neighborhood.aka.laplace.estuary.core.task.{SinkManager, TaskManager}
+import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.adapt.OplogPowerAdapterCommand.OplogPowerAdapterUpdateCost
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.count.OplogProcessingCounterCommand.OplogProcessingCounterUpdateCount
 import com.neighborhood.aka.laplace.estuary.mongo.sink.OplogKeyKafkaSinkManagerImp
+import com.neighborhood.aka.laplace.estuary.mongo.source.MongoOffset
 
 import scala.util.Try
 
@@ -39,9 +40,13 @@ final class OplogKeyKafkaSimpleSinker(
   override lazy val sinkFunc: KafkaSinkFunc[OplogKey, String] = sinkManger.sink
 
 
-  val processingCounter = taskManager.processingCounter
+  lazy val processingCounter = taskManager.processingCounter
 
-  val powerAdapter = taskManager.powerAdapter
+  lazy val powerAdapter = taskManager.powerAdapter
+
+  lazy val positionRecorder = taskManager.positionRecorder.get
+
+  lazy val sinkAbnormal = taskManager.sinkAbnormal
 
   /**
     * 处理Batcher转换过的数据
@@ -51,7 +56,10 @@ final class OplogKeyKafkaSimpleSinker(
     */
   override protected def handleSinkTask[I <: KafkaMessage](input: I): Try[_] = Try {
     if (!input.isAbnormal) {
-      //sink.send(input.baseDataJsonKey.asInstanceOf[OplogKey], input.jsonValue, new OplogSinkCallback)
+      val key = input.baseDataJsonKey.asInstanceOf[OplogKey]
+      val mongoOffset = MongoOffset(key.getMongoTsSecond, key.getMongoTsInc)
+      sink.send(key, input.jsonValue, new OplogSinkCallback(sinkAbnormal, positionRecorder, mongoOffset))
+      positionRecorder ! mongoOffset //发送offset
       sendCost(System.currentTimeMillis() - input.baseDataJsonKey.msgSyncStartTime)
     }
     sendCount(1)

@@ -20,4 +20,5 @@ object SettingConstant {
   val CHECK_STATUS_INTERVAL = 20
   val SINKER_FLUSH_INTERVAL = 300 //这个单位是毫秒
   val FAILURE_RETRY_BACKOFF = 100 //ms
+  val CHECK_ACTIVE_INTERVAL = 30 //s
 }

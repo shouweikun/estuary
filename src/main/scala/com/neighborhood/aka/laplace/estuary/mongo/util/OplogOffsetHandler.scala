@@ -22,7 +22,7 @@ final class OplogOffsetHandler(
                                 private val inputMongoOffset: Option[MongoOffset] = None
                               ) extends PositionHandler[MongoOffset] {
 
-  private val connectionStatus = new AtomicBoolean()
+  private val connectionStatus = new AtomicBoolean() //链接状态
 
   override def start(): Unit = {
     zkManager.start()
@@ -61,7 +61,9 @@ final class OplogOffsetHandler(
 
   /**
     * 事实上没用上conn
-    *
+    * 1. 从zk中获取
+    * 2. 从传入的获取
+    * 3. 使用当前时间
     * @param conn
     * @return
     */

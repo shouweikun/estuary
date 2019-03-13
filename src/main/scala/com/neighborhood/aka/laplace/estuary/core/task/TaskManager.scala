@@ -23,6 +23,7 @@ import scala.util.Try
   */
 trait TaskManager {
 
+  def positionHandler: PositionHandler[_]
 
   /**
     * batch转换模块

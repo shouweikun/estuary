@@ -1,5 +1,7 @@
 package com.neighborhood.aka.laplace.estuary.mongo.sink
 
+import java.util.concurrent.atomic.AtomicBoolean
+
 import com.neighborhood.aka.laplace.estuary.bean.key.{BinlogKey, OplogKey}
 import com.neighborhood.aka.laplace.estuary.core.sink.kafka.KafkaSinkFunc
 import com.neighborhood.aka.laplace.estuary.core.task.SinkManager
@@ -24,4 +26,6 @@ trait OplogKeyKafkaSinkManagerImp extends SinkManager[KafkaSinkFunc[OplogKey, St
   override def buildSink: OplogKeyKafkaSinkFunc = {
     new OplogKeyKafkaSinkFunc(sinkBean)
   }
+
+  lazy val sinkAbnormal = new AtomicBoolean(false)
 }

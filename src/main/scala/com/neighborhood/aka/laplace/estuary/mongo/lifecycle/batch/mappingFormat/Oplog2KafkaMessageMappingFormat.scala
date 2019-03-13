@@ -12,16 +12,18 @@ import org.bson.Document
   *
   * 将Oplog转化为kafkaMessage的MappingFormat
   *
+  * @note 不负责mongoConnection的生命周期
   * @author neighborhood.aka.laplace
   */
 final class Oplog2KafkaMessageMappingFormat(
-                                             override val mongoConnection: MongoConnection,
+                                             override val mongoConnection: MongoConnection, //mongo链接
                                              override val syncTaskId: String
                                            ) extends OplogMappingFormat[KafkaMessage] {
 
   /**
+    * 将oplogClassifier装换成KafkaMessage
     *
-    * @param x
+    * @param x OplogClassifier
     * @return
     */
   override def transform(x: lifecycle.OplogClassifier): KafkaMessage = {
@@ -40,7 +42,7 @@ final class Oplog2KafkaMessageMappingFormat(
 
   }
 
-
+  @inline
   private def getJsonValue(doc: Document): String = {
     doc.toJson
   }

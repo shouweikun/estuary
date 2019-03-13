@@ -3,11 +3,12 @@ package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.fetch
 import akka.actor.{ActorRef, Props}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.DataSourceFetcherPrototype
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, FetcherMessage, SyncControllerMessage}
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.{FetcherMessage, SyncControllerMessage}
 import com.neighborhood.aka.laplace.estuary.core.task.{SourceManager, TaskManager}
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.adapt.OplogPowerAdapterCommand.OplogPowerAdapterUpdateCost
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.count.OplogProcessingCounterCommand.OplogProcessingCounterUpdateCount
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.fetch.OplogFetcherCommand._
+import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.fetch.OplogFetcherEvent.OplogFetcherActiveChecked
 import com.neighborhood.aka.laplace.estuary.mongo.source.{MongoConnection, MongoSourceManagerImp}
 import com.neighborhood.aka.laplace.estuary.mongo.util.OplogOffsetHandler
 
@@ -67,6 +68,8 @@ final class SimpleOplogFetcher(
     case FetcherMessage(OplogFetcherUpdateDelay(x)) => delay = x
     case SyncControllerMessage(OplogFetcherUpdateDelay(x)) => delay = x
     case SyncControllerMessage(OplogFetcherStart) => start
+    case FetcherMessage(OplogFetcherCheckActive) => sender() ! OplogFetcherActiveChecked()
+    case OplogFetcherCheckActive => sender() ! OplogFetcherActiveChecked()
   }
 
   /**
@@ -85,6 +88,7 @@ final class SimpleOplogFetcher(
     *
     */
   private def handleFetchTask: Unit = {
+    context.parent ! OplogFetcherBusy //忙碌
     sendFetchMessage(self, delay, OplogFetcherFetch) //发送下一次拉取的指令
     simpleFetchModule.fetch.foreach {
       doc =>
@@ -94,18 +98,19 @@ final class SimpleOplogFetcher(
         sendCount(1)
         lastFetchTimestamp = curr //更新一下时间
     }
-
-
+    context.parent ! OplogFetcherFree //空闲
   }
 
   /**
     * 发送数据
+    *
     * @param data
     */
   private def sendData(data: Any) = downStream ! data
 
   /**
     * 计数
+    *
     * @param count 数量
     * @return
     */
@@ -113,6 +118,7 @@ final class SimpleOplogFetcher(
 
   /**
     * 计时
+    *
     * @param cost
     * @return
     */
@@ -120,6 +126,7 @@ final class SimpleOplogFetcher(
 
   /**
     * 构建fetch命令
+    *
     * @param ref
     * @param delay
     * @param message
