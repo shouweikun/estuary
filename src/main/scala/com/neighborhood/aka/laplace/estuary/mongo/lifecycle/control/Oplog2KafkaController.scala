@@ -22,6 +22,7 @@ import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.control.OplogControl
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.count.OplogProcessingCounter
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.count.OplogProcessingCounterCommand.OplogProcessingCounterComputeCount
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.fetch.{OplogFetcherCommand, OplogFetcherManager}
+import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.record.OplogPositionRecorder
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.record.OplogRecorderCommand.OplogRecorderSavePosition
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.{OplogSinkerCommand, OplogSinkerManager}
 import com.neighborhood.aka.laplace.estuary.mongo.sink.OplogKeyKafkaBeanImp
@@ -116,7 +117,7 @@ final class Oplog2KafkaController(
 
   /**
     * 初始化workers
-    * 1.初始化HeartBeatsListener
+    * ------1.初始化HeartBeatsListener
     * 2.初始化binlogSinker
     * 3.初始化binlogEventBatcher
     * 4.初始化binlogFetcher
@@ -135,10 +136,10 @@ final class Oplog2KafkaController(
     val powerAdapter = context.actorOf(OplogPowerAdapter.buildOplogPowerAdapterByName(taskManager, ""), powerAdapterName)
     taskManager.powerAdapter = Option(powerAdapter) //必须要powerAdapter嵌入taskManager
 
-    //初始化binlogPositionRecorder
-    //    log.info(s"initialize Recorder,id:$syncTaskId")
-    //    val recorder = context.actorOf(OplogPositionRecorder.props(resourceManager), positionRecorderName)
-    //    taskManager.positionRecorder = Option(recorder) //必须要将PositionRecorder嵌入taskManager
+    // 初始化binlogPositionRecorder
+    log.info(s"initialize Recorder,id:$syncTaskId")
+    val recorder = context.actorOf(OplogPositionRecorder.props(taskManager), positionRecorderName)
+    taskManager.positionRecorder = Option(recorder) //必须要将PositionRecorder嵌入taskManager
 
 
     //初始化HeartBeatsListener
@@ -157,7 +158,7 @@ final class Oplog2KafkaController(
 
     // 初始化binlogFetcher
     log.info(s"initialize fetcher,id:$syncTaskId")
-    context.actorOf(OplogFetcherManager.props(resourceManager, oplogBatcher).withDispatcher("akka.fetcher-dispatcher"),fetcherName)
+    context.actorOf(OplogFetcherManager.props(resourceManager, oplogBatcher).withDispatcher("akka.fetcher-dispatcher"), fetcherName)
 
   }
 
@@ -166,7 +167,7 @@ final class Oplog2KafkaController(
     * 1. 启动binlogSinker:       1.发送开始命令
     * 2. 启动binlogBatcher:      1.发送开始命令 2.发送定时心跳数据命令
     * 3. 启动binlogFetcher:      1.发送开始命令
-    * 4. 启动heartbeatListener:  1.发送开始命令 2.发送定时监听数据源心跳命令
+    *   ---------------- 4. 启动heartbeatListener:  1.发送开始命令 2.发送定时监听数据源心跳命令
     * 5. 如果计时    发送计时命令给powerAdapter
     * 6. 如果计数    发送计数命令给countProcesser
     * 7. 如果功率控制 发送功率控制命令给powerAdapter
@@ -240,12 +241,12 @@ final class Oplog2KafkaController(
     log.info(s"power Control ON,id:$syncTaskId")
 
     //启动positionRecorder
-    //    context
-    //      .child(positionRecorderName)
-    //      .fold {
-    //        log.error(s"$positionRecorderName is null,id:$syncTaskId")
-    //        throw new WorkerCannotFindException(s"$positionRecorderName is null,id:$syncTaskId")
-    //      } { ref => scheduleSaveCommand(ref) }
+    context
+      .child(positionRecorderName)
+      .fold {
+        log.error(s"$positionRecorderName is null,id:$syncTaskId")
+        throw new WorkerCannotFindException(s"$positionRecorderName is null,id:$syncTaskId")
+      } { ref => scheduleSaveCommand(ref) }
   }
 
 

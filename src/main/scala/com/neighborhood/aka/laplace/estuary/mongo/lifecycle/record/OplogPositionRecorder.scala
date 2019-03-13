@@ -1,5 +1,6 @@
 package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.record
 
+import akka.actor.Props
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, FetcherMessage, SinkerMessage, SyncControllerMessage}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.SourceDataPositionRecorder
@@ -86,4 +87,8 @@ final class OplogPositionRecorder(
     * 错误处理
     */
   override def processError(e: Throwable, message: lifecycle.WorkerMessage): Unit = ???
+}
+
+object OplogPositionRecorder {
+  def props(taskManager: TaskManager): Props = Props(new OplogPositionRecorder(taskManager))
 }
