@@ -23,6 +23,7 @@ package object task {
                                         override val props: Props,
                                         override val name: String) extends SyncTask
 
-
+  final case class Mongo2KafkaSyncTask(override val props: Props,
+                                       override val name: String) extends SyncTask
 
 }

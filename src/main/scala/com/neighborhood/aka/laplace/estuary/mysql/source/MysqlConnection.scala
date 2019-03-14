@@ -32,7 +32,7 @@ import scala.util.Try
   * @todo
   */
 
-class MysqlConnection(
+final class MysqlConnection(
                        private val charset: Charset = Charset.forName("UTF-8"), //字符集
                        private val charserNum: Byte = 33.toByte, //字符集序号
                        private val binlogFormat: BinlogFormat = null,

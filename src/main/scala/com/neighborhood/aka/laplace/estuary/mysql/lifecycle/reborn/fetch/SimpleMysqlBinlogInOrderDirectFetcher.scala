@@ -10,6 +10,8 @@ import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlSourceManagerImp
 import com.neighborhood.aka.laplace.estuary.mysql.task.mysql.Mysql2MysqlTaskInfoManager
 import com.neighborhood.aka.laplace.estuary.mysql.utils.CanalEntryTransUtil
 
+import scala.concurrent.ExecutionContextExecutor
+
 /**
   * Created by john_liu on 2019/1/16.
   *

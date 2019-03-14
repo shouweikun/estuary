@@ -1,6 +1,7 @@
 package com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype
 
-import akka.actor.ActorRef
+import akka.actor.SupervisorStrategy.Escalate
+import akka.actor.{ActorRef, AllForOneStrategy}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.{SourceDataFetcher, Status}
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
@@ -9,6 +10,8 @@ import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
   * Created by john_liu on 2018/5/20.
   */
 trait SourceDataFetcherManagerPrototype extends ActorPrototype with SourceDataFetcher {
+  val directFetcherName: String = "directFetcher"
+
   /**
     * 是否是最上层的manager
     */
@@ -24,6 +27,11 @@ trait SourceDataFetcherManagerPrototype extends ActorPrototype with SourceDataFe
     * 任务信息管理器
     */
   def taskManager: TaskManager
+
+  /**
+    * 直接fetcher
+    */
+  def directFetcher: Option[ActorRef] = context.child(directFetcherName)
 
   /**
     * 初始化Fetcher域下相关组件
@@ -64,6 +72,26 @@ trait SourceDataFetcherManagerPrototype extends ActorPrototype with SourceDataFe
     context.become(receive)
     fetcherChangeStatus(Status.RESTARTING)
     super.preRestart(reason, message)
+  }
+
+  override def supervisorStrategy = {
+    AllForOneStrategy() {
+      case e: Exception => {
+        fetcherChangeStatus(Status.ERROR)
+        log.error(s"fetcherManager crashed,exception:$e,cause:${e.getCause},processing SupervisorStrategy,id:$syncTaskId")
+        Escalate
+      }
+      case error: Error => {
+        fetcherChangeStatus(Status.ERROR)
+        log.error(s"fetcherManager crashed,error:$error,cause:${error.getCause},processing SupervisorStrategy,id:$syncTaskId")
+        Escalate
+      }
+      case e => {
+        log.error(s"fetcherManager crashed,throwable:$e,cause:${e.getCause},processing SupervisorStrategy,id:$syncTaskId")
+        fetcherChangeStatus(Status.ERROR)
+        Escalate
+      }
+    }
   }
 
 }

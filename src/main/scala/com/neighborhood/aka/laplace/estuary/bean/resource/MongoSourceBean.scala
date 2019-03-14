@@ -1,22 +1,17 @@
 package com.neighborhood.aka.laplace.estuary.bean.resource
 
 import com.neighborhood.aka.laplace.estuary.bean.credential.MongoCredentialBean
+import com.neighborhood.aka.laplace.estuary.mongo.source.MongoConnection
 
 /**
   * Created by john_liu on 2018/4/25.
   *
-  * @todo 有问题
+  * @author neighborhood.aka.laplace
   */
-trait MongoSourceBean extends DataSourceBase[MysqlSourceBean] {
-  override val dataSourceType = SourceDataType.MONGO.toString
+trait MongoSourceBean extends DataSourceBase[MongoConnection] {
+  override val dataSourceType = SourceDataType.MONGO.toString  //数据源类型
   val MONGODB_CR = "MONGODB-CR"
-  val SCRAM_SHA_1 = "SCRAM-SHA-1";
-
-  val mongoCredentials: Option[List[MongoCredentialBean]]
-  val hosts: List[String]
-  val port: Int
-  val concernedNs: Array[String] = Array.empty
-  val ignoredNs: Array[String] = Array.empty
+  val SCRAM_SHA_1 = "SCRAM-SHA-1"
   /**
     * 读取数据时, 对于有replication set 复本集的collection是使用什么策略
     * primary,
@@ -44,7 +39,13 @@ trait MongoSourceBean extends DataSourceBase[MysqlSourceBean] {
     * w3
     */
   val writeConcern = "majority"
-  var authMechanism = SCRAM_SHA_1
+
+  def authMechanism:String
+  def mongoCredentials: List[MongoCredentialBean]
+  def hosts: List[String]
+  def port: Int
+  def concernedNs: Array[String] = Array.empty
+  def ignoredNs: Array[String] = Array.empty
 
   override def toString: String = "MongoBean{" + ", hosts=" + hosts.mkString(",") + ", port=" + port + ", authMechanism='" + authMechanism + '\'' + ", readPreference='" + readPreference + '\'' + ", writeConcern='" + writeConcern + '\'' + '}'
 }

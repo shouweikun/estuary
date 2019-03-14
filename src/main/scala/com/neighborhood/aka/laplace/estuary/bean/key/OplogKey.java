@@ -1,5 +1,6 @@
 package com.neighborhood.aka.laplace.estuary.bean.key;
 
+import com.neighborhood.aka.laplace.estuary.mongo.source.Oplog;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 
 /**
@@ -11,21 +12,21 @@ public class OplogKey extends BaseDataJsonKey {
     public OplogKey() {
         super();
     }
-//
-//    public OplogKey(Oplog oplog) {
-//        this.setMongoOpsUuid(oplog.getId());
-//        this.sourceType = "oplog";
-//        this.msgUuid = Long.toHexString(oplog.getId());
-//        this.dbName = oplog.getDbName();
-//        this.tableName = oplog.getTableName();
-//
-//        this.setMongoTsSecond(oplog.getTimestamp().getTime());
-//        this.setMongoTsInc(oplog.getTimestamp().getInc());
-//        this.eventType = oplog.getOperateType();
-//
-//        // 这边是秒,需要处理
-//        setDbEffectTime(((long)this.mongoTsSecond)*1000);
-//    }
+
+    public OplogKey(Oplog oplog) {
+        this.setMongoOpsUuid(oplog.getId());
+        this.sourceType = "oplog";
+        this.msgUuid = Long.toHexString(oplog.getId());
+        this.dbName = oplog.getDbName();
+        this.tableName = oplog.getTableName();
+
+        this.setMongoTsSecond(oplog.getTimestamp().getTime());
+        this.setMongoTsInc(oplog.getTimestamp().getInc());
+        this.eventType = oplog.getOperateType();
+
+        // 这边是秒,需要处理
+        setDbEffectTime(((long)this.mongoTsSecond)*1000);
+    }
 
     /**
      * 对mongodb集群的标识
