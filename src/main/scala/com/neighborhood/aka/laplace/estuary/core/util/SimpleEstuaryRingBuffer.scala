@@ -59,4 +59,5 @@ final class SimpleEstuaryRingBuffer[A: ClassTag](private val size: Int = 31)(imp
 
   def peek: A = buffer(head)
 
+  def last: A = buffer((tail - 1 + size) % size)
 }
