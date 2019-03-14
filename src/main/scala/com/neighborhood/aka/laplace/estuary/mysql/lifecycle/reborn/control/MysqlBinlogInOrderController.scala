@@ -55,7 +55,7 @@ abstract class MysqlBinlogInOrderController[B <: SinkFunc](override val taskBean
   /**
     * 资源管理器，一次同步任务所有的resource都由resourceManager负责
     */
-  def resourceManager: MysqlSourceManagerImp with SinkManager[B] with TaskManager = buildManager.asInstanceOf[MysqlSourceManagerImp with SinkManager[B] with TaskManager]
+  override def resourceManager: MysqlSourceManagerImp with SinkManager[B] with TaskManager = buildManager.asInstanceOf[MysqlSourceManagerImp with SinkManager[B] with TaskManager]
 
   /**
     * 任务管理器
@@ -405,6 +405,7 @@ abstract class MysqlBinlogInOrderController[B <: SinkFunc](override val taskBean
     log.info(s"syncController processing postStop ,id:$syncTaskId")
     if (!schedulingCommandPool.isShutdown) Try(schedulingCommandPool.shutdownNow())
     TaskManager.removeTaskManager(syncTaskId) // 这步很必要
+    taskManager.close
     if (!resourceManager.sink.isTerminated) resourceManager.sink.close
     if (resourceManager.source.isConnected) resourceManager.source.disconnect()
 

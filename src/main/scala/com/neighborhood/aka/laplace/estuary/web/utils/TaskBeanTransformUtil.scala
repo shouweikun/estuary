@@ -1,16 +1,26 @@
 package com.neighborhood.aka.laplace.estuary.web.utils
 
-import com.neighborhood.aka.laplace.estuary.bean.credential.MysqlCredentialBean
+import com.neighborhood.aka.laplace.estuary.bean.credential.{MongoCredentialBean, MysqlCredentialBean}
+import com.neighborhood.aka.laplace.estuary.mongo.sink.OplogKeyKafkaBeanImp
+import com.neighborhood.aka.laplace.estuary.mongo.source.{MongoOffset, MongoSourceBeanImp}
+import com.neighborhood.aka.laplace.estuary.mongo.task.kafka.{Mongo2KafkaAllTaskInfoBean, Mongo2KafkaTaskInfoBeanImp}
 import com.neighborhood.aka.laplace.estuary.mysql.sink.MysqlSinkBeanImp
 import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlSourceBeanImp
 import com.neighborhood.aka.laplace.estuary.mysql.task.mysql.{Mysql2MysqlAllTaskInfoBean, Mysql2MysqlTaskInfoBeanImp, SdaBean}
-import com.neighborhood.aka.laplace.estuary.web.bean.{Mysql2MysqlRequestBean, MysqlCredentialRequestBean}
+import com.neighborhood.aka.laplace.estuary.web.bean._
 
+import scala.collection.JavaConverters._
 object TaskBeanTransformUtil {
 
+  def convertMongo2KafkaRequest2Mongo2KafkaTaskInfo(request: Mongo2KafkaTaskRequestBean): Mongo2KafkaAllTaskInfoBean = {
+    val mongoSource = mongoSourceRequestBeanToMongoSourceBean(request.getMongoSource)
+    val oplogKeyKafkaSink = OplogKafkaSinkRequestBeanToKafkaSinkBean(request.getKafkaSink)
+    val runningInfo = mongo2KafkaRunningInfoRequestBean2Mongo2KafkaTaskInfoBean(request.getMongo2KafkaRunningInfo)
+    Mongo2KafkaAllTaskInfoBean(oplogKeyKafkaSink, mongoSource, runningInfo)
+  }
 
   def convertMysql2MysqlRequest2Mysql2MysqlTaskInfo(request: Mysql2MysqlRequestBean): Mysql2MysqlAllTaskInfoBean = {
-    import scala.collection.JavaConverters._
+
     val requestMysqlSourceBean = request.getMysqlSourceBean
     val requestMysqlSinkBean = request.getMysqlSinkBean
     val requestRunningBean = request.getMysql2MysqlRunningInfoBean
@@ -62,8 +72,42 @@ object TaskBeanTransformUtil {
     Mysql2MysqlAllTaskInfoBean(sourceBean = mysqlSourceBean, sinkBean = mysqlSinkBean, taskRunningInfoBean = runningInfoBean, sdaBean = sdaBean)
   }
 
+  private def mongoSourceRequestBeanToMongoSourceBean(mongoSourceRequestBean: MongoSourceRequestBean): MongoSourceBeanImp = {
+    MongoSourceBeanImp(
+      authMechanism = mongoSourceRequestBean.getAuthMechanism,
+      mongoCredentials = mongoSourceRequestBean.getMongoCredentials.asScala.map(MongoCredentialRequestBean2MongoCredentialBean(_)).toList,
+      hosts = mongoSourceRequestBean.getHosts.asScala.toList,
+      port = mongoSourceRequestBean.getPort
+    )(
+      concernedNs = Option(mongoSourceRequestBean.getConcernedNs).getOrElse(Array.empty),
+      ignoredNs = Option(mongoSourceRequestBean.getIgnoredNs).getOrElse(Array.empty)
+    )
+  }
 
-  def MysqlCredentialRequestBean2MysqlCredentialBean(mysqlCredentialRequestBean: MysqlCredentialRequestBean): MysqlCredentialBean = {
+  private def mongo2KafkaRunningInfoRequestBean2Mongo2KafkaTaskInfoBean(mongo2KafkaRunningInfoRequestBean: Mongo2KafkaRunningInfoRequestBean): Mongo2KafkaTaskInfoBeanImp = {
+    Mongo2KafkaTaskInfoBeanImp(
+      syncTaskId = mongo2KafkaRunningInfoRequestBean.getSyncTaskId,
+      offsetZookeeperServer = mongo2KafkaRunningInfoRequestBean.getOffsetZookeeperServers
+    )(
+      mongoOffset = MongoOffset(
+        mongoTsSecond = mongo2KafkaRunningInfoRequestBean.getMongoTsSecond,
+        mongoTsInc = mongo2KafkaRunningInfoRequestBean.getMongoTsInc
+      ),
+      batcherNum = if (mongo2KafkaRunningInfoRequestBean.getBatcherNum <= 0) 15 else mongo2KafkaRunningInfoRequestBean.getBatcherNum,
+      sinkerNum = if (mongo2KafkaRunningInfoRequestBean.getSinkerNum <= 0) 15 else mongo2KafkaRunningInfoRequestBean.getBatcherNum
+
+    )
+  }
+
+  private def OplogKafkaSinkRequestBeanToKafkaSinkBean(request: KafkaSinkRequestBean): OplogKeyKafkaBeanImp = {
+    OplogKeyKafkaBeanImp(
+      bootstrapServers = request.getBootstrapServers,
+      topic = request.getTopic,
+      ddlTopic = request.getDdlTopic
+    )(specificTopics = request.getSpecificTopics.asScala.toMap)
+  }
+
+  private def MysqlCredentialRequestBean2MysqlCredentialBean(mysqlCredentialRequestBean: MysqlCredentialRequestBean): MysqlCredentialBean = {
     MysqlCredentialBean(
       address = mysqlCredentialRequestBean.getAddress,
       port = mysqlCredentialRequestBean.getPort,
@@ -71,5 +115,9 @@ object TaskBeanTransformUtil {
       password = mysqlCredentialRequestBean.getPassword,
       defaultDatabase = Option(mysqlCredentialRequestBean.getDefaultDatabase)
     )
+  }
+
+  private def MongoCredentialRequestBean2MongoCredentialBean(mongoCredentialRequestBean: MongoCredentialRequestBean): MongoCredentialBean = {
+    MongoCredentialBean(username = mongoCredentialRequestBean.getUsername, database = mongoCredentialRequestBean.getDatabase, password = mongoCredentialRequestBean.getPassword)
   }
 }

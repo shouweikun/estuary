@@ -24,7 +24,7 @@ import scala.util.Try
 /**
   * Created by john_liu on 2018/2/4.
   */
-class LogPositionHandler(
+final class LogPositionHandler(
 
                           val manager: ZooKeeperLogPositionManager,
                           val master: Option[EntryPosition] = None,

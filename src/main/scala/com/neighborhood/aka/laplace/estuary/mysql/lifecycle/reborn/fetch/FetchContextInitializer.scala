@@ -26,7 +26,7 @@ final class FetchContextInitializer(
   /**
     * 寻址处理器
     */
-  lazy val logPositionHandler = taskManager.logPositionHandler
+  lazy val logPositionHandler = taskManager.positionHandler
   /**
     * binlogParser 解析binlog
     */

@@ -11,6 +11,7 @@ import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.WorkerType.Wor
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.{Status, WorkerType}
 import com.neighborhood.aka.laplace.estuary.core.snapshot.SnapshotStatus
 import com.neighborhood.aka.laplace.estuary.core.trans.MappingFormat
+import com.neighborhood.aka.laplace.estuary.mysql.utils.LogPositionHandler
 import com.typesafe.config.Config
 
 import scala.annotation.tailrec
@@ -21,6 +22,9 @@ import scala.util.Try
   * 负责管理资源和任务
   */
 trait TaskManager {
+
+  def positionHandler: PositionHandler[_]
+
   /**
     * batch转换模块
     */

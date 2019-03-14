@@ -17,11 +17,13 @@ trait SourceDataBatcherManagerPrototype[A <: DataSourceConnection, B <: SinkFunc
   /**
     * specialInfoSender的名称
     */
-  val specialInfoSenderName = "specialInfoSender"
+  final val specialInfoSenderName = "specialInfoSender"
   /**
     * router的名称
     */
-  val routerName: String = "router"
+  final val routerName: String = "router"
+
+  final val batcherName:String = "batcher"
 
   /**
     * 事件收集器

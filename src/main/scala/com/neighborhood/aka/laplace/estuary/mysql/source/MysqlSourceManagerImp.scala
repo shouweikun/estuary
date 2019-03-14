@@ -98,7 +98,7 @@ trait MysqlSourceManagerImp extends SourceManager[MysqlConnection] {
 
   def binlogParser: MysqlBinlogParser = binlogParser_
 
-  def logPositionHandler: LogPositionHandler = logPositionHandler_
+  def positionHandler: LogPositionHandler = logPositionHandler_
 
   def fetchContextInitializer: FetchContextInitializer = fetchContextInitializer_
 
@@ -184,7 +184,7 @@ trait MysqlSourceManagerImp extends SourceManager[MysqlConnection] {
   override def closeSource: Unit = Try {
     if (source.isConnected) source.disconnect()
     if (binlogParser.isStart) binlogParser.stop()
-    if (logPositionHandler.isStart) logPositionHandler.close()
+    if (positionHandler.isStart) positionHandler.close()
   }
 
   /**
@@ -194,7 +194,7 @@ trait MysqlSourceManagerImp extends SourceManager[MysqlConnection] {
     logger.info(s"start source,id:$syncTaskId")
     source
     binlogParser.start()
-    logPositionHandler.start()
+    positionHandler.start()
     fetchContextInitializer
   }
 }

@@ -23,10 +23,10 @@ trait SyncControllerPrototype[A <: DataSourceConnection, B <: SinkFunc] extends 
   /**
     * 用于动态传参加载类和获取ActorRef
     */
-  final val sinkerName: String = "binlogSinker"
-  final val fetcherName: String = "binlogFetcher"
-  final val batcherName: String = "binlogBatcher"
-  final val listenerName: String = "heartBeatsListener"
+  final val sinkerName: String = "sourceSinker"
+  final val fetcherName: String = "sourceFetcher"
+  final val batcherName: String = "sourceBatcher"
+  final val listenerName: String = "heartbeatsListener"
   final val powerAdapterName: String = "powerAdapter"
   final val processingCounterName: String = "processingCounter"
   final val positionRecorderName: String = "positionRecorder"
@@ -61,6 +61,9 @@ trait SyncControllerPrototype[A <: DataSourceConnection, B <: SinkFunc] extends 
     */
   def taskManager: TaskManager
 
+
+  def resourceManager: SourceManager[A] with SinkManager[B]
+
   /**
     * 在线模式
     *
@@ -74,7 +77,7 @@ trait SyncControllerPrototype[A <: DataSourceConnection, B <: SinkFunc] extends 
     * @return 构造好的资源管理器
     *
     */
-   def buildManager: SourceManager[A] with SinkManager[B] with TaskManager
+  def buildManager: SourceManager[A] with SinkManager[B] with TaskManager
 
   /**
     * 利用监督机制重启
