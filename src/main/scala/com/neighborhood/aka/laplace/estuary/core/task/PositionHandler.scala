@@ -8,6 +8,12 @@ import com.neighborhood.aka.laplace.estuary.core.source.DataSourceConnection
   */
 trait PositionHandler[A] {
 
+  def start():Unit
+
+  def isStart: Boolean
+
+  def close(): Unit
+
   def persistLogPosition(destination:String,logPosition:A):Unit
 
   def getlatestIndexBy(destination:String):A

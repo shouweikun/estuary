@@ -26,7 +26,7 @@ final class MysqlBinlogInOrderPositionRecorder(
   /**
     * logPosition管理器
     */
-  private lazy val logPositionHandler: LogPositionHandler = taskManager.logPositionHandler
+  private lazy val logPositionHandler: LogPositionHandler = taskManager.positionHandler
 
   private val isProfiling: Boolean = taskManager.isProfiling
 
@@ -61,7 +61,7 @@ final class MysqlBinlogInOrderPositionRecorder(
     case BatcherMessage(x: BinlogPositionInfo) => updateOffset(x)
     case SyncControllerMessage(MysqlBinlogInOrderRecorderSavePosition) => saveOffset
     case SinkerMessage(MysqlInOrderSinkerGetAbnormal(e, offset)) => saveOffsetWhenError(e, offset)
-    case SinkerMessage(MysqlBinlogInOrderRecorderEnsurePosition(offset)) =>
+    case SinkerMessage(MysqlBinlogInOrderRecorderEnsurePosition(offset)) => //todo
     case FetcherMessage(MysqlBinlogInOrderRecorderSaveLatestPosition) => saveLatestOffset
     case MysqlBinlogInOrderRecorderSaveLatestPosition => saveLatestOffset
     case x: BinlogPositionInfo => updateOffset(x)

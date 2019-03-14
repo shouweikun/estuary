@@ -7,9 +7,9 @@ import scala.beans.BeanProperty
   */
 @BeanProperty
 final case class MongoCredentialBean(
-                                      val username: Option[String] = None,
-                                      val password: Option[String] = None,
-                                      val database: Option[String] = None
+                                      val username:String,
+                                      val password:String,
+                                      val database:String
                                     ) {
 
 

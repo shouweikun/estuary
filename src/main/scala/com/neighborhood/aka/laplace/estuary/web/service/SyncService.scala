@@ -132,7 +132,14 @@ trait SyncService[Bean <: TaskRequestBean] {
     * @return 启动信息
     */
   def startNewOneTaskKeepConfig(syncTaskId: String, taskRequestBean: Bean): String = {
-    val re = startNewOneTask(taskRequestBean)
+    val re = if (checkAllRunningTaskName.contains(syncTaskId))
+      s"""
+        {
+         "syncTaskId":"$syncTaskId"
+         "status":"existed"
+        }
+      """.stripMargin
+    else startNewOneTask(taskRequestBean)
     requestBeanMap.put(syncTaskId, taskRequestBean)
     re
   }

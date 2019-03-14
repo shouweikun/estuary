@@ -70,7 +70,7 @@ trait SourceDataSinkerPrototype[S <: SinkFunc, -R] extends ActorPrototype with S
 
   override def postStop(): Unit = {
     log.debug(s"sinker$num processing postStop,id:$syncTaskId")
-    if (sinkFunc.isTerminated) sinkFunc.close
+    if (!sinkFunc.isTerminated) sinkFunc.close
     //    sinkTaskPool.environment.shutdown()
     //logPositionHandler.logPositionManage
   }

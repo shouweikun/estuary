@@ -11,7 +11,6 @@ import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.listen.MysqlC
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.record.MysqlBinlogInOrderPositionRecorder
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.sink.mysql.{MysqlBinlogInOrderMysqlSinkerManager, MysqlBinlogInOrderSinkerManager}
 import com.neighborhood.aka.laplace.estuary.mysql.task.mysql.{Mysql2MysqlAllTaskInfoBean, Mysql2MysqlTaskInfoManager}
-import com.neighborhood.aka.laplace.estuary.mysql.task.{Mysql2MysqlTaskInfoBean, Mysql2MysqlTaskInfoManager}
 
 /**
   * Created by john_liu on 2019/1/15.
@@ -68,12 +67,12 @@ final class MysqlBinlogInOrderMysqlController(
     val batcherTypeName = controllerNameToLoad.get(batcherName).getOrElse(MysqlBinlogInOrderBatcherMysqlManager.name)
     val binlogEventBatcher = context
       .actorOf(MysqlBinlogInOrderBatcherManager
-        .buildMysqlBinlogInOrderBatcherManager(batcherTypeName, resourceManager, binlogSinker).withDispatcher("akka.batcher-dispatcher"), "binlogBatcher")
+        .buildMysqlBinlogInOrderBatcherManager(batcherTypeName, resourceManager, binlogSinker).withDispatcher("akka.batcher-dispatcher"), batcherName)
 
     // 初始化binlogFetcher
     log.info(s"initialize fetcher,id:$syncTaskId")
     val fetcherTypeName: String = controllerNameToLoad.get(fetcherName).getOrElse(MysqlBinlogInOrderFetcherManager.name) //暂时没用上
-    context.actorOf(MysqlBinlogInOrderFetcherManager.props(resourceManager, binlogEventBatcher).withDispatcher("akka.fetcher-dispatcher"), "binlogFetcher")
+    context.actorOf(MysqlBinlogInOrderFetcherManager.props(resourceManager, binlogEventBatcher).withDispatcher("akka.fetcher-dispatcher"), fetcherName)
 
   }
 

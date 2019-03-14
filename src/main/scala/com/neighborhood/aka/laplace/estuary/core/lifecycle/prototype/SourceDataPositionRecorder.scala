@@ -19,6 +19,10 @@ trait SourceDataPositionRecorder[A <: ComparableOffset[A]] extends ActorPrototyp
     case _ =>
   }
 
+  /**
+    * @note 阻塞操作
+    * @return
+    */
   def startPosition: Option[A]
 
   def destination: String = this.syncTaskId

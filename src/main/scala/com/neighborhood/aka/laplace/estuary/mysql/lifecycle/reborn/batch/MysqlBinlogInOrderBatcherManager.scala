@@ -85,7 +85,7 @@ abstract class MysqlBinlogInOrderBatcherManager[B <: SinkFunc](
 
 
   override def receive: Receive = {
-    case SyncControllerMessage(MysqlBinlogInOrderBatcherStart) => switch2Online
+    case SyncControllerMessage(MysqlBinlogInOrderBatcherStart) => start
     case SyncControllerMessage(msg) => log.warning(s"batcher offline unhandled message$msg,id:$syncTaskId")
   }
 
@@ -99,7 +99,7 @@ abstract class MysqlBinlogInOrderBatcherManager[B <: SinkFunc](
   /**
     * 换成online
     */
-  protected def switch2Online: Unit = {
+  protected def start: Unit = {
     context.become(online, true)
     batcherChangeStatus(Status.ONLINE)
     eventCollector.map(ref => ref ! MysqlBinlogInOrderBatcherStarted)
