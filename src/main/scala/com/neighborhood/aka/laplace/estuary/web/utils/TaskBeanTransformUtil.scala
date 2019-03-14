@@ -7,7 +7,8 @@ import com.neighborhood.aka.laplace.estuary.mongo.task.kafka.{Mongo2KafkaAllTask
 import com.neighborhood.aka.laplace.estuary.mysql.sink.MysqlSinkBeanImp
 import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlSourceBeanImp
 import com.neighborhood.aka.laplace.estuary.mysql.task.mysql.{Mysql2MysqlAllTaskInfoBean, Mysql2MysqlTaskInfoBeanImp, SdaBean}
-import com.neighborhood.aka.laplace.estuary.web.bean.{Mysql2MysqlRequestBean, MysqlCredentialRequestBean}
+import com.neighborhood.aka.laplace.estuary.web.bean._
+
 import scala.collection.JavaConverters._
 object TaskBeanTransformUtil {
 
