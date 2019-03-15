@@ -1,4 +1,4 @@
-package com.neighborhood.aka.laplace.estuary.mongo.sink
+package com.neighborhood.aka.laplace.estuary.mongo.sink.kafka
 
 import com.neighborhood.aka.laplace.estuary.bean.key.OplogKey
 import com.neighborhood.aka.laplace.estuary.core.sink.kafka.KafkaSinkFunc

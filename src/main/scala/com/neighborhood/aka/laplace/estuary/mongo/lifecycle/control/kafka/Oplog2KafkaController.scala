@@ -26,7 +26,7 @@ import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.record.OplogPosition
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.record.OplogRecorderCommand.OplogRecorderSavePosition
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.OplogSinkerCommand
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.kafka.OplogKeyKafkaSinkerManager
-import com.neighborhood.aka.laplace.estuary.mongo.sink.OplogKeyKafkaBeanImp
+import com.neighborhood.aka.laplace.estuary.mongo.sink.kafka.OplogKeyKafkaBeanImp
 import com.neighborhood.aka.laplace.estuary.mongo.source.{MongoConnection, MongoSourceBeanImp}
 import com.neighborhood.aka.laplace.estuary.mongo.task.kafka.{Mongo2KafkaAllTaskInfoBean, Mongo2KafkaTaskInfoBeanImp, Mongo2KafkaTaskInfoManager}
 import org.I0Itec.zkclient.exception.ZkTimeoutException

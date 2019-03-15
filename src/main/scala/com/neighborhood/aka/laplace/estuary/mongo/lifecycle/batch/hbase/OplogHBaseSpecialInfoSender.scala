@@ -12,7 +12,7 @@ import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.batch.OplogBatcherCo
   *
   * @author neighborhood.aka.laplace
   */
-final class OplogHBasepecialInfoSender(
+final class OplogHBaseSpecialInfoSender(
                                         override val sinker: ActorRef,
                                         override val taskManager: TaskManager
                                       ) extends SourceDataSpecialBatcherPrototype {
@@ -56,8 +56,8 @@ final class OplogHBasepecialInfoSender(
   override def processError(e: Throwable, message: lifecycle.WorkerMessage): Unit = {}
 }
 
-object OplogHBasepecialInfoSender {
-  val name = OplogHBasepecialInfoSender.getClass.getName.stripSuffix("$")
+object OplogHBaseSpecialInfoSender {
+  val name = OplogHBaseSpecialInfoSender.getClass.getName.stripSuffix("$")
 
-  def props(sinker: ActorRef, taskManager: TaskManager): Props = Props(new OplogHBasepecialInfoSender(taskManager = taskManager, sinker = sinker))
+  def props(sinker: ActorRef, taskManager: TaskManager): Props = Props(new OplogHBaseSpecialInfoSender(taskManager = taskManager, sinker = sinker))
 }

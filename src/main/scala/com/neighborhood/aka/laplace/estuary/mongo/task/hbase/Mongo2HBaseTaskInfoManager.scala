@@ -1,4 +1,4 @@
-package com.neighborhood.aka.laplace.estuary.mongo.task.kafka
+package com.neighborhood.aka.laplace.estuary.mongo.task.hbase
 
 import akka.actor.ActorRef
 import com.neighborhood.aka.laplace.estuary.bean.key.PartitionStrategy
@@ -18,11 +18,11 @@ import org.slf4j.{Logger, LoggerFactory}
   *
   * @author neighborhood.aka.laplace
   */
-final class Mongo2KafkaTaskInfoManager(
-                                        private val allTaskInfoBean: Mongo2KafkaAllTaskInfoBean,
+final class Mongo2HBaseTaskInfoManager(
+                                        private val allTaskInfoBean: Mongo2HBaseAllTaskInfoBean,
                                         _config: Config
                                       ) extends OplogKeyKafkaSinkManagerImp with MongoSourceManagerImp with TaskManager {
-  override protected lazy val logger: Logger = LoggerFactory.getLogger(classOf[Mongo2KafkaTaskInfoManager])
+  override protected lazy val logger: Logger = LoggerFactory.getLogger(classOf[Mongo2HBaseTaskInfoManager])
   /**
     * 数据汇bean
     */

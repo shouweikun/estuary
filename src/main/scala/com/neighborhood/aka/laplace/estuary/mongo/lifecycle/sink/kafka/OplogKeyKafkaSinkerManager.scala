@@ -8,7 +8,7 @@ import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.SourceDataS
 import com.neighborhood.aka.laplace.estuary.core.sink.kafka.KafkaSinkFunc
 import com.neighborhood.aka.laplace.estuary.core.task.{SinkManager, TaskManager}
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.OplogSinkerCommand.OplogSinkerStart
-import com.neighborhood.aka.laplace.estuary.mongo.sink.OplogKeyKafkaSinkManagerImp
+import com.neighborhood.aka.laplace.estuary.mongo.sink.kafka.OplogKeyKafkaSinkManagerImp
 
 /**
   * Created by john_liu on 2019/3/2.

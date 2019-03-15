@@ -1,4 +1,4 @@
-package com.neighborhood.aka.laplace.estuary.mongo.task.kafka
+package com.neighborhood.aka.laplace.estuary.mongo.task.hbase
 
 import java.util.Date
 
@@ -9,7 +9,7 @@ import com.neighborhood.aka.laplace.estuary.mongo.source.MongoSourceBeanImp
 /**
   * Created by john_liu on 2019/2/28.
   */
-final case class Mongo2KafkaAllTaskInfoBean (
+final case class Mongo2HBaseAllTaskInfoBean(
                                               sinkBean: OplogKeyKafkaBeanImp,
                                               sourceBean: MongoSourceBeanImp,
                                               taskRunningInfoBean: Mongo2KafkaTaskInfoBeanImp

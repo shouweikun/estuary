@@ -1,8 +1,8 @@
-package com.neighborhood.aka.laplace.estuary.mongo.sink
+package com.neighborhood.aka.laplace.estuary.mongo.sink.kafka
 
 import java.util.concurrent.atomic.AtomicBoolean
 
-import com.neighborhood.aka.laplace.estuary.bean.key.{BinlogKey, OplogKey}
+import com.neighborhood.aka.laplace.estuary.bean.key.OplogKey
 import com.neighborhood.aka.laplace.estuary.core.sink.kafka.KafkaSinkFunc
 import com.neighborhood.aka.laplace.estuary.core.task.SinkManager
 import org.slf4j.LoggerFactory

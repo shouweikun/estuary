@@ -1,7 +1,7 @@
 package com.neighborhood.aka.laplace.estuary.web.utils
 
 import com.neighborhood.aka.laplace.estuary.bean.credential.{MongoCredentialBean, MysqlCredentialBean}
-import com.neighborhood.aka.laplace.estuary.mongo.sink.OplogKeyKafkaBeanImp
+import com.neighborhood.aka.laplace.estuary.mongo.sink.kafka.OplogKeyKafkaBeanImp
 import com.neighborhood.aka.laplace.estuary.mongo.source.{MongoOffset, MongoSourceBeanImp}
 import com.neighborhood.aka.laplace.estuary.mongo.task.kafka.{Mongo2KafkaAllTaskInfoBean, Mongo2KafkaTaskInfoBeanImp}
 import com.neighborhood.aka.laplace.estuary.mysql.sink.MysqlSinkBeanImp
