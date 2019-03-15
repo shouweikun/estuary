@@ -49,6 +49,10 @@
             </snapshots>
             <layout>default</layout>
         </repository>
+        <repository>
+            <id>cloudera repository</id>
+            <url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
+        </repository>
     </repositories>
     <dependencies>
         <dependency>
@@ -374,11 +378,11 @@
             <version>${hbase.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.apache.hbase</groupId>
-            <artifactId>hbase-common</artifactId>
-            <version>${hbase.version}</version>
-        </dependency>
+        <!--<dependency>-->
+            <!--<groupId>org.apache.hbase</groupId>-->
+            <!--<artifactId>hbase-common</artifactId>-->
+            <!--<version>${hbase.version}</version>-->
+        <!--</dependency>-->
         <!--start scalatest-->
         <!--<dependency>-->
         <!--<groupId>com.finup.cif</groupId>-->

@@ -21,4 +21,12 @@ object SettingConstant {
   val SINKER_FLUSH_INTERVAL = 300 //这个单位是毫秒
   val FAILURE_RETRY_BACKOFF = 100 //ms
   val CHECK_ACTIVE_INTERVAL = 30 //s
+
+  //列族名称
+  object HBASE_CF{
+    //用户查询需要的字段存在这个列族中
+    val TABLECF="original"
+    //附加字段存在这个列族
+    val COMMENTCF="cif"
+  }
 }
