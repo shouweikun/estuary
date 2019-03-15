@@ -17,5 +17,9 @@ class OplogHBaseMappingFormat extends OplogMappingFormat[HBasePut[MongoOffset]] 
     */
   override def mongoConnection: MongoConnection = ???
 
-  override def transform(x: lifecycle.OplogClassifier): HBasePut[MongoOffset] = ???
+  override def transform(x: lifecycle.OplogClassifier): HBasePut[MongoOffset] = {
+    val oplog = x.toOplog
+    val docOption = getRealDoc(oplog)
+    if (docOption.isEmpty)
+  }
 }

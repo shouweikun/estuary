@@ -11,7 +11,12 @@ import org.apache.hadoop.hbase.client.Put
 final case class HBasePut[A <: ComparableOffset[A]](
                                                      val key: String,
                                                      val put: Put,
-                                                     val offset: A
+                                                     val offset: A,
+                                                     val isAbnormal: Boolean = false
                                                    ) {
 
+}
+
+object HBasePut {
+  def abnormal[A <: ComparableOffset[A]](tableName:String,offset:A): HBasePut[A] = HBasePut(tableName,null,offset,true)
 }

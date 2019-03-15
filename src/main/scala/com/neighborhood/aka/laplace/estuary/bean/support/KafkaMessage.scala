@@ -12,7 +12,7 @@ import com.neighborhood.aka.laplace.estuary.bean.key.BaseDataJsonKey
 final case class KafkaMessage(
                                val baseDataJsonKey: BaseDataJsonKey,
                                val jsonValue: String,
-                               val isAbnormal: Boolean = true
+                               val isAbnormal: Boolean = false
                              ) {
 
 
