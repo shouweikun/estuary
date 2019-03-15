@@ -1,8 +1,10 @@
 package com.neighborhood.aka.laplace.estuary.web.utils
 
 import com.neighborhood.aka.laplace.estuary.bean.credential.{MongoCredentialBean, MysqlCredentialBean}
+import com.neighborhood.aka.laplace.estuary.mongo.sink.hbase.HBaseBeanImp
 import com.neighborhood.aka.laplace.estuary.mongo.sink.kafka.OplogKeyKafkaBeanImp
 import com.neighborhood.aka.laplace.estuary.mongo.source.{MongoOffset, MongoSourceBeanImp}
+import com.neighborhood.aka.laplace.estuary.mongo.task.hbase.{Mongo2HBaseAllTaskInfoBean, Mongo2HBaseTaskInfoBeanImp}
 import com.neighborhood.aka.laplace.estuary.mongo.task.kafka.{Mongo2KafkaAllTaskInfoBean, Mongo2KafkaTaskInfoBeanImp}
 import com.neighborhood.aka.laplace.estuary.mysql.sink.MysqlSinkBeanImp
 import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlSourceBeanImp
@@ -13,12 +15,21 @@ import scala.collection.JavaConverters._
 
 object TaskBeanTransformUtil {
 
+  def convertMongo2HBaseRequest2Mongo2HBaseTaskInfo(request: Mongo2HBaseTaskRequestBean): Mongo2HBaseAllTaskInfoBean = {
+    Mongo2HBaseAllTaskInfoBean(
+      sinkBean = HBaseSinkRequestBeanToHBaseBean(request.getHbaseSink),
+      sourceBean =mongoSourceRequestBeanToMongoSourceBean( request.getMongoSource),
+      taskRunningInfoBean =Mongo2HBaseRunningInfoRequestBeanToMongo2HBaseTaskInfoBean( request.getMongo2HBaseRunningInfo)
+    )
+  }
+
   def convertMongo2KafkaRequest2Mongo2KafkaTaskInfo(request: Mongo2KafkaTaskRequestBean): Mongo2KafkaAllTaskInfoBean = {
     val mongoSource = mongoSourceRequestBeanToMongoSourceBean(request.getMongoSource)
     val oplogKeyKafkaSink = OplogKafkaSinkRequestBeanToKafkaSinkBean(request.getKafkaSink)
     val runningInfo = mongo2KafkaRunningInfoRequestBean2Mongo2KafkaTaskInfoBean(request.getMongo2KafkaRunningInfo)
     Mongo2KafkaAllTaskInfoBean(oplogKeyKafkaSink, mongoSource, runningInfo)
   }
+
 
   def convertMysql2MysqlRequest2Mysql2MysqlTaskInfo(request: Mysql2MysqlRequestBean): Mysql2MysqlAllTaskInfoBean = {
 
@@ -68,6 +79,25 @@ object TaskBeanTransformUtil {
     )
     val sdaBean = Option(request.getSdaBean).map(_.getTableMappingRule.asScala.toMap[String, String]).map(SdaBean(_))
     Mysql2MysqlAllTaskInfoBean(sourceBean = mysqlSourceBean, sinkBean = mysqlSinkBean, taskRunningInfoBean = runningInfoBean, sdaBean = sdaBean)
+  }
+
+  private def Mongo2HBaseRunningInfoRequestBeanToMongo2HBaseTaskInfoBean(mongo2HBaseRunningInfoRequestBean: Mongo2HBaseRunningInfoRequestBean): Mongo2HBaseTaskInfoBeanImp = {
+    Mongo2HBaseTaskInfoBeanImp(
+      syncTaskId = mongo2HBaseRunningInfoRequestBean.getSyncTaskId,
+      offsetZookeeperServer = mongo2HBaseRunningInfoRequestBean.getOffsetZookeeperServers
+    )(
+      mongoOffset = MongoOffset(
+        mongoTsSecond = mongo2HBaseRunningInfoRequestBean.getMongoTsSecond,
+        mongoTsInc = mongo2HBaseRunningInfoRequestBean.getMongoTsInc
+      ),
+      batcherNum = if (mongo2HBaseRunningInfoRequestBean.getBatcherNum <= 0) 15 else mongo2HBaseRunningInfoRequestBean.getBatcherNum,
+      sinkerNum = if (mongo2HBaseRunningInfoRequestBean.getSinkerNum <= 0) 15 else mongo2HBaseRunningInfoRequestBean.getBatcherNum
+
+    )
+  }
+
+  private def HBaseSinkRequestBeanToHBaseBean(hBaseSinkRequestBean: HBaseSinkRequestBean): HBaseBeanImp = {
+    HBaseBeanImp(hBaseSinkRequestBean.getHbaseZookeeperQuorum, hBaseSinkRequestBean.getHabseZookeeperPropertyClientPort)
   }
 
   private def mongoSourceRequestBeanToMongoSourceBean(mongoSourceRequestBean: MongoSourceRequestBean): MongoSourceBeanImp = {
