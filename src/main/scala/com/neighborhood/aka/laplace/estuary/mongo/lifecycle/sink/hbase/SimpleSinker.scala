@@ -1,5 +1,6 @@
 package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.hbase
 
+import akka.actor.Props
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.SinkerMessage
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.SourceDataSinkerPrototype
@@ -76,4 +77,9 @@ private[hbase] class SimpleSinker(
     */
   override def processError(e: Throwable, message: lifecycle.WorkerMessage): Unit = throw e
 
+}
+
+object SimpleSinker {
+  def props(taskManager: HBaseSinkManager with TaskManager, num: Int
+           ): Props = Props(new SimpleSinker(taskManager, num))
 }

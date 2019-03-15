@@ -1,6 +1,6 @@
 package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.hbase
 
-import akka.actor.ActorRef
+import akka.actor.{ActorRef, Props}
 import com.neighborhood.aka.laplace.estuary.bean.support.HBasePut
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.SourceDataSinkerPrototype
@@ -11,9 +11,15 @@ import com.neighborhood.aka.laplace.estuary.mongo.source.MongoOffset
 import org.apache.hadoop.hbase.client.Put
 
 import scala.util.Try
+import OplogKeyHBaseRingBufferSinker._
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.SinkerMessage
+import com.neighborhood.aka.laplace.estuary.mongo.SettingConstant
+import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.OplogSinkerCommand.OplogSinkerCheckBatch
 
 /**
   * Created by john_liu on 2019/3/14.
+  *
+  * @author neighborhood.aka.laplace
   */
 class OplogKeyHBaseRingBufferSinker(
                                      override val taskManager: HBaseSinkManager with TaskManager,
@@ -36,7 +42,17 @@ class OplogKeyHBaseRingBufferSinker(
     */
   override val sinkFunc: HBaseSinkFunc = sinkManger.sink
 
-  val realSinker: ActorRef = ???
+
+  lazy val realSinker: ActorRef = context.child(realSinkerName).get
+
+  private var lastSendTimestamp: Long = System.currentTimeMillis()
+
+  override def receive: Receive = {
+    case x: HBasePut[MongoOffset] => handleSinkTask(x)
+    case SinkerMessage(x: HBasePut[MongoOffset]) => handleSinkTask(x)
+    case OplogSinkerCheckBatch => handleCheckBatchTask
+    case SinkerMessage(OplogSinkerCheckBatch) => handleCheckBatchTask
+  }
 
   /**
     * 处理Batcher转换过的数据
@@ -44,8 +60,8 @@ class OplogKeyHBaseRingBufferSinker(
     * @param input batcher转换完的数据
     * @tparam I 类型参数 逆变
     */
-  override protected def handleSinkTask[I <: HBasePut[MongoOffset]](input: I): Try[_] = {
-
+  override protected def handleSinkTask[I <: HBasePut[MongoOffset]](input: I): Try[_] = Try {
+    putAndFlushWhenFull(input)
   }
 
   /**
@@ -64,9 +80,16 @@ class OplogKeyHBaseRingBufferSinker(
     * @return 刷新是否成功
     */
   private def putAndFlushWhenFull(x: HBasePut[MongoOffset]): Try[Unit] = Try {
-    if (ringBuffer.isFull) flush
+    if (ringBuffer.isFull) flush()
     ringBuffer.put(x)
-    if (ringBuffer.isFull) flush
+    if (ringBuffer.isFull) flush()
+  }
+
+  private def handleCheckBatchTask: Unit = {
+    val ts = System.currentTimeMillis()
+    if (ts - lastSendTimestamp > SettingConstant.SINKER_FLUSH_INTERVAL) {
+      flush(ts)
+    }
   }
 
   /**
@@ -74,15 +97,29 @@ class OplogKeyHBaseRingBufferSinker(
     *
     * 将RingBuffer里所有的元素都形成sql 以batch的形式更新到数据库中
     */
-  private def flush: Unit = {
+  private def flush(ts: Long = System.currentTimeMillis()): Unit = {
     if (!ringBuffer.isEmpty) {
-      val offset = ringBuffer.last.offset
+      val last = ringBuffer.last
+      val offset = last.offset
+      val tableName = last.key
       val count = ringBuffer.elemNum
       val list = new java.util.LinkedList[Put]()
-      ringBuffer.foreach(x => list.add(x.put))
-      realSinker ! SinkHolder(offset, list)
+      ringBuffer.foreach(x => if (!x.isAbnormal) list.add(x.put))
+      realSinker ! SinkHolder(tableName, offset, list, count, ts)
+      lastSendTimestamp = ts
     }
   }
+
+  private def initRealSinker: Unit = {
+    context.actorOf(SimpleSinker.props(taskManager, num).withDispatcher("akka.sinker-dispatcher"))
+  }
+
+  override def preStart(): Unit = {
+    super.preStart()
+    initRealSinker
+    self ! OplogSinkerCheckBatch
+  }
+
 
   /**
     * 错位次数阈值
@@ -97,7 +134,13 @@ class OplogKeyHBaseRingBufferSinker(
   /**
     * 错误处理
     */
-  override def processError(e: Throwable, message: lifecycle.WorkerMessage): Unit = ???
+  override def processError(e: Throwable, message: lifecycle.WorkerMessage): Unit = {}
 
-  override def receive: Receive = ???
+
+}
+
+object OplogKeyHBaseRingBufferSinker {
+  final private[OplogKeyHBaseRingBufferSinker] val realSinkerName = "realSinkerName"
+
+  def props(taskManager: HBaseSinkManager with TaskManager, num: Int): Props = Props(new OplogKeyHBaseRingBufferSinker(taskManager, num))
 }

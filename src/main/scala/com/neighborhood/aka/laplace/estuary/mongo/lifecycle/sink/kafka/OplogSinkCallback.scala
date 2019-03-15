@@ -1,12 +1,13 @@
-package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink
+package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.kafka
 
 import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.actor.ActorRef
-import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.OplogSinkCallback._
+import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.OplogSinkerCommand
 import com.neighborhood.aka.laplace.estuary.mongo.source.MongoOffset
 import org.apache.kafka.clients.producer.{Callback, RecordMetadata}
 import org.slf4j.LoggerFactory
+import OplogSinkCallback._
 
 /**
   * Created by john_liu on 2019/3/5.

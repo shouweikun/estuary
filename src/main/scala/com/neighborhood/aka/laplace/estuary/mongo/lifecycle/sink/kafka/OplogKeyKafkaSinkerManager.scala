@@ -1,4 +1,4 @@
-package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink
+package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.kafka
 
 import akka.actor.{ActorRef, Props}
 import com.neighborhood.aka.laplace.estuary.bean.key.OplogKey
@@ -15,7 +15,7 @@ import com.neighborhood.aka.laplace.estuary.mongo.sink.OplogKeyKafkaSinkManagerI
   *
   * @author neighborhood.aka.laplace
   */
-final class OplogSinkerManager(
+final class OplogKeyKafkaSinkerManager(
                                 override val taskManager: OplogKeyKafkaSinkManagerImp with TaskManager
                               ) extends SourceDataSinkerManagerPrototype[KafkaSinkFunc[OplogKey, String]] {
   /**
@@ -102,6 +102,6 @@ final class OplogSinkerManager(
   }
 }
 
-object OplogSinkerManager {
-  def props(taskManager:OplogKeyKafkaSinkManagerImp with TaskManager):Props = Props(new OplogSinkerManager(taskManager))
+object OplogKeyKafkaSinkerManager {
+  def props(taskManager:OplogKeyKafkaSinkManagerImp with TaskManager):Props = Props(new OplogKeyKafkaSinkerManager(taskManager))
 }
