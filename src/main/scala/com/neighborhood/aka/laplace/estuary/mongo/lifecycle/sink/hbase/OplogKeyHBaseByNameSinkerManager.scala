@@ -61,8 +61,8 @@ class OplogKeyHBaseByNameSinkerManager(
     */
   override protected def online: Receive = {
     //case _ => SyncControllerMessage()
-    case x: HBasePut[MongoOffset] => getOrCreateSinker(x.key) ! x
-    case BatcherMessage(x: HBasePut[MongoOffset]) => getOrCreateSinker(x.key) ! x
+    case x: HBasePut[MongoOffset] => getOrCreateSinker(x.tableName) ! x
+    case BatcherMessage(x: HBasePut[MongoOffset]) => getOrCreateSinker(x.tableName) ! x
     case _ => //暂时不做其他处理
 
   }

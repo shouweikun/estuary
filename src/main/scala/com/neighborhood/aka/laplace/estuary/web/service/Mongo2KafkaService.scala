@@ -2,7 +2,7 @@ package com.neighborhood.aka.laplace.estuary.web.service
 
 import com.neighborhood.aka.laplace.estuary.core.akkaUtil.SyncDaemonCommand.ExternalStartCommand
 import com.neighborhood.aka.laplace.estuary.core.task.Mongo2KafkaSyncTask
-import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.control.Oplog2KafkaController
+import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.control.kafka.Oplog2KafkaController
 import com.neighborhood.aka.laplace.estuary.web.akkaUtil.ActorRefHolder
 import com.neighborhood.aka.laplace.estuary.web.bean.Mongo2KafkaTaskRequestBean
 import com.neighborhood.aka.laplace.estuary.web.utils.TaskBeanTransformUtil

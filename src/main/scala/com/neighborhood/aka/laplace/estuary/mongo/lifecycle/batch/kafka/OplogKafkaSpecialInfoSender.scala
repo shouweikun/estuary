@@ -1,12 +1,11 @@
-package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.batch
+package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.batch.kafka
 
 import akka.actor.{ActorRef, Props}
-import com.neighborhood.aka.laplace.estuary.bean.key.OplogKey
-import com.neighborhood.aka.laplace.estuary.bean.support.KafkaMessage
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.BatcherMessage
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.SourceDataSpecialBatcherPrototype
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
+import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.batch.OplogBatcherCommand
 
 /**
   * Created by john_liu on 2019/3/4.

@@ -1,7 +1,7 @@
-package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.batch
+package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.batch.hbase
 
 import akka.actor.{ActorRef, Props}
-import com.neighborhood.aka.laplace.estuary.bean.support.KafkaMessage
+import com.neighborhood.aka.laplace.estuary.bean.support.HBasePut
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.BatcherMessage
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.SourceDataBatcherPrototype
@@ -10,22 +10,23 @@ import com.neighborhood.aka.laplace.estuary.core.trans.MappingFormat
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.OplogClassifier
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.adapt.OplogPowerAdapterCommand.OplogPowerAdapterUpdateCost
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.count.OplogProcessingCounterCommand.OplogProcessingCounterUpdateCount
+import com.neighborhood.aka.laplace.estuary.mongo.source.MongoOffset
 
 /**
   * Created by john_liu on 2019/3/1.
   *
   * @author neighborhood.aka.laplace
   */
-final class OplogKafkaBatcher(
+final class OplogHBaseBatcher(
                                override val taskManager: TaskManager,
                                override val sinker: ActorRef,
                                override val num: Int
-                             ) extends SourceDataBatcherPrototype[OplogClassifier, KafkaMessage] {
+                             ) extends SourceDataBatcherPrototype[OplogClassifier, HBasePut[MongoOffset]] {
 
   /**
     * mappingFormat
     */
-  override val mappingFormat: MappingFormat[OplogClassifier, KafkaMessage] = taskManager.batchMappingFormat.get.asInstanceOf[MappingFormat[OplogClassifier, KafkaMessage]]
+  override val mappingFormat: MappingFormat[OplogClassifier, HBasePut[MongoOffset]] = taskManager.batchMappingFormat.get.asInstanceOf[MappingFormat[OplogClassifier, HBasePut[MongoOffset]]]
   /**
     * processingCounter
     */
@@ -46,21 +47,22 @@ final class OplogKafkaBatcher(
 
   /**
     * 处理转化打包任务
+    *
     * @param oplogClassifier
     */
   private def handleBatchTask(oplogClassifier: OplogClassifier): Unit = {
-    val kafkaMessage = transAndSend(oplogClassifier)
-    if (!kafkaMessage.isAbnormal) {
-      sendCost(kafkaMessage.baseDataJsonKey.msgSyncUsedTime)
+    val hbasePut = transAndSend(oplogClassifier)
+    if (!hbasePut.isAbnormal) {
+      sendCost(System.currentTimeMillis() - oplogClassifier.fetchTimeStamp)
     }
     sendCount(1)
   }
 
   @inline
-  private def transAndSend(oplogClassifier: OplogClassifier): KafkaMessage = {
-    val kafkaMessage = transform(oplogClassifier)
-    sinker ! kafkaMessage
-    kafkaMessage
+  private def transAndSend(oplogClassifier: OplogClassifier): HBasePut[MongoOffset] = {
+    val hbasePut = transform(oplogClassifier)
+    sinker ! hbasePut
+    hbasePut
   }
 
   @inline
@@ -72,21 +74,21 @@ final class OplogKafkaBatcher(
   /**
     * 错位次数阈值
     */
-  override def errorCountThreshold: Int = ???
+  override def errorCountThreshold: Int = 0
 
   /**
     * 错位次数
     */
-  override var errorCount: Int = _
+  override var errorCount: Int = 0
 
   /**
     * 错误处理
     */
-  override def processError(e: Throwable, message: lifecycle.WorkerMessage): Unit = ???
+  override def processError(e: Throwable, message: lifecycle.WorkerMessage): Unit = {}
 }
 
-object OplogKafkaBatcher {
-  val name = OplogKafkaBatcher.getClass.getName.stripSuffix("$")
+object OplogHBaseBatcher {
+  val name = OplogHBaseBatcher.getClass.getName.stripSuffix("$")
 
-  def props(taskManager: TaskManager, sinker: ActorRef, num: Int): Props = Props(new OplogKafkaBatcher(taskManager, sinker, num))
+  def props(taskManager: TaskManager, sinker: ActorRef, num: Int): Props = Props(new OplogHBaseBatcher(taskManager, sinker, num))
 }

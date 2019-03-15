@@ -9,7 +9,7 @@ import org.apache.hadoop.hbase.client.Put
   * @author neighborhood.aka.laplace
   */
 final case class HBasePut[A <: ComparableOffset[A]](
-                                                     val key: String,
+                                                     val tableName: String,
                                                      val put: Put,
                                                      val offset: A,
                                                      val isAbnormal: Boolean = false

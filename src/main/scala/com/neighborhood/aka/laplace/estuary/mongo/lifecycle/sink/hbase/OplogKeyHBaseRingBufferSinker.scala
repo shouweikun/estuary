@@ -101,7 +101,7 @@ class OplogKeyHBaseRingBufferSinker(
     if (!ringBuffer.isEmpty) {
       val last = ringBuffer.last
       val offset = last.offset
-      val tableName = last.key
+      val tableName = last.tableName
       val count = ringBuffer.elemNum
       val list = new java.util.LinkedList[Put]()
       ringBuffer.foreach(x => if (!x.isAbnormal) list.add(x.put))
