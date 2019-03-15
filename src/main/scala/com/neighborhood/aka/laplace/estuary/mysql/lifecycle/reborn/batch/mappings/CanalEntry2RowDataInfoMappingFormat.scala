@@ -51,10 +51,10 @@ trait CanalEntry2RowDataInfoMappingFormat extends CanalEntryMappingFormat[MysqlR
           fields.append(column.getName)
         }
     }
-//    val delete = handleDeleteEventRowDataToSql(dbName, tableName, columnList, entry).head
+    //    val delete = handleDeleteEventRowDataToSql(dbName, tableName, columnList, entry).head
     val insert = s"replace into `$dbName`.`$tableName`(${fields.mkString(",")}) VALUES (${values.mkString(",")}) "
     List(
-//      delete,
+      //      delete,
       insert)
   }
 
@@ -124,6 +124,7 @@ trait CanalEntry2RowDataInfoMappingFormat extends CanalEntryMappingFormat[MysqlR
     else dmlType match {
       case EventType.INSERT | EventType.UPDATE => handleUpdateEventRowDataToSql(dbName, tableName, columnList, entry)
       case EventType.DELETE => handleDeleteEventRowDataToSql(dbName, tableName, columnList, entry)
+      case _ => throw new UnsupportedOperationException(s"$dmlType is not supported currently,id:$syncTaskId")
     }
     val binlogPositionInfo = BinlogPositionInfo(
       entry.getHeader.getLogfileName,

@@ -6,7 +6,7 @@ package com.neighborhood.aka.laplace.estuary.mongo
   */
 object SettingConstant {
 
-  val COMPUTE_COST_CONSTANT = 3
+  val COMPUTE_COST_CONSTANT: Int = 3
   val COMPUTE_COUNT_CONSTANT = 100 //这个单位是ms
   val COMPUTE_FIRST_DELAY: Int = 5
   val OFFSET_SAVE_CONSTANT: Int = 60
@@ -23,10 +23,11 @@ object SettingConstant {
   val CHECK_ACTIVE_INTERVAL = 30 //s
 
   //列族名称
-  object HBASE_CF{
+  object HBASE_CF {
     //用户查询需要的字段存在这个列族中
-    val TABLECF="original"
+    val TABLECF = "original"
     //附加字段存在这个列族
-    val COMMENTCF="cif"
+    val COMMENTCF = "cif"
   }
+
 }

@@ -1,5 +1,6 @@
 package com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype
 
+import akka.actor.ActorRef
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.SourceDataSinker
 import com.neighborhood.aka.laplace.estuary.core.sink.SinkFunc
 import com.neighborhood.aka.laplace.estuary.core.task.{SinkManager, TaskManager}
@@ -44,6 +45,30 @@ trait SourceDataSinkerPrototype[S <: SinkFunc, -R] extends ActorPrototype with S
     *
     */
   def num: Int
+
+  def positionRecorder: Option[ActorRef] = taskManager.positionRecorder
+
+  def processingCounter: Option[ActorRef] = taskManager.processingCounter
+
+  def powerAdapter: Option[ActorRef] = taskManager.powerAdapter
+
+  def isCounting = taskManager.isCounting
+
+  def isCosting = taskManager.isCosting
+
+  /**
+    * 发送计数
+    *
+    * @param count
+    */
+  protected def sendCount(count: => Long): Unit = {}
+
+  /**
+    * 发送耗时
+    *
+    * @param cost
+    */
+  protected def sendCost(cost: => Long): Unit = {}
 
   /**
     * 处理Batcher转换过的数据

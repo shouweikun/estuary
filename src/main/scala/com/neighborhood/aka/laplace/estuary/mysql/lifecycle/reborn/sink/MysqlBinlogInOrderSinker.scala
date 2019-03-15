@@ -50,23 +50,23 @@ abstract class MysqlBinlogInOrderSinker[B <: SinkFunc, R: ClassTag](
   /**
     * 功率控制器
     */
-  lazy val powerAdapter = taskManager.powerAdapter
+  override lazy val powerAdapter = taskManager.powerAdapter
   /**
     * 计数器
     */
-  lazy val processingCounter = taskManager.processingCounter
+  override lazy val processingCounter = taskManager.processingCounter
   /**
     * 位置记录器
     */
-  lazy val positionRecorder = taskManager.positionRecorder
+  override lazy val positionRecorder = taskManager.positionRecorder
   /**
     * 是否计数
     */
-  val isCounting = taskManager.isCounting
+  override val isCounting = taskManager.isCounting
   /**
     * 是否计算耗时
     */
-  val isCosting = taskManager.isCounting
+  override val isCosting = taskManager.isCounting
 
   /**
     * 出错，挂起
@@ -77,21 +77,6 @@ abstract class MysqlBinlogInOrderSinker[B <: SinkFunc, R: ClassTag](
     //    case x => log.warning(s"since sinker get abnormal,$x will not be processed,id:$syncTaskId")
     case _ =>
   }
-
-  /**
-    * 发送计数
-    *
-    * @param count
-    */
-  protected def sendCount(count: => Long): Unit = if (isCounting) this.processingCounter.fold(log.warning(s"cannot find processingCounter when send sink Count,id:$syncTaskId"))(ref => ref ! SinkerMessage(MysqlBinlogInOrderProcessingCounterUpdateCount(count)))
-
-  /**
-    * 发送耗时
-    *
-    * @param cost
-    */
-  protected def sendCost(cost: => Long): Unit = if (isCosting) this.powerAdapter.fold(log.warning(s"cannot find powerAdapter when sinker sending cost,id:$syncTaskId"))(ref => ref ! SinkerMessage(MysqlBinlogInOrderPowerAdapterUpdateCost(cost)))
-
 
   override def supervisorStrategy = {
     OneForOneStrategy() {

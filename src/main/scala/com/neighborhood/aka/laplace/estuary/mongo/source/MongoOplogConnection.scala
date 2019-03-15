@@ -62,7 +62,7 @@ final class MongoConnection(
     try {
       if (connectStatus.compareAndSet(true, false)) mongoClient.close()
     } catch {
-      case e => throw e
+      case e: Exception => throw e
     }
     finally lock.unlock()
     logger.info("disconnect mongoConnection success")

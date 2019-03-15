@@ -6,6 +6,8 @@ import com.neighborhood.aka.laplace.estuary.core.lifecycle.SinkerMessage
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.SourceDataSinkerPrototype
 import com.neighborhood.aka.laplace.estuary.core.sink.hbase.{HBaseSinkFunc, HBaseSinkManager}
 import com.neighborhood.aka.laplace.estuary.core.task.{SinkManager, TaskManager}
+import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.adapt.OplogPowerAdapterCommand.OplogPowerAdapterUpdateCost
+import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.count.OplogProcessingCounterCommand.OplogProcessingCounterUpdateCount
 
 import scala.util.Try
 
@@ -18,6 +20,8 @@ private[hbase] class SimpleSinker(
                                    val taskManager: HBaseSinkManager with TaskManager,
                                    override val num: Int
                                  ) extends SourceDataSinkerPrototype[HBaseSinkFunc, SinkHolder] {
+
+
   /**
     * 资源管理器
     */
@@ -34,6 +38,13 @@ private[hbase] class SimpleSinker(
   override val sinkFunc: HBaseSinkFunc = taskManager.sink
 
 
+  override val isCounting = taskManager.isCounting
+  override val isCosting = taskManager.isCosting
+
+  override lazy val positionRecorder = taskManager.positionRecorder
+  override lazy val processingCounter = taskManager.processingCounter
+  override lazy val powerAdapter = taskManager.powerAdapter
+
   override def receive: Receive = {
     case m@SinkerMessage(x: SinkHolder) => handleSinkTask(x).failed.foreach(e => processError(e, m))
   }
@@ -49,6 +60,8 @@ private[hbase] class SimpleSinker(
     hTable.setAutoFlush(false, true)
     hTable.put(input.list)
     hTable.flushCommits()
+    sendCost(System.currentTimeMillis() - input.generateTs)
+    sendCount(input.count)
     hTable.close()
   }
 
@@ -61,6 +74,20 @@ private[hbase] class SimpleSinker(
   override protected def handleBatchSinkTask[I <: SinkHolder](input: List[I]): Try[_] = {
     ???
   }
+
+  /**
+    * 发送计数
+    *
+    * @param count
+    */
+ override protected def sendCount(count: => Long): Unit = if (isCounting) this.processingCounter.fold(log.warning(s"cannot find processingCounter when send sink Count,id:$syncTaskId"))(ref => ref ! SinkerMessage(OplogProcessingCounterUpdateCount(count)))
+
+  /**
+    * 发送耗时
+    *
+    * @param cost
+    */
+  override protected def sendCost(cost: => Long): Unit = if (isCosting) this.powerAdapter.fold(log.warning(s"cannot find powerAdapter when sinker sending cost,id:$syncTaskId"))(ref => ref ! SinkerMessage(OplogPowerAdapterUpdateCost(cost)))
 
   /**
     * 错位次数阈值

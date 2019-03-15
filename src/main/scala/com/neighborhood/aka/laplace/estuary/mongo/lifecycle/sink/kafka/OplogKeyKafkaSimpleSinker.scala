@@ -40,11 +40,11 @@ final class OplogKeyKafkaSimpleSinker(
   override lazy val sinkFunc: KafkaSinkFunc[OplogKey, String] = sinkManger.sink
 
 
-  lazy val processingCounter = taskManager.processingCounter
+  override lazy val processingCounter = taskManager.processingCounter
 
-  lazy val powerAdapter = taskManager.powerAdapter
+  override lazy val powerAdapter = taskManager.powerAdapter
 
-  lazy val positionRecorder = taskManager.positionRecorder.get
+  override lazy val positionRecorder = taskManager.positionRecorder
 
   lazy val sinkAbnormal = taskManager.sinkAbnormal
 
@@ -58,8 +58,8 @@ final class OplogKeyKafkaSimpleSinker(
     if (!input.isAbnormal) {
       val key = input.baseDataJsonKey.asInstanceOf[OplogKey]
       val mongoOffset = MongoOffset(key.getMongoTsSecond, key.getMongoTsInc)
-      sink.send(key, input.jsonValue, new OplogSinkCallback(sinkAbnormal, positionRecorder, mongoOffset))
-      positionRecorder ! mongoOffset //发送offset
+      sink.send(key, input.jsonValue, new OplogSinkCallback(sinkAbnormal, positionRecorder.get, mongoOffset))
+      positionRecorder.map(ref => ref ! mongoOffset) //发送offset
       sendCost(System.currentTimeMillis() - input.baseDataJsonKey.msgSyncStartTime)
     }
     sendCount(1)

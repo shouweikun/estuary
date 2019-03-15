@@ -1,6 +1,6 @@
 package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.hbase
 
-import akka.actor.ActorRef
+import akka.actor.{ActorRef, Props}
 import com.neighborhood.aka.laplace.estuary.bean.support.HBasePut
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, SyncControllerMessage}
@@ -107,4 +107,8 @@ class OplogKeyHBaseByNameSinkerManager(
     */
   override def processError(e: Throwable, message: lifecycle.WorkerMessage): Unit = ???
 
+}
+
+object OplogKeyHBaseByNameSinkerManager {
+  def props(taskManager: HBaseSinkManager with TaskManager): Props = Props(new OplogKeyHBaseByNameSinkerManager(taskManager))
 }

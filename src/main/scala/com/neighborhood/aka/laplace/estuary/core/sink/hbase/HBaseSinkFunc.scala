@@ -20,11 +20,11 @@ abstract class HBaseSinkFunc(val hbaseSinkBean: HBaseBean) extends SinkFunc {
 
 
   private def initConnection: Connection = {
-    var conf = HBaseConfiguration.create()
+    val conf = HBaseConfiguration.create()
     conf.set("hbase.zookeeper.quorum", hbaseSinkBean.HbaseZookeeperQuorum)
     //设置zookeeper连接端口，默认2181
     conf.set("hbase.zookeeper.property.clientPort", hbaseSinkBean.HabseZookeeperPropertyClientPort)
-    conf.set("hbase.client.keyvalue.maxsize","0")
+    conf.set("hbase.client.keyvalue.maxsize", "0")
 
     val conn = ConnectionFactory.createConnection(conf)
 
@@ -41,8 +41,8 @@ abstract class HBaseSinkFunc(val hbaseSinkBean: HBaseBean) extends SinkFunc {
     if (connectionStatus.compareAndSet(true, false)) conn.close()
   }
 
-  def getTable(tableName: String)(implicit pool: ExecutorService): HTable = {
+  def getTable(tableName: String): HTable = {
     if (!connectionStatus.get()) throw new IllegalStateException()
-    new HTable(TableName.valueOf(tableName), conn, pool)
+    conn.getTable(TableName.valueOf(tableName)).asInstanceOf[HTable]
   }
 }
