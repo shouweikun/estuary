@@ -3,16 +3,16 @@ package com.neighborhood.aka.laplace.estuary.mongo.task.hbase
 import java.util.Date
 
 import com.neighborhood.aka.laplace.estuary.bean.identity.BaseExtractBean
-import com.neighborhood.aka.laplace.estuary.mongo.sink.kafka.OplogKeyKafkaBeanImp
+import com.neighborhood.aka.laplace.estuary.mongo.sink.hbase.HBaseBeanImp
 import com.neighborhood.aka.laplace.estuary.mongo.source.MongoSourceBeanImp
 
 /**
   * Created by john_liu on 2019/2/28.
   */
 final case class Mongo2HBaseAllTaskInfoBean(
-                                              sinkBean: OplogKeyKafkaBeanImp,
+                                              sinkBean: HBaseBeanImp,
                                               sourceBean: MongoSourceBeanImp,
-                                              taskRunningInfoBean: Mongo2KafkaTaskInfoBeanImp
+                                              taskRunningInfoBean: Mongo2HBaseTaskInfoBeanImp
 )extends BaseExtractBean {
 
 

@@ -7,8 +7,7 @@ import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.core.trans.MappingFormat
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.OplogClassifier
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.batch.mappingFormat.Oplog2KafkaMessageMappingFormat
-import com.neighborhood.aka.laplace.estuary.mongo.sink.OplogKeyKafkaSinkManagerImp
-import com.neighborhood.aka.laplace.estuary.mongo.sink.kafka.{OplogKeyKafkaBeanImp, OplogKeyKafkaSinkManagerImp}
+import com.neighborhood.aka.laplace.estuary.mongo.sink.hbase.{HBaseBeanImp, HBaseSinkManagerImp}
 import com.neighborhood.aka.laplace.estuary.mongo.source.{MongoOffset, MongoSourceBeanImp, MongoSourceManagerImp}
 import com.typesafe.config.Config
 import org.slf4j.{Logger, LoggerFactory}
@@ -21,12 +20,12 @@ import org.slf4j.{Logger, LoggerFactory}
 final class Mongo2HBaseTaskInfoManager(
                                         private val allTaskInfoBean: Mongo2HBaseAllTaskInfoBean,
                                         _config: Config
-                                      ) extends OplogKeyKafkaSinkManagerImp with MongoSourceManagerImp with TaskManager {
+                                      ) extends HBaseSinkManagerImp with MongoSourceManagerImp with TaskManager {
   override protected lazy val logger: Logger = LoggerFactory.getLogger(classOf[Mongo2HBaseTaskInfoManager])
   /**
     * 数据汇bean
     */
-  override val sinkBean: OplogKeyKafkaBeanImp = allTaskInfoBean.sinkBean
+  override val sinkBean: HBaseBeanImp = allTaskInfoBean.sinkBean
 
   /**
     * 数据源bean
@@ -36,7 +35,7 @@ final class Mongo2HBaseTaskInfoManager(
   /**
     * 任务信息bean
     */
-  override lazy val taskInfo: Mongo2KafkaTaskInfoBeanImp = allTaskInfoBean.taskRunningInfoBean
+  override lazy val taskInfo: Mongo2HBaseTaskInfoBeanImp = allTaskInfoBean.taskRunningInfoBean
 
   /**
     * batch转换模块
@@ -84,12 +83,12 @@ final class Mongo2HBaseTaskInfoManager(
   /**
     * 是否同步写
     */
-  override def isSync: Boolean = ???
+  override def isSync: Boolean = true //todo
 
   /**
     * 是否是补录任务
     */
-  override def isDataRemedy: Boolean = ???
+  override def isDataRemedy: Boolean = true //todo
 
   /**
     * 任务类型

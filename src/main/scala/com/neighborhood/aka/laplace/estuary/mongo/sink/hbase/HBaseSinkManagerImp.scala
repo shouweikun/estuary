@@ -1,12 +1,11 @@
 package com.neighborhood.aka.laplace.estuary.mongo.sink.hbase
 
-import com.neighborhood.aka.laplace.estuary.core.sink.hbase.HBaseSinkFunc
-import com.neighborhood.aka.laplace.estuary.core.task.SinkManager
+import com.neighborhood.aka.laplace.estuary.core.sink.hbase.{HBaseSinkFunc, HBaseSinkManager}
 
 /**
   * Created by john_liu on 2019/3/15.
   */
-trait HBaseSinkManagerImp extends SinkManager[HBaseSinkFunc] {
+trait HBaseSinkManagerImp extends HBaseSinkManager {
 
 
   /**
