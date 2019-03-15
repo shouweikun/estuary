@@ -5,7 +5,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 import com.neighborhood.aka.laplace.estuary.bean.datasink.HBaseBean
 import com.neighborhood.aka.laplace.estuary.core.sink.SinkFunc
-import org.apache.hadoop.hbase.TableName
+import org.apache.hadoop.hbase.{HBaseConfiguration, TableName}
 import org.apache.hadoop.hbase.client._
 
 /**
@@ -20,8 +20,15 @@ abstract class HBaseSinkFunc(val hbaseSinkBean: HBaseBean) extends SinkFunc {
 
 
   private def initConnection: Connection = {
+    var conf = HBaseConfiguration.create()
+    conf.set("hbase.zookeeper.quorum", hbaseSinkBean.HbaseZookeeperQuorum)
+    //设置zookeeper连接端口，默认2181
+    conf.set("hbase.zookeeper.property.clientPort", hbaseSinkBean.HabseZookeeperPropertyClientPort)
+    conf.set("hbase.client.keyvalue.maxsize","0")
 
-    ???
+    val conn = ConnectionFactory.createConnection(conf)
+
+    conn
   }
 
   def start(): Unit = {
