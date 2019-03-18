@@ -18,6 +18,7 @@ import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.adapt.OplogPowerAdap
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.adapt.OplogPowerAdapterCommand.{OplogPowerAdapterComputeCost, OplogPowerAdapterControl, OplogPowerAdapterDelayFetch}
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.batch.OplogBatcherCommand.OplogBatcherCheckHeartbeats
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.batch.OplogBatcherCommand
+import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.batch.kafka.OplogKafkaBatcherManager
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.control.OplogControllerCommand._
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.count.OplogProcessingCounter
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.count.OplogProcessingCounterCommand.OplogProcessingCounterComputeCount

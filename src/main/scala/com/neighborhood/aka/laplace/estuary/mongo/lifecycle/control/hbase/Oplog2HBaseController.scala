@@ -3,7 +3,7 @@ package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.control.hbase
 import java.util.concurrent.{ExecutorService, Executors}
 
 import akka.actor.SupervisorStrategy.Escalate
-import akka.actor.{ActorRef, AllForOneStrategy}
+import akka.actor.{ActorRef, AllForOneStrategy, Props}
 import com.neighborhood.aka.laplace.estuary.bean.exception.control.WorkerCannotFindException
 import com.neighborhood.aka.laplace.estuary.core.akkaUtil.SyncDaemonCommand.{ExternalRestartCommand, ExternalStartCommand}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
@@ -168,7 +168,7 @@ final class Oplog2HBaseController(
     * 1. 启动binlogSinker:       1.发送开始命令
     * 2. 启动binlogBatcher:      1.发送开始命令 2.发送定时心跳数据命令
     * 3. 启动binlogFetcher:      1.发送开始命令
-    *   ---------------- 4. 启动heartbeatListener:  1.发送开始命令 2.发送定时监听数据源心跳命令
+    * ---------------- 4. 启动heartbeatListener:  1.发送开始命令 2.发送定时监听数据源心跳命令
     * 5. 如果计时    发送计时命令给powerAdapter
     * 6. 如果计数    发送计数命令给countProcesser
     * 7. 如果功率控制 发送功率控制命令给powerAdapter
@@ -452,3 +452,6 @@ final class Oplog2HBaseController(
 
 }
 
+object Oplog2HBaseController {
+  def props(allTaskInfoBean: Mongo2HBaseAllTaskInfoBean): Props = Props(new Oplog2HBaseController(allTaskInfoBean))
+}

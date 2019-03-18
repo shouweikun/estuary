@@ -19,6 +19,8 @@ import org.bson.Document
 
 /**
   * Created by john_liu on 2019/3/1.
+  *
+  * @author neighborhood.aka.laplace
   */
 final class OplogKafkaBatcherManager(
                                       override val taskManager: MongoSourceManagerImp with TaskManager,
@@ -73,6 +75,7 @@ final class OplogKafkaBatcherManager(
     partitionStrategy match { //暂未支持其他分区等级
       case PartitionStrategy.PRIMARY_KEY => consistentHashing
       case PartitionStrategy.DATABASE_TABLE => consistentHashing
+      case PartitionStrategy.MOD => roundRobin //使用roundRobin进行分类
     }
     //    val specialInfoSenderTypeName = batcherNameToLoad.get(specialInfoSenderName).getOrElse(MysqlBinlogInOrderMysqlSpecialInfoSender.name) //todo 动态加载能力
     val props = OplogKafkaSpecialInfoSender.props(taskManager.sinkerList.head, taskManager)

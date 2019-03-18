@@ -7,7 +7,6 @@ import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.core.trans.MappingFormat
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.OplogClassifier
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.batch.mappingFormat.Oplog2KafkaMessageMappingFormat
-import com.neighborhood.aka.laplace.estuary.mongo.sink.OplogKeyKafkaSinkManagerImp
 import com.neighborhood.aka.laplace.estuary.mongo.sink.kafka.{OplogKeyKafkaBeanImp, OplogKeyKafkaSinkManagerImp}
 import com.neighborhood.aka.laplace.estuary.mongo.source.{MongoOffset, MongoSourceBeanImp, MongoSourceManagerImp}
 import com.typesafe.config.Config
