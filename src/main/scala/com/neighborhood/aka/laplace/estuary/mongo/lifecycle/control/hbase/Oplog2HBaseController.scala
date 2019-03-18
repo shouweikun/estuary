@@ -1,24 +1,23 @@
-package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.control.kafka
+package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.control.hbase
 
 import java.util.concurrent.{ExecutorService, Executors}
 
 import akka.actor.SupervisorStrategy.Escalate
 import akka.actor.{ActorRef, AllForOneStrategy, Props}
 import com.neighborhood.aka.laplace.estuary.bean.exception.control.WorkerCannotFindException
-import com.neighborhood.aka.laplace.estuary.bean.key.OplogKey
 import com.neighborhood.aka.laplace.estuary.core.akkaUtil.SyncDaemonCommand.{ExternalRestartCommand, ExternalStartCommand}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.SyncControllerPrototype
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{ListenerMessage, PowerAdapterMessage, SinkerMessage, SyncControllerMessage}
-import com.neighborhood.aka.laplace.estuary.core.sink.kafka.KafkaSinkFunc
+import com.neighborhood.aka.laplace.estuary.core.sink.hbase.HBaseSinkFunc
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mongo.SettingConstant
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.adapt.OplogPowerAdapter
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.adapt.OplogPowerAdapterCommand.{OplogPowerAdapterComputeCost, OplogPowerAdapterControl, OplogPowerAdapterDelayFetch}
-import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.batch.OplogBatcherCommand.OplogBatcherCheckHeartbeats
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.batch.OplogBatcherCommand
-import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.batch.kafka.OplogKafkaBatcherManager
+import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.batch.OplogBatcherCommand.OplogBatcherCheckHeartbeats
+import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.batch.hbase.OplogHBaseBatcherManager
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.control.OplogControllerCommand._
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.count.OplogProcessingCounter
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.count.OplogProcessingCounterCommand.OplogProcessingCounterComputeCount
@@ -26,10 +25,10 @@ import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.fetch.{OplogFetcherC
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.record.OplogPositionRecorder
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.record.OplogRecorderCommand.OplogRecorderSavePosition
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.OplogSinkerCommand
-import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.kafka.OplogKeyKafkaSinkerManager
-import com.neighborhood.aka.laplace.estuary.mongo.sink.kafka.OplogKeyKafkaBeanImp
+import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.hbase.OplogKeyHBaseByNameSinkerManager
+import com.neighborhood.aka.laplace.estuary.mongo.sink.hbase.HBaseBeanImp
 import com.neighborhood.aka.laplace.estuary.mongo.source.{MongoConnection, MongoSourceBeanImp}
-import com.neighborhood.aka.laplace.estuary.mongo.task.kafka.{Mongo2KafkaAllTaskInfoBean, Mongo2KafkaTaskInfoBeanImp, Mongo2KafkaTaskInfoManager}
+import com.neighborhood.aka.laplace.estuary.mongo.task.hbase.{Mongo2HBaseAllTaskInfoBean, Mongo2HBaseTaskInfoBeanImp, Mongo2HBaseTaskInfoManager}
 import org.I0Itec.zkclient.exception.ZkTimeoutException
 
 import scala.concurrent.duration._
@@ -41,19 +40,19 @@ import scala.util.Try
   *
   * @author neighborhood.aka.lapalce
   */
-final class Oplog2KafkaController(
-                                   val allTaskInfoBean: Mongo2KafkaAllTaskInfoBean
-                                 ) extends SyncControllerPrototype[MongoConnection, KafkaSinkFunc[OplogKey, String]] {
+final class Oplog2HBaseController(
+                                   val allTaskInfoBean: Mongo2HBaseAllTaskInfoBean
+                                 ) extends SyncControllerPrototype[MongoConnection, HBaseSinkFunc] {
 
   protected val schedulingCommandPool: ExecutorService = Executors.newFixedThreadPool(3)
   /**
     * 必须要用这个，保证重启后，之前的定时发送任务都没了
     */
   implicit protected val scheduleTaskPool: ExecutionContextExecutor = ExecutionContext.fromExecutor(schedulingCommandPool)
-  override val taskBean: Mongo2KafkaTaskInfoBeanImp = allTaskInfoBean.taskRunningInfoBean
+  override val taskBean: Mongo2HBaseTaskInfoBeanImp = allTaskInfoBean.taskRunningInfoBean
   override val sourceBean: MongoSourceBeanImp = allTaskInfoBean.sourceBean
 
-  override val sinkBean: OplogKeyKafkaBeanImp = allTaskInfoBean.sinkBean
+  override val sinkBean: HBaseBeanImp = allTaskInfoBean.sinkBean
 
 
   /**
@@ -64,14 +63,14 @@ final class Oplog2KafkaController(
   /**
     * 任务信息管理器
     */
-  override val taskManager: Mongo2KafkaTaskInfoManager = buildManager
+  override val taskManager: Mongo2HBaseTaskInfoManager = buildManager
 
 
   val isCosting = taskManager.isCosting
   val isCounting = taskManager.isCounting
   val isPowerAdapted = taskManager.isPowerAdapted
 
-  override def resourceManager: Mongo2KafkaTaskInfoManager = taskManager
+  override def resourceManager: Mongo2HBaseTaskInfoManager = taskManager
 
   override def receive: Receive = {
     case ExternalStartCommand => switch2Online
@@ -112,9 +111,9 @@ final class Oplog2KafkaController(
     * @return 构造好的资源管理器
     *
     */
-  override def buildManager: Mongo2KafkaTaskInfoManager = {
-    log.info(s"start to build Mongo2KafkaTaskInfoManager,id:$syncTaskId")
-    new Mongo2KafkaTaskInfoManager(allTaskInfoBean, context.system.settings.config)
+  override def buildManager: Mongo2HBaseTaskInfoManager = {
+    log.info(s"start to build Mongo2HBaseTaskInfoManager,id:$syncTaskId")
+    new Mongo2HBaseTaskInfoManager(allTaskInfoBean, context.system.settings.config)
   }
 
   /**
@@ -128,7 +127,7 @@ final class Oplog2KafkaController(
     * 7.初始化positionRecorder
     */
   override def initWorkers: Unit = {
-    log.info(s"Oplog2KafkaController start init workers,id:$syncTaskId")
+    log.info(s"Oplog2HBaseController start init workers,id:$syncTaskId")
     //初始化processingCounter
     log.info(s"initialize processingCounter,id:$syncTaskId")
     val processingCounter = context.actorOf(OplogProcessingCounter.props(taskManager), processingCounterName)
@@ -150,13 +149,13 @@ final class Oplog2KafkaController(
 
     //初始化binlogSinker
     log.info(s"initialize sinker,id:$syncTaskId")
-    val oplogSinker = context.actorOf(OplogKeyKafkaSinkerManager.props(taskManager).withDispatcher("akka.sinker-dispatcher"), sinkerName)
+    val oplogSinker = context.actorOf(OplogKeyHBaseByNameSinkerManager.props(taskManager).withDispatcher("akka.sinker-dispatcher"), sinkerName)
 
     taskManager.wait4SinkerList() //必须要等待
     //初始化batcher
     log.info(s"initialize batcher,id:$syncTaskId")
     val oplogBatcher = context
-      .actorOf(OplogKafkaBatcherManager.props(taskManager, oplogSinker).withDispatcher("akka.batcher-dispatcher"), batcherName)
+      .actorOf(OplogHBaseBatcherManager.props(taskManager, oplogSinker).withDispatcher("akka.batcher-dispatcher"), batcherName)
 
     // 初始化binlogFetcher
     log.info(s"initialize fetcher,id:$syncTaskId")
@@ -169,7 +168,7 @@ final class Oplog2KafkaController(
     * 1. 启动binlogSinker:       1.发送开始命令
     * 2. 启动binlogBatcher:      1.发送开始命令 2.发送定时心跳数据命令
     * 3. 启动binlogFetcher:      1.发送开始命令
-    *   ---------------- 4. 启动heartbeatListener:  1.发送开始命令 2.发送定时监听数据源心跳命令
+    * ---------------- 4. 启动heartbeatListener:  1.发送开始命令 2.发送定时监听数据源心跳命令
     * 5. 如果计时    发送计时命令给powerAdapter
     * 6. 如果计数    发送计数命令给countProcesser
     * 7. 如果功率控制 发送功率控制命令给powerAdapter
@@ -453,6 +452,6 @@ final class Oplog2KafkaController(
 
 }
 
-object Oplog2KafkaController {
-  def props(allTaskInfoBean: Mongo2KafkaAllTaskInfoBean): Props = Props(new Oplog2KafkaController(allTaskInfoBean))
+object Oplog2HBaseController {
+  def props(allTaskInfoBean: Mongo2HBaseAllTaskInfoBean): Props = Props(new Oplog2HBaseController(allTaskInfoBean))
 }

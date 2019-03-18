@@ -1,12 +1,11 @@
 package com.neighborhood.aka.laplace.estuary.core.sink.hbase
 
-import java.util.concurrent.ExecutorService
 import java.util.concurrent.atomic.AtomicBoolean
 
 import com.neighborhood.aka.laplace.estuary.bean.datasink.HBaseBean
 import com.neighborhood.aka.laplace.estuary.core.sink.SinkFunc
-import org.apache.hadoop.hbase.{HBaseConfiguration, TableName}
 import org.apache.hadoop.hbase.client._
+import org.apache.hadoop.hbase.{HBaseConfiguration, TableName}
 
 /**
   * Created by john_liu on 2019/3/14.
@@ -40,6 +39,12 @@ abstract class HBaseSinkFunc(val hbaseSinkBean: HBaseBean) extends SinkFunc {
   override def close: Unit = {
     if (connectionStatus.compareAndSet(true, false)) conn.close()
   }
+
+  /**
+    * 检测，是否关闭
+    *
+    */
+  override def isTerminated: Boolean = !connectionStatus.get()
 
   def getTable(tableName: String): HTable = {
     if (!connectionStatus.get()) throw new IllegalStateException()

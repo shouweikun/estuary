@@ -1,7 +1,7 @@
-package com.neighborhood.aka.laplace.estuary.mongo.sink
+package com.neighborhood.aka.laplace.estuary.mongo.sink.kafka
 
 import com.neighborhood.aka.laplace.estuary.bean.datasink.KafkaBean
-import com.neighborhood.aka.laplace.estuary.bean.key.{BinlogKey, JsonKeySerializer, MultipleJsonKeyPartitioner, OplogKey}
+import com.neighborhood.aka.laplace.estuary.bean.key.{JsonKeySerializer, MultipleJsonKeyPartitioner, OplogKey}
 import org.apache.kafka.common.serialization.StringSerializer
 
 /**

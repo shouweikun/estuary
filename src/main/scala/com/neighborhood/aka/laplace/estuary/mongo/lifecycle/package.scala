@@ -33,4 +33,5 @@ package object lifecycle {
     def toOplog = new Oplog(doc)
   }
 
+
 }

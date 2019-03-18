@@ -1,4 +1,4 @@
-package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.batch.kafka
+package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.batch.hbase
 
 import akka.actor.SupervisorStrategy.Escalate
 import akka.actor.{ActorRef, AllForOneStrategy, Props}
@@ -22,7 +22,7 @@ import org.bson.Document
   *
   * @author neighborhood.aka.laplace
   */
-final class OplogKafkaBatcherManager(
+final class OplogHBaseBatcherManager(
                                       override val taskManager: MongoSourceManagerImp with TaskManager,
                                       override val sinker: ActorRef
 
@@ -68,17 +68,17 @@ final class OplogKafkaBatcherManager(
     taskManager.wait4SinkerList() //必须要等待,一定要等sinkerList创建完毕才行
     //val batcherTypeName = taskManager.batcherNameToLoad.get(batcherName).getOrElse(OplogKafkaBatcher.name) // todo 支持动态加载
     val paths: List[String] = (1 to batcherNum).map {
-      index => OplogKafkaBatcher.props(taskManager, taskManager.sinkerList(index - 1), index)
+      index => OplogHBaseBatcher.props(taskManager, taskManager.sinkerList(index - 1), index)
     }.map(context.actorOf(_)).map(_.path.toString).toList
     lazy val roundRobin = context.actorOf(new RoundRobinGroup(paths).props().withDispatcher("akka.batcher-dispatcher"), "router")
     lazy val consistentHashing = context.actorOf(new ConsistentHashingGroup(paths, virtualNodesFactor = SettingConstant.HASH_MAPPING_VIRTUAL_NODES_FACTOR).props().withDispatcher("akka.batcher-dispatcher"), routerName)
     partitionStrategy match { //暂未支持其他分区等级
       case PartitionStrategy.PRIMARY_KEY => consistentHashing
       case PartitionStrategy.DATABASE_TABLE => consistentHashing
-      case PartitionStrategy.MOD => roundRobin //使用roundRobin进行分类
+      case PartitionStrategy.MOD => roundRobin
     }
     //    val specialInfoSenderTypeName = batcherNameToLoad.get(specialInfoSenderName).getOrElse(MysqlBinlogInOrderMysqlSpecialInfoSender.name) //todo 动态加载能力
-    val props = OplogKafkaSpecialInfoSender.props(taskManager.sinkerList.head, taskManager)
+    val props = OplogHBaseSpecialInfoSender.props(taskManager.sinkerList.head, taskManager)
     context.actorOf(props, specialInfoSenderName)
   }
 
@@ -186,6 +186,6 @@ final class OplogKafkaBatcherManager(
 
 }
 
-object OplogKafkaBatcherManager {
-  def props(taskManager: MongoSourceManagerImp with TaskManager, sinker: ActorRef): Props = Props(new OplogKafkaBatcherManager(taskManager, sinker))
+object OplogHBaseBatcherManager {
+  def props(taskManager: MongoSourceManagerImp with TaskManager, sinker: ActorRef): Props = Props(new OplogHBaseBatcherManager(taskManager, sinker))
 }
