@@ -5,11 +5,13 @@ import com.neighborhood.aka.laplace.estuary.web.service.SyncService
 import com.neighborhood.aka.laplace.estuary.web.utils.ValidationUtils
 import io.swagger.annotations.ApiOperation
 import org.springframework.beans.factory.annotation.{Autowired, Qualifier}
-import org.springframework.web.bind.annotation.{RequestBody, RequestMapping, RequestMethod, RequestParam}
+import org.springframework.web.bind.annotation._
 
 /**
   * Created by john_liu on 2019/3/15.
   */
+@RestController
+@RequestMapping(Array("/api/v1/estuary/mongo2hbase"))
 final class Mongo2HBaseController extends SyncTaskController[Mongo2HBaseTaskRequestBean] {
 
   @Qualifier("mongo2hbase")
