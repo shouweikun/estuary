@@ -81,9 +81,9 @@ final class OplogKeyKafkaSimpleSinker(
   }
 
 
-  override def sendCost(cost: Long) = powerAdapter.map(ref => ref ! SinkerMessage(OplogPowerAdapterUpdateCost(cost)))
+  override protected def sendCost(cost: => Long): Unit = powerAdapter.map(ref => ref ! SinkerMessage(OplogPowerAdapterUpdateCost(cost)))
 
-  override def sendCount(count: Long) = processingCounter.map(ref => ref ! SinkerMessage(OplogProcessingCounterUpdateCount(count: Long)))
+  override protected def sendCount(count: => Long): Unit = processingCounter.map(ref => ref ! SinkerMessage(OplogProcessingCounterUpdateCount(count: Long)))
 
   /**
     * 错位次数阈值

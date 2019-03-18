@@ -23,13 +23,13 @@ trait SyncControllerPrototype[A <: DataSourceConnection, B <: SinkFunc] extends 
   /**
     * 用于动态传参加载类和获取ActorRef
     */
-  final val sinkerName: String = "sourceSinker"
-  final val fetcherName: String = "sourceFetcher"
-  final val batcherName: String = "sourceBatcher"
-  final val listenerName: String = "heartbeatsListener"
-  final val powerAdapterName: String = "powerAdapter"
-  final val processingCounterName: String = "processingCounter"
-  final val positionRecorderName: String = "positionRecorder"
+  final val sinkerName: String = SyncControllerPrototype.sinkerName
+  final val fetcherName: String = SyncControllerPrototype.fetcherName
+  final val batcherName: String = SyncControllerPrototype.batcherName
+  final val listenerName: String = SyncControllerPrototype.listenerName
+  final val powerAdapterName: String = SyncControllerPrototype.powerAdapterName
+  final val processingCounterName: String = SyncControllerPrototype.processingCounterName
+  final val positionRecorderName: String = SyncControllerPrototype.positionRecorderName
 
   /**
     *
@@ -156,4 +156,16 @@ trait SyncControllerPrototype[A <: DataSourceConnection, B <: SinkFunc] extends 
   protected def onChangeFunc = TaskManager.onChangeStatus(taskManager)
 
   protected def controllerChangeStatus(status: Status) = TaskManager.changeStatus(status, changeFunc, onChangeFunc)
+}
+object SyncControllerPrototype{
+  /**
+    * 用于动态传参加载类和获取ActorRef
+    */
+  final val sinkerName: String = "sourceSinker"
+  final val fetcherName: String = "sourceFetcher"
+  final val batcherName: String = "sourceBatcher"
+  final val listenerName: String = "heartbeatsListener"
+  final val powerAdapterName: String = "powerAdapter"
+  final val processingCounterName: String = "processingCounter"
+  final val positionRecorderName: String = "positionRecorder"
 }

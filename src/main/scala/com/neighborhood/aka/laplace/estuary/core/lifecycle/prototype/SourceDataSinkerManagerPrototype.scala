@@ -1,11 +1,13 @@
 package com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype
 
-import akka.actor.ActorRef
+import akka.actor.{ActorRef, OneForOneStrategy}
+import akka.actor.SupervisorStrategy.Escalate
 import com.neighborhood.aka.laplace.estuary.bean.exception.control.WorkerCannotFindException
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.{SourceDataSinker, Status}
 import com.neighborhood.aka.laplace.estuary.core.sink.SinkFunc
 import com.neighborhood.aka.laplace.estuary.core.task.{SinkManager, TaskManager}
+import org.I0Itec.zkclient.exception.ZkTimeoutException
 
 /**
   * Created by john_liu on 2018/5/21.
@@ -134,5 +136,30 @@ trait SourceDataSinkerManagerPrototype[B <: SinkFunc] extends ActorPrototype wit
     log.info(s"sinker processing preRestart,id:$syncTaskId")
     sinkerChangeStatus(Status.RESTARTING)
     super.postRestart(reason)
+  }
+
+  override def supervisorStrategy = {
+    OneForOneStrategy() {
+      case e: ZkTimeoutException => {
+        sinkerChangeStatus(Status.ERROR)
+        log.error(s"can not connect to zookeeper server,id:$syncTaskId")
+        Escalate
+      }
+      case e: Exception => {
+        sinkerChangeStatus(Status.ERROR)
+        log.error(s"sinker crashed,exception:$e,cause:${e.getCause},processing SupervisorStrategy,id:$syncTaskId")
+        Escalate
+      }
+      case error: Error => {
+        sinkerChangeStatus(Status.ERROR)
+        log.error(s"sinker crashed,error:$error,cause:${error.getCause},processing SupervisorStrategy,id:$syncTaskId")
+        Escalate
+      }
+      case e => {
+        log.error(s"sinker crashed,throwable:$e,cause:${e.getCause},processing SupervisorStrategy,id:$syncTaskId")
+        sinkerChangeStatus(Status.ERROR)
+        Escalate
+      }
+    }
   }
 }

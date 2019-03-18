@@ -114,31 +114,7 @@ abstract class MysqlBinlogInOrderSinkerManager(
     super.postRestart(reason)
   }
 
-  override def supervisorStrategy = {
-    OneForOneStrategy() {
 
-      case e: ZkTimeoutException => {
-        sinkerChangeStatus(Status.ERROR)
-        log.error(s"can not connect to zookeeper server,id:$syncTaskId")
-        Escalate
-      }
-      case e: Exception => {
-        sinkerChangeStatus(Status.ERROR)
-        log.error(s"sinker crashed,exception:$e,cause:${e.getCause},processing SupervisorStrategy,id:$syncTaskId")
-        Escalate
-      }
-      case error: Error => {
-        sinkerChangeStatus(Status.ERROR)
-        log.error(s"sinker crashed,error:$error,cause:${error.getCause},processing SupervisorStrategy,id:$syncTaskId")
-        Escalate
-      }
-      case e => {
-        log.error(s"sinker crashed,throwable:$e,cause:${e.getCause},processing SupervisorStrategy,id:$syncTaskId")
-        sinkerChangeStatus(Status.ERROR)
-        Escalate
-      }
-    }
-  }
 
 
 }

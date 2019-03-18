@@ -24,8 +24,8 @@ import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.count.OplogProcessin
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.fetch.{OplogFetcherCommand, OplogFetcherManager}
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.record.OplogPositionRecorder
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.record.OplogRecorderCommand.OplogRecorderSavePosition
-import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.OplogSinkerCommand
-import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.hbase.OplogKeyHBaseByNameSinkerManager
+import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.hbase.DefaultOplogKeyHBaseSinkerManager
+import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.{OplogSinkerCommand, OplogSinkerManager}
 import com.neighborhood.aka.laplace.estuary.mongo.sink.hbase.HBaseBeanImp
 import com.neighborhood.aka.laplace.estuary.mongo.source.{MongoConnection, MongoSourceBeanImp}
 import com.neighborhood.aka.laplace.estuary.mongo.task.hbase.{Mongo2HBaseAllTaskInfoBean, Mongo2HBaseTaskInfoBeanImp, Mongo2HBaseTaskInfoManager}
@@ -149,7 +149,8 @@ final class Oplog2HBaseController(
 
     //初始化binlogSinker
     log.info(s"initialize sinker,id:$syncTaskId")
-    val oplogSinker = context.actorOf(OplogKeyHBaseByNameSinkerManager.props(taskManager).withDispatcher("akka.sinker-dispatcher"), sinkerName)
+    val sinkerTypeName = taskManager.sinkerNameToLoad.get(sinkerName).getOrElse(DefaultOplogKeyHBaseSinkerManager.name)
+    val oplogSinker = context.actorOf(OplogSinkerManager.builgOplogSinkerManager(sinkerTypeName, taskManager).withDispatcher("akka.sinker-dispatcher"), sinkerName)
 
     taskManager.wait4SinkerList() //必须要等待
     //初始化batcher
