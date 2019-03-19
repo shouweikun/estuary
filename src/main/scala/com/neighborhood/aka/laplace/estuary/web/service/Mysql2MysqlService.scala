@@ -88,7 +88,7 @@ final class Mysql2MysqlService extends SyncService[Mysql2MysqlRequestBean] {
   override protected def startNewOneTask(taskRequestBean: Mysql2MysqlRequestBean): String = {
     if (status.compareAndSet(false, true)) Mysql2MysqlService.ref = this //这是一个不好的实现
     val taskInfoBean = TaskBeanTransformUtil.convertMysql2MysqlRequest2Mysql2MysqlTaskInfo(taskRequestBean)
-    val controllerName = taskInfoBean.taskRunningInfoBean.controllerNameToLoad.get("syncController").getOrElse(MysqlBinlogInOrderMysqlController.name)
+    val controllerName = Option(taskInfoBean.taskRunningInfoBean.controllerNameToLoad).flatMap(_.get("syncController")).getOrElse(MysqlBinlogInOrderMysqlController.name)
     ActorRefHolder.syncDaemon ! ExternalStartCommand(Mysql2MysqlSyncTask(MysqlBinlogInOrderController.buildMysqlBinlogInOrderController(taskInfoBean, controllerName), taskRequestBean.getMysql2MysqlRunningInfoBean.getSyncTaskId))
     s"""
       {
@@ -134,6 +134,8 @@ final class Mysql2MysqlService extends SyncService[Mysql2MysqlRequestBean] {
     taskRequestBean.getMysql2MysqlRunningInfoBean.getFetcherNameToLoad.put("directFetcher", "com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.fetch.SdaMysqlBinlogInOrderDirectFetcher") //强制sda
     taskRequestBean.getMysql2MysqlRunningInfoBean.setBatcherNameToLoad(new util.HashMap[String, String]())
     taskRequestBean.getMysql2MysqlRunningInfoBean.getBatcherNameToLoad.put("specialInfoSender", "com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.batch.imp.MysqlBinlogInOrderMysqlSpecialInfoSender4Sda") //强制sda
+    taskRequestBean.getMysql2MysqlRunningInfoBean.setControllerNameToLoad(new util.HashMap[String, String]())
+    taskRequestBean.getMysql2MysqlRunningInfoBean.getControllerNameToLoad.put("syncController","com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.control.MysqlBinlogInOrderMysqlController4Sda") //强制sda
     taskRequestBean.setSdaBean(new SdaRequestBean(getMappingRule, allEncryptField)) //增加rule
   }
 
