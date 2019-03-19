@@ -44,8 +44,4 @@ final class Oplog2KafkaMessageMappingFormat(
 
   }
 
-  @inline
-  private def getJsonValue(doc: Document): String = {
-    doc.toJson
-  }
 }
