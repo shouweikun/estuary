@@ -33,6 +33,10 @@ class OplogHBaseMappingFormat(
       val endTime = System.currentTimeMillis()
       val ts = getTs(oplog.getTimestamp.getTime, oplog.getTimestamp.getInc)
       val dbEffectTime = (oplog.getTimestamp.getTime + "0000").toLong
+
+      put.addColumn(Bytes.toBytes(getTableCF), Bytes.toBytes("0"),ts, Bytes.toBytes(value))
+      put.addColumn(Bytes.toBytes(getTableCF), Bytes.toBytes("1"),ts, Bytes.toBytes(doc.get("_id").toString))
+
       // 添加 CommentCF
       put.addColumn(Bytes.toBytes(getCommentCF), Bytes.toBytes("dbEffectTime"), ts, Bytes.toBytes(dbEffectTime))
       put.addColumn(Bytes.toBytes(getCommentCF), Bytes.toBytes("endTime"), ts, Bytes.toBytes(endTime))
