@@ -2,13 +2,14 @@ package com.neighborhood.aka.laplace.estuary.mongo.task.hbase
 
 import akka.actor.ActorRef
 import com.neighborhood.aka.laplace.estuary.bean.key.PartitionStrategy
-import com.neighborhood.aka.laplace.estuary.bean.support.KafkaMessage
+import com.neighborhood.aka.laplace.estuary.bean.support.{HBasePut, KafkaMessage}
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.core.trans.MappingFormat
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.OplogClassifier
-import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.batch.mappingFormat.Oplog2KafkaMessageMappingFormat
+import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.batch.mappingFormat.{Oplog2KafkaMessageMappingFormat, OplogHBaseMappingFormat}
 import com.neighborhood.aka.laplace.estuary.mongo.sink.hbase.{HBaseBeanImp, HBaseSinkManagerImp}
 import com.neighborhood.aka.laplace.estuary.mongo.source.{MongoOffset, MongoSourceBeanImp, MongoSourceManagerImp}
+import com.neighborhood.aka.laplace.estuary.mongo.util.MongoDocumentToJson
 import com.typesafe.config.Config
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -40,9 +41,9 @@ final class Mongo2HBaseTaskInfoManager(
   /**
     * batch转换模块
     */
-  override lazy val batchMappingFormat: Option[MappingFormat[OplogClassifier, KafkaMessage]] = Option(buildMappingFormat)
+  override lazy val batchMappingFormat: Option[MappingFormat[OplogClassifier, HBasePut[MongoOffset]]] = Option(buildMappingFormat)
 
-  override val offsetZookeeperServer: String =taskInfo.offsetZookeeperServer
+  override val offsetZookeeperServer: String = taskInfo.offsetZookeeperServer
 
   override val startMongoOffset: Option[MongoOffset] = Option(taskInfo.mongoOffset)
 
@@ -50,7 +51,6 @@ final class Mongo2HBaseTaskInfoManager(
     * 事件溯源的事件收集器
     */
   override def eventCollector: Option[ActorRef] = None //todo
-
 
 
   /**
@@ -106,7 +106,8 @@ final class Mongo2HBaseTaskInfoManager(
 
   /**
     * 是否阻塞式拉取
-    *@todo
+    *
+    * @todo
     * @return
     */
   override val isBlockingFetch: Boolean = true
@@ -148,8 +149,8 @@ final class Mongo2HBaseTaskInfoManager(
     startSink
   }
 
-  private def buildMappingFormat: MappingFormat[OplogClassifier, KafkaMessage] = {
+  private def buildMappingFormat: MappingFormat[OplogClassifier, HBasePut[MongoOffset]] = {
     logger.info(s"start to build build mapping formart,id:$syncTaskId")
-    new Oplog2KafkaMessageMappingFormat(source, syncTaskId)
+    new OplogHBaseMappingFormat(source, syncTaskId, new MongoDocumentToJson)
   }
 }

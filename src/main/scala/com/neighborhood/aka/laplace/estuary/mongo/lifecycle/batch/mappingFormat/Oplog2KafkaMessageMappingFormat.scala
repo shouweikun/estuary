@@ -4,6 +4,7 @@ import com.neighborhood.aka.laplace.estuary.bean.key.OplogKey
 import com.neighborhood.aka.laplace.estuary.bean.support.KafkaMessage
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle
 import com.neighborhood.aka.laplace.estuary.mongo.source.MongoConnection
+import com.neighborhood.aka.laplace.estuary.mongo.util.MongoDocumentToJson
 import org.bson.Document
 
 
@@ -17,7 +18,8 @@ import org.bson.Document
   */
 final class Oplog2KafkaMessageMappingFormat(
                                              override val mongoConnection: MongoConnection, //mongo链接
-                                             override val syncTaskId: String
+                                             override val syncTaskId: String,
+                                             override val mongoDocumentToJson: MongoDocumentToJson
                                            ) extends OplogMappingFormat[KafkaMessage] {
 
   /**
