@@ -28,6 +28,7 @@ class OplogHBaseMappingFormat(
       HBasePut.abnormal(tableName, mongoOffset)
     } else {
       val doc = docOption.get
+      val value = getJsonValue(doc)
       val put = new Put(Bytes.toBytes(MD5Utils.md5(doc.get("_id").toString)))
       val endTime = System.currentTimeMillis()
       val ts = getTs(oplog.getTimestamp.getTime, oplog.getTimestamp.getInc)
