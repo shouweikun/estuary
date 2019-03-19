@@ -16,7 +16,7 @@ class OplogSinkerManager {
 object OplogSinkerManager {
   private[OplogSinkerManager] lazy val logger = LoggerFactory.getLogger(classOf[OplogSinkerManager])
 
-  def builgOplogSinkerManager(nameToLoad: String, taskManager: TaskManager): Props = {
+  def builgOplogSinkerManager(nameToLoad: String, taskManager: TaskManager): Props = nameToLoad match {
     case DefaultOplogKeyHBaseSinkerManager.name => DefaultOplogKeyHBaseSinkerManager.props(taskManager.asInstanceOf[HBaseSinkManager with TaskManager])
     case OplogKeyHBaseByNameSinkerManager.name => OplogKeyHBaseByNameSinkerManager.props(taskManager.asInstanceOf[HBaseSinkManager with TaskManager])
     case _ => throw new IllegalArgumentException(s"$nameToLoad is not supported currently when builgOplogSinkerManager")
