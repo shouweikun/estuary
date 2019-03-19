@@ -30,6 +30,7 @@ trait SyncControllerPrototype[A <: DataSourceConnection, B <: SinkFunc] extends 
   final val powerAdapterName: String = "powerAdapter"
   final val processingCounterName: String = "processingCounter"
   final val positionRecorderName: String = "positionRecorder"
+  final val syncControllerName:String = "syncController"
 
   /**
     *

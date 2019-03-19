@@ -471,6 +471,7 @@ object MysqlBinlogInOrderController {
   def buildMysqlBinlogInOrderController(taskInfoBean: BaseExtractBean, name: String): Props = {
     name match {
       case MysqlBinlogInOrderMysqlController.name => MysqlBinlogInOrderMysqlController.props(taskInfoBean.asInstanceOf[Mysql2MysqlAllTaskInfoBean])
+      case MysqlBinlogInOrderMysqlController4Sda.name => MysqlBinlogInOrderMysqlController4Sda.props(taskInfoBean.asInstanceOf[Mysql2MysqlAllTaskInfoBean])
       case _ => throw new WorkerInitialFailureException(s"cannot build MysqlBinlogInOrderController name item match $name")
     }
   }

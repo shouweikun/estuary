@@ -3,14 +3,15 @@ package com.neighborhood.aka.laplace.estuary.web.service
 
 import java.net.InetAddress
 import java.util
+import java.util.concurrent.atomic.AtomicBoolean
 
 import com.neighborhood.aka.laplace.estuary.core.akkaUtil.SyncDaemonCommand.ExternalStartCommand
 import com.neighborhood.aka.laplace.estuary.core.task.Mysql2MysqlSyncTask
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.control.{MysqlBinlogInOrderController, MysqlBinlogInOrderMysqlController}
+import com.neighborhood.aka.laplace.estuary.mysql.task.mysql.Mysql2MysqlAllTaskInfoBean
 import com.neighborhood.aka.laplace.estuary.web.akkaUtil.ActorRefHolder
 import com.neighborhood.aka.laplace.estuary.web.bean.{Mysql2MysqlRequestBean, SdaRequestBean}
 import com.neighborhood.aka.laplace.estuary.web.utils.TaskBeanTransformUtil
-import org.slf4j.{Logger, LoggerFactory}
 import org.springframework.beans.factory.annotation.{Autowired, Qualifier, Value}
 import org.springframework.http.{HttpEntity, HttpHeaders, HttpMethod}
 import org.springframework.jdbc.core.JdbcTemplate
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Service
 import org.springframework.web.client.RestTemplate
 
 import scala.collection.JavaConverters._
+import scala.util.Try
 
 /**
   * Created by john_liu on 2018/3/10.
@@ -45,6 +47,21 @@ final class Mysql2MysqlService extends SyncService[Mysql2MysqlRequestBean] {
   @Qualifier("restTemplate")
   private val restTemplate: RestTemplate = null
 
+  private val status: AtomicBoolean = new AtomicBoolean(false)
+
+  def getNewTaskInfoBeanAndUpdate(syncTaskId: String): Option[Mysql2MysqlAllTaskInfoBean] = {
+    Try(requestBeanMap.get(syncTaskId))
+      .map(_.asInstanceOf[Mysql2MysqlRequestBean])
+      .toOption
+      .flatMap(Option(_))
+      .map {
+        bean =>
+          customRequestForSda(bean)
+          requestBeanMap.put(syncTaskId, bean)
+          TaskBeanTransformUtil.convertMysql2MysqlRequest2Mysql2MysqlTaskInfo(bean)
+      }
+  }
+
   /**
     * 为Sda定制的开始方法
     *
@@ -69,8 +86,10 @@ final class Mysql2MysqlService extends SyncService[Mysql2MysqlRequestBean] {
     * @return 任务启动信息
     */
   override protected def startNewOneTask(taskRequestBean: Mysql2MysqlRequestBean): String = {
+    if (status.compareAndSet(false, true)) Mysql2MysqlService.ref = this //这是一个不好的实现
     val taskInfoBean = TaskBeanTransformUtil.convertMysql2MysqlRequest2Mysql2MysqlTaskInfo(taskRequestBean)
-    ActorRefHolder.syncDaemon ! ExternalStartCommand(Mysql2MysqlSyncTask(MysqlBinlogInOrderController.buildMysqlBinlogInOrderController(taskInfoBean, MysqlBinlogInOrderMysqlController.name), taskRequestBean.getMysql2MysqlRunningInfoBean.getSyncTaskId))
+    val controllerName = taskInfoBean.taskRunningInfoBean.controllerNameToLoad.get("syncController").getOrElse(MysqlBinlogInOrderMysqlController.name)
+    ActorRefHolder.syncDaemon ! ExternalStartCommand(Mysql2MysqlSyncTask(MysqlBinlogInOrderController.buildMysqlBinlogInOrderController(taskInfoBean, controllerName), taskRequestBean.getMysql2MysqlRunningInfoBean.getSyncTaskId))
     s"""
       {
        "syncTaskId":"${taskRequestBean.getMysql2MysqlRunningInfoBean.getSyncTaskId}",
@@ -148,4 +167,8 @@ final class Mysql2MysqlService extends SyncService[Mysql2MysqlRequestBean] {
       }
       .toMap.asJava
   }
+}
+
+object Mysql2MysqlService {
+  @volatile var ref: Mysql2MysqlService = null
 }

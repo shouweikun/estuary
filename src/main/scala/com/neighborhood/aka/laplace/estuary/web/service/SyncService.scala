@@ -29,7 +29,7 @@ trait SyncService[Bean <: TaskRequestBean] {
   implicit val timeout = akka.util.Timeout(3 seconds)
   protected lazy val logger: Logger = LoggerFactory.getLogger(classOf[SyncService[Bean]])
   protected lazy val objectMapper: ObjectMapper = new ObjectMapper
-  private lazy val requestBeanMap: ConcurrentHashMap[String, TaskRequestBean]
+  protected lazy val requestBeanMap: ConcurrentHashMap[String, TaskRequestBean]
   = new ConcurrentHashMap[String, TaskRequestBean]()
 
   /**
