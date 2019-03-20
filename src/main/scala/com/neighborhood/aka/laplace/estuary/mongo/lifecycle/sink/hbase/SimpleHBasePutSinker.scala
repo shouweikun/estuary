@@ -63,7 +63,6 @@ private[hbase] class SimpleHBasePutSinker(
   override protected def handleSinkTask[I <: HBasePut[MongoOffset]](input: I): Try[_] = Try {
     lazy val hTable = sink.getTable(input.tableName)
     if (!input.isAbnormal) {
-
       hTable.setAutoFlush(true, true)
       hTable.put(input.put)
       sendCost(System.currentTimeMillis() - input.ts)

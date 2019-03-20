@@ -105,7 +105,7 @@ abstract class OplogPowerAdapter(
       //      case (_, x, y, z) if (x > 50 || y > 6000 || z > 700) => math.max(60000, delayDuration) //60ms 防止数据太大
       //      case (_, x, y, z) if (x > 30 || y > 4000 || z > 600) => math.max(40000, delayDuration) //40ms 防止数据太大
       //      case (_, x, y, z) if (x > 25 || y > 2500 || z > 450) => math.max(35000, delayDuration) //40ms
-      case (w, _, _, _) if (w < 30000 * 1) => 0 //0s 快速拉取数据
+      case (w, _, _, _) if (w < 20000 * 1) => 0 //0s 快速拉取数据
       //      case (_, x, y, z) if (x > 20 || y > 2000 || z > 400) => math.max(25000, delayDuration) //25ms
       //      case (_, x, y, z) if (x > 15 || y > 1800 || z > 300) => math.max(20000, delayDuration) //20ms
       //      case (_, x, y, z) if (x > 12 || y > 1700 || z > 250) => math.max(10000, delayDuration) //10ms
@@ -113,15 +113,15 @@ abstract class OplogPowerAdapter(
       //      case (_, x, y, z) if (x > 8 || y > 950 || z > 180) => math.max(2000, delayDuration) //2ms
       //      case (_, x, y, z) if (x > 5 || y > 700 || z > 160) => math.max(1500, delayDuration) //1.5ms
       //            case (w, _, _, _) if (w < 20000 * 1) => 1
-      case (w, _, _, _) if (w < 55000 * 1) => 2
+      case (w, _, _, _) if (w < 45000 * 1) => 2
       //      case (w, _, _, _) if (w < 55000 * 1) => 10
       //      case (w, _, _, _) if (w < 70000 * 1) => 1500
       //      case (w, _, _, _) if (w < 65000 * 1) => 300
       case (w, _, _, _) if (w < 72000 * 1) => 20 //0.05ms
       //      case (w, _, _, _) if (w < 65000 * 1) => 500000 // 5s
-      case (w, _, _, _) if (w < 82000 * 1) => math.max(delayDuration * 10, 10000) //10ms
+      case (w, _, _, _) if (w < 82000 * 1) => math.min(1500000, math.max(delayDuration * 10, 10000)) //10ms
       //      case (w, _, _, _) if (w < 100000 * 1) => math.max(delayDuration, 7000) //7ms
-      case (w, _, _, _) if (w < 120000 * 1) => math.max(delayDuration, 100000) //30ms
+      case (w, _, _, _) if (w < 120000 * 1) => math.min(1500000, math.max(delayDuration, 100000)) //30ms
       //      case (w, _, _, _) if (w < 150000 * 1) => math.max(delayDuration, 500000) //500ms
       //      case (w, _, _, _) if (w < 160000 * 1) => math.max(delayDuration, 700000) //700ms
       //      case (w, _, _, _) if (w < 180000 * 1) => math.max(delayDuration, 800000) //800ms

@@ -102,6 +102,7 @@ final class Oplog2KafkaController(
     case ListenerMessage(msg) => log.warning(s"syncController online unhandled message:$msg,id:$syncTaskId")
     case SinkerMessage(msg) => log.warning(s"syncController online unhandled message:${SinkerMessage(msg)},id:$syncTaskId")
     case SyncControllerMessage(OplogControllerCheckRunningInfo) => checkInfo
+
     case PowerAdapterMessage(x: OplogPowerAdapterDelayFetch) => sendFetchDelay(x)
     case msg => log.warning(s"syncController online unhandled message:${msg},id:$syncTaskId")
   }

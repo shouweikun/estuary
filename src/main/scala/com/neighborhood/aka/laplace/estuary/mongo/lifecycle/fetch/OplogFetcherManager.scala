@@ -2,14 +2,15 @@ package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.fetch
 
 import akka.actor.{ActorRef, Props}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.{FetcherMessage, SyncControllerMessage}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.SourceDataFetcherManagerPrototype
-import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
-import com.neighborhood.aka.laplace.estuary.mongo.source.MongoSourceManagerImp
-import OplogFetcherCommand._
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.{FetcherMessage, SyncControllerMessage}
+import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mongo.SettingConstant
+import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.fetch.OplogFetcherCommand._
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.fetch.OplogFetcherEvent.OplogFetcherActiveChecked
+import com.neighborhood.aka.laplace.estuary.mongo.source.MongoSourceManagerImp
+
 import scala.concurrent.duration._
 
 /**
@@ -58,7 +59,7 @@ final class OplogFetcherManager(
   }
 
   def online: Receive = {
-    case m@SyncControllerMessage(OplogFetcherUpdateDelay(_)) => dispatchMessageToDirectFetcher(m)
+    case SyncControllerMessage(OplogFetcherUpdateDelay(x)) => dispatchUpdateDelayMessage(x)
     case FetcherMessage(OplogFetcherCheckActive) => handleCheckActiveTask
     case OplogFetcherActiveChecked(ts) => lastActive = ts
     case FetcherMessage(OplogFetcherActiveChecked(ts)) => lastActive = ts
@@ -78,7 +79,7 @@ final class OplogFetcherManager(
     context.system.scheduler.scheduleOnce(SettingConstant.CHECK_ACTIVE_INTERVAL second, self, OplogFetcherCheckActive)
   }
 
-  private def dispatchUpdateDelayMessage(m: SyncControllerMessage): Unit = dispatchMessageToDirectFetcher(m)
+  private def dispatchUpdateDelayMessage(x:Long): Unit = dispatchMessageToDirectFetcher(FetcherMessage(OplogFetcherUpdateDelay(x)))
 
   private def dispatchMessageToDirectFetcher(m: Any): Unit = directFetcher.map(ref => ref ! m)
 
