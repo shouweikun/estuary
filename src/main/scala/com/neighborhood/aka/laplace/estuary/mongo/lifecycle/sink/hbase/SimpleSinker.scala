@@ -46,7 +46,9 @@ private[hbase] class SimpleSinker(
   override lazy val powerAdapter = taskManager.powerAdapter
 
   override def receive: Receive = {
+    case SinkerMessage(x: SinkHolder) => handleSinkTask(x).failed.foreach(e => processError(e, SinkerMessage(x)))
     case m@SinkerMessage(x: SinkHolder) => handleSinkTask(x).failed.foreach(e => processError(e, m))
+
   }
 
   /**
