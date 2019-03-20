@@ -3,8 +3,8 @@ package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.hbase
 import akka.actor.Props
 import com.neighborhood.aka.laplace.estuary.bean.support.HBasePut
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, SinkerMessage}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.SourceDataSinkerPrototype
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, SinkerMessage}
 import com.neighborhood.aka.laplace.estuary.core.sink.hbase.{HBaseSinkFunc, HBaseSinkManager}
 import com.neighborhood.aka.laplace.estuary.core.task.{SinkManager, TaskManager}
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.adapt.OplogPowerAdapterCommand.OplogPowerAdapterUpdateCost
@@ -63,12 +63,12 @@ private[hbase] class SimpleHBasePutSinker(
   override protected def handleSinkTask[I <: HBasePut[MongoOffset]](input: I): Try[_] = Try {
     lazy val hTable = sink.getTable(input.tableName)
     if (!input.isAbnormal) {
+      val ts = System.currentTimeMillis()
       hTable.setAutoFlush(false, true)
       hTable.put(input.put)
-      sendCost(System.currentTimeMillis() - input.ts)
+      sendCost(System.currentTimeMillis() - ts)
     }
     sendCount(1)
-    hTable.close()
   }
 
   /**

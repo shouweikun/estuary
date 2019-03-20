@@ -17,6 +17,7 @@ abstract class HBaseSinkFunc(val hbaseSinkBean: HBaseBean) extends SinkFunc {
 
   protected val flushSize = 1024 * 1024 * 1024
   protected val lowLimit = flushSize / 10 * 7
+  protected val tableFlushSize = 1024 * 1024 * 20
   private val connectionStatus: AtomicBoolean = new AtomicBoolean(false)
 
 
@@ -28,9 +29,7 @@ abstract class HBaseSinkFunc(val hbaseSinkBean: HBaseBean) extends SinkFunc {
     conf.set("hbase.client.keyvalue.maxsize", "0")
     conf.set("hbase.hregion.memstore.flush.size", s"$flushSize")
     conf.set("hbase.regionserver.global.memstore.lowerLimit", s"$lowLimit")
-
     val conn = ConnectionFactory.createConnection(conf)
-
     conn
   }
 
@@ -53,6 +52,8 @@ abstract class HBaseSinkFunc(val hbaseSinkBean: HBaseBean) extends SinkFunc {
 
   def getTable(tableName: String): HTable = {
     if (!connectionStatus.get()) throw new IllegalStateException()
-    conn.getTable(TableName.valueOf(tableName)).asInstanceOf[HTable]
+    val re = conn.getTable(TableName.valueOf(tableName)).asInstanceOf[HTable]
+    if (re.getWriteBufferSize < tableFlushSize) re.setWriteBufferSize(tableFlushSize)
+    re
   }
 }
