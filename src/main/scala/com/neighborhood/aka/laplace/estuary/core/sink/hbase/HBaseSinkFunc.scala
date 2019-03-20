@@ -15,6 +15,8 @@ abstract class HBaseSinkFunc(val hbaseSinkBean: HBaseBean) extends SinkFunc {
 
   lazy val conn = initConnection
 
+  protected val flushSize = 1024 * 1024 * 1024
+  protected val lowLimit = flushSize / 10 * 7
   private val connectionStatus: AtomicBoolean = new AtomicBoolean(false)
 
 
@@ -24,7 +26,8 @@ abstract class HBaseSinkFunc(val hbaseSinkBean: HBaseBean) extends SinkFunc {
     //设置zookeeper连接端口，默认2181
     conf.set("hbase.zookeeper.property.clientPort", hbaseSinkBean.HabseZookeeperPropertyClientPort)
     conf.set("hbase.client.keyvalue.maxsize", "0")
-    conf.set("hbase.hregion.memstore.flush.size","536870912")
+    conf.set("hbase.hregion.memstore.flush.size", s"$flushSize")
+    conf.set("hbase.regionserver.global.memstore.lowerLimit", s"$lowLimit")
 
     val conn = ConnectionFactory.createConnection(conf)
 
