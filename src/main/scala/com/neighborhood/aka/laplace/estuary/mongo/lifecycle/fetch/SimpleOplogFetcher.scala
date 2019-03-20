@@ -68,10 +68,7 @@ final class SimpleOplogFetcher(
   override def receive: Receive = {
     case FetcherMessage(OplogFetcherStart) => start
     case m@FetcherMessage(OplogFetcherFetch) => Try(handleFetchTask).failed.foreach(e => processError(e, m))
-    case FetcherMessage(OplogFetcherUpdateDelay(x)) => {
-      log.debug(s"control fetch delay,id:$syncTaskId")
-      delay = x
-    }
+    case FetcherMessage(OplogFetcherUpdateDelay(x)) => delay = x
     case SyncControllerMessage(OplogFetcherUpdateDelay(x)) => delay = x
     case SyncControllerMessage(OplogFetcherStart) => start
     case FetcherMessage(OplogFetcherCheckActive) => sender() ! OplogFetcherActiveChecked()

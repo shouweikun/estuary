@@ -24,6 +24,7 @@ abstract class HBaseSinkFunc(val hbaseSinkBean: HBaseBean) extends SinkFunc {
     //设置zookeeper连接端口，默认2181
     conf.set("hbase.zookeeper.property.clientPort", hbaseSinkBean.HabseZookeeperPropertyClientPort)
     conf.set("hbase.client.keyvalue.maxsize", "0")
+    conf.set("hbase.hregion.memstore.flush.size","536870912")
 
     val conn = ConnectionFactory.createConnection(conf)
 

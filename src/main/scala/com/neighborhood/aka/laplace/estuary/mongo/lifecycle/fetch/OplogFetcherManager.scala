@@ -7,6 +7,7 @@ import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{FetcherMessage, SyncControllerMessage}
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mongo.SettingConstant
+import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.adapt.OplogPowerAdapterCommand.OplogPowerAdapterDelayFetch
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.fetch.OplogFetcherCommand._
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.fetch.OplogFetcherEvent.OplogFetcherActiveChecked
 import com.neighborhood.aka.laplace.estuary.mongo.source.MongoSourceManagerImp
@@ -59,6 +60,7 @@ final class OplogFetcherManager(
   }
 
   def online: Receive = {
+    case SyncControllerMessage(OplogPowerAdapterDelayFetch(x)) => dispatchUpdateDelayMessage(x)
     case SyncControllerMessage(OplogFetcherUpdateDelay(x)) => dispatchUpdateDelayMessage(x)
     case FetcherMessage(OplogFetcherCheckActive) => handleCheckActiveTask
     case OplogFetcherActiveChecked(ts) => lastActive = ts
