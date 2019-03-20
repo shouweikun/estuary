@@ -15,6 +15,8 @@ final case class HBasePut[A <: ComparableOffset[A]](
                                                      val isAbnormal: Boolean = false
                                                    ) {
 
+  val ts = System.currentTimeMillis()
+
 }
 
 object HBasePut {

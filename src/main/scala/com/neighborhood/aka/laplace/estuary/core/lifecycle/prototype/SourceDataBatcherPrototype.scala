@@ -31,7 +31,7 @@ trait SourceDataBatcherPrototype[A, B] extends ActorPrototype with SourceDataBat
   def transform(a: A): B = mappingFormat.transform(a) // todo 这么干有问题
 
   override def preStart(): Unit = {
-    log.info(s"init batcher$num,id:$syncTaskId")
+    log.debug(s"init batcher$num,id:$syncTaskId")
   }
 
   override def postStop(): Unit = {

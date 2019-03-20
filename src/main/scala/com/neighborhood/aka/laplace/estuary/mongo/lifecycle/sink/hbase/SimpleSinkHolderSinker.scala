@@ -16,7 +16,7 @@ import scala.util.Try
   *
   * @author neighborhood.aka.laplace
   */
-private[hbase] class SimpleSinker(
+private[hbase] class SimpleSinkHolderSinker(
                                    val taskManager: HBaseSinkManager with TaskManager,
                                    override val num: Int
                                  ) extends SourceDataSinkerPrototype[HBaseSinkFunc, SinkHolder] {
@@ -108,7 +108,7 @@ private[hbase] class SimpleSinker(
 
 }
 
-object SimpleSinker {
+object SimpleSinkHolderSinker {
   def props(taskManager: HBaseSinkManager with TaskManager, num: Int
-           ): Props = Props(new SimpleSinker(taskManager, num))
+           ): Props = Props(new SimpleSinkHolderSinker(taskManager, num))
 }

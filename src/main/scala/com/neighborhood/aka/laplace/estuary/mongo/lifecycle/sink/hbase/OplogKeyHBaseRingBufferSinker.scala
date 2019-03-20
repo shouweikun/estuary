@@ -111,7 +111,7 @@ class OplogKeyHBaseRingBufferSinker(
   }
 
   private def initRealSinker: Unit = {
-    context.actorOf(SimpleSinker.props(taskManager, num).withDispatcher("akka.sinker-dispatcher"))
+    context.actorOf(SimpleSinkHolderSinker.props(taskManager, num).withDispatcher("akka.sinker-dispatcher"))
   }
 
   override def preStart(): Unit = {

@@ -33,6 +33,7 @@ abstract class HBaseSinkFunc(val hbaseSinkBean: HBaseBean) extends SinkFunc {
   def start(): Unit = {
     conn
     assert(conn != null)
+    assert(!conn.isClosed)
     connectionStatus.set(true)
   }
 

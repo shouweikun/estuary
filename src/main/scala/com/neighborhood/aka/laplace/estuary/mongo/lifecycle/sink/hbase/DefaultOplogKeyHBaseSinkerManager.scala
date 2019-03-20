@@ -71,7 +71,7 @@ class DefaultOplogKeyHBaseSinkerManager(
     */
   override protected def initSinkers: Unit = {
     log.info(s"DefaultOplogKeyHBaseSinkerManager start init sinkers,id:$syncTaskId")
-    val sinkerList = (1 to sinkerNum).map(num => context.actorOf(SimpleSinker.props(taskManager, num).withDispatcher("akka.sinker-dispatcher"))).toList
+    val sinkerList = (1 to sinkerNum).map(num => context.actorOf(SimpleHBasePutSinker.props(taskManager, num).withDispatcher("akka.sinker-dispatcher"))).toList
     taskManager.sinkerList = sinkerList //很重要
   }
 
