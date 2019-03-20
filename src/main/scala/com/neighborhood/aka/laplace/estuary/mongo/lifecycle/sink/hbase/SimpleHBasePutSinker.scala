@@ -48,8 +48,8 @@ private[hbase] class SimpleHBasePutSinker(
   override lazy val powerAdapter = taskManager.powerAdapter
 
   override def receive: Receive = {
+    case x: HBasePut[MongoOffset] => handleSinkTask(x).failed.foreach(e => processError(e, SinkerMessage(x)))
     case m@BatcherMessage(x: HBasePut[MongoOffset]) => handleSinkTask(x).failed.foreach(e => processError(e, m))
-    case SinkerMessage(x: HBasePut[MongoOffset]) => handleSinkTask(x).failed.foreach(e => processError(e, SinkerMessage(x)))
     case m@SinkerMessage(x: HBasePut[MongoOffset]) => handleSinkTask(x).failed.foreach(e => processError(e, m))
 
   }
