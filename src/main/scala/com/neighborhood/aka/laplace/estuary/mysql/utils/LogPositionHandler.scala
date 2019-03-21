@@ -26,16 +26,16 @@ import scala.util.Try
   */
 final class LogPositionHandler(
 
-                          val manager: ZooKeeperLogPositionManager,
-                          val master: Option[EntryPosition] = None,
-                          val standby: Option[EntryPosition] = None,
-                          val slaveId: Long = -1L,
-                          val destination: String = "",
-                          val address: InetSocketAddress,
-                          implicit val binlogParser: MysqlBinlogParser
+                                val manager: ZooKeeperLogPositionManager,
+                                val master: Option[EntryPosition] = None,
+                                val standby: Option[EntryPosition] = None,
+                                val slaveId: Long = -1L,
+                                val destination: String = "",
+                                val address: InetSocketAddress,
+                                implicit val binlogParser: MysqlBinlogParser
 
-                        ) extends PositionHandler[EntryPosition] {
-  val logger = LoggerFactory.getLogger(classOf[LogPositionHandler])
+                              ) extends PositionHandler[EntryPosition] {
+  override protected lazy val logger = LoggerFactory.getLogger(classOf[LogPositionHandler])
   private val logPositionManager = manager
 
   def start() = manager.start()

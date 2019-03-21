@@ -35,6 +35,7 @@ final class OplogPositionRecorder(
     log.info(s"start to get start position,id:$syncTaskId")
     while (getSaveOffset.isEmpty) {
       Thread.sleep(200)
+      log.warning(s"still try to get start position...,id:$syncTaskId")
     }
     val re = getSaveOffset
     log.info(s"get start position:${re.get},id:$syncTaskId")

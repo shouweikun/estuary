@@ -77,6 +77,7 @@ private[hbase] class SimpleHBasePutSinker(
       hTable.setAutoFlush(false, true)
       hTable.put(input.put)
       sendCost(System.currentTimeMillis() - ts)
+      lastOffset = Option(input.offset)
     }
     sendCount(1)
   }
