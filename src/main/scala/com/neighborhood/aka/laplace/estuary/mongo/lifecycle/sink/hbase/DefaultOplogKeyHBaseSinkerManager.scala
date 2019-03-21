@@ -95,7 +95,11 @@ class DefaultOplogKeyHBaseSinkerManager(
     offsetMap.values.toList match {
       case Nil =>
       case hd :: Nil => positionRecorder.map(ref => ref ! hd)
-      case list => positionRecorder.map(ref => ref ! list.reduce { case (x, y) => x.compare(y, true) })
+      case list => positionRecorder.map {
+        ref =>
+          val offset = list.reduce {  (x: MongoOffset, y: MongoOffset) => x.compare(y, true) }
+          ref ! offset
+      }
     }
   }
 
