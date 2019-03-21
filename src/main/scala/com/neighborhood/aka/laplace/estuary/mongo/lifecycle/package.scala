@@ -20,9 +20,9 @@ package object lifecycle {
   final case class OplogClassifier(doc: Document, fetchTimeStamp: Long = System.currentTimeMillis(), partitionStrategy: PartitionStrategy = PartitionStrategy.PRIMARY_KEY) extends ConsistentHashable {
     override def consistentHashKey: Any = key
 
-    lazy val ns = doc.get("ns")
-    lazy val mod = Option(doc.get("h")).getOrElse("")
-    lazy val id = Option(doc.get("o")).map(_.asInstanceOf[Document]).map(_.get("_id")).getOrElse("")
+    lazy val ns = Option(doc.get("ns")).getOrElse("ns")
+    lazy val mod = Option(doc.get("h")).getOrElse("h")
+    lazy val id = Option(doc.get("o")).map(_.asInstanceOf[Document]).map(_.get("_id")).getOrElse("_id")
     lazy val key: AnyRef = partitionStrategy match {
       case PartitionStrategy.DATABASE_TABLE => ns
       case PartitionStrategy.PRIMARY_KEY => id
