@@ -38,6 +38,7 @@ package object lifecycle {
       if (otherJournalFileName < thisJournaleFileName) return false
       if (other.offset > this.offset) true else false
     }
+
   }
 
   object BinlogPositionInfo {

@@ -11,4 +11,5 @@ trait ComparableOffset[ComparableOffset] {
     if (compare(other) ^ smaller) other else this.asInstanceOf[ComparableOffset]
   }
 
+
 }

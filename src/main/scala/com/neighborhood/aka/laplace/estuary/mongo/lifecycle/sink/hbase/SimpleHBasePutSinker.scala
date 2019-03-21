@@ -9,6 +9,8 @@ import com.neighborhood.aka.laplace.estuary.core.sink.hbase.{HBaseSinkFunc, HBas
 import com.neighborhood.aka.laplace.estuary.core.task.{SinkManager, TaskManager}
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.adapt.OplogPowerAdapterCommand.OplogPowerAdapterUpdateCost
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.count.OplogProcessingCounterCommand.OplogProcessingCounterUpdateCount
+import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.OplogSinkerCommand.OplogSinkerCollectOffset
+import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.OplogSinkerEvent.OplogSinkerOffsetCollected
 import com.neighborhood.aka.laplace.estuary.mongo.source.MongoOffset
 
 import scala.util.Try
@@ -47,11 +49,19 @@ private[hbase] class SimpleHBasePutSinker(
   override lazy val processingCounter = taskManager.processingCounter
   override lazy val powerAdapter = taskManager.powerAdapter
 
+  var lastOffset: Option[MongoOffset] = None
+
   override def receive: Receive = {
     case x: HBasePut[MongoOffset] => handleSinkTask(x).failed.foreach(e => processError(e, SinkerMessage(x)))
+    case OplogSinkerCollectOffset => handleCollectOffset
     case m@BatcherMessage(x: HBasePut[MongoOffset]) => handleSinkTask(x).failed.foreach(e => processError(e, m))
     case m@SinkerMessage(x: HBasePut[MongoOffset]) => handleSinkTask(x).failed.foreach(e => processError(e, m))
 
+
+  }
+
+  def handleCollectOffset: Unit = {
+    lastOffset.foreach(offset => sender() ! OplogSinkerOffsetCollected(offset))
   }
 
   /**
@@ -61,7 +71,7 @@ private[hbase] class SimpleHBasePutSinker(
     * @tparam I 类型参数 逆变
     */
   override protected def handleSinkTask[I <: HBasePut[MongoOffset]](input: I): Try[_] = Try {
-    lazy val hTable = sink.getTable(input.tableName)
+    lazy val hTable = sink.getTableAndHold(input.tableName)
     if (!input.isAbnormal) {
       val ts = System.currentTimeMillis()
       hTable.setAutoFlush(false, true)

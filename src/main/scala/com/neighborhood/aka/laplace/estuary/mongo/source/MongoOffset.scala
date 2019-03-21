@@ -26,6 +26,9 @@ final case class MongoOffset(
   }
 
   def formatString = s"($mongoTsSecond,$mongoTsInc)"
+
+
+
 }
 
 object MongoOffset {

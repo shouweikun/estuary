@@ -4,10 +4,11 @@ import akka.actor.{ActorRef, Props}
 import com.neighborhood.aka.laplace.estuary.bean.support.HBasePut
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.SourceDataSinkerManagerPrototype
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, SyncControllerMessage}
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, SinkerMessage, SyncControllerMessage}
 import com.neighborhood.aka.laplace.estuary.core.sink.hbase.{HBaseSinkFunc, HBaseSinkManager}
 import com.neighborhood.aka.laplace.estuary.core.task.{SinkManager, TaskManager}
-import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.OplogSinkerCommand.OplogSinkerStart
+import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.OplogSinkerCommand.{OplogSinkerCheckFlush, OplogSinkerCollectOffset, OplogSinkerSendOffset, OplogSinkerStart}
+import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.OplogSinkerEvent.OplogSinkerOffsetCollected
 import com.neighborhood.aka.laplace.estuary.mongo.source.MongoOffset
 
 /**
@@ -49,6 +50,13 @@ class DefaultOplogKeyHBaseSinkerManager(
     */
   override val sinkerNum: Int = taskManager.sinkerNum //但是没有生效
 
+  val sink = sinkManager.sink
+
+  val offsetMap: scala.collection.mutable.HashMap[String, MongoOffset] = new scala.collection.mutable.HashMap[String, MongoOffset]()
+
+
+  def tableNameMap = sink.getAllHoldHTable
+
 
   override def receive: Receive = {
     case SyncControllerMessage(OplogSinkerStart) => start
@@ -60,7 +68,49 @@ class DefaultOplogKeyHBaseSinkerManager(
     * @return
     */
   override protected def online: Receive = {
+    case OplogSinkerOffsetCollected(offset: MongoOffset) => handleOplogSinkerOffsetCollected(offset)
+    case OplogSinkerSendOffset => handleOplogSinkerSendOffset
+    case OplogSinkerCollectOffset => dispatchOplogSinkerCollectOffset
+    case OplogSinkerCheckFlush => handleOplogCheckFlush
+    case SinkerMessage(OplogSinkerCollectOffset) => dispatchOplogSinkerCollectOffset
+    case SinkerMessage(OplogSinkerCheckFlush) => handleOplogCheckFlush
+    case SinkerMessage(OplogSinkerSendOffset) => handleOplogSinkerSendOffset
+    case SinkerMessage(OplogSinkerOffsetCollected(offset: MongoOffset)) => handleOplogSinkerOffsetCollected(offset)
+    case SyncControllerMessage(OplogSinkerCollectOffset) => dispatchOplogSinkerCollectOffset
+    case SyncControllerMessage(OplogSinkerCheckFlush) => handleOplogCheckFlush
+    case SyncControllerMessage(OplogSinkerSendOffset) => handleOplogSinkerSendOffset
+    case SyncControllerMessage(OplogSinkerOffsetCollected(offset: MongoOffset)) => handleOplogSinkerOffsetCollected(offset)
     case _ => //暂时不做其他处理
+  }
+
+  def handleOplogCheckFlush: Unit = {
+    val ts = System.currentTimeMillis()
+    log.info(s"start to handle check flush,id:$syncTaskId")
+    tableNameMap.values.map(_.flushCommits())
+    log.info(s"this flush cost is ${System.currentTimeMillis() - ts},id:$syncTaskId")
+  }
+
+  def handleOplogSinkerSendOffset: Unit = {
+    log.info(s"start to send offset to recorder,id:$syncTaskId")
+    offsetMap.values.toList match {
+      case Nil =>
+      case hd :: Nil => positionRecorder.map(ref => ref ! hd)
+      case list => positionRecorder.map(ref => ref ! list.reduce { case (x, y) => x.compare(y, true) })
+    }
+  }
+
+  def handleOplogSinkerOffsetCollected(offset: MongoOffset): Unit = {
+    val senderName = sender().path.name
+    offsetMap
+      .get(senderName)
+      .fold(offsetMap.put(senderName, offset)) {
+        case odd => offsetMap.put(senderName, odd.compare(offset, true))
+      }
+  }
+
+  def dispatchOplogSinkerCollectOffset: Unit = {
+    log.info(s"dispatch oplog sinker collect offset to sinkers,id:$syncTaskId")
+    context.children.foreach(ref => ref ! OplogSinkerCollectOffset)
   }
 
   /**

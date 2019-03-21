@@ -58,7 +58,7 @@ private[hbase] class SimpleSinkHolderSinker(
     * @tparam I 类型参数 逆变
     */
   override protected def handleSinkTask[I <: SinkHolder](input: I): Try[_] = Try {
-    val hTable = sink.getTable(input.tableName)
+    val hTable = sink.getTableAndHold(input.tableName)
     hTable.setAutoFlush(false, true)
     hTable.put(input.list)
     hTable.flushCommits()

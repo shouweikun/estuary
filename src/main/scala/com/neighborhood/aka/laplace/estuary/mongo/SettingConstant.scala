@@ -21,6 +21,9 @@ object SettingConstant {
   val SINKER_FLUSH_INTERVAL = 300 //这个单位是毫秒
   val FAILURE_RETRY_BACKOFF = 100 //ms
   val CHECK_ACTIVE_INTERVAL = 30 //s
+  val CHECK_HBASE_FLUSH_INTERVAL = 40 //s
+  val CHECK_SEND_OFFSET_INTERVAL = 20 //s
+  val CHECK_COLLECT_OFFSET_INTERVAL = 10//s
 
   //列族名称
   object HBASE_CF {

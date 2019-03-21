@@ -1,5 +1,6 @@
 package com.neighborhood.aka.laplace.estuary.core.sink.hbase
 
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 
 import com.neighborhood.aka.laplace.estuary.bean.datasink.HBaseBean
@@ -19,6 +20,8 @@ abstract class HBaseSinkFunc(val hbaseSinkBean: HBaseBean) extends SinkFunc {
   protected val lowLimit = flushSize / 10 * 7
   protected val tableFlushSize = 1024 * 1024 * 20
   private val connectionStatus: AtomicBoolean = new AtomicBoolean(false)
+
+  private val tableHolder = new ConcurrentHashMap[String, HTable]()
 
 
   private def initConnection: Connection = {
@@ -41,7 +44,10 @@ abstract class HBaseSinkFunc(val hbaseSinkBean: HBaseBean) extends SinkFunc {
   }
 
   override def close: Unit = {
-    if (connectionStatus.compareAndSet(true, false)) conn.close()
+    if (connectionStatus.compareAndSet(true, false)) {
+      getAllHoldHTable.values.foreach(_.close())
+      conn.close()
+    }
   }
 
   /**
@@ -50,9 +56,23 @@ abstract class HBaseSinkFunc(val hbaseSinkBean: HBaseBean) extends SinkFunc {
     */
   override def isTerminated: Boolean = !connectionStatus.get()
 
-  def getTable(tableName: String): HTable = {
-    if (!connectionStatus.get()) throw new IllegalStateException()
-    val re = conn.getTable(TableName.valueOf(tableName)).asInstanceOf[HTable]
+  def getAllHoldHTable: Map[String, HTable] = {
+    import scala.collection.JavaConverters._
+    tableHolder.asScala.toMap
+  }
+
+  def getTableAndHold(tableName: String): HTable = { //没有remove操作所以安全
+    if (!tableHolder.containsKey(tableName)) {
+      val table = getTable(TableName.valueOf(tableName))
+      tableHolder.put(tableName, table)
+      table
+    }
+    else tableHolder.get(tableName)
+  }
+
+  def getTable(tableName: TableName): HTable = {
+    if (!connectionStatus.get()) throw new IllegalStateException("cannot get table when connection is closed")
+    val re = conn.getTable(tableName).asInstanceOf[HTable]
     if (re.getWriteBufferSize < tableFlushSize) re.setWriteBufferSize(tableFlushSize)
     re
   }

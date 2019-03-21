@@ -32,10 +32,13 @@ final class OplogPositionRecorder(
     * @return
     */
   override lazy val startPosition: Option[MongoOffset] = {
+    log.info(s"start to get start position,id:$syncTaskId")
     while (getSaveOffset.isEmpty) {
       Thread.sleep(200)
     }
-    getSaveOffset
+    val re = getSaveOffset
+    log.info(s"get start position:${re.get},id:$syncTaskId")
+    re
   }
 
   override protected def saveOffsetInternal(offset: MongoOffset): Unit = {

@@ -8,11 +8,17 @@ import com.neighborhood.aka.laplace.estuary.mongo.source.MongoOffset
 sealed trait OplogSinkerCommand
 
 object OplogSinkerCommand {
+
   case object OplogSinkerStart extends OplogSinkerCommand
 
   case class OplogSinkerGetAbnormal(e: Throwable, offset: Option[MongoOffset]) extends OplogSinkerCommand
 
   case object OplogSinkerCheckBatch extends OplogSinkerCommand
+  case object OplogSinkerCheckFlush extends OplogSinkerCommand
+
+  case object OplogSinkerCollectOffset extends OplogSinkerCommand
+
+  case object OplogSinkerSendOffset extends OplogSinkerCommand
 
 }
 

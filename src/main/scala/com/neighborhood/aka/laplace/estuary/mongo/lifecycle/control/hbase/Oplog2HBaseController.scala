@@ -24,6 +24,7 @@ import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.count.OplogProcessin
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.fetch.{OplogFetcherCommand, OplogFetcherManager}
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.record.OplogPositionRecorder
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.record.OplogRecorderCommand.OplogRecorderSavePosition
+import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.OplogSinkerCommand.{OplogSinkerCheckFlush, OplogSinkerCollectOffset, OplogSinkerSendOffset}
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.hbase.DefaultOplogKeyHBaseSinkerManager
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.{OplogSinkerCommand, OplogSinkerManager}
 import com.neighborhood.aka.laplace.estuary.mongo.sink.hbase.HBaseBeanImp
@@ -182,17 +183,7 @@ final class Oplog2HBaseController(
 
     scheduleCheckInfoCommand(self)
     //启动sinker
-    context
-      .child(sinkerName)
-      .fold {
-        log.error(s"$sinkerName is null,id:$syncTaskId")
-        throw new WorkerCannotFindException(s"$sinkerName is null,id:$syncTaskId")
-      } {
-        ref =>
-          log.info(s"start $sinkerName,id:$syncTaskId")
-          sendStartCommand(ref, sinkerName)
-
-      }
+    startSinker
     //启动batcher
     context
       .child(batcherName)
@@ -253,6 +244,27 @@ final class Oplog2HBaseController(
       } { ref => scheduleSaveCommand(ref) }
   }
 
+  /**
+    * 1.开始命令
+    * 2.flush
+    * 3.send offset
+    * 4.collect offset
+    */
+  def startSinker: Unit = {
+    context
+      .child(sinkerName)
+      .fold {
+        log.error(s"$sinkerName is null,id:$syncTaskId")
+        throw new WorkerCannotFindException(s"$sinkerName is null,id:$syncTaskId")
+      } {
+        ref =>
+          log.info(s"start $sinkerName,id:$syncTaskId")
+          sendStartCommand(ref, sinkerName)
+          sendCheckHBaseFlushCommand(ref)
+          sendCheckSendOffsetCommand(ref)
+          sendCheckCollectOffsetCommand(ref)
+      }
+  }
 
   /**
     * 发送fetch delay给fetcher
@@ -315,6 +327,25 @@ final class Oplog2HBaseController(
     )
 
   }
+
+  private def sendCheckHBaseFlushCommand(ref: ActorRef): Unit = {
+    log.info(s" schedule `OplogSinkerCheckFlush` message per ${SettingConstant.CHECK_HBASE_FLUSH_INTERVAL},id:$syncTaskId")
+    context.system.scheduler.schedule(SettingConstant.CHECK_HBASE_FLUSH_INTERVAL * 2 seconds, SettingConstant.CHECK_HBASE_FLUSH_INTERVAL seconds, ref, SyncControllerMessage(OplogSinkerCheckFlush)
+    )
+  }
+
+  private def sendCheckSendOffsetCommand(ref: ActorRef): Unit = {
+    log.info(s" schedule `OplogSinkerSendOffset` message per ${SettingConstant.CHECK_SEND_OFFSET_INTERVAL},id:$syncTaskId")
+    context.system.scheduler.schedule(SettingConstant.CHECK_SEND_OFFSET_INTERVAL * 2 seconds, SettingConstant.CHECK_SEND_OFFSET_INTERVAL seconds, ref, SyncControllerMessage(OplogSinkerSendOffset)
+    )
+  }
+
+  private def sendCheckCollectOffsetCommand(ref: ActorRef): Unit = {
+    log.info(s" schedule `OplogSinkerCollectOffset` message per ${SettingConstant.CHECK_COLLECT_OFFSET_INTERVAL},id:$syncTaskId")
+    context.system.scheduler.schedule(SettingConstant.CHECK_COLLECT_OFFSET_INTERVAL * 2 seconds, SettingConstant.CHECK_COLLECT_OFFSET_INTERVAL seconds, ref, SyncControllerMessage(OplogSinkerCollectOffset)
+    )
+  }
+
 
   //  /**
   //    * 发送心跳监听的指令
