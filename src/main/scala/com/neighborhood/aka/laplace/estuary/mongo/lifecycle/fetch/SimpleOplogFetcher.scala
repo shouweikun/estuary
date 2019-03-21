@@ -34,6 +34,7 @@ final class SimpleOplogFetcher(
     */
   override val sourceManager: SourceManager[MongoConnection] = taskManager
 
+
   /**
     * 同步任务id
     */

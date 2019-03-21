@@ -2,11 +2,11 @@ package com.neighborhood.aka.laplace.estuary.mongo.task.hbase
 
 import akka.actor.ActorRef
 import com.neighborhood.aka.laplace.estuary.bean.key.PartitionStrategy
-import com.neighborhood.aka.laplace.estuary.bean.support.{HBasePut, KafkaMessage}
+import com.neighborhood.aka.laplace.estuary.bean.support.HBasePut
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.core.trans.MappingFormat
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.OplogClassifier
-import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.batch.mappingFormat.{Oplog2KafkaMessageMappingFormat, OplogHBaseMappingFormat}
+import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.batch.mappingFormat.OplogHBaseMappingFormat
 import com.neighborhood.aka.laplace.estuary.mongo.sink.hbase.{HBaseBeanImp, HBaseSinkManagerImp}
 import com.neighborhood.aka.laplace.estuary.mongo.source.{MongoOffset, MongoSourceBeanImp, MongoSourceManagerImp}
 import com.neighborhood.aka.laplace.estuary.mongo.util.MongoDocumentToJson
@@ -144,9 +144,15 @@ final class Mongo2HBaseTaskInfoManager(
     * 初始化/启动
     */
   override def start: Unit = {
-    logger.info(s"task manager start,id:$syncTaskId")
+    logger.info(s"mongo 2 hbase task manager start,id:$syncTaskId")
     startSource
     startSink
+  }
+
+  override def close: Unit = {
+    logger.info(s"mongo 2 hbase task manager close,id:$syncTaskId")
+    closeSink
+    closeSource
   }
 
   private def buildMappingFormat: MappingFormat[OplogClassifier, HBasePut[MongoOffset]] = {

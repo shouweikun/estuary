@@ -70,6 +70,8 @@ final class Oplog2HBaseController(
   val isCounting = taskManager.isCounting
   val isPowerAdapted = taskManager.isPowerAdapted
 
+  log.info(s"Oplog2HBaseController start build,id:$syncTaskId")
+
   override def resourceManager: Mongo2HBaseTaskInfoManager = taskManager
 
   override def receive: Receive = {

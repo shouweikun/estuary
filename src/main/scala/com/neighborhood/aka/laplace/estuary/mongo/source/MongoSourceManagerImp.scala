@@ -6,6 +6,8 @@ import com.neighborhood.aka.laplace.estuary.core.util.zookeeper.{EstuaryStringZo
 import com.neighborhood.aka.laplace.estuary.mongo.util.OplogOffsetHandler
 import org.slf4j.LoggerFactory
 
+import scala.util.Try
+
 /**
   * Created by john_liu on 2019/2/28.
   */
@@ -26,9 +28,19 @@ trait MongoSourceManagerImp extends SourceManager[MongoConnection] {
   }
 
   override def startSource: Unit = {
-    logger.info(s"star source,id:$syncTaskId")
+    logger.info(s"start source,id:$syncTaskId")
     super.startSource
     positionHandler.start()
+  }
+
+
+  /**
+    * 停止所有资源
+    */
+  override def closeSource: Unit = {
+    logger.info(s"close source,id:$syncTaskId")
+    super.closeSource
+    positionHandler.close()
   }
 
   def positionHandler: OplogOffsetHandler = positionHandler_
