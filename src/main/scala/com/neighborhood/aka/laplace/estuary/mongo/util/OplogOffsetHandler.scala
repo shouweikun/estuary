@@ -7,6 +7,7 @@ import com.neighborhood.aka.laplace.estuary.core.source.DataSourceConnection
 import com.neighborhood.aka.laplace.estuary.core.task.PositionHandler
 import com.neighborhood.aka.laplace.estuary.core.util.zookeeper.EstuaryStringZookeeperManager
 import com.neighborhood.aka.laplace.estuary.mongo.source.MongoOffset
+import org.slf4j.{Logger, LoggerFactory}
 
 /**
   * Created by john_liu on 2019/3/1.
@@ -22,6 +23,7 @@ final class OplogOffsetHandler(
                                 private val inputMongoOffset: Option[MongoOffset] = None
                               ) extends PositionHandler[MongoOffset] {
 
+  override protected lazy val logger: Logger = LoggerFactory.getLogger(classOf[OplogOffsetHandler])
   private val connectionStatus = new AtomicBoolean() //链接状态
 
   override def start(): Unit = {
@@ -37,6 +39,7 @@ final class OplogOffsetHandler(
   }
 
   override def persistLogPosition(destination: String, logPosition: MongoOffset): Unit = {
+    logger.info(s"start to persist log position:${logPosition.formatString},id:$syncTaskId")
     val value =
       s"""
          {
@@ -45,6 +48,7 @@ final class OplogOffsetHandler(
          }
        """.stripMargin
     zkManager.persistStringBy(destination, value)
+    logger.info(s"persist log position finished ,id:$syncTaskId")
   }
 
   override def getlatestIndexBy(destination: String): MongoOffset = {
@@ -64,6 +68,7 @@ final class OplogOffsetHandler(
     * 1. 从zk中获取
     * 2. 从传入的获取
     * 3. 使用当前时间
+    *
     * @param conn
     * @return
     */
