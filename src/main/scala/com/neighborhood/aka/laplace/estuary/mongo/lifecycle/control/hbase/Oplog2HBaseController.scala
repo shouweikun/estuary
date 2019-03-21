@@ -180,8 +180,7 @@ final class Oplog2HBaseController(
     */
   protected def startAllWorkers: Unit = {
 
-
-    scheduleCheckInfoCommand(self)
+    if (taskBean.logEnabled) scheduleCheckInfoCommand(self)
     //启动sinker
     startSinker
     //启动batcher

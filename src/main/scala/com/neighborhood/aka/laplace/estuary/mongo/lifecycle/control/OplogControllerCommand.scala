@@ -14,4 +14,6 @@ object OplogControllerCommand {
   case object OplogControllerStopAndRestart extends OplogControllerCommand //针对 online时的人为重启
 
   case object OplogControllerCheckRunningInfo extends OplogControllerCommand
+
+  case object  OplogControllerCollectChildInfo  extends OplogControllerCommand
 }

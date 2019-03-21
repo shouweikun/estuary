@@ -63,6 +63,7 @@ final class OplogPositionRecorder(
            "schedulingSavePoint":"$scheduling",
            "scheduledSavePoint":"$scheduled"
         }
+
          """.stripMargin)
   }
 

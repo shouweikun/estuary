@@ -19,11 +19,12 @@ final case class Mongo2HBaseTaskInfoBeanImp(
                                              val isCounting: Boolean = true,
                                              val isProfiling: Boolean = true,
                                              val isPowerAdapted: Boolean = true,
-                                             val partitionStrategy: PartitionStrategy = PartitionStrategy.PRIMARY_KEY,
+                                             val partitionStrategy: PartitionStrategy = PartitionStrategy.MOD,
                                              val syncStartTime: Long = System.currentTimeMillis(),
                                              val batchThreshold: Long = 1,
                                              val batcherNum: Int = 15,
-                                             val sinkerNum: Int = 15
+                                             val sinkerNum: Int = 15,
+                                             val logEnabled:Boolean = true
                                            ) extends BaseExtractBean {
 
   /**
