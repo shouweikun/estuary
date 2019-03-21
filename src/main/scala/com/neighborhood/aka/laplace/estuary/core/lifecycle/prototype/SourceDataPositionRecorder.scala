@@ -117,5 +117,6 @@ trait SourceDataPositionRecorder[A <: ComparableOffset[A]] extends ActorPrototyp
     scheduledSavedOffset = startPosition
     schedulingSavedOffset = startPosition
     startPosition.map(quene.enqueue(_))
+    log.info(s"positionRecorder process preStart finished,id:$syncTaskId")
   }
 }
