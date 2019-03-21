@@ -100,7 +100,7 @@ class DefaultOplogKeyHBaseSinkerManager(
     log.info(s"handleOplogSinkerSendOffset func get offset:${Option(offset).map(_.formatString).getOrElse("")},id:$syncTaskId")
     positionRecorder.foreach {
       ref =>
-        ref ! offset //发送offset
+        Option(offset).map(x=>ref ! x) //发送offset
         offsetMap.clear() //必须要清空
     }
   }
