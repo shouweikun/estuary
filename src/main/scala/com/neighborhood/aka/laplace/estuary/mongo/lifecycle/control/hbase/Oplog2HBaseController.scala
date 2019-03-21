@@ -330,19 +330,19 @@ final class Oplog2HBaseController(
 
   private def sendCheckHBaseFlushCommand(ref: ActorRef): Unit = {
     log.info(s" schedule `OplogSinkerCheckFlush` message per ${SettingConstant.CHECK_HBASE_FLUSH_INTERVAL},id:$syncTaskId")
-    context.system.scheduler.schedule(SettingConstant.CHECK_HBASE_FLUSH_INTERVAL * 2 seconds, SettingConstant.CHECK_HBASE_FLUSH_INTERVAL seconds, ref, SyncControllerMessage(OplogSinkerCheckFlush)
+    context.system.scheduler.schedule(SettingConstant.CHECK_HBASE_FLUSH_INTERVAL * 2 + 2 seconds, SettingConstant.CHECK_HBASE_FLUSH_INTERVAL seconds, ref, SyncControllerMessage(OplogSinkerCheckFlush)
     )
   }
 
   private def sendCheckSendOffsetCommand(ref: ActorRef): Unit = {
     log.info(s" schedule `OplogSinkerSendOffset` message per ${SettingConstant.CHECK_SEND_OFFSET_INTERVAL},id:$syncTaskId")
-    context.system.scheduler.schedule(SettingConstant.CHECK_SEND_OFFSET_INTERVAL * 2 seconds, SettingConstant.CHECK_SEND_OFFSET_INTERVAL seconds, ref, SyncControllerMessage(OplogSinkerSendOffset)
+    context.system.scheduler.schedule(SettingConstant.CHECK_SEND_OFFSET_INTERVAL * 2 + 3 seconds, SettingConstant.CHECK_SEND_OFFSET_INTERVAL seconds, ref, SyncControllerMessage(OplogSinkerSendOffset)
     )
   }
 
   private def sendCheckCollectOffsetCommand(ref: ActorRef): Unit = {
     log.info(s" schedule `OplogSinkerCollectOffset` message per ${SettingConstant.CHECK_COLLECT_OFFSET_INTERVAL},id:$syncTaskId")
-    context.system.scheduler.schedule(SettingConstant.CHECK_COLLECT_OFFSET_INTERVAL * 2 seconds, SettingConstant.CHECK_COLLECT_OFFSET_INTERVAL seconds, ref, SyncControllerMessage(OplogSinkerCollectOffset)
+    context.system.scheduler.schedule(SettingConstant.CHECK_COLLECT_OFFSET_INTERVAL * 2 + 1 seconds, SettingConstant.CHECK_COLLECT_OFFSET_INTERVAL seconds, ref, SyncControllerMessage(OplogSinkerCollectOffset)
     )
   }
 

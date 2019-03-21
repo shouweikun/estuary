@@ -85,8 +85,9 @@ class DefaultOplogKeyHBaseSinkerManager(
   def handleOplogCheckFlush: Unit = {
     val ts = System.currentTimeMillis()
     log.info(s"start to handle check flush,id:$syncTaskId")
-    tableNameMap.values.map(_.flushCommits())
-    log.info(s"this flush cost is ${System.currentTimeMillis() - ts},id:$syncTaskId")
+    val values = tableNameMap.values
+    values.foreach(_.flushCommits())
+    log.info(s"this flush cost is ${System.currentTimeMillis() - ts},tables:${values.mkString(",")},id:$syncTaskId")
   }
 
   def handleOplogSinkerSendOffset: Unit = {
@@ -96,12 +97,15 @@ class DefaultOplogKeyHBaseSinkerManager(
       case hd :: Nil => hd
       case list => list.reduce { (x: MongoOffset, y: MongoOffset) => x.compare(y, true) }
     }
-    log.info(s"get offset:${Option(offset).map(_.formatString).getOrElse("")},id:$syncTaskId")
-    positionRecorder.map(ref => ref ! offset)
+    log.info(s"handleOplogSinkerSendOffset func get offset:${Option(offset).map(_.formatString).getOrElse("")},id:$syncTaskId")
+    positionRecorder.foreach {
+      ref =>
+        ref ! offset //发送offset
+        offsetMap.clear() //必须要清空
+    }
   }
 
   def handleOplogSinkerOffsetCollected(offset: MongoOffset): Unit = {
-
     val senderName = sender().path.name
     offsetMap
       .get(senderName)

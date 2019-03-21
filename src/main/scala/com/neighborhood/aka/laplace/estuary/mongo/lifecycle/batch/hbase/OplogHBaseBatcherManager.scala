@@ -68,7 +68,7 @@ final class OplogHBaseBatcherManager(
     taskManager.wait4SinkerList() //必须要等待,一定要等sinkerList创建完毕才行
     //val batcherTypeName = taskManager.batcherNameToLoad.get(batcherName).getOrElse(OplogKafkaBatcher.name) // todo 支持动态加载
     val paths: List[String] = (1 to batcherNum).map {
-      index => OplogHBaseBatcher.props(taskManager, taskManager.sinkerList(index - 1), index)
+      index => OplogHBaseBatcher.props(taskManager, taskManager.sinkerList((index - 1) % (taskManager.sinkerList.size)), index)
     }.map(context.actorOf(_)).map(_.path.toString).toList
     lazy val roundRobin = context.actorOf(new RoundRobinGroup(paths).props().withDispatcher("akka.batcher-dispatcher"), "router")
     lazy val consistentHashing = context.actorOf(new ConsistentHashingGroup(paths, virtualNodesFactor = SettingConstant.HASH_MAPPING_VIRTUAL_NODES_FACTOR).props().withDispatcher("akka.batcher-dispatcher"), routerName)
