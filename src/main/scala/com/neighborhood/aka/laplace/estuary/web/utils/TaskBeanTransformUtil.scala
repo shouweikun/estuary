@@ -18,8 +18,8 @@ object TaskBeanTransformUtil {
   def convertMongo2HBaseRequest2Mongo2HBaseTaskInfo(request: Mongo2HBaseTaskRequestBean): Mongo2HBaseAllTaskInfoBean = {
     Mongo2HBaseAllTaskInfoBean(
       sinkBean = HBaseSinkRequestBeanToHBaseBean(request.getHbaseSink),
-      sourceBean =mongoSourceRequestBeanToMongoSourceBean( request.getMongoSource),
-      taskRunningInfoBean =Mongo2HBaseRunningInfoRequestBeanToMongo2HBaseTaskInfoBean( request.getMongo2HBaseRunningInfo)
+      sourceBean = mongoSourceRequestBeanToMongoSourceBean(request.getMongoSource),
+      taskRunningInfoBean = Mongo2HBaseRunningInfoRequestBeanToMongo2HBaseTaskInfoBean(request.getMongo2HBaseRunningInfo)
     )
   }
 
@@ -91,8 +91,9 @@ object TaskBeanTransformUtil {
         mongoTsInc = mongo2HBaseRunningInfoRequestBean.getMongoTsInc
       ),
       batcherNum = if (mongo2HBaseRunningInfoRequestBean.getBatcherNum <= 0) 15 else mongo2HBaseRunningInfoRequestBean.getBatcherNum,
-      sinkerNum = if (mongo2HBaseRunningInfoRequestBean.getSinkerNum <= 0) 15 else mongo2HBaseRunningInfoRequestBean.getBatcherNum
-
+      sinkerNum = if (mongo2HBaseRunningInfoRequestBean.getSinkerNum <= 0) 15 else mongo2HBaseRunningInfoRequestBean.getBatcherNum,
+      partitionStrategy = mongo2HBaseRunningInfoRequestBean.getPartitionStrategy,
+      batchThreshold = mongo2HBaseRunningInfoRequestBean.getBatchThreshold
     )
   }
 
