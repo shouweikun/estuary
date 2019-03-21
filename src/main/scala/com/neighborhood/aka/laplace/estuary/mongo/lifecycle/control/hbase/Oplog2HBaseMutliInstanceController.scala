@@ -3,7 +3,7 @@ package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.control.hbase
 import java.util.concurrent.{ExecutorService, Executors}
 
 import akka.actor.SupervisorStrategy.Restart
-import akka.actor.{ActorRef, AllForOneStrategy}
+import akka.actor.{ActorRef, AllForOneStrategy, Props}
 import com.neighborhood.aka.laplace.estuary.core.akkaUtil.SyncDaemonCommand.{ExternalRestartCommand, ExternalStartCommand}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.SyncControllerPrototype
@@ -258,4 +258,6 @@ final class Oplog2HBaseMutliInstanceController(
 
 }
 
-
+object Oplog2HBaseMutliInstanceController {
+  def props(allTaskInfoBean: Mongo2HBaseAllTaskInfoBean): Props = Props(new Oplog2HBaseMutliInstanceController(allTaskInfoBean))
+}
