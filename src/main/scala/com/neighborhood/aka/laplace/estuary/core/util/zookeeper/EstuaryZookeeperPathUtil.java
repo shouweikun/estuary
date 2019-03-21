@@ -36,7 +36,7 @@ import java.text.MessageFormat;
  * @author john_liu
  * @version 1.0.0
  */
-public class ZookeeperPathUtil {
+public class EstuaryZookeeperPathUtil {
 
     public static final String ZOOKEEPER_SEPARATOR = "/";
 

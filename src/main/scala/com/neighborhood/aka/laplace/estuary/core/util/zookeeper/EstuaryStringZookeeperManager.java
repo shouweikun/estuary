@@ -1,7 +1,6 @@
 package com.neighborhood.aka.laplace.estuary.core.util.zookeeper;
 
 import com.alibaba.fastjson.JSON;
-import com.alibaba.otter.canal.common.zookeeper.ZookeeperPathUtils;
 import org.I0Itec.zkclient.exception.ZkNoNodeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +44,7 @@ public class EstuaryStringZookeeperManager {
     }
 
     public String getStringBy(String destination) {
-        String path = ZookeeperPathUtil.getParsePath(destination);
+        String path = EstuaryZookeeperPathUtil.getParsePath(destination);
         byte[] data = zkClient.readData(path, true);
         if (data == null || data.length == 0) {
             return null;
@@ -54,7 +53,7 @@ public class EstuaryStringZookeeperManager {
     }
 
     public void persistStringBy(String destination, String value) {
-        String path = ZookeeperPathUtils.getParsePath(destination);
+        String path = EstuaryZookeeperPathUtil.getParsePath(destination);
         byte[] data = JSON.toJSONBytes(value);
         try {
             zkClient.writeData(path, data);
