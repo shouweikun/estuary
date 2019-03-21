@@ -91,7 +91,7 @@ final class MongoConnection(
       //                    .batchSize(1) //设置batchSize会让tail失效?
       .noCursorTimeout(false) //avoid timeout if you are working on big data
       //                .maxTime(3,TimeUnit.SECONDS)
-      .maxAwaitTime(15, TimeUnit.SECONDS) //还是应该有超时时间, 待测试.
+      .maxAwaitTime(60, TimeUnit.SECONDS) //还是应该有超时时间, 待测试.
       .sort(new BasicDBObject("$natural", 1))
       .iterator()
     iterator
@@ -101,13 +101,15 @@ final class MongoConnection(
     assert(this.isConnected, "cannot find real doc cause connection is not ready or disconnected")
     val o = oplog.getCurrentDocument
     if ("u".equals(oplog.getOperateType()) && o != null && o.containsKey("$set")) {
-      logger.warn(s"try to handle update event for oplog id:${oplog.getId},ts:${oplog.getTimestamp.getTime}${oplog.getTimestamp.getTime}")
-      val o2Iter: MongoCursor[Document] = mongoClient
-        .getDatabase(oplog.getDbName())
-        .getCollection(oplog.getTableName())
-        .find(oplog.getWhereCondition())
-        .iterator()
-      Try(o2Iter.next()).toOption
+      Try {
+        logger.warn(s"try to handle update event for oplog id:${oplog.getId},ts:${oplog.getTimestamp.getTime}${oplog.getTimestamp.getInc},ns:${oplog.getDbName}")
+        val o2Iter: MongoCursor[Document] = mongoClient
+          .getDatabase(oplog.getDbName())
+          .getCollection(oplog.getTableName())
+          .find(oplog.getWhereCondition())
+          .iterator()
+        o2Iter.next()
+      }.toOption
     } else None
   }
 

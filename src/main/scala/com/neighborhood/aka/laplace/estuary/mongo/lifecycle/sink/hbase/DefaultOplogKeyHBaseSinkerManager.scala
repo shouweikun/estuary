@@ -91,18 +91,17 @@ class DefaultOplogKeyHBaseSinkerManager(
 
   def handleOplogSinkerSendOffset: Unit = {
     log.info(s"start to send offset to recorder,id:$syncTaskId")
-    offsetMap.values.toList match {
-      case Nil =>
-      case hd :: Nil => positionRecorder.map(ref => ref ! hd)
-      case list => positionRecorder.map {
-        ref =>
-          val offset = list.reduce {  (x: MongoOffset, y: MongoOffset) => x.compare(y, true) }
-          ref ! offset
-      }
+    val offset = offsetMap.values.toList match {
+      case Nil => null
+      case hd :: Nil => hd
+      case list => list.reduce { (x: MongoOffset, y: MongoOffset) => x.compare(y, true) }
     }
+    log.info(s"get offset:${Option(offset).map(_.formatString).getOrElse("")},id:$syncTaskId")
+    positionRecorder.map(ref => ref ! offset)
   }
 
   def handleOplogSinkerOffsetCollected(offset: MongoOffset): Unit = {
+
     val senderName = sender().path.name
     offsetMap
       .get(senderName)

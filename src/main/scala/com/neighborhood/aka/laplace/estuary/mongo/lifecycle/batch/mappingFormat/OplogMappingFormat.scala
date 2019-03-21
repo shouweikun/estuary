@@ -2,6 +2,7 @@ package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.batch.mappingFormat
 
 import com.neighborhood.aka.laplace.estuary.core.trans.MappingFormat
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.OplogClassifier
+import com.neighborhood.aka.laplace.estuary.mongo.source.MongoConnection.logger
 import com.neighborhood.aka.laplace.estuary.mongo.source.{MongoConnection, Oplog}
 import com.neighborhood.aka.laplace.estuary.mongo.util.MongoDocumentToJson
 import org.bson.Document
@@ -35,7 +36,10 @@ trait OplogMappingFormat[B] extends MappingFormat[OplogClassifier, B] {
     * @return 找到Some(doc) else None
     */
   protected def getRealDoc(oplog: Oplog): Option[Document] = {
-    if (oplog.getOperateType == "u") mongoConnection.findRealDocForUpdate(oplog)
+    if (oplog.getOperateType == "u") {
+      val re = mongoConnection.findRealDocForUpdate(oplog)
+      re
+    }
     else Option(oplog.getCurrentDocument)
   }
 
