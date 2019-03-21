@@ -118,9 +118,20 @@ final class Oplog2HBaseMutliInstanceController(
     assert(sourceBean.concernedNs.nonEmpty)
     sourceBean.concernedNs.foreach {
       tableName =>
-        val spSourceBean = sourceBean.copy()(concernedNs = Array(tableName))
+        val spSourceBean = sourceBean.copy()(concernedNs = Array(tableName), ignoredNs = sourceBean.ignoredNs)
         val newTaskName = buildChildTaskName(tableName)
-        val spTaskBean = taskBean.copy(syncTaskId = newTaskName)(logEnabled = false)
+        val spTaskBean = taskBean.copy(syncTaskId = newTaskName)(
+          logEnabled = false,
+          mongoOffset = taskBean.mongoOffset,
+          isCosting = taskBean.isCosting,
+          isCounting = taskBean.isCounting,
+          isProfiling = taskBean.isProfiling,
+          isPowerAdapted = taskBean.isPowerAdapted,
+          partitionStrategy = taskBean.partitionStrategy,
+          syncStartTime = taskBean.syncStartTime,
+          batchThreshold = taskBean.batchThreshold,
+          batcherNum = taskBean.batcherNum,
+          sinkerNum = taskBean.sinkerNum)
         val spTotalInfoBean = allTaskInfoBean.copy(sourceBean = spSourceBean, taskRunningInfoBean = spTaskBean)
         val props = Oplog2HBaseController.props(spTotalInfoBean)
         context.actorOf(props, newTaskName)
