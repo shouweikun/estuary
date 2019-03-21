@@ -12,6 +12,8 @@ import scala.collection.mutable
   * 这个是处理Offset的Actor，用于SavePoint保存
   */
 trait SourceDataPositionRecorder[A <: ComparableOffset[A]] extends ActorPrototype with PositionRecorder {
+  def logIsEnabled = taskManager.logIsEnabled
+
   private val queneMaxSize = 10
   private lazy val quene: mutable.Queue[A] = new mutable.Queue[A]()
 
@@ -39,7 +41,7 @@ trait SourceDataPositionRecorder[A <: ComparableOffset[A]] extends ActorPrototyp
   }
 
   def saveOffset: Unit = {
-    log.info(s"start saveOffset,id:$syncTaskId")
+    if (logIsEnabled) log.info(s"start saveOffset,id:$syncTaskId")
     scheduledSavedOffset.map(saveOffsetInternal(_))
     scheduledSavedOffset.map(updateQuene(_))
     scheduledSavedOffset = schedulingSavedOffset

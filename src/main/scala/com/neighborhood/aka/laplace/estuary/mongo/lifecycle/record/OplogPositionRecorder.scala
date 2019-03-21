@@ -2,8 +2,8 @@ package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.record
 
 import akka.actor.Props
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, FetcherMessage, SinkerMessage, SyncControllerMessage}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.SourceDataPositionRecorder
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, FetcherMessage, SinkerMessage, SyncControllerMessage}
 import com.neighborhood.aka.laplace.estuary.core.task.{PositionHandler, TaskManager}
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.record.OplogRecorderCommand.{OplogRecorderEnsurePosition, OplogRecorderSaveLatestPosition, OplogRecorderSavePosition}
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.OplogSinkerCommand.OplogSinkerGetAbnormal
@@ -32,13 +32,13 @@ final class OplogPositionRecorder(
     * @return
     */
   override lazy val startPosition: Option[MongoOffset] = {
-    log.info(s"start to get start position,id:$syncTaskId")
+    if (logIsEnabled) log.info(s"start to get start position,id:$syncTaskId")
     while (getSaveOffset.isEmpty) {
       Thread.sleep(200)
       log.warning(s"still try to get start position...,id:$syncTaskId")
     }
     val re = getSaveOffset
-    log.info(s"get start position:${re.get},id:$syncTaskId")
+    if (logIsEnabled) log.info(s"get start position:${re.get},id:$syncTaskId")
     re
   }
 

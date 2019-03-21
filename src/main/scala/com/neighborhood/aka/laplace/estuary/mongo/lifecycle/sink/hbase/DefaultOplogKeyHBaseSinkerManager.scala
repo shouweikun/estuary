@@ -23,7 +23,7 @@ class DefaultOplogKeyHBaseSinkerManager(
     */
   override val sinkerName: String = "sinker"
 
-
+  val logEnabled = taskManager.logIsEnabled
   /**
     * 同步任务id
     */
@@ -84,23 +84,23 @@ class DefaultOplogKeyHBaseSinkerManager(
 
   def handleOplogCheckFlush: Unit = {
     val ts = System.currentTimeMillis()
-    log.info(s"start to handle check flush,id:$syncTaskId")
+    if (logEnabled) log.info(s"start to handle check flush,id:$syncTaskId")
     val values = tableNameMap.values
     values.foreach(_.flushCommits())
-    log.info(s"this flush cost is ${System.currentTimeMillis() - ts},tables:${values.mkString(",")},id:$syncTaskId")
+    if (logEnabled) log.info(s"this flush cost is ${System.currentTimeMillis() - ts},tables:${values.mkString(",")},id:$syncTaskId")
   }
 
   def handleOplogSinkerSendOffset: Unit = {
-    log.info(s"start to send offset to recorder,id:$syncTaskId")
+    if (logEnabled) log.info(s"start to send offset to recorder,id:$syncTaskId")
     val offset = offsetMap.values.toList match {
       case Nil => null
       case hd :: Nil => hd
       case list => list.reduce { (x: MongoOffset, y: MongoOffset) => x.compare(y, true) }
     }
-    log.info(s"handleOplogSinkerSendOffset func get offset:${Option(offset).map(_.formatString).getOrElse("")},id:$syncTaskId")
+    if (logEnabled) log.info(s"handleOplogSinkerSendOffset func get offset:${Option(offset).map(_.formatString).getOrElse("")},id:$syncTaskId")
     positionRecorder.foreach {
       ref =>
-        Option(offset).map(x=>ref ! x) //发送offset
+        Option(offset).map(x => ref ! x) //发送offset
         offsetMap.clear() //必须要清空
     }
   }
@@ -115,7 +115,7 @@ class DefaultOplogKeyHBaseSinkerManager(
   }
 
   def dispatchOplogSinkerCollectOffset: Unit = {
-    log.info(s"dispatch oplog sinker collect offset to sinkers,id:$syncTaskId")
+    if (logEnabled) log.info(s"dispatch oplog sinker collect offset to sinkers,id:$syncTaskId")
     context.children.foreach(ref => ref ! OplogSinkerCollectOffset)
   }
 

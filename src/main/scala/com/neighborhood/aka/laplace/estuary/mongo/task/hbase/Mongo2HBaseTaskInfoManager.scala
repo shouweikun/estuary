@@ -38,6 +38,7 @@ final class Mongo2HBaseTaskInfoManager(
     */
   override lazy val taskInfo: Mongo2HBaseTaskInfoBeanImp = allTaskInfoBean.taskRunningInfoBean
 
+  override val logIsEnabled = taskInfo.logEnabled
   /**
     * batch转换模块
     */
@@ -156,7 +157,7 @@ final class Mongo2HBaseTaskInfoManager(
   }
 
   private def buildMappingFormat: MappingFormat[OplogClassifier, HBasePut[MongoOffset]] = {
-    logger.info(s"start to build build mapping formart,id:$syncTaskId")
+    if (logIsEnabled) logger.info(s"start to build build mapping formart,id:$syncTaskId")
     new OplogHBaseMappingFormat(source, syncTaskId, new MongoDocumentToJson)
   }
 }

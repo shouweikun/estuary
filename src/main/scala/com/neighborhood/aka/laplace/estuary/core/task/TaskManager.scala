@@ -23,6 +23,8 @@ import scala.util.Try
   */
 trait TaskManager {
 
+  def logIsEnabled: Boolean = true
+
   def positionHandler: PositionHandler[_]
 
   /**
