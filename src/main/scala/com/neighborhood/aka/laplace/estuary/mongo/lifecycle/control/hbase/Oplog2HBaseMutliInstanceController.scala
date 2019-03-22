@@ -153,15 +153,15 @@ final class Oplog2HBaseMutliInstanceController(
   def collectChildInfo: Unit = {
     val tem = 3
     val childTaskManagers = sourceBean.concernedNs.map(x => TaskManager.getTaskManager(buildChildTaskName(x))).withFilter(_.isDefined).map(_.get)
-    childTaskManagers.map(_.syncTaskId).toList.diff(sourceBean.concernedNs.toList) match {
-      case Nil =>
+    childTaskManagers.map(_.syncTaskId).toList.diff(sourceBean.concernedNs.toList.map(buildChildTaskName(_))) match {
+      case Nil => //do nothing
       case list => log.error(s"table:${list.mkString(",")} can not found when collect Child info,id:$syncTaskId")
     }
     val lastFetchCount = taskManager.fetchCount.get()
     val fetchCount = childTaskManagers.map(_.fetchCount.get()).sum
     val lastBatchCount = taskManager.batchCount.get()
     val batchCount = childTaskManagers.map(_.batchCount.get()).sum
-    val lastSinkCount = childTaskManagers.map(_.sinkCount.get()).sum
+    val lastSinkCount = taskManager.sinkCount.get()
     val sinkCount = childTaskManagers.map(_.sinkCount.get()).sum
     taskManager.fetchCount.set(fetchCount)
     taskManager.batchCount.set(batchCount)

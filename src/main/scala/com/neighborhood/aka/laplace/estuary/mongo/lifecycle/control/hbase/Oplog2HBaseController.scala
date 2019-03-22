@@ -30,7 +30,6 @@ import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.{OplogSinkerCom
 import com.neighborhood.aka.laplace.estuary.mongo.sink.hbase.HBaseBeanImp
 import com.neighborhood.aka.laplace.estuary.mongo.source.{MongoConnection, MongoSourceBeanImp}
 import com.neighborhood.aka.laplace.estuary.mongo.task.hbase.{Mongo2HBaseAllTaskInfoBean, Mongo2HBaseTaskInfoBeanImp, Mongo2HBaseTaskInfoManager}
-import org.I0Itec.zkclient.exception.ZkTimeoutException
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
@@ -55,7 +54,7 @@ final class Oplog2HBaseController(
 
   override val sinkBean: HBaseBeanImp = allTaskInfoBean.sinkBean
 
-
+  val logIsEnabled = taskBean.logEnabled
   /**
     * 同步任务id
     */
@@ -71,7 +70,7 @@ final class Oplog2HBaseController(
   val isCounting = taskManager.isCounting
   val isPowerAdapted = taskManager.isPowerAdapted
 
-  log.info(s"Oplog2HBaseController start build,id:$syncTaskId")
+  if(logIsEnabled)log.info(s"Oplog2HBaseController start build,id:$syncTaskId")
 
   override def resourceManager: Mongo2HBaseTaskInfoManager = taskManager
 
@@ -417,9 +416,10 @@ final class Oplog2HBaseController(
   override def preStart(): Unit
   = {
     controllerChangeStatus(Status.OFFLINE)
-    log.info(s"start init all workers,id:$syncTaskId")
+    if (logIsEnabled) log.info(s"start init all workers,id:$syncTaskId")
     initWorkers
     taskManager.start
+    log.info(s"~put taskManager:$syncTaskId")
     TaskManager.putTaskManager(syncTaskId, taskManager)
   }
 
