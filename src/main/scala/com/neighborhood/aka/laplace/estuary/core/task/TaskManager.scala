@@ -371,8 +371,8 @@ trait TaskManager {
 }
 
 object TaskManager {
-  private lazy val taskStatusMap: ConcurrentHashMap[String, Map[String, Status.Status]] = new ConcurrentHashMap[String, Map[String, Status.Status]]()
-  private lazy val taskManagerMap: ConcurrentHashMap[String, TaskManager] = new ConcurrentHashMap[String, TaskManager]()
+  private val taskStatusMap: ConcurrentHashMap[String, Map[String, Status.Status]] = new ConcurrentHashMap[String, Map[String, Status.Status]]()
+  private val taskManagerMap: ConcurrentHashMap[String, TaskManager] = new ConcurrentHashMap[String, TaskManager]()
 
   /**
     * 状态变化

@@ -30,6 +30,8 @@ trait SyncService[Bean <: TaskRequestBean] {
   private lazy val requestBeanMap: ConcurrentHashMap[String, TaskRequestBean]
   = new ConcurrentHashMap[String, TaskRequestBean]()
 
+  protected def subTaskMark:String = "::"
+
   /**
     * 入海口3存任务的表名
     *
@@ -73,7 +75,9 @@ trait SyncService[Bean <: TaskRequestBean] {
     * @return 计数JSON
     */
   def checkLogCount(syncTaskId: String)(implicit typeTag: TypeTag[Bean]): String = {
-    val map = if (checkRunningTaskInternal.contains(syncTaskId)) checkLogCountInternal(syncTaskId) else Map.empty[String, Long]
+
+    val map = if (syncTaskId.contains(subTaskMark)) checkLogCountInternal(syncTaskId)
+    else if (checkRunningTaskInternal.contains(syncTaskId)) checkLogCountInternal(syncTaskId) else Map.empty[String, Long]
 
     if (map.isEmpty)
       s"""{"syncTaskId":"${syncTaskId}"}"""
@@ -94,7 +98,8 @@ trait SyncService[Bean <: TaskRequestBean] {
   }
 
   def checkLogCost(syncTaskId: String)(implicit typeTag: TypeTag[Bean]): String = {
-    val map = if (checkRunningTaskInternal.contains(syncTaskId)) checkLogCostInternal(syncTaskId) else Map.empty[String, Long]
+    val map = if (syncTaskId.contains(subTaskMark)) checkLogCostInternal(syncTaskId)
+    else if (checkRunningTaskInternal.contains(syncTaskId)) checkLogCostInternal(syncTaskId) else Map.empty[String, Long]
 
     if (map.isEmpty)
       s"""{"syncTaskId":"${syncTaskId}"}"""
@@ -119,7 +124,7 @@ trait SyncService[Bean <: TaskRequestBean] {
     * @return
     */
   def checkLastSavedLogPosition(syncTaskId: String)(implicit typeTag: TypeTag[Bean]): String = {
-    if (checkRunningTaskInternal.contains(syncTaskId)) checkLastSavedLogPositionInternal(syncTaskId) else s"""{"syncTaskId":"$syncTaskId"}"""
+    if (syncTaskId.contains(subTaskMark)) checkLastSavedLogPositionInternal(syncTaskId) else if (checkRunningTaskInternal.contains(syncTaskId)) checkLastSavedLogPositionInternal(syncTaskId) else s"""{"syncTaskId":"$syncTaskId"}"""
 
   }
 

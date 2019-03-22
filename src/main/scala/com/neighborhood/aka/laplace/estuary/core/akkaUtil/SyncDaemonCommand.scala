@@ -13,6 +13,9 @@ object SyncDaemonCommand {
 
   case object ExternalStartCommand
 
+  case class ExternalSuspendCommand(syncTaskId: String) extends SyncDaemonCommand
+
+  case class ExternalResumeCommand(syncTaskId: String) extends SyncDaemonCommand
 
   case class ExternalRestartCommand(syncTaskId: String) extends SyncDaemonCommand
 
@@ -22,7 +25,7 @@ object SyncDaemonCommand {
 
   case object ExternalGetAllRunningTask extends SyncDaemonCommand
 
-  case class ExternalGetCertainRunningTask(syncTaskId:String) extends SyncDaemonCommand
+  case class ExternalGetCertainRunningTask(syncTaskId: String) extends SyncDaemonCommand
 
 }
 
