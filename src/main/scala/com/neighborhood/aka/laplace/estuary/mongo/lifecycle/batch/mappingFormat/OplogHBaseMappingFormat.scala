@@ -72,8 +72,8 @@ class OplogHBaseMappingFormat(
   }
 
   private def getTableName(dbName: String, tableName: String): String = {
-    //    dbName.toLowerCase()+"_mongo:"+tableName.toLowerCase+"_1500000000"
-    "liushouwei_t_1"
+        dbName.toLowerCase()+"_mongo:"+tableName.toLowerCase+"_1500000000"
+//    "liushouwei_t_1"
   }
 
   private def getTs(seconds: Int, inc: Int): Long = {
