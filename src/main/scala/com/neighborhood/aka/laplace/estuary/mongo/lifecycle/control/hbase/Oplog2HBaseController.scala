@@ -462,13 +462,10 @@ final class Oplog2HBaseController(
 
   override def supervisorStrategy = {
     AllForOneStrategy() {
-      case e: ZkTimeoutException => {
-        controllerChangeStatus(Status.ERROR)
-        Escalate
-      }
       case e: Exception => {
         controllerChangeStatus(Status.ERROR)
-
+        log.error(s"mongo 2 hbase controller crashed,id:$syncTaskId,e:$e")
+        e.printStackTrace()
         Escalate
 
       }

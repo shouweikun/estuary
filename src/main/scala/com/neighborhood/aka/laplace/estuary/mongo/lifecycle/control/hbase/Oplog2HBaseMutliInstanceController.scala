@@ -3,7 +3,7 @@ package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.control.hbase
 import java.util.concurrent.{ExecutorService, Executors}
 
 import akka.actor.SupervisorStrategy.Restart
-import akka.actor.{ActorRef, AllForOneStrategy, Props}
+import akka.actor.{ActorRef, OneForOneStrategy, Props}
 import com.neighborhood.aka.laplace.estuary.core.akkaUtil.SyncDaemonCommand.{ExternalRestartCommand, ExternalStartCommand}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.SyncControllerPrototype
@@ -143,23 +143,48 @@ final class Oplog2HBaseMutliInstanceController(
     *
     */
   protected def startAllWorkers: Unit = {
+    scheduleCheckInfoCommand(self)
     sendCollectChildInfoCommand(self)
     context.children.foreach {
       ref => ref ! ExternalStartCommand
     }
-
   }
 
   def collectChildInfo: Unit = {
+    val tem = 3
     val childTaskManagers = sourceBean.concernedNs.map(x => TaskManager.getTaskManager(buildChildTaskName(x))).withFilter(_.isDefined).map(_.get)
-    taskManager.fetchCount.set(childTaskManagers.map(_.fetchCount.get()).sum)
-    taskManager.batchCount.set(childTaskManagers.map(_.batchCount.get()).sum)
-    taskManager.sinkCount.set(childTaskManagers.map(_.sinkCount.get()).sum)
+    childTaskManagers.map(_.syncTaskId).toList.diff(sourceBean.concernedNs.toList) match {
+      case Nil =>
+      case list => log.error(s"table:${list.mkString(",")} can not found when collect Child info,id:$syncTaskId")
+    }
+    val lastFetchCount = taskManager.fetchCount.get()
+    val fetchCount = childTaskManagers.map(_.fetchCount.get()).sum
+    val lastBatchCount = taskManager.batchCount.get()
+    val batchCount = childTaskManagers.map(_.batchCount.get()).sum
+    val lastSinkCount = childTaskManagers.map(_.sinkCount.get()).sum
+    val sinkCount = childTaskManagers.map(_.sinkCount.get()).sum
+    taskManager.fetchCount.set(fetchCount)
+    taskManager.batchCount.set(batchCount)
+    taskManager.sinkCount.set(sinkCount)
     taskManager.fetchCost.set(childTaskManagers.map(_.fetchCost.get()).sum / childTaskManagers.size)
     taskManager.batchCost.set(childTaskManagers.map(_.batchCost.get()).sum / childTaskManagers.size)
     taskManager.sinkCost.set(childTaskManagers.map(_.sinkCost.get()).sum / childTaskManagers.size)
+    taskManager.sinkCountPerSecond.set((sinkCount - lastSinkCount) / tem)
+    taskManager.batchCountPerSecond.set((batchCount - lastBatchCount) / tem)
+    taskManager.fetchCountPerSecond.set((fetchCount - lastFetchCount) / tem)
     taskManager.fetchDelay.set(-1)
-    taskManager.sinkerLogPosition.set(childTaskManagers.map(_.sinkerLogPosition.get()).mkString("\\n"))
+    taskManager.sinkerLogPosition.set(childTaskManagers.map(_.sinkerLogPosition.get()).mkString("\n"))
+  }
+
+  /**
+    * 发送检查程序运行状态的定时指令
+    * 固定日志输出
+    *
+    * @param ref
+    */
+  private def scheduleCheckInfoCommand(ref: ActorRef = self): Unit = {
+    log.info(s"schedule `checkInfo` message per ${SettingConstant.CHECK_STATUS_INTERVAL} seconds,id:$syncTaskId")
+    context.system.scheduler.schedule(SettingConstant.COMPUTE_FIRST_DELAY seconds, SettingConstant.CHECK_STATUS_INTERVAL seconds, ref, SyncControllerMessage(OplogControllerCheckRunningInfo))
   }
 
   private def sendCollectChildInfoCommand(ref: ActorRef): Unit = {
@@ -245,14 +270,13 @@ final class Oplog2HBaseMutliInstanceController(
   }
 
   override def supervisorStrategy = {
-    AllForOneStrategy() {
+    OneForOneStrategy() {
       case e: ZkTimeoutException => {
         controllerChangeStatus(Status.ERROR)
         Restart
       }
       case e: Exception => {
         controllerChangeStatus(Status.ERROR)
-
         Restart
 
       }

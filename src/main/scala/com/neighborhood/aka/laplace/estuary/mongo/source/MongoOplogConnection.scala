@@ -125,7 +125,7 @@ final class MongoConnection(
     logger.info("start init mongo client")
     // mongo3.4.0 读取数据时, 对于有replication set 复本集的collection是使用从库策略
     // http://www.jianshu.com/p/d4c3c9752e7e
-    val options = MongoClientOptions.builder.readPreference(ReadPreference.secondaryPreferred).connectionsPerHost(200).connectTimeout(60000).maxWaitTime(120000).socketTimeout(50000).build
+    val options = MongoClientOptions.builder.readPreference(ReadPreference.secondaryPreferred).connectionsPerHost(200).connectTimeout(60000).maxWaitTime(120000).socketTimeout(Int.MaxValue).build
     val hosts = mongoBeanImp.hosts.map(host => new ServerAddress(host, mongoBeanImp.port))
     val credential = createCredential(mongoBeanImp.authMechanism, mongoBeanImp.mongoCredentials)
     assert(hosts.nonEmpty) //必须非空

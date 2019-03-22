@@ -23,7 +23,7 @@ final class Mongo2HBaseService extends SyncService[Mongo2HBaseTaskRequestBean] {
     */
   override protected def startNewOneTask(taskRequestBean: Mongo2HBaseTaskRequestBean): String = {
     val taskInfoBean = TaskBeanTransformUtil.convertMongo2HBaseRequest2Mongo2HBaseTaskInfo(taskRequestBean)
-    val props = if (taskRequestBean.isMutli) Oplog2HBaseMutliInstanceController.props(taskInfoBean) else Oplog2HBaseController.props(taskInfoBean)
+    val props = if (taskRequestBean.isMulti) Oplog2HBaseMutliInstanceController.props(taskInfoBean) else Oplog2HBaseController.props(taskInfoBean)
 
     ActorRefHolder.syncDaemon ! ExternalStartCommand(Mongo2HBaseSyncTask(props, taskRequestBean.getMongo2HBaseRunningInfo.getSyncTaskId))
     s"""
