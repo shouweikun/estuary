@@ -44,9 +44,11 @@ trait SourceDataPositionRecorder[A <: ComparableOffset[A]] extends ActorPrototyp
     if (logIsEnabled) log.info(s"start saveOffset,id:$syncTaskId")
     scheduledSavedOffset.map(saveOffsetInternal(_))
     scheduledSavedOffset.map(updateQuene(_))
-    scheduledSavedOffset = schedulingSavedOffset
-    schedulingSavedOffset = lastSavedOffset
-    lastSavedOffset = latestOffset
+    if(lastSavedOffset != latestOffset){
+      scheduledSavedOffset = schedulingSavedOffset
+      schedulingSavedOffset = lastSavedOffset
+      lastSavedOffset = latestOffset
+    }
   }
 
   def saveOffsetWhenError(e: Throwable, offset: Option[A]): Unit = {
