@@ -5,18 +5,18 @@ package com.neighborhood.aka.laplace.estuary.web.bean;
  */
 public class Mongo2HBaseTaskRequestBean extends TaskRequestBean {
 
-    private boolean isMutli = false;
+    private boolean isMulti = false;
 
     private Mongo2HBaseRunningInfoRequestBean mongo2HBaseRunningInfo;
     private MongoSourceRequestBean mongoSource;
     private HBaseSinkRequestBean hbaseSink;
 
-    public boolean isMutli() {
-        return isMutli;
+    public boolean isMulti() {
+        return isMulti;
     }
 
-    public void setMutli(boolean mutli) {
-        isMutli = mutli;
+    public void setMulti(boolean multi) {
+        isMulti = multi;
     }
 
     public Mongo2HBaseRunningInfoRequestBean getMongo2HBaseRunningInfo() {

@@ -85,9 +85,11 @@ class DefaultOplogKeyHBaseSinkerManager(
   def handleOplogCheckFlush: Unit = {
     val ts = System.currentTimeMillis()
     if (logEnabled) log.info(s"start to handle check flush,id:$syncTaskId")
-    val values = tableNameMap.values
+    val map = tableNameMap
+    val values = map.values
+    val keys = map.keySet
     values.foreach(_.flushCommits())
-    if (logEnabled) log.info(s"this flush cost is ${System.currentTimeMillis() - ts},tables:${values.mkString(",")},id:$syncTaskId")
+    if (logEnabled) log.info(s"this flush cost is ${System.currentTimeMillis() - ts},tables:${keys.mkString(",")},id:$syncTaskId")
   }
 
   def handleOplogSinkerSendOffset: Unit = {

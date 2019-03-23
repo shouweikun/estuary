@@ -27,6 +27,8 @@ final class Mongo2HBaseController extends SyncTaskController[Mongo2HBaseTaskRequ
   }
 
 
+
+
   @ApiOperation(value = "查看任务状态", httpMethod = "GET", notes = "")
   @RequestMapping(value = Array("/check/sync/status"), method = Array(RequestMethod.GET))
   def checkTaskStatus(@RequestParam("id") id: String): String = {
