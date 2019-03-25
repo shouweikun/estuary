@@ -44,6 +44,8 @@ object Parser {
     SchemaChange.parse(schemaName, ddlSql).asScala.toList
   }
 
+  def parseAndReplaceFirst(ddlSql: String, defaultSchemaName: String, tableMappingRule: SdaSchemaMappingRule): SchemaChange = parseAndReplace(ddlSql, defaultSchemaName, tableMappingRule).head
+
   /**
     * 解析并替换库表名
     *
@@ -52,11 +54,10 @@ object Parser {
     * @param tableMappingRule
     * @return
     */
-  def parseAndReplace(ddlSql: String, defaultSchemaName: String, tableMappingRule: SdaSchemaMappingRule): SchemaChange = {
+  def parseAndReplace(ddlSql: String, defaultSchemaName: String, tableMappingRule: SdaSchemaMappingRule): List[SchemaChange] = {
     logger.info(s"start parse and replace ddl:$ddlSql,defaultSchemaName:$defaultSchemaName")
     val re = parse(ddlSql, defaultSchemaName) //这个实现涉及了对象内部变量的改变
-    if (re.size > 1) throw new InvalidDdlException(s"only single ddl is supported,ddl:$ddlSql")
-    re.head match {
+    def handleDDl(schemaChange: SchemaChange): Unit = schemaChange match {
       case alter: TableAlter => {
         if (JavaCommonUtil.isEmpty(alter.database)) alter.database = alter.newDatabase
         if (JavaCommonUtil.isEmpty(alter.table)) alter.table = alter.newTableName
@@ -87,7 +88,8 @@ object Parser {
       }
     }
 
-    re.head
+    re.foreach(handleDDl(_))
+    re
   }
 
 

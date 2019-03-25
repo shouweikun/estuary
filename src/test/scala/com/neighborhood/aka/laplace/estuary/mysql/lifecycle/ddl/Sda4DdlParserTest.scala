@@ -50,7 +50,7 @@ class Sda4DdlParserTest extends UnitSpec {
          PRIMARY KEY ( tutorial_id )
       );""".stripMargin
   "test 1" should "successfully handle Alter table with column add" in {
-    val schemaChange = Parser.parseAndReplace(alterTable1, "a_map", schemaMappingRule)
+    val schemaChange = Parser.parseAndReplaceFirst(alterTable1, "a_map", schemaMappingRule)
     assert(schemaChange.isInstanceOf[TableAlter])
     val tableAlter = schemaChange.asInstanceOf[TableAlter]
     assert(tableAlter.database == "a_map")
@@ -66,7 +66,7 @@ class Sda4DdlParserTest extends UnitSpec {
   }
 
   "test 2" should "successfully handle Alter table with column add" in {
-    val schemaChange = Parser.parseAndReplace(alterTable2, "a_map", schemaMappingRule)
+    val schemaChange = Parser.parseAndReplaceFirst(alterTable2, "a_map", schemaMappingRule)
     assert(schemaChange.isInstanceOf[TableAlter])
     val tableAlter = schemaChange.asInstanceOf[TableAlter]
     assert(tableAlter.database == "a_map")
@@ -83,7 +83,7 @@ class Sda4DdlParserTest extends UnitSpec {
   }
 
   "test 3" should "successfully handle Alter table with column add" in {
-    val schemaChange = Parser.parseAndReplace(alterTable3, "a_map", schemaMappingRule)
+    val schemaChange = Parser.parseAndReplaceFirst(alterTable3, "a_map", schemaMappingRule)
     assert(schemaChange.isInstanceOf[TableAlter])
     val tableAlter = schemaChange.asInstanceOf[TableAlter]
     assert(tableAlter.database == "a_map")
@@ -100,7 +100,7 @@ class Sda4DdlParserTest extends UnitSpec {
   }
 
   "test 4" should "successfully handle Alter table with column add" in {
-    val schemaChange = Parser.parseAndReplace(alterTable4, "a_map", schemaMappingRule)
+    val schemaChange = Parser.parseAndReplaceFirst(alterTable4, "a_map", schemaMappingRule)
     assert(schemaChange.isInstanceOf[TableAlter])
     val tableAlter = schemaChange.asInstanceOf[TableAlter]
     assert(tableAlter.database == "a_map")
@@ -118,7 +118,7 @@ class Sda4DdlParserTest extends UnitSpec {
   }
 
   "test 5" should "successfully handle Alter table with column add" in {
-    val schemaChange = Parser.parseAndReplace(alterTable5, "a_map", schemaMappingRule)
+    val schemaChange = Parser.parseAndReplaceFirst(alterTable5, "a_map", schemaMappingRule)
     assert(schemaChange.isInstanceOf[TableAlter])
     val tableAlter = schemaChange.asInstanceOf[TableAlter]
     assert(tableAlter.database == "a_map")
@@ -136,7 +136,7 @@ class Sda4DdlParserTest extends UnitSpec {
   }
 
   "test 6" should "successfully handle table alter with column drop" in {
-    val schemaChange = Parser.parseAndReplace(alterTable6, "a_map", schemaMappingRule)
+    val schemaChange = Parser.parseAndReplaceFirst(alterTable6, "a_map", schemaMappingRule)
     assert(schemaChange.isInstanceOf[TableAlter])
     val tableAlter = schemaChange.asInstanceOf[TableAlter]
     assert(tableAlter.database == "a_map")
@@ -150,7 +150,7 @@ class Sda4DdlParserTest extends UnitSpec {
   }
 
   "test 7" should "successfully handle table alter with column change" in {
-    val schemaChange = Parser.parseAndReplace(alterTable7, "a_map", schemaMappingRule)
+    val schemaChange = Parser.parseAndReplaceFirst(alterTable7, "a_map", schemaMappingRule)
     assert(schemaChange.isInstanceOf[TableAlter])
     val tableAlter = schemaChange.asInstanceOf[TableAlter]
     assert(tableAlter.database == "a_map")
@@ -169,7 +169,7 @@ class Sda4DdlParserTest extends UnitSpec {
   }
 
   "test 8" should "successfully handle table alter with column change" in {
-    val schemaChange = Parser.parseAndReplace(alterTable8, "a_map", schemaMappingRule)
+    val schemaChange = Parser.parseAndReplaceFirst(alterTable8, "a_map", schemaMappingRule)
     assert(schemaChange.isInstanceOf[TableAlter])
     val tableAlter = schemaChange.asInstanceOf[TableAlter]
     assert(tableAlter.database == "a_map")
@@ -188,7 +188,7 @@ class Sda4DdlParserTest extends UnitSpec {
   }
 
   "test 9" should "successfully handle table alter with column change" in {
-    val schemaChange = Parser.parseAndReplace(alterTable9, "a_map", schemaMappingRule)
+    val schemaChange = Parser.parseAndReplaceFirst(alterTable9, "a_map", schemaMappingRule)
     assert(schemaChange.isInstanceOf[TableAlter])
     val tableAlter = schemaChange.asInstanceOf[TableAlter]
     assert(tableAlter.database == "a_map")
@@ -207,7 +207,7 @@ class Sda4DdlParserTest extends UnitSpec {
   }
 
   "test 10" should "successfully handle table alter with column change" in {
-    val schemaChange = Parser.parseAndReplace(alterTable10, "a_map", schemaMappingRule)
+    val schemaChange = Parser.parseAndReplaceFirst(alterTable10, "a_map", schemaMappingRule)
     assert(schemaChange.isInstanceOf[TableAlter])
     val tableAlter = schemaChange.asInstanceOf[TableAlter]
     assert(tableAlter.database == "a_map")
@@ -226,7 +226,7 @@ class Sda4DdlParserTest extends UnitSpec {
   }
 
   "test 11" should "successfully handle table raname with all full name" in {
-    val schemaChange = Parser.parseAndReplace(renameTable11, "a_map", schemaMappingRule)
+    val schemaChange = Parser.parseAndReplaceFirst(renameTable11, "a_map", schemaMappingRule)
     assert(schemaChange.isInstanceOf[TableAlter])
     val tableAlter = schemaChange.asInstanceOf[TableAlter]
     assert(tableAlter.database == "a_map")
@@ -239,7 +239,7 @@ class Sda4DdlParserTest extends UnitSpec {
   }
 
   "test 12" should "successfully handle table raname with only table name" in {
-    val schemaChange = Parser.parseAndReplace(renameTable12, "a", schemaMappingRule)
+    val schemaChange = Parser.parseAndReplaceFirst(renameTable12, "a", schemaMappingRule)
     assert(schemaChange.isInstanceOf[TableAlter])
     val tableAlter = schemaChange.asInstanceOf[TableAlter]
     assert(tableAlter.database == "a_map")
@@ -252,7 +252,7 @@ class Sda4DdlParserTest extends UnitSpec {
   }
 
   "test 13" should "successfully handle table raname with partial table db name" in {
-    val schemaChange = Parser.parseAndReplace(renameTable13, "a", schemaMappingRule)
+    val schemaChange = Parser.parseAndReplaceFirst(renameTable13, "a", schemaMappingRule)
     assert(schemaChange.isInstanceOf[TableAlter])
     val tableAlter = schemaChange.asInstanceOf[TableAlter]
     assert(tableAlter.database == "a_map")
@@ -265,7 +265,7 @@ class Sda4DdlParserTest extends UnitSpec {
   }
 
   "test 14" should "successfully handle table raname with partial table db name" in {
-    val schemaChange = Parser.parseAndReplace(renameTable14, "a", schemaMappingRule)
+    val schemaChange = Parser.parseAndReplaceFirst(renameTable14, "a", schemaMappingRule)
     assert(schemaChange.isInstanceOf[TableAlter])
     val tableAlter = schemaChange.asInstanceOf[TableAlter]
     assert(tableAlter.database == "a_map")
@@ -278,7 +278,7 @@ class Sda4DdlParserTest extends UnitSpec {
   }
 
   "test 15" should "successfully handle table drop with full name" in {
-    val schemaChange = Parser.parseAndReplace(dropTable15, "a", schemaMappingRule)
+    val schemaChange = Parser.parseAndReplaceFirst(dropTable15, "a", schemaMappingRule)
     assert(schemaChange.isInstanceOf[TableDrop])
     val tableDrop = schemaChange.asInstanceOf[TableDrop]
     assert(tableDrop.database == "a_map")
@@ -289,7 +289,7 @@ class Sda4DdlParserTest extends UnitSpec {
   }
 
   "test 16" should "successfully handle table drop only with table name" in {
-    val schemaChange = Parser.parseAndReplace(dropTable16, "a", schemaMappingRule)
+    val schemaChange = Parser.parseAndReplaceFirst(dropTable16, "a", schemaMappingRule)
     assert(schemaChange.isInstanceOf[TableDrop])
     val tableDrop = schemaChange.asInstanceOf[TableDrop]
     assert(tableDrop.database == "a_map")
@@ -300,7 +300,7 @@ class Sda4DdlParserTest extends UnitSpec {
   }
 
   "test 17" should "successfully handle table drop only with if exists" in {
-    val schemaChange = Parser.parseAndReplace(dropTable17, "a", schemaMappingRule)
+    val schemaChange = Parser.parseAndReplaceFirst(dropTable17, "a", schemaMappingRule)
     assert(schemaChange.isInstanceOf[TableDrop])
     val tableDrop = schemaChange.asInstanceOf[TableDrop]
     assert(tableDrop.database == "a_map")
@@ -311,7 +311,7 @@ class Sda4DdlParserTest extends UnitSpec {
   }
 
   "test 18" should "successfully handle table create with full name" in {
-    val schemaChange = Parser.parseAndReplace(createTable18, "a", schemaMappingRule)
+    val schemaChange = Parser.parseAndReplaceFirst(createTable18, "a", schemaMappingRule)
     assert(schemaChange.isInstanceOf[TableCreate])
     val tableCreate = schemaChange.asInstanceOf[TableCreate]
     assert(tableCreate.database == "a_map")
@@ -331,7 +331,7 @@ class Sda4DdlParserTest extends UnitSpec {
 
 
   "test 19" should "successfully handle table create with table name" in {
-    val schemaChange = Parser.parseAndReplace(createTable18, "a", schemaMappingRule)
+    val schemaChange = Parser.parseAndReplaceFirst(createTable18, "a", schemaMappingRule)
     assert(schemaChange.isInstanceOf[TableCreate])
     val tableCreate = schemaChange.asInstanceOf[TableCreate]
     assert(tableCreate.database == "a_map")

@@ -45,8 +45,9 @@ trait CanalEntry2RowDataInfoMappingFormat extends CanalEntryMappingFormat[MysqlR
     val fields = new ListBuffer[String]
     columnList.foreach {
       column =>
-        if (!column.getIsNull && column.hasValue) {
-          val value = mapRowValue((OperationField(dbName, tableName, column, column.getValue, entry)))
+        if ((!column.getIsNull) && column.hasValue && column.getValue != null) {
+          val originalValue =column.getValue
+          val value = mapRowValue((OperationField(dbName, tableName, column, originalValue, entry)))
           values.append(value)
           fields.append(column.getName)
         }
@@ -92,8 +93,8 @@ trait CanalEntry2RowDataInfoMappingFormat extends CanalEntryMappingFormat[MysqlR
       .map { tableMeta =>
         val re = columnList
           .forall(x => tableMeta.columnInfoMap.contains(x.name))
-        if(!re){
-         val list = tableMeta.columns.map(_.name).diff(columnList.map(_.name))
+        if (!re) {
+          val list = tableMeta.columns.map(_.name).diff(columnList.map(_.name))
           logger.warn(list.mkString(","))
         }
         re

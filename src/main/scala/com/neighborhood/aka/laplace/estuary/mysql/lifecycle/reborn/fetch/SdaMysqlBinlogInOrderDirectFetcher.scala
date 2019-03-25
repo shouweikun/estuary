@@ -53,9 +53,9 @@ final class SdaMysqlBinlogInOrderDirectFetcher(
     val ddlSql = CanalEntryTransUtil.parseStoreValue(entry)(syncTaskId).getSql
     log.info(s"ddl sql is $ddlSql,id:$syncTaskId")
     //    val sdaDbName = rule.getDatabaseMappingName(entry.getHeader.getSchemaName).get
-    val schemaChange = Parser.parseAndReplace(ddlSql, (entry.getHeader.getSchemaName), rule) //只会是一条
-    if (isSchemaComponentOn) schemaHolder.updateTableMeta(schemaChange, sink) //更新Schema
-    val finalDdl = schemaChange.toDdlSqlWithSink(Option(sink))
+    val schemaChanges = Parser.parseAndReplace(ddlSql, (entry.getHeader.getSchemaName), rule) //只会是一条
+    if (isSchemaComponentOn) schemaChanges.map(x => schemaHolder.updateTableMeta(x, sink)) //更新Schema
+    val finalDdl = schemaChanges.flatMap(_.toDdlSqlWithSink(Option(sink)))
     taskManager.wait4TheSameCount() //等待执行完毕
     log.info(s"start to execute sda finalDdl:$ddlSql,finalDdl:$finalDdl,id:$syncTaskId")
     val execution = Try(finalDdl.map(sink.insertSql(_)))
