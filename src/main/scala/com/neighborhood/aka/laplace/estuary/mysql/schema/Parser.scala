@@ -55,7 +55,7 @@ object Parser {
   def parseAndReplace(ddlSql: String, defaultSchemaName: String, tableMappingRule: SdaSchemaMappingRule): SchemaChange = {
     logger.info(s"start parse and replace ddl:$ddlSql,defaultSchemaName:$defaultSchemaName")
     val re = parse(ddlSql, defaultSchemaName) //这个实现涉及了对象内部变量的改变
-    if (re.size > 1) throw new InvalidDdlException("only single ddl is supported")
+    if (re.size > 1) throw new InvalidDdlException(s"only single ddl is supported,ddl:$ddlSql")
     re.head match {
       case alter: TableAlter => {
         if (JavaCommonUtil.isEmpty(alter.database)) alter.database = alter.newDatabase
@@ -117,17 +117,18 @@ object Parser {
     val newName = s"${tableAlter.newDatabase}.${tableAlter.newTableName}"
     if (originName == newName) {
       //目前只支持单条
-      tableAlter.columnMods.asScala.map{
-        mod => mod match {
-          case add: AddColumnMod =>
-            s"ALTER TABLE $newName ADD COLUMN ${add.definition.getName} ${add.definition.getFullType} ${getSigned(add.definition)} ${Option(add.definition.getDefaultValue).map(x => s"DEFAULT $x").getOrElse("")}"
-          case remove: RemoveColumnMod => s"ALTER TABLE $newName DROP COLUMN ${remove.name}"
-          case change: ChangeColumnMod => {
-            val oldColumnName = Option(change.name).flatMap(x => if (x != change.definition.getName) Option(x) else None).getOrElse("")
-            val actionName = if (oldColumnName.isEmpty) "MODIFY" else "CHANGE"
-            s"ALTER TABLE $newName $actionName COLUMN $oldColumnName  ${change.definition.getName} ${change.definition.getFullType} ${getSigned(change.definition)} ${Option(change.definition.getDefaultValue).map(x => s"DEFAULT $x").getOrElse("")}"
+      tableAlter.columnMods.asScala.map {
+        mod =>
+          mod match {
+            case add: AddColumnMod =>
+              s"ALTER TABLE $newName ADD COLUMN ${add.definition.getName} ${add.definition.getFullType} ${getSigned(add.definition)} ${Option(add.definition.getDefaultValue).map(x => s"DEFAULT $x").getOrElse("")}"
+            case remove: RemoveColumnMod => s"ALTER TABLE $newName DROP COLUMN ${remove.name}"
+            case change: ChangeColumnMod => {
+              val oldColumnName = Option(change.name).flatMap(x => if (x != change.definition.getName) Option(x) else None).getOrElse("")
+              val actionName = if (oldColumnName.isEmpty) "MODIFY" else "CHANGE"
+              s"ALTER TABLE $newName $actionName COLUMN $oldColumnName  ${change.definition.getName} ${change.definition.getFullType} ${getSigned(change.definition)} ${Option(change.definition.getDefaultValue).map(x => s"DEFAULT $x").getOrElse("")}"
+            }
           }
-        }
       }.mkString(";")
 
     }
