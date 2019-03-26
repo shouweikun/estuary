@@ -33,12 +33,14 @@ final class MysqlBinlogInOrderPositionRecorder(
   /**
     * 任务开始位置
     *
-    *
     * @return
     */
   lazy val startPosition: Option[BinlogPositionInfo] = {
+    var count = 0
     while (getSaveOffset.isEmpty) {
       Thread.sleep(200)
+      count = count + 1
+      if (count > 200) throw new RuntimeException(s"cannot get startPosition over 200 times,id:$syncTaskId")
     }
     getSaveOffset
   }
