@@ -15,13 +15,16 @@ import java.util.TimeZone;
  */
 public class MongoOplogBsonWriter extends JsonWriter {
 
-    private SimpleDateFormat sdf = new SimpleDateFormat("\""+"yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"+"\"");
+    private SimpleDateFormat sdf = new SimpleDateFormat("\"" + "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'" + "\"");
+
     {
         sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
     }
+
     public MongoOplogBsonWriter(Writer writer) {
         super(writer);
     }
+
     /* try {
          switch (settings.getOutputMode()) {
              case STRICT:
@@ -56,8 +59,7 @@ public class MongoOplogBsonWriter extends JsonWriter {
         try {
             this.writeStartDocument();
             writeNameHelper("$date");
-            Date date=new Date(value);
-            String result =sdf.format(date);
+            String result = String.valueOf(value);
             getWriter().write(result);
             this.writeEndDocument();
         } catch (Exception e) {
