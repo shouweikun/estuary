@@ -4,7 +4,7 @@ import java.util.concurrent.{ExecutorService, Executors}
 
 import akka.actor.SupervisorStrategy.Restart
 import akka.actor.{ActorRef, OneForOneStrategy, Props}
-import com.neighborhood.aka.laplace.estuary.core.akkaUtil.SyncDaemonCommand.{ExternalRestartCommand, ExternalStartCommand}
+import com.neighborhood.aka.laplace.estuary.core.akkaUtil.SyncDaemonCommand.{ExternalRestartCommand, ExternalStartCommand, ExternalSuspendCommand}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.SyncControllerPrototype
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status
@@ -28,7 +28,7 @@ import scala.util.Try
   * @note 子任务命名规则:s"$syncTaskId::$tableName"
   * @author neighborhood.aka.lapalce
   */
-final class Oplog2HBaseMutliInstanceController(
+final class Oplog2HBaseMultiInstanceController(
                                                 val allTaskInfoBean: Mongo2HBaseAllTaskInfoBean
                                               ) extends SyncControllerPrototype[MongoConnection, HBaseSinkFunc] {
 
@@ -90,6 +90,7 @@ final class Oplog2HBaseMutliInstanceController(
     case SinkerMessage(msg) => log.warning(s"syncController online unhandled message:${SinkerMessage(msg)},id:$syncTaskId")
     case SyncControllerMessage(OplogControllerCheckRunningInfo) => checkInfo
     case SyncControllerMessage(OplogControllerCollectChildInfo) => collectChildInfo
+    case ExternalSuspendCommand(`syncTaskId`) =>
     case msg => log.warning(s"syncController online unhandled message:${msg},id:$syncTaskId")
   }
 
@@ -149,6 +150,10 @@ final class Oplog2HBaseMutliInstanceController(
       ref => ref ! ExternalStartCommand
     }
   }
+
+
+
+
 
   def collectChildInfo: Unit = {
     val tem = 3
@@ -293,6 +298,6 @@ final class Oplog2HBaseMutliInstanceController(
 
 }
 
-object Oplog2HBaseMutliInstanceController {
-  def props(allTaskInfoBean: Mongo2HBaseAllTaskInfoBean): Props = Props(new Oplog2HBaseMutliInstanceController(allTaskInfoBean))
+object Oplog2HBaseMultiInstanceController {
+  def props(allTaskInfoBean: Mongo2HBaseAllTaskInfoBean): Props = Props(new Oplog2HBaseMultiInstanceController(allTaskInfoBean))
 }

@@ -2,7 +2,7 @@ package com.neighborhood.aka.laplace.estuary.web.service
 
 import com.neighborhood.aka.laplace.estuary.core.akkaUtil.SyncDaemonCommand.ExternalStartCommand
 import com.neighborhood.aka.laplace.estuary.core.task.{Mongo2HBaseSyncTask, Mongo2KafkaSyncTask}
-import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.control.hbase.{Oplog2HBaseController, Oplog2HBaseMutliInstanceController}
+import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.control.hbase.{Oplog2HBaseController, Oplog2HBaseMultiInstanceController}
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.control.kafka.Oplog2KafkaController
 import com.neighborhood.aka.laplace.estuary.web.akkaUtil.ActorRefHolder
 import com.neighborhood.aka.laplace.estuary.web.bean.Mongo2HBaseTaskRequestBean
@@ -23,7 +23,7 @@ final class Mongo2HBaseService extends SyncService[Mongo2HBaseTaskRequestBean] {
     */
   override protected def startNewOneTask(taskRequestBean: Mongo2HBaseTaskRequestBean): String = {
     val taskInfoBean = TaskBeanTransformUtil.convertMongo2HBaseRequest2Mongo2HBaseTaskInfo(taskRequestBean)
-    val props = if (taskRequestBean.isMulti) Oplog2HBaseMutliInstanceController.props(taskInfoBean) else Oplog2HBaseController.props(taskInfoBean)
+    val props = if (taskRequestBean.isMulti) Oplog2HBaseMultiInstanceController.props(taskInfoBean) else Oplog2HBaseController.props(taskInfoBean)
 
     ActorRefHolder.syncDaemon ! ExternalStartCommand(Mongo2HBaseSyncTask(props, taskRequestBean.getMongo2HBaseRunningInfo.getSyncTaskId))
     s"""

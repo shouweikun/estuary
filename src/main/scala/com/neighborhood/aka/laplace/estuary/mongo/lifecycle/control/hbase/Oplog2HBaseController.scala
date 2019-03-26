@@ -5,7 +5,7 @@ import java.util.concurrent.{ExecutorService, Executors}
 import akka.actor.SupervisorStrategy.Escalate
 import akka.actor.{ActorRef, AllForOneStrategy, Props}
 import com.neighborhood.aka.laplace.estuary.bean.exception.control.WorkerCannotFindException
-import com.neighborhood.aka.laplace.estuary.core.akkaUtil.SyncDaemonCommand.{ExternalRestartCommand, ExternalStartCommand}
+import com.neighborhood.aka.laplace.estuary.core.akkaUtil.SyncDaemonCommand.{ExternalRestartCommand, ExternalResumeCommand, ExternalStartCommand, ExternalSuspendCommand}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.SyncControllerPrototype
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status
@@ -70,7 +70,7 @@ final class Oplog2HBaseController(
   val isCounting = taskManager.isCounting
   val isPowerAdapted = taskManager.isPowerAdapted
 
-  if(logIsEnabled)log.info(s"Oplog2HBaseController start build,id:$syncTaskId")
+  if (logIsEnabled) log.info(s"Oplog2HBaseController start build,id:$syncTaskId")
 
   override def resourceManager: Mongo2HBaseTaskInfoManager = taskManager
 
@@ -99,12 +99,26 @@ final class Oplog2HBaseController(
     */
   override def online: Receive = {
     case ExternalRestartCommand(`syncTaskId`) => restartBySupervisor
+    case ExternalSuspendCommand(_) => suspendFetcher
+    case ExternalResumeCommand(_) => resumeFetcher
     case OplogControllerStopAndRestart => restartBySupervisor
     case ListenerMessage(msg) => log.warning(s"syncController online unhandled message:$msg,id:$syncTaskId")
     case SinkerMessage(msg) => log.warning(s"syncController online unhandled message:${SinkerMessage(msg)},id:$syncTaskId")
     case SyncControllerMessage(OplogControllerCheckRunningInfo) => checkInfo
     case PowerAdapterMessage(x: OplogPowerAdapterDelayFetch) => sendFetchDelay(x)
     case msg => log.warning(s"syncController online unhandled message:${msg},id:$syncTaskId")
+  }
+
+  def suspendFetcher: Unit = {
+    log.info(s"start suspend fetcher,id:$syncTaskId")
+    context.child(fetcherName).foreach(context.stop(_))
+    taskManager.fetcherStatus.set(Status.SUSPEND)
+  }
+
+  def resumeFetcher: Unit = {
+    log.info(s"resume fetcher,id:$syncTaskId")
+    initFetcher(context.child(batcherName).get)
+    startFetcher
   }
 
   /**
@@ -159,12 +173,15 @@ final class Oplog2HBaseController(
     log.info(s"initialize batcher,id:$syncTaskId")
     val oplogBatcher = context
       .actorOf(OplogHBaseBatcherManager.props(taskManager, oplogSinker).withDispatcher("akka.batcher-dispatcher"), batcherName)
+    initFetcher(oplogBatcher)
+  }
 
+  protected def initFetcher(batcher: ActorRef): ActorRef = {
     // 初始化binlogFetcher
     log.info(s"initialize fetcher,id:$syncTaskId")
-    context.actorOf(OplogFetcherManager.props(resourceManager, oplogBatcher).withDispatcher("akka.fetcher-dispatcher"), fetcherName)
-
+    context.actorOf(OplogFetcherManager.props(resourceManager, batcher).withDispatcher("akka.fetcher-dispatcher"), fetcherName)
   }
+
 
   /**
     * 0. 发送定时打印任务运行信息的命令(checkInfo)
@@ -194,17 +211,8 @@ final class Oplog2HBaseController(
           sendStartCommand(ref, batcherName, SettingConstant.BATCHER_START_DELAY)
           sendCheckHeartBeatsCommand(ref)
       }
-    //启动fetcher
-    context
-      .child(fetcherName)
-      .fold {
-        log.error(s"$batcherName is null,id:$syncTaskId")
-        throw new WorkerCannotFindException(s"$batcherName is null,id:$syncTaskId")
-      } { ref =>
-        log.info(s"start $batcherName in ${SettingConstant.FETCHER_START_DELAY},id:$syncTaskId")
-        sendStartCommand(ref, fetcherName, SettingConstant.FETCHER_START_DELAY)
-      }
 
+    startFetcher
 
     if (isCosting)
       context
@@ -240,6 +248,19 @@ final class Oplog2HBaseController(
         log.error(s"$positionRecorderName is null,id:$syncTaskId")
         throw new WorkerCannotFindException(s"$positionRecorderName is null,id:$syncTaskId")
       } { ref => scheduleSaveCommand(ref) }
+  }
+
+  protected def startFetcher: Unit = {
+    //启动fetcher
+    context
+      .child(fetcherName)
+      .fold {
+        log.error(s"$fetcherName is null,id:$syncTaskId")
+        throw new WorkerCannotFindException(s"$batcherName is null,id:$syncTaskId")
+      } { ref =>
+        log.info(s"start $fetcherName in ${SettingConstant.FETCHER_START_DELAY},id:$syncTaskId")
+        sendStartCommand(ref, fetcherName, SettingConstant.FETCHER_START_DELAY)
+      }
   }
 
   /**
