@@ -60,7 +60,12 @@ abstract class HBaseSinkFunc(val hbaseSinkBean: HBaseBean) extends SinkFunc {
 
   def getAllHoldBufferMutator: Map[String, BufferedMutator] = mutatorHolder.asScala.toMap
 
-  def getBufferMutatorAndHold = BufferedMutator =
+  def getBufferMutatorAndHold(tableName: String): BufferedMutator = {
+    val re = Option(mutatorHolder.get(tableName)).getOrElse(getBufferMutator(tableName))
+    mutatorHolder.putIfAbsent(tableName, re)
+    re
+  }
+
   def getBufferMutator(tableName: String): BufferedMutator = {
     if (!connectionStatus.get()) throw new IllegalStateException("cannot get table when connection is closed")
     conn.getBufferedMutator(TableName.valueOf(tableName))

@@ -71,11 +71,10 @@ private[hbase] class SimpleHBasePutSinker(
     * @tparam I 类型参数 逆变
     */
   override protected def handleSinkTask[I <: HBasePut[MongoOffset]](input: I): Try[_] = Try {
-    lazy val hTable = sink.getTableAndHold(input.tableName)
+    lazy val mutator = sink.getBufferMutatorAndHold(input.tableName)
     if (!input.isAbnormal) {
       val ts = System.currentTimeMillis()
-      hTable.setAutoFlush(false, true)
-      hTable.put(input.put)
+      mutator.mutate(input.put)
       sendCost(System.currentTimeMillis() - ts)
       lastOffset = Option(input.offset)
     }

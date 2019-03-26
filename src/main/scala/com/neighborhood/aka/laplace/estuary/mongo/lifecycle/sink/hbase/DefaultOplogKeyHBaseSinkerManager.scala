@@ -54,7 +54,7 @@ class DefaultOplogKeyHBaseSinkerManager(
   val offsetMap: scala.collection.mutable.HashMap[String, MongoOffset] = new scala.collection.mutable.HashMap[String, MongoOffset]()
 
 
-  def tableNameMap = sink.getAllHoldHTable
+  def tableMutatorMap = sink.getAllHoldBufferMutator
 
 
   override def receive: Receive = {
@@ -85,10 +85,10 @@ class DefaultOplogKeyHBaseSinkerManager(
   def handleOplogCheckFlush: Unit = {
     val ts = System.currentTimeMillis()
     if (logEnabled) log.info(s"start to handle check flush,id:$syncTaskId")
-    val map = tableNameMap
+    val map = tableMutatorMap
     val values = map.values
     val keys = map.keySet
-    values.foreach(_.flushCommits())
+    values.foreach(_.flush())
     if (logEnabled) log.info(s"this flush cost is ${System.currentTimeMillis() - ts},tables:${keys.mkString(",")},id:$syncTaskId")
   }
 
