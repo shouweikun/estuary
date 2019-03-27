@@ -13,9 +13,9 @@ import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.batch.OplogBatcherCo
   * @author neighborhood.aka.laplace
   */
 final class OplogHBaseSpecialInfoSender(
-                                        override val sinker: ActorRef,
-                                        override val taskManager: TaskManager
-                                      ) extends SourceDataSpecialBatcherPrototype {
+                                         override val sinker: ActorRef,
+                                         override val taskManager: TaskManager
+                                       ) extends SourceDataSpecialBatcherPrototype {
   /**
     * 事件收集器
     */
@@ -25,6 +25,8 @@ final class OplogHBaseSpecialInfoSender(
     * 同步任务id
     */
   override val syncTaskId: String = taskManager.syncTaskId
+
+  val tableName: String = if (syncTaskId.contains("::")) syncTaskId.split("::")(1) else syncTaskId
 
   override def receive: Receive = {
     case BatcherMessage(OplogBatcherCheckHeartbeats) => buildAndSendHeartbeatMessage
