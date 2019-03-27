@@ -32,7 +32,7 @@ final class Oplog2HBaseMultiInstanceController(
                                                 val allTaskInfoBean: Mongo2HBaseAllTaskInfoBean
                                               ) extends SyncControllerPrototype[MongoConnection, HBaseSinkFunc] {
 
-  protected val schedulingCommandPool: ExecutorService = Executors.newFixedThreadPool(3)
+  protected val schedulingCommandPool: ExecutorService = Executors.newFixedThreadPool(30)
   /**
     * 必须要用这个，保证重启后，之前的定时发送任务都没了
     */
@@ -180,6 +180,9 @@ final class Oplog2HBaseMultiInstanceController(
     taskManager.fetchCountPerSecond.set((fetchCount - lastFetchCount) / tem)
     taskManager.fetchDelay.set(-1)
     taskManager.sinkerLogPosition.set(childTaskManagers.map(_.sinkerLogPosition.get()).mkString("\n"))
+
+    if (childTaskManagers.exists(x => x.fetcherStatus.get() == Status.SUSPEND)) taskManager.fetcherStatus.set(Status.SUSPEND)
+
   }
 
   /**
@@ -278,20 +281,16 @@ final class Oplog2HBaseMultiInstanceController(
   override def supervisorStrategy = {
     OneForOneStrategy() {
       case e: ZkTimeoutException => {
-        controllerChangeStatus(Status.ERROR)
         Restart
       }
       case e: Exception => {
-        controllerChangeStatus(Status.ERROR)
         Restart
 
       }
       case error: Error => {
-        controllerChangeStatus(Status.ERROR)
         Restart
       }
       case _ => {
-        controllerChangeStatus(Status.ERROR)
         Restart
       }
     }

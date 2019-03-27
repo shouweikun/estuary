@@ -19,6 +19,9 @@ trait DataSourceFetcherPrototype[source <: DataSourceConnection] extends ActorPr
     */
   lazy val connection = sourceManager.source  //取消fork，使得线程可以被杀死
 
+  def suspend:Receive = {
+    case _ =>
+  }
   /*
     * 用于在最终的数据汇建立相应的schema信息
     */

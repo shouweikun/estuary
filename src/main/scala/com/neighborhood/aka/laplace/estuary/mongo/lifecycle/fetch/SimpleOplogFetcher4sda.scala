@@ -104,7 +104,8 @@ final class SimpleOplogFetcher4sda(
     */
   private def handleUpdateHandleFetcherSuspendTimed(ts: Long): Unit = {
     log.info(s"update suspend ts:$ts,id:$syncTaskId")
-    suspendTs = ts
+    if (System.currentTimeMillis() > ts) switch2Suspend()
+    else suspendTs = ts
   }
 
   /**
@@ -114,23 +115,32 @@ final class SimpleOplogFetcher4sda(
   private def handleFetchTask: Unit = {
     context.parent ! OplogFetcherBusy //忙碌
     sendFetchMessage(self, delay, OplogFetcherFetch) //发送下一次拉取的指令
-    simpleFetchModule.fetch.foreach {
+    simpleFetchModule.fetch.fold(context.parent ! OplogFetcherFree) {
       doc =>
-        val suspend = Option(doc.get("ts")).map(_.asInstanceOf[BsonTimestamp]).map(ts => ts.getTime * 1000 > suspendTs).getOrElse(false) //判断是否需要挂起
-        if (suspend) {
-          log.info(s"time to suspend,ts:$suspendTs,id:$syncTaskId")
-          context.become(receive, true)
-          context.parent ! OplogFetcherSuspend
-          return
-        }
-        val curr = System.currentTimeMillis()
-        sendData(doc)
-        sendCost(System.currentTimeMillis() - lastFetchTimestamp)
-        sendCount(1)
-        lastFetchTimestamp = curr //更新一下时间
 
+        val isSuspend = Option(doc.get("ts")).map(_.asInstanceOf[BsonTimestamp]).map { ts =>
+          val re = ts.getTime > (suspendTs / 1000)
+          //          log.info(s"$re,${ts.getTime}")
+          re
+        }.getOrElse(false) //判断是否需要挂起
+        if (isSuspend) {
+          switch2Suspend()
+        } else {
+          val curr = System.currentTimeMillis()
+          sendData(doc)
+          sendCost(System.currentTimeMillis() - lastFetchTimestamp)
+          sendCount(1)
+          lastFetchTimestamp = curr //更新一下时间
+          context.parent ! OplogFetcherFree //空闲
+        }
     }
-    context.parent ! OplogFetcherFree //空闲
+
+  }
+
+  private def switch2Suspend(): Unit = {
+    log.info(s"time to suspend,ts:$suspendTs,id:$syncTaskId")
+    context.become(suspend, true)
+    context.parent ! OplogFetcherSuspend
   }
 
   /**
@@ -205,6 +215,7 @@ final class SimpleOplogFetcher4sda(
     cal.set(Calendar.SECOND, 0)
     cal.set(Calendar.MINUTE, 0)
     cal.set(Calendar.HOUR_OF_DAY, 0)
+    cal.set(Calendar.MILLISECOND, 0)
     val date = cal.getTime
     val re = date.getTime
     log.info(s"init suspend ts:$re,id:$syncTaskId")
