@@ -31,7 +31,7 @@ public class EstuaryStringZookeeperManager {
     public void stop() {
         logger.info("EstuaryStringZookeeperManager stop");
         try {
-            zkClient.close();
+//            zkClient.close();
         } catch (Exception e) {
 
         } finally {
