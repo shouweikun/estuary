@@ -32,7 +32,7 @@ class OplogHBaseMappingFormat(
       val put = new Put(Bytes.toBytes(MD5Utils.md5(doc.get("_id").toString)))
       val endTime = System.currentTimeMillis()
       val ts = getTs(oplog.getTimestamp.getTime, oplog.getTimestamp.getInc)
-      val dbEffectTime = (oplog.getTimestamp.getTime + "0000").toLong
+      val dbEffectTime = (oplog.getTimestamp.getTime + "000").toLong
 
       put.addColumn(Bytes.toBytes(getTableCF), Bytes.toBytes("0"),ts, Bytes.toBytes(value))
       put.addColumn(Bytes.toBytes(getTableCF), Bytes.toBytes("1"),ts, Bytes.toBytes(doc.get("_id").toString))
