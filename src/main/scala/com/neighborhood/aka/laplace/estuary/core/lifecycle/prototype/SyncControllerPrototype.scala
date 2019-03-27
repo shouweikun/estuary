@@ -134,6 +134,10 @@ trait SyncControllerPrototype[A <: DataSourceConnection, B <: SinkFunc] extends 
   protected def switch2Online: Unit = {
     context.become(online, true)
     controllerChangeStatus(Status.ONLINE)
+    taskManager.fetcherStatus.set(Status.ONLINE)
+    taskManager.heartBeatListenerStatus.set(Status.ONLINE)
+    taskManager.sinkerStatus.set(Status.ONLINE)
+    taskManager.batcherStatus.set(Status.ONLINE)
     startAllWorkers
     log.info(s"controller switched to online,start all workers,id:$syncTaskId")
   }
@@ -157,7 +161,8 @@ trait SyncControllerPrototype[A <: DataSourceConnection, B <: SinkFunc] extends 
 
   protected def controllerChangeStatus(status: Status) = TaskManager.changeStatus(status, changeFunc, onChangeFunc)
 }
-object SyncControllerPrototype{
+
+object SyncControllerPrototype {
   /**
     * 用于动态传参加载类和获取ActorRef
     */

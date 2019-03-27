@@ -91,8 +91,8 @@ final class Oplog2HBaseMultiInstanceController(
     case SyncControllerMessage(OplogControllerCheckRunningInfo) => checkInfo
     case SyncControllerMessage(OplogControllerCollectChildInfo) => collectChildInfo
     case m@ExternalSuspendCommand(`syncTaskId`) => context.children.foreach(ref => ref ! m)
-    case m@ExternalResumeCommand(`syncTaskId`) => context.children.foreach(ref =>ref ! m)
-    case m@ExternalSuspendTimedCommand(`syncTaskId`,_) => context.children.foreach(ref =>ref ! m)
+    case m@ExternalResumeCommand(`syncTaskId`) => context.children.foreach(ref => ref ! m)
+    case m@ExternalSuspendTimedCommand(`syncTaskId`, _) => context.children.foreach(ref => ref ! m)
     case msg => log.warning(s"syncController online unhandled message:${msg},id:$syncTaskId")
   }
 
@@ -134,7 +134,9 @@ final class Oplog2HBaseMultiInstanceController(
           syncStartTime = taskBean.syncStartTime,
           batchThreshold = taskBean.batchThreshold,
           batcherNum = taskBean.batcherNum,
-          sinkerNum = taskBean.sinkerNum)
+          sinkerNum = taskBean.sinkerNum,
+          fetcherNameToLoad = taskBean.fetcherNameToLoad
+        )
         val spTotalInfoBean = allTaskInfoBean.copy(sourceBean = spSourceBean, taskRunningInfoBean = spTaskBean)
         val props = Oplog2HBaseController.props(spTotalInfoBean)
         context.actorOf(props, newTaskName)
