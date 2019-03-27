@@ -7,6 +7,8 @@ import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.control.kafka.Oplog2
 import com.neighborhood.aka.laplace.estuary.web.akkaUtil.ActorRefHolder
 import com.neighborhood.aka.laplace.estuary.web.bean.Mongo2HBaseTaskRequestBean
 import com.neighborhood.aka.laplace.estuary.web.utils.TaskBeanTransformUtil
+import org.springframework.beans.factory.annotation.{Autowired, Qualifier}
+import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Service
 
 /**
@@ -15,6 +17,10 @@ import org.springframework.stereotype.Service
 
 @Service("mongo2hbase")
 final class Mongo2HBaseService extends SyncService[Mongo2HBaseTaskRequestBean] {
+
+  @Autowired
+  @Qualifier("configJdbcTemplate") private lazy val jdbcTemplate: JdbcTemplate = null
+
   /**
     * 开始一个同步任务
     *
@@ -32,5 +38,14 @@ final class Mongo2HBaseService extends SyncService[Mongo2HBaseTaskRequestBean] {
        "status":"submitted"
       }
     """.stripMargin
+  }
+
+  def startNewOneTask4Sda(taskRequestBean: Mongo2HBaseTaskRequestBean): String = {
+    ???
+  }
+
+  private def customRequest4Sda(taskRequestBean: Mongo2HBaseTaskRequestBean): Unit = {
+    if (taskRequestBean.getMongo2HBaseRunningInfo.getFetcherNameToLoad == null) taskRequestBean.getMongo2HBaseRunningInfo.setFetcherNameToLoad(new java.util.HashMap[String, String])
+    taskRequestBean.getMongo2HBaseRunningInfo.getFetcherNameToLoad.put("directFetcher","")
   }
 }

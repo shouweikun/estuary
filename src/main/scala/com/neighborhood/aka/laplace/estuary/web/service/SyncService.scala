@@ -30,7 +30,7 @@ trait SyncService[Bean <: TaskRequestBean] {
   private lazy val requestBeanMap: ConcurrentHashMap[String, TaskRequestBean]
   = new ConcurrentHashMap[String, TaskRequestBean]()
 
-  protected def subTaskMark:String = "::"
+  protected def subTaskMark: String = "::"
 
   /**
     * 入海口3存任务的表名
@@ -294,8 +294,8 @@ trait SyncService[Bean <: TaskRequestBean] {
     * @param taskType   任务类型
     * @param f          存任务信息的方法 sql => 存
     */
-  protected def saveTaskInfo(syncTaskId: String, ip: String, port: String, bean: Bean, taskType: String)(f: String => Unit) = {
-    val sql = s"insert into $saveTaskInfoTableName(sync_task_id,ip,port,bean,task_type) VALUES('$syncTaskId','$ip','$port','${objectMapper.writeValueAsString(bean)}','$taskType')"
+  protected def saveTaskInfo(syncTaskId: String, ip: String, port: String, bean: Bean, taskType: String, databaseName: String = " ")(f: String => Unit) = {
+    val sql = s"insert into $saveTaskInfoTableName(sync_task_id,ip,port,bean,task_type,db_name) VALUES('$syncTaskId','$ip','$port','${objectMapper.writeValueAsString(bean)}','$taskType','$databaseName')"
     f(sql)
   }
 }
