@@ -25,6 +25,8 @@ import scala.util.Try
   *
   * 處理oplog 拉取的actor
   *
+  * sda专用
+  *
   * @author neighborhood.aka.laplace
   */
 final class SimpleOplogFetcher4sda(

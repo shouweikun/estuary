@@ -7,7 +7,6 @@ import com.neighborhood.aka.laplace.estuary.core.akkaUtil.SyncDaemonCommand.{Ext
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.web.akkaUtil.ActorRefHolder
 import com.neighborhood.aka.laplace.estuary.web.bean.TaskRequestBean
-import org.springframework.jdbc.core.JdbcTemplate
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -38,8 +37,14 @@ trait SyncService[Bean <: TaskRequestBean] {
     */
   protected def saveTaskInfoTableName: String = "estuary3_task_info"
 
-
-  def sendSuspendTimedCommand(syncTaskId: String, ts: Long): Boolean = {
+  /**
+    * 发送挂起命令
+    *
+    * @param syncTaskId
+    * @param ts
+    * @return
+    */
+  def sendSuspendCommand(syncTaskId: String, ts: Long): Boolean = {
     val re = checkAllRunningTaskName.contains(syncTaskId)
     if (re) ActorRefHolder.syncDaemon ! ExternalSuspendTimedCommand(syncTaskId, ts)
     re

@@ -3,9 +3,8 @@ package com.neighborhood.aka.laplace.estuary.web.service
 import java.net.InetAddress
 
 import com.neighborhood.aka.laplace.estuary.core.akkaUtil.SyncDaemonCommand.ExternalStartCommand
-import com.neighborhood.aka.laplace.estuary.core.task.{Mongo2HBaseSyncTask, Mongo2KafkaSyncTask}
+import com.neighborhood.aka.laplace.estuary.core.task.Mongo2HBaseSyncTask
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.control.hbase.{Oplog2HBaseController, Oplog2HBaseMultiInstanceController}
-import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.control.kafka.Oplog2KafkaController
 import com.neighborhood.aka.laplace.estuary.web.akkaUtil.ActorRefHolder
 import com.neighborhood.aka.laplace.estuary.web.bean.Mongo2HBaseTaskRequestBean
 import com.neighborhood.aka.laplace.estuary.web.utils.TaskBeanTransformUtil
@@ -15,6 +14,8 @@ import org.springframework.stereotype.Service
 
 /**
   * Created by john_liu on 2019/3/15.
+  *
+  * @author neighborhood.aka.laplace
   */
 
 @Service("mongo2hbase")
@@ -43,6 +44,16 @@ final class Mongo2HBaseService extends SyncService[Mongo2HBaseTaskRequestBean] {
     """.stripMargin
   }
 
+  /**
+    * 启动一个新的sda mongo2Hbase任务
+    *
+    * 1.sda定制
+    * 2.保存任务信息
+    * 3.启动
+    *
+    * @param taskRequestBean Mongo2HBaseTaskRequestBean
+    * @return 任务启动情况
+    */
   def startNewOneTask4Sda(taskRequestBean: Mongo2HBaseTaskRequestBean): String = {
     customRequest4Sda(taskRequestBean)
     val syncTaskId = taskRequestBean.getMongo2HBaseRunningInfo.getSyncTaskId
@@ -62,6 +73,12 @@ final class Mongo2HBaseService extends SyncService[Mongo2HBaseTaskRequestBean] {
     startNewOneTaskKeepConfig(taskRequestBean.getMongo2HBaseRunningInfo.getSyncTaskId, taskRequestBean)
   }
 
+  /**
+    * 定制sda 需求
+    * 1.使用sda专用fetcher
+    *
+    * @param taskRequestBean Mongo2HBaseTaskRequestBean
+    */
   private def customRequest4Sda(taskRequestBean: Mongo2HBaseTaskRequestBean): Unit = {
     if (taskRequestBean.getMongo2HBaseRunningInfo.getFetcherNameToLoad == null) taskRequestBean.getMongo2HBaseRunningInfo.setFetcherNameToLoad(new java.util.HashMap[String, String])
     taskRequestBean.getMongo2HBaseRunningInfo.getFetcherNameToLoad.put("directFetcher", "com.neighborhood.aka.laplace.estuary.mongo.lifecycle.fetch.SimpleOplogFetcher4sda")

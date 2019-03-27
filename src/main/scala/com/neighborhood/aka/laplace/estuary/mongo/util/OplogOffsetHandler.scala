@@ -26,18 +26,35 @@ final class OplogOffsetHandler(
   override protected lazy val logger: Logger = LoggerFactory.getLogger(classOf[OplogOffsetHandler])
   private val connectionStatus = new AtomicBoolean() //链接状态
 
+  /**
+    * 生命周期:启动
+    */
   override def start(): Unit = {
     zkManager.start()
     connectionStatus.set(true)
   }
 
+  /**
+    * 判断是否启动
+    *
+    * @return
+    */
   override def isStart: Boolean = connectionStatus.get()
 
+  /**
+    * 声明周期：关闭
+    */
   override def close(): Unit = {
     zkManager.stop()
     connectionStatus.set(false)
   }
 
+  /**
+    * 保存任务offset
+    *
+    * @param destination 同步任务id
+    * @param logPosition offset
+    */
   override def persistLogPosition(destination: String, logPosition: MongoOffset): Unit = {
     logger.info(s"start to persist log position:${logPosition.formatString},id:$syncTaskId")
     val value =
@@ -51,6 +68,13 @@ final class OplogOffsetHandler(
     logger.info(s"persist log position finished ,id:$syncTaskId")
   }
 
+  /**
+    * 根据任务id获取offset
+    *
+    * @param destination syncTaskId
+    * @note null 可能性
+    * @return  offset
+    */
   override def getlatestIndexBy(destination: String): MongoOffset = {
     Option(zkManager.getStringBy(destination))
       .map {

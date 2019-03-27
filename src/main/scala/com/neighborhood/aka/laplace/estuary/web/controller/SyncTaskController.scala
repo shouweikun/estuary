@@ -12,7 +12,7 @@ trait SyncTaskController[A <: TaskRequestBean] {
   protected val syncService: SyncService[A]
 
 
-  def sendSupendTimedCommand(@RequestParam("id") id: String, @RequestParam("ts") ts: Long) = ???
+  def sendSupendTimedCommand(@RequestParam("id") id: String, @RequestParam("ts") ts: Long): Boolean =  syncService.sendSuspendCommand(id, ts)
 
   def createNewSyncTask(@RequestBody requestBody: A)
 

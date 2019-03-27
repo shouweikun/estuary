@@ -57,9 +57,15 @@ final class SyncDaemon extends Actor with ActorLogging {
     } { ref => Try(context.stop(ref)) }
   }
 
+  /**
+    * 挂起一个同步任务
+    *
+    * @param name syncTaskId
+    * @param ts   时间戳
+    */
   private def suspendTask(name: String, ts: Long = -1): Unit = {
     lazy val command = if (ts == -1) ExternalSuspendCommand(name) else ExternalSuspendTimedCommand(name, ts)
-    Option(name).flatMap(context.child(_)).fold {
+    Option(name).flatMap(getCertainSyncTaskActorRef(_)).fold {
       log.warning(s"does not exist task called $name,no need to suspend it")
     } { ref => ref ! command }
   }
@@ -71,7 +77,7 @@ final class SyncDaemon extends Actor with ActorLogging {
     */
   private def restartTask(name: String): Unit = {
     Option(name).
-      flatMap(context.child(_)).fold {
+      flatMap(getCertainSyncTaskActorRef(_)).fold {
       log.warning(s"does not exist task called $name,no need to restart it")
     } { ref => ref ! ExternalRestartCommand(name) }
   }

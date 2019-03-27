@@ -18,9 +18,10 @@ final class Mongo2HBaseController extends SyncTaskController[Mongo2HBaseTaskRequ
   @Autowired
   override protected val syncService: Mongo2HBaseService = null
 
-
-  override def sendSupendTimedCommand(@RequestParam("id") id: String, @RequestParam("ts") ts: Long) = {
-
+  @ApiOperation(value = "挂起任务", httpMethod = "GET", notes = "")
+  @RequestMapping(value = Array("/check/sync/suspend"), method = Array(RequestMethod.GET))
+  override def sendSupendTimedCommand(@RequestParam("id") id: String, @RequestParam("ts") ts: Long): Boolean = {
+    super.sendSupendTimedCommand(id, ts)
   }
 
 
