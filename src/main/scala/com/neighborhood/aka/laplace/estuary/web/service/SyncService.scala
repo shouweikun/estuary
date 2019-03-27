@@ -196,7 +196,7 @@ trait SyncService[Bean <: TaskRequestBean] {
     */
   def checkTaskStatus(syncTaskId: String): String = {
     import scala.collection.JavaConverters._
-    val idStringKv = "syncTaskId" -> s"""$syncTaskId"""
+    val idStringKv = s""" "syncTaskId":"$syncTaskId" """
     TaskManager.getTaskManager(syncTaskId)
     match {
       case Some(x) => {

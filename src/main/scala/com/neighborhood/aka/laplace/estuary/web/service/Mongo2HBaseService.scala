@@ -8,9 +8,11 @@ import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.control.hbase.{Oplog
 import com.neighborhood.aka.laplace.estuary.web.akkaUtil.ActorRefHolder
 import com.neighborhood.aka.laplace.estuary.web.bean.Mongo2HBaseTaskRequestBean
 import com.neighborhood.aka.laplace.estuary.web.utils.TaskBeanTransformUtil
+import org.slf4j.{Logger, LoggerFactory}
 import org.springframework.beans.factory.annotation.{Autowired, Qualifier, Value}
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Service
+import org.springframework.web.client.RestTemplate
 
 /**
   * Created by john_liu on 2019/3/15.
@@ -20,10 +22,17 @@ import org.springframework.stereotype.Service
 
 @Service("mongo2hbase")
 final class Mongo2HBaseService extends SyncService[Mongo2HBaseTaskRequestBean] {
+  private lazy val logger: Logger = LoggerFactory.getLogger(classOf[Mongo2HBaseService])
   @Value("${server.port}")
   private val port: String = null
   @Autowired
-  @Qualifier("configJdbcTemplate") private lazy val jdbcTemplate: JdbcTemplate = null
+  @Qualifier("configJdbcTemplate")
+  private val jdbcTemplate: JdbcTemplate = null
+
+
+  @Autowired
+  @Qualifier("restTemplate")
+  private val restTemplate: RestTemplate = null
 
   /**
     * 开始一个同步任务
@@ -62,14 +71,14 @@ final class Mongo2HBaseService extends SyncService[Mongo2HBaseTaskRequestBean] {
     val taskType = "MONGO_TO_HBASE_SDA"
     val database = taskRequestBean.getMongoSource.getConcernedNs.headOption.map(_.split('.')(0)).getOrElse("")
     val save: String => Unit = s => jdbcTemplate.update(s)
-    saveTaskInfo(
-      syncTaskId = syncTaskId,
-      ip = ip,
-      port = port,
-      taskType = taskType,
-      bean = bean,
-      databaseName = database
-    )(save)
+      saveTaskInfo(
+        syncTaskId = syncTaskId,
+        ip = ip,
+        port = port,
+        taskType = taskType,
+        bean = bean,
+        databaseName = database
+      )(save)
     startNewOneTaskKeepConfig(taskRequestBean.getMongo2HBaseRunningInfo.getSyncTaskId, taskRequestBean)
   }
 

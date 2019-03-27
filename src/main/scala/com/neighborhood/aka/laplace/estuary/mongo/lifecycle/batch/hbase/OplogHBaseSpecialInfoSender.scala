@@ -16,6 +16,8 @@ final class OplogHBaseSpecialInfoSender(
                                          override val sinker: ActorRef,
                                          override val taskManager: TaskManager
                                        ) extends SourceDataSpecialBatcherPrototype {
+
+  val logIsEnabled = taskManager.logIsEnabled
   /**
     * 事件收集器
     */
@@ -33,7 +35,7 @@ final class OplogHBaseSpecialInfoSender(
   }
 
   def buildAndSendHeartbeatMessage: Unit = {
-    log.warning("buildAndSendHeartbeatMessage should be implemented")
+    if (logIsEnabled) log.warning("buildAndSendHeartbeatMessage should be implemented")
 
     //    val dummyValue: String = ???
     //    val dummyKey: OplogKey = ???
