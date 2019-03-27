@@ -38,9 +38,9 @@ class OplogHBaseMappingFormat(
       put.addColumn(Bytes.toBytes(getTableCF), Bytes.toBytes("1"),ts, Bytes.toBytes(doc.get("_id").toString))
 
       // 添加 CommentCF
-      put.addColumn(Bytes.toBytes(getCommentCF), Bytes.toBytes("dbEffectTime"), ts, Bytes.toBytes(dbEffectTime))
-      put.addColumn(Bytes.toBytes(getCommentCF), Bytes.toBytes("endTime"), ts, Bytes.toBytes(endTime))
-      put.addColumn(Bytes.toBytes(getCommentCF), Bytes.toBytes("processTime"), ts, Bytes.toBytes((endTime - dbEffectTime)))
+      put.addColumn(Bytes.toBytes(getCommentCF), Bytes.toBytes("dbEffectTime"), ts, Bytes.toBytes(dbEffectTime.toString))
+      put.addColumn(Bytes.toBytes(getCommentCF), Bytes.toBytes("endTime"), ts, Bytes.toBytes(endTime.toString))
+      put.addColumn(Bytes.toBytes(getCommentCF), Bytes.toBytes("processTime"), ts, Bytes.toBytes((endTime - dbEffectTime).toString))
       //将数据改为非历史数据（数据初始化时，导入的数据is_his为true，后面进来的数据都为false，做下区分）
       put.addColumn(Bytes.toBytes(getCommentCF), Bytes.toBytes("is_his"), ts, Bytes.toBytes("false"))
 
