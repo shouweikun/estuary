@@ -1,6 +1,8 @@
 package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.fetch
 
-import akka.actor.{ActorRef, Props}
+import java.util.Calendar
+
+import akka.actor.ActorRef
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.DataSourceFetcherPrototype
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{FetcherMessage, SyncControllerMessage}
@@ -11,6 +13,7 @@ import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.fetch.OplogFetcherCo
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.fetch.OplogFetcherEvent.OplogFetcherActiveChecked
 import com.neighborhood.aka.laplace.estuary.mongo.source.{MongoConnection, MongoSourceManagerImp}
 import com.neighborhood.aka.laplace.estuary.mongo.util.OplogOffsetHandler
+import org.bson.BsonTimestamp
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
@@ -23,10 +26,10 @@ import scala.util.Try
   *
   * @author neighborhood.aka.laplace
   */
-final class SimpleOplogFetcher(
-                                val taskManager: MongoSourceManagerImp with TaskManager,
-                                val downStream: ActorRef
-                              ) extends DataSourceFetcherPrototype[MongoConnection] {
+final class SimpleOplogFetcher4sda(
+                                    val taskManager: MongoSourceManagerImp with TaskManager,
+                                    val downStream: ActorRef
+                                  ) extends DataSourceFetcherPrototype[MongoConnection] {
 
   implicit val transTaskPool: ExecutionContextExecutor = scala.concurrent.ExecutionContext.Implicits.global //使用广域线程池
   /**
@@ -49,6 +52,7 @@ final class SimpleOplogFetcher(
 
   private var delay: Long = 0
   private var lastFetchTimestamp = System.currentTimeMillis()
+  var suspendTs = getSuspendTs()
 
   /**
     * 位置处理器
@@ -96,11 +100,18 @@ final class SimpleOplogFetcher(
     sendFetchMessage(self, delay, OplogFetcherFetch) //发送下一次拉取的指令
     simpleFetchModule.fetch.foreach {
       doc =>
+        val suspend = Option(doc.get("ts")).map(_.asInstanceOf[BsonTimestamp]).map(ts => ts.getTime * 1000 > suspendTs).getOrElse(false)
+        if (suspend) {
+          context.become(receive, true)
+          context.parent ! OplogFetcherSuspend
+          return
+        }
         val curr = System.currentTimeMillis()
         sendData(doc)
         sendCost(System.currentTimeMillis() - lastFetchTimestamp)
         sendCount(1)
         lastFetchTimestamp = curr //更新一下时间
+
     }
     context.parent ! OplogFetcherFree //空闲
   }
@@ -164,10 +175,16 @@ final class SimpleOplogFetcher(
     e.printStackTrace()
     throw e
   }
+
+  def getSuspendTs(): Long = {
+
+    val cal = Calendar.getInstance()
+    cal.add(Calendar.DAY_OF_MONTH, 1)
+    cal.set(Calendar.SECOND, 0)
+    cal.set(Calendar.MINUTE, 0)
+    cal.set(Calendar.HOUR_OF_DAY, 0)
+    val date = cal.getTime
+    date.getTime
+  }
 }
 
-object SimpleOplogFetcher {
-  val name = SimpleOplogFetcher.getClass.getName.stripSuffix("$")
-
-  def props(taskManager: MongoSourceManagerImp with TaskManager, downStream: ActorRef): Props = Props(new SimpleOplogFetcher(taskManager, downStream))
-}

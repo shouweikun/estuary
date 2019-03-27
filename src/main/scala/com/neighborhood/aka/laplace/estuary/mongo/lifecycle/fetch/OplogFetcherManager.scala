@@ -67,6 +67,7 @@ final class OplogFetcherManager(
     case FetcherMessage(OplogFetcherActiveChecked(ts)) => lastActive = ts
     case OplogFetcherFree => fetcherChangeStatus(Status.FREE)
     case OplogFetcherBusy => fetcherChangeStatus(Status.BUSY)
+    case OplogFetcherSuspend =>fetcherChangeStatus(Status.SUSPEND)
   }
 
   /**
