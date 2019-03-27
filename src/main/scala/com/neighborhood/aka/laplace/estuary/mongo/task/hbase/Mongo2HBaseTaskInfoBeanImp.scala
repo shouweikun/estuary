@@ -24,7 +24,8 @@ final case class Mongo2HBaseTaskInfoBeanImp(
                                              val batchThreshold: Long = 1,
                                              val batcherNum: Int = 15,
                                              val sinkerNum: Int = 15,
-                                             val logEnabled:Boolean = true
+                                             val logEnabled:Boolean = true,
+                                             val fetcherNameToLoad:Map[String,String]
                                            ) extends BaseExtractBean {
 
   /**

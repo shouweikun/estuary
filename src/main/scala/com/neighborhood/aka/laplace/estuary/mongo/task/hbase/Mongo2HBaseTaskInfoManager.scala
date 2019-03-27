@@ -141,6 +141,9 @@ final class Mongo2HBaseTaskInfoManager(
   override val sinkerNum: Int = taskInfo.sinkerNum
 
 
+  override val fetcherNameToLoad = taskInfo.fetcherNameToLoad
+
+
   /**
     * 初始化/启动
     */

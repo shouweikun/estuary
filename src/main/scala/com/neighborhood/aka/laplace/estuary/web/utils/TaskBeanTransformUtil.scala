@@ -93,7 +93,8 @@ object TaskBeanTransformUtil {
       batcherNum = if (mongo2HBaseRunningInfoRequestBean.getBatcherNum <= 0) 15 else mongo2HBaseRunningInfoRequestBean.getBatcherNum,
       sinkerNum = if (mongo2HBaseRunningInfoRequestBean.getSinkerNum <= 0) 15 else mongo2HBaseRunningInfoRequestBean.getBatcherNum,
       partitionStrategy = mongo2HBaseRunningInfoRequestBean.getPartitionStrategy,
-      batchThreshold = mongo2HBaseRunningInfoRequestBean.getBatchThreshold
+      batchThreshold = mongo2HBaseRunningInfoRequestBean.getBatchThreshold,
+      fetcherNameToLoad = mongo2HBaseRunningInfoRequestBean.getFetcherNameToLoad.asScala.toMap
     )
   }
 

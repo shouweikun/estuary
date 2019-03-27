@@ -50,7 +50,7 @@ final class OplogFetcherManager(
     log.info(s"fetcherManager start init fetchers,id:$syncTaskId")
     val directFetcherTypeName = taskManager.fetcherNameToLoad.get(directFetcherName).flatMap(Option(_)).getOrElse(SimpleOplogFetcher.name)
     //构建directFetcher
-    log.info(s"start init $directFetcherName,id:$syncTaskId")
+    log.info(s"start init $directFetcherName type:$directFetcherTypeName,id:$syncTaskId")
     context.actorOf(OplogFetcher.buildOplogFetcher(directFetcherTypeName, batcher, taskManager.asInstanceOf[MongoSourceManagerImp with TaskManager]).withDispatcher("akka.pinned-dispatcher"), directFetcherName)
   }
 
