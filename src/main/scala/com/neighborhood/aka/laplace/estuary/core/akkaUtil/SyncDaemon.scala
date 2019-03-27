@@ -29,6 +29,7 @@ final class SyncDaemon extends Actor with ActorLogging {
     }
     case ExternalRestartCommand(syncTaskId) => restartTask(syncTaskId)
     case ExternalStopCommand(syncTaskId) => stopTask(syncTaskId)
+    case ExternalSuspendTimedCommand(syncTaskId, ts) => suspendTask(syncTaskId, ts)
     case ExternalGetAllRunningTask => sender ! getAllRunningTask
     case ExternalGetCertainRunningTask(syncTaskId) => sender ! getCertainSyncTaskActorRef(syncTaskId)
     case x => log.warning(s"SyncDeamon unhandled message $x")
@@ -54,6 +55,13 @@ final class SyncDaemon extends Actor with ActorLogging {
     Option(name).flatMap(context.child(_)).fold {
       log.warning(s"does not exist task called $name,no need to stop it")
     } { ref => Try(context.stop(ref)) }
+  }
+
+  private def suspendTask(name: String, ts: Long = -1): Unit = {
+    lazy val command = if (ts == -1) ExternalSuspendCommand(name) else ExternalSuspendTimedCommand(name, ts)
+    Option(name).flatMap(context.child(_)).fold {
+      log.warning(s"does not exist task called $name,no need to suspend it")
+    } { ref => ref ! command }
   }
 
   /**

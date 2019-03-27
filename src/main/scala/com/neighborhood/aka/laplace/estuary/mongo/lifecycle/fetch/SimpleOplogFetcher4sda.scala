@@ -2,7 +2,8 @@ package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.fetch
 
 import java.util.Calendar
 
-import akka.actor.ActorRef
+import akka.actor.{ActorRef, Props}
+import com.neighborhood.aka.laplace.estuary.core.akkaUtil.SyncDaemonCommand.ExternalSuspendTimedCommand
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.DataSourceFetcherPrototype
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{FetcherMessage, SyncControllerMessage}
@@ -52,7 +53,8 @@ final class SimpleOplogFetcher4sda(
 
   private var delay: Long = 0
   private var lastFetchTimestamp = System.currentTimeMillis()
-  var suspendTs = getSuspendTs()
+
+  private var suspendTs = getSuspendTs()
 
   /**
     * 位置处理器
@@ -78,6 +80,7 @@ final class SimpleOplogFetcher4sda(
     case SyncControllerMessage(OplogFetcherStart) => start
     case FetcherMessage(OplogFetcherCheckActive) => sender() ! OplogFetcherActiveChecked()
     case OplogFetcherCheckActive => sender() ! OplogFetcherActiveChecked()
+    case m@ExternalSuspendTimedCommand(_, _) =>
   }
 
   /**
@@ -91,6 +94,11 @@ final class SimpleOplogFetcher4sda(
     sendFetchMessage(self, delay, OplogFetcherFetch)
   }
 
+  private def handleUpdateHandleFetcherSuspendTimed(ts: Long): Unit = {
+    log.info(s"update suspend ts:$ts,id:$syncTaskId")
+    suspendTs = ts
+  }
+
   /**
     * 处理拉取的核心方法
     *
@@ -102,6 +110,7 @@ final class SimpleOplogFetcher4sda(
       doc =>
         val suspend = Option(doc.get("ts")).map(_.asInstanceOf[BsonTimestamp]).map(ts => ts.getTime * 1000 > suspendTs).getOrElse(false)
         if (suspend) {
+          log.info(s"time to suspend,ts:$suspendTs,id:$syncTaskId")
           context.become(receive, true)
           context.parent ! OplogFetcherSuspend
           return
@@ -188,3 +197,8 @@ final class SimpleOplogFetcher4sda(
   }
 }
 
+object SimpleOplogFetcher4sda {
+  val name = SimpleOplogFetcher4sda.getClass.getName.stripSuffix("$")
+
+  def props(taskManager: MongoSourceManagerImp with TaskManager, downStream: ActorRef): Props = Props(new SimpleOplogFetcher4sda(taskManager, downStream))
+}

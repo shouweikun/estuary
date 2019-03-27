@@ -1,6 +1,7 @@
 package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.fetch
 
 import akka.actor.{ActorRef, Props}
+import com.neighborhood.aka.laplace.estuary.core.akkaUtil.SyncDaemonCommand.ExternalSuspendTimedCommand
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.SourceDataFetcherManagerPrototype
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status
@@ -47,11 +48,10 @@ final class OplogFetcherManager(
     */
   override protected def initFetchers: Unit = {
     log.info(s"fetcherManager start init fetchers,id:$syncTaskId")
-    //todo 动态组件能力
-       val directFetcherTypeName = taskManager.fetcherNameToLoad.get(directFetcherName).flatMap(Option(_)).getOrElse(SimpleOplogFetcher.name)
+    val directFetcherTypeName = taskManager.fetcherNameToLoad.get(directFetcherName).flatMap(Option(_)).getOrElse(SimpleOplogFetcher.name)
     //构建directFetcher
     log.info(s"start init $directFetcherName,id:$syncTaskId")
-    context.actorOf(SimpleOplogFetcher.props(taskManager.asInstanceOf[MongoSourceManagerImp with TaskManager], batcher).withDispatcher("akka.pinned-dispatcher"), directFetcherName)
+    context.actorOf(OplogFetcher.buildOplogFetcher(directFetcherTypeName, batcher, taskManager.asInstanceOf[MongoSourceManagerImp with TaskManager]).withDispatcher("akka.pinned-dispatcher"), directFetcherName)
   }
 
 
@@ -65,9 +65,10 @@ final class OplogFetcherManager(
     case FetcherMessage(OplogFetcherCheckActive) => handleCheckActiveTask
     case OplogFetcherActiveChecked(ts) => lastActive = ts
     case FetcherMessage(OplogFetcherActiveChecked(ts)) => lastActive = ts
+    case m@ExternalSuspendTimedCommand(_, _) => context.child(directFetcherName).map(ref => ref ! m)
     case OplogFetcherFree => fetcherChangeStatus(Status.FREE)
     case OplogFetcherBusy => fetcherChangeStatus(Status.BUSY)
-    case OplogFetcherSuspend =>fetcherChangeStatus(Status.SUSPEND)
+    case OplogFetcherSuspend => fetcherChangeStatus(Status.SUSPEND)
   }
 
   /**
@@ -82,7 +83,7 @@ final class OplogFetcherManager(
     context.system.scheduler.scheduleOnce(SettingConstant.CHECK_ACTIVE_INTERVAL second, self, OplogFetcherCheckActive)
   }
 
-  private def dispatchUpdateDelayMessage(x:Long): Unit = dispatchMessageToDirectFetcher(FetcherMessage(OplogFetcherUpdateDelay(x)))
+  private def dispatchUpdateDelayMessage(x: Long): Unit = dispatchMessageToDirectFetcher(FetcherMessage(OplogFetcherUpdateDelay(x)))
 
   private def dispatchMessageToDirectFetcher(m: Any): Unit = directFetcher.map(ref => ref ! m)
 

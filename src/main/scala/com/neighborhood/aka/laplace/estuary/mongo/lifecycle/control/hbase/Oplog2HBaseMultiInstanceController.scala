@@ -4,7 +4,7 @@ import java.util.concurrent.{ExecutorService, Executors}
 
 import akka.actor.SupervisorStrategy.Restart
 import akka.actor.{ActorRef, OneForOneStrategy, Props}
-import com.neighborhood.aka.laplace.estuary.core.akkaUtil.SyncDaemonCommand.{ExternalRestartCommand, ExternalResumeCommand, ExternalStartCommand, ExternalSuspendCommand}
+import com.neighborhood.aka.laplace.estuary.core.akkaUtil.SyncDaemonCommand._
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.SyncControllerPrototype
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status
@@ -92,6 +92,7 @@ final class Oplog2HBaseMultiInstanceController(
     case SyncControllerMessage(OplogControllerCollectChildInfo) => collectChildInfo
     case m@ExternalSuspendCommand(`syncTaskId`) => context.children.foreach(ref => ref ! m)
     case m@ExternalResumeCommand(`syncTaskId`) => context.children.foreach(ref =>ref ! m)
+    case m@ExternalSuspendTimedCommand(`syncTaskId`,_) => context.children.foreach(ref =>ref ! m)
     case msg => log.warning(s"syncController online unhandled message:${msg},id:$syncTaskId")
   }
 

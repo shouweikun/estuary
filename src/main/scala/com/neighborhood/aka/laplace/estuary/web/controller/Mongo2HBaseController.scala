@@ -1,7 +1,7 @@
 package com.neighborhood.aka.laplace.estuary.web.controller
 
-import com.neighborhood.aka.laplace.estuary.web.bean.Mongo2HBaseTaskRequestBean
-import com.neighborhood.aka.laplace.estuary.web.service.SyncService
+import com.neighborhood.aka.laplace.estuary.web.bean.{Mongo2HBaseTaskRequestBean, Mysql2MysqlRequestBean}
+import com.neighborhood.aka.laplace.estuary.web.service.{Mongo2HBaseService, SyncService}
 import com.neighborhood.aka.laplace.estuary.web.utils.ValidationUtils
 import io.swagger.annotations.ApiOperation
 import org.springframework.beans.factory.annotation.{Autowired, Qualifier}
@@ -16,7 +16,13 @@ final class Mongo2HBaseController extends SyncTaskController[Mongo2HBaseTaskRequ
 
   @Qualifier("mongo2hbase")
   @Autowired
-  override protected val syncService: SyncService[Mongo2HBaseTaskRequestBean] = null
+  override protected val syncService: Mongo2HBaseService = null
+
+
+  override def sendSupendTimedCommand(@RequestParam("id") id: String, @RequestParam("ts") ts: Long) = {
+
+  }
+
 
   @ApiOperation(value = "开始一个新的mysql2mysql任务", httpMethod = "POST", notes = "")
   @RequestMapping(value = Array("/new/sync"), method = Array(RequestMethod.POST))
@@ -26,7 +32,11 @@ final class Mongo2HBaseController extends SyncTaskController[Mongo2HBaseTaskRequ
     syncService.startNewOneTaskKeepConfig(requestBody.getMongo2HBaseRunningInfo.getSyncTaskId, requestBody)
   }
 
-
+  @ApiOperation(value = "开始一个新的mongo2HbaseForSda任务", httpMethod = "POST", notes = "")
+  @RequestMapping(value = Array("/new/sync/sda"), method = Array(RequestMethod.POST))
+  def createNewSyncTaskForSda(@RequestBody requestBody: Mongo2HBaseTaskRequestBean) = {
+    syncService.startNewOneTask4Sda(requestBody)
+  }
 
 
   @ApiOperation(value = "查看任务状态", httpMethod = "GET", notes = "")

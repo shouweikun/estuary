@@ -3,7 +3,7 @@ package com.neighborhood.aka.laplace.estuary.web.service
 import java.util.concurrent.ConcurrentHashMap
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.neighborhood.aka.laplace.estuary.core.akkaUtil.SyncDaemonCommand.{ExternalGetAllRunningTask, ExternalRestartCommand, ExternalStopCommand}
+import com.neighborhood.aka.laplace.estuary.core.akkaUtil.SyncDaemonCommand.{ExternalGetAllRunningTask, ExternalRestartCommand, ExternalStopCommand, ExternalSuspendTimedCommand}
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.web.akkaUtil.ActorRefHolder
 import com.neighborhood.aka.laplace.estuary.web.bean.TaskRequestBean
@@ -37,6 +37,13 @@ trait SyncService[Bean <: TaskRequestBean] {
     *
     */
   protected def saveTaskInfoTableName: String = "estuary3_task_info"
+
+
+  def sendSuspendTimedCommand(syncTaskId: String, ts: Long): Boolean = {
+    val re = checkAllRunningTaskName.contains(syncTaskId)
+    if (re) ActorRefHolder.syncDaemon ! ExternalSuspendTimedCommand(syncTaskId, ts)
+    re
+  }
 
   /**
     * 重启一个syncTask

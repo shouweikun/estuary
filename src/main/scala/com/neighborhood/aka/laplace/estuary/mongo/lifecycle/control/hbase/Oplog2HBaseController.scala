@@ -5,7 +5,7 @@ import java.util.concurrent.{ExecutorService, Executors}
 import akka.actor.SupervisorStrategy.Escalate
 import akka.actor.{ActorRef, AllForOneStrategy, Props}
 import com.neighborhood.aka.laplace.estuary.bean.exception.control.WorkerCannotFindException
-import com.neighborhood.aka.laplace.estuary.core.akkaUtil.SyncDaemonCommand.{ExternalRestartCommand, ExternalResumeCommand, ExternalStartCommand, ExternalSuspendCommand}
+import com.neighborhood.aka.laplace.estuary.core.akkaUtil.SyncDaemonCommand._
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.SyncControllerPrototype
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.worker.Status
@@ -101,6 +101,7 @@ final class Oplog2HBaseController(
     case ExternalRestartCommand(`syncTaskId`) => restartBySupervisor
     case ExternalSuspendCommand(_) => suspendFetcher
     case ExternalResumeCommand(_) => resumeFetcher
+    case m@ExternalSuspendTimedCommand(_, _) => context.child(fetcherName).map(ref => ref ! m)
     case OplogControllerStopAndRestart => restartBySupervisor
     case ListenerMessage(msg) => log.warning(s"syncController online unhandled message:$msg,id:$syncTaskId")
     case SinkerMessage(msg) => log.warning(s"syncController online unhandled message:${SinkerMessage(msg)},id:$syncTaskId")
