@@ -38,6 +38,8 @@ import scala.util.Try
 /**
   * Created by john_liu on 2019/3/6.
   *
+  * mongo2Hbase的控制类
+  *
   * @author neighborhood.aka.lapalce
   */
 final class Oplog2HBaseController(
@@ -110,12 +112,18 @@ final class Oplog2HBaseController(
     case msg => log.warning(s"syncController online unhandled message:${msg},id:$syncTaskId")
   }
 
+  /***
+    * 挂起fetcher
+    */
   def suspendFetcher: Unit = {
     log.info(s"start suspend fetcher,id:$syncTaskId")
     context.child(fetcherName).foreach(context.stop(_))
     taskManager.fetcherStatus.set(Status.SUSPEND)
   }
 
+  /**
+    * 唤醒fetcher
+    */
   def resumeFetcher: Unit = {
     log.info(s"resume fetcher,id:$syncTaskId")
     initFetcher(context.child(batcherName).get)

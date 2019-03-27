@@ -15,7 +15,6 @@ import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.fetch.OplogFetcherEv
 import com.neighborhood.aka.laplace.estuary.mongo.source.{MongoConnection, MongoSourceManagerImp}
 import com.neighborhood.aka.laplace.estuary.mongo.util.OplogOffsetHandler
 import org.bson.BsonTimestamp
-
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
 import scala.util.Try
@@ -44,14 +43,16 @@ final class SimpleOplogFetcher4sda(
     * 同步任务id
     */
   override val syncTaskId: String = taskManager.syncTaskId
-
+  /**
+    * 是否计数
+    */
   val isCounting = taskManager.isCounting
 
-  lazy val powerAdapter = taskManager.powerAdapter
+  lazy val powerAdapter: Option[ActorRef] = taskManager.powerAdapter
 
-  lazy val processingCounter = taskManager.processingCounter
+  lazy val processingCounter: Option[ActorRef] = taskManager.processingCounter
 
-  val batchNum: Long = taskManager.batchThreshold
+  private val batchThreshold: Long = taskManager.batchThreshold
 
   private var delay: Long = 0
   private var lastFetchTimestamp = System.currentTimeMillis()
@@ -82,7 +83,7 @@ final class SimpleOplogFetcher4sda(
     case SyncControllerMessage(OplogFetcherStart) => start
     case FetcherMessage(OplogFetcherCheckActive) => sender() ! OplogFetcherActiveChecked()
     case OplogFetcherCheckActive => sender() ! OplogFetcherActiveChecked()
-    case m@ExternalSuspendTimedCommand(_, _) =>
+    case ExternalSuspendTimedCommand(_, ts) => handleUpdateHandleFetcherSuspendTimed(ts)
   }
 
   /**
@@ -96,6 +97,11 @@ final class SimpleOplogFetcher4sda(
     sendFetchMessage(self, delay, OplogFetcherFetch)
   }
 
+  /**
+    * 处理更新挂起时间的方法
+    *
+    * @param ts 时间
+    */
   private def handleUpdateHandleFetcherSuspendTimed(ts: Long): Unit = {
     log.info(s"update suspend ts:$ts,id:$syncTaskId")
     suspendTs = ts
@@ -110,7 +116,7 @@ final class SimpleOplogFetcher4sda(
     sendFetchMessage(self, delay, OplogFetcherFetch) //发送下一次拉取的指令
     simpleFetchModule.fetch.foreach {
       doc =>
-        val suspend = Option(doc.get("ts")).map(_.asInstanceOf[BsonTimestamp]).map(ts => ts.getTime * 1000 > suspendTs).getOrElse(false)
+        val suspend = Option(doc.get("ts")).map(_.asInstanceOf[BsonTimestamp]).map(ts => ts.getTime * 1000 > suspendTs).getOrElse(false) //判断是否需要挂起
         if (suspend) {
           log.info(s"time to suspend,ts:$suspendTs,id:$syncTaskId")
           context.become(receive, true)
@@ -187,7 +193,12 @@ final class SimpleOplogFetcher4sda(
     throw e
   }
 
-  def getSuspendTs(): Long = {
+  /**
+    * 获取挂起时间，默认午夜12点
+    *
+    * @return ts
+    */
+  private def getSuspendTs(): Long = {
 
     val cal = Calendar.getInstance()
     cal.add(Calendar.DAY_OF_MONTH, 1)
@@ -195,7 +206,9 @@ final class SimpleOplogFetcher4sda(
     cal.set(Calendar.MINUTE, 0)
     cal.set(Calendar.HOUR_OF_DAY, 0)
     val date = cal.getTime
-    date.getTime
+    val re = date.getTime
+    log.info(s"init suspend ts:$re,id:$syncTaskId")
+    re
   }
 }
 
