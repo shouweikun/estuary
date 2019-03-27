@@ -24,6 +24,12 @@ final class Mongo2HBaseController extends SyncTaskController[Mongo2HBaseTaskRequ
     super.sendSupendTimedCommand(id, ts)
   }
 
+  @ApiOperation(value = "挂起任务", httpMethod = "GET", notes = "")
+  @RequestMapping(value = Array("/check/sync/resume"), method = Array(RequestMethod.GET))
+  override def sendResumeCommand(@RequestParam("id") id: String): Boolean = {
+    super.sendResumeCommand(id)
+  }
+
 
   @ApiOperation(value = "开始一个新的mysql2mysql任务", httpMethod = "POST", notes = "")
   @RequestMapping(value = Array("/new/sync"), method = Array(RequestMethod.POST))

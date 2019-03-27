@@ -21,6 +21,7 @@ import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.batch.hbase.OplogHBa
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.control.OplogControllerCommand._
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.count.OplogProcessingCounter
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.count.OplogProcessingCounterCommand.OplogProcessingCounterComputeCount
+import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.fetch.OplogFetcherCommand.OplogFetcherSuspend
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.fetch.{OplogFetcherCommand, OplogFetcherManager}
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.record.OplogPositionRecorder
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.record.OplogRecorderCommand.OplogRecorderSavePosition
@@ -103,8 +104,9 @@ final class Oplog2HBaseController(
     case ExternalRestartCommand(`syncTaskId`) => restartBySupervisor
     case ExternalSuspendCommand(_) => suspendFetcher
     case ExternalResumeCommand(_) => resumeFetcher
-    case m@ExternalSuspendTimedCommand(_, _) => context.child(fetcherName).map(ref => ref ! m)
+    case m@ExternalSuspendTimedCommand(_, x) => taskManager.fetchSuspendTs.set(x)
     case OplogControllerStopAndRestart => restartBySupervisor
+    case OplogFetcherSuspend => suspendFetcher
     case ListenerMessage(msg) => log.warning(s"syncController online unhandled message:$msg,id:$syncTaskId")
     case SinkerMessage(msg) => log.warning(s"syncController online unhandled message:${SinkerMessage(msg)},id:$syncTaskId")
     case SyncControllerMessage(OplogControllerCheckRunningInfo) => checkInfo
@@ -112,7 +114,7 @@ final class Oplog2HBaseController(
     case msg => log.warning(s"syncController online unhandled message:${msg},id:$syncTaskId")
   }
 
-  /***
+  /** *
     * 挂起fetcher
     */
   def suspendFetcher: Unit = {

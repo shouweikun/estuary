@@ -138,7 +138,7 @@ final class Oplog2HBaseMultiInstanceController(
           fetcherNameToLoad = taskBean.fetcherNameToLoad
         )
         val spTotalInfoBean = allTaskInfoBean.copy(sourceBean = spSourceBean, taskRunningInfoBean = spTaskBean)
-        val props = Oplog2HBaseController.props(spTotalInfoBean)
+        val props = Oplog2HBaseController.props(spTotalInfoBean).withDispatcher("akka.controller-dispatcher")
         context.actorOf(props, newTaskName)
     }
   }

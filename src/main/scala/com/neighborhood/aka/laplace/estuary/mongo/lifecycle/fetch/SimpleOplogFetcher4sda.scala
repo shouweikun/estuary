@@ -57,7 +57,8 @@ final class SimpleOplogFetcher4sda(
   private var delay: Long = 0
   private var lastFetchTimestamp = System.currentTimeMillis()
 
-  private var suspendTs = getSuspendTs()
+  private val suspendTs = taskManager.fetchSuspendTs
+  suspendTs.set(getSuspendTs())
 
   /**
     * 位置处理器
@@ -104,8 +105,8 @@ final class SimpleOplogFetcher4sda(
     */
   private def handleUpdateHandleFetcherSuspendTimed(ts: Long): Unit = {
     log.info(s"update suspend ts:$ts,id:$syncTaskId")
-    if (System.currentTimeMillis() > ts) switch2Suspend()
-    else suspendTs = ts
+    if (lastFetchTimestamp > ts) switch2Suspend()
+    else suspendTs.set(ts)
   }
 
   /**
@@ -119,7 +120,7 @@ final class SimpleOplogFetcher4sda(
       doc =>
 
         val isSuspend = Option(doc.get("ts")).map(_.asInstanceOf[BsonTimestamp]).map { ts =>
-          val re = ts.getTime > (suspendTs / 1000)
+          val re = ts.getTime > (suspendTs.get() / 1000)
           //          log.info(s"$re,${ts.getTime}")
           re
         }.getOrElse(false) //判断是否需要挂起

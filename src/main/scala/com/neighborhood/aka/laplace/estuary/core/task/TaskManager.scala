@@ -27,6 +27,7 @@ trait TaskManager {
 
   def positionHandler: PositionHandler[_]
 
+
   /**
     * batch转换模块
     */
@@ -268,6 +269,8 @@ trait TaskManager {
     * 拉取数据时延
     */
   lazy val fetchDelay: AtomicLong = new AtomicLong(0)
+
+  lazy val fetchSuspendTs: AtomicLong = new AtomicLong(0)
 
   /**
     * 打包阈值

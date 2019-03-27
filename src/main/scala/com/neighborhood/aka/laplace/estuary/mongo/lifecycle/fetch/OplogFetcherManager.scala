@@ -65,10 +65,14 @@ final class OplogFetcherManager(
     case FetcherMessage(OplogFetcherCheckActive) => handleCheckActiveTask
     case OplogFetcherActiveChecked(ts) => lastActive = ts
     case FetcherMessage(OplogFetcherActiveChecked(ts)) => lastActive = ts
-    case m@ExternalSuspendTimedCommand(_, _) => context.child(directFetcherName).map(ref => ref ! m)
+//    case m@ExternalSuspendTimedCommand(_, _) => context.child(directFetcherName).map(ref => ref ! m)
     case OplogFetcherFree => fetcherChangeStatus(Status.FREE)
     case OplogFetcherBusy => fetcherChangeStatus(Status.BUSY)
-    case OplogFetcherSuspend => fetcherChangeStatus(Status.SUSPEND)
+    case OplogFetcherSuspend => {
+      fetcherChangeStatus(Status.SUSPEND)
+      context.parent ! OplogFetcherSuspend
+
+    }
   }
 
   /**

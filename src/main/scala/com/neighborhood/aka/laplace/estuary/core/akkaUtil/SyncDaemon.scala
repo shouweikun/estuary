@@ -29,6 +29,7 @@ final class SyncDaemon extends Actor with ActorLogging {
     }
     case ExternalRestartCommand(syncTaskId) => restartTask(syncTaskId)
     case ExternalStopCommand(syncTaskId) => stopTask(syncTaskId)
+    case ExternalResumeCommand(syncTaskId) => resumeTask(syncTaskId)
     case ExternalSuspendTimedCommand(syncTaskId, ts) => suspendTask(syncTaskId, ts)
     case ExternalGetAllRunningTask => sender ! getAllRunningTask
     case ExternalGetCertainRunningTask(syncTaskId) => sender ! getCertainSyncTaskActorRef(syncTaskId)
@@ -68,6 +69,12 @@ final class SyncDaemon extends Actor with ActorLogging {
     Option(name).flatMap(getCertainSyncTaskActorRef(_)).fold {
       log.warning(s"does not exist task called $name,no need to suspend it")
     } { ref => ref ! command }
+  }
+
+  private def resumeTask(name: String): Unit = {
+    Option(name).flatMap(getCertainSyncTaskActorRef(_)).fold {
+      log.warning(s"does not exist task called $name,no need to suspend it")
+    } { ref => ref ! ExternalResumeCommand(name) }
   }
 
   /**

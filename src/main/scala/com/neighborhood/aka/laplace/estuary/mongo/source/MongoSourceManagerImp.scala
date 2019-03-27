@@ -48,7 +48,7 @@ trait MongoSourceManagerImp extends SourceManager[MongoConnection] {
   private lazy val positionHandler_ = buildMongoOffsetPositionHandler
 
   def buildMongoOffsetPositionHandler: OplogOffsetHandler = {
-    val zkClient = new EstuaryZkClient(offsetZookeeperServer)
+    val zkClient = EstuaryZkClient.getZkClient(offsetZookeeperServer)
     val zkManager = new EstuaryStringZookeeperManager(zkClient)
     new OplogOffsetHandler(zkManager, syncTaskId, startMongoOffset)
   }
