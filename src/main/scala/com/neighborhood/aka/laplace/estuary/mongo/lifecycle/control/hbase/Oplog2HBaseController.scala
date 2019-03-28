@@ -104,8 +104,7 @@ final class Oplog2HBaseController(
     case ExternalRestartCommand(`syncTaskId`) => restartBySupervisor
     case ExternalSuspendCommand(_) => suspendFetcher
     case ExternalResumeCommand(_) => resumeFetcher
-    case m@ExternalSuspendTimedCommand(_, x) => taskManager.fetchSuspendTs.set(x
-    )
+    case m@ExternalSuspendTimedCommand(_, x) => handleTimedSuspend(x)
     case OplogControllerStopAndRestart => restartBySupervisor
     case OplogFetcherSuspend => suspendFetcher
     case ListenerMessage(msg) => log.warning(s"syncController online unhandled message:$msg,id:$syncTaskId")
@@ -114,6 +113,8 @@ final class Oplog2HBaseController(
     case PowerAdapterMessage(x: OplogPowerAdapterDelayFetch) => sendFetchDelay(x)
     case msg => log.warning(s"syncController online unhandled message:${msg},id:$syncTaskId")
   }
+
+  def handleTimedSuspend(ts: Long): Unit = taskManager.fetchSuspendTs.set(ts)
 
   /** *
     * 挂起fetcher
