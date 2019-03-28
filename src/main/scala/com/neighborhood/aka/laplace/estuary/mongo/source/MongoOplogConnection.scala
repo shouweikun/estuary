@@ -90,8 +90,8 @@ final class MongoConnection(
       .oplogReplay(true)
       //                    .batchSize(1) //设置batchSize会让tail失效?
       .noCursorTimeout(false) //avoid timeout if you are working on big data
-      .maxTime(2, TimeUnit.MINUTES)
-      .maxAwaitTime(5, TimeUnit.MINUTES) //还是应该有超时时间, 待测试.
+      .maxTime(5, TimeUnit.MINUTES)
+      .maxAwaitTime(12, TimeUnit.HOURS) //还是应该有超时时间, 待测试.
       .sort(new BasicDBObject("$natural", 1))
       .iterator()
     iterator

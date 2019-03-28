@@ -1,6 +1,8 @@
 package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.fetch
 
-import akka.actor.{ActorRef, Props}
+import akka.actor.SupervisorStrategy.Escalate
+import akka.actor.{ActorRef, AllForOneStrategy, Props}
+import com.neighborhood.aka.laplace.estuary.bean.exception.fetch.FetcherTimeoutException
 import com.neighborhood.aka.laplace.estuary.core.akkaUtil.SyncDaemonCommand.ExternalSuspendTimedCommand
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.SourceDataFetcherManagerPrototype
@@ -117,9 +119,9 @@ final class OplogFetcherManager(
   override def postRestart(reason: Throwable): Unit
 
   = {
-    log.info(s"fetcherManger processing postRestart,id:$syncTaskId")
     super.postRestart(reason)
-
+    self ! SyncControllerMessage(OplogFetcherStart)
+    this.start
   }
 
   override def postStop(): Unit
@@ -152,6 +154,31 @@ final class OplogFetcherManager(
     * 错误处理
     */
   override def processError(e: Throwable, message: lifecycle.WorkerMessage): Unit = ???
+
+  override def supervisorStrategy = {
+    AllForOneStrategy() {
+      case e: FetcherTimeoutException => {
+        fetcherChangeStatus(Status.ERROR)
+        log.error(s"direct fetcher crashed,exception:$e,cause:${e.getCause},processing SupervisorStrategy,id:$syncTaskId")
+        Escalate
+      }
+      case e: Exception => {
+        fetcherChangeStatus(Status.ERROR)
+        log.error(s"fetcherManager crashed,exception:$e,cause:${e.getCause},processing SupervisorStrategy,id:$syncTaskId")
+        Escalate
+      }
+      case error: Error => {
+        fetcherChangeStatus(Status.ERROR)
+        log.error(s"fetcherManager crashed,error:$error,cause:${error.getCause},processing SupervisorStrategy,id:$syncTaskId")
+        Escalate
+      }
+      case e => {
+        log.error(s"fetcherManager crashed,throwable:$e,cause:${e.getCause},processing SupervisorStrategy,id:$syncTaskId")
+        fetcherChangeStatus(Status.ERROR)
+        Escalate
+      }
+    }
+  }
 }
 
 object OplogFetcherManager {

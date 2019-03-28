@@ -26,7 +26,7 @@ final case class Mongo2HBaseTaskInfoBeanImp(
                                              val sinkerNum: Int = 15,
                                              val logEnabled: Boolean = true,
                                              val fetcherNameToLoad: Map[String, String],
-                                             @volatile var suspendTs: Option[Long] = None
+                                             var suspendTs: Option[Long] = None
                                            ) extends BaseExtractBean {
 
   /**

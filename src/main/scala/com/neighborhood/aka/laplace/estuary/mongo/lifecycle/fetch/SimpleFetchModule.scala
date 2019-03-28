@@ -46,7 +46,9 @@ final class SimpleFetchModule(
     *
     * @return
     */
-  def fetch: Option[Document] = iterator.fold(throw new RuntimeException(s"iter is null when fetch oplog doc,id:$syncTaskId")) { iter => if (iter.hasNext) Option(iter.next()) else None }
+  def fetch: Option[Document] = iterator.fold(throw new RuntimeException(s"iter is null when fetch oplog doc,id:$syncTaskId")) { iter =>
+    if (iter.hasNext) Option(iter.next()) else None
+  }
 
   /**
     * 关闭，不要扔出异常

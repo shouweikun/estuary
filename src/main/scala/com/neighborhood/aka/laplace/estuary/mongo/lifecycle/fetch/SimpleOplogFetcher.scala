@@ -1,6 +1,8 @@
 package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.fetch
 
 import akka.actor.{ActorRef, Props}
+import com.mongodb.MongoExecutionTimeoutException
+import com.neighborhood.aka.laplace.estuary.bean.exception.fetch.FetcherTimeoutException
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.DataSourceFetcherPrototype
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{FetcherMessage, SyncControllerMessage}
@@ -94,13 +96,18 @@ final class SimpleOplogFetcher(
   private def handleFetchTask: Unit = {
     context.parent ! OplogFetcherBusy //忙碌
     sendFetchMessage(self, delay, OplogFetcherFetch) //发送下一次拉取的指令
-    simpleFetchModule.fetch.foreach {
-      doc =>
-        val curr = System.currentTimeMillis()
-        sendData(doc)
-        sendCost(System.currentTimeMillis() - lastFetchTimestamp)
-        sendCount(1)
-        lastFetchTimestamp = curr //更新一下时间
+    try {
+      simpleFetchModule.fetch.foreach {
+        doc =>
+          val curr = System.currentTimeMillis()
+          sendData(doc)
+          sendCost(System.currentTimeMillis() - lastFetchTimestamp)
+          sendCount(1)
+          lastFetchTimestamp = curr //更新一下时间
+      }
+    } catch {
+      case e: MongoExecutionTimeoutException => throw new FetcherTimeoutException(s"fetcher timeout when fetch oplog,id:$syncTaskId")
+      case e: _ => throw e
     }
     context.parent ! OplogFetcherFree //空闲
   }
@@ -164,6 +171,8 @@ final class SimpleOplogFetcher(
     e.printStackTrace()
     throw e
   }
+
+
 }
 
 object SimpleOplogFetcher {

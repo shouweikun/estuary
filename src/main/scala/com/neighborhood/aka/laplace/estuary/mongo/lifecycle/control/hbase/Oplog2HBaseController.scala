@@ -2,9 +2,11 @@ package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.control.hbase
 
 import java.util.concurrent.{ExecutorService, Executors}
 
-import akka.actor.SupervisorStrategy.Escalate
+import akka.actor.SupervisorStrategy.{Escalate, Restart}
 import akka.actor.{ActorRef, AllForOneStrategy, Props}
+import com.mongodb.MongoExecutionTimeoutException
 import com.neighborhood.aka.laplace.estuary.bean.exception.control.WorkerCannotFindException
+import com.neighborhood.aka.laplace.estuary.bean.exception.fetch.FetcherTimeoutException
 import com.neighborhood.aka.laplace.estuary.core.akkaUtil.SyncDaemonCommand._
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.SyncControllerPrototype
@@ -496,6 +498,10 @@ final class Oplog2HBaseController(
 
   override def supervisorStrategy = {
     AllForOneStrategy() {
+      case e: FetcherTimeoutException => {
+        log.warning(s"fetcher timeout,try to restart fetcher,id:$syncTaskId")
+        Restart
+      }
       case e: Exception => {
         controllerChangeStatus(Status.ERROR)
         log.error(s"mongo 2 hbase controller crashed,id:$syncTaskId,e:$e")
