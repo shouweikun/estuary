@@ -1,6 +1,6 @@
 package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.fetch
 
-import akka.actor.SupervisorStrategy.Escalate
+import akka.actor.SupervisorStrategy.{Escalate, Restart}
 import akka.actor.{ActorRef, AllForOneStrategy, Props}
 import com.neighborhood.aka.laplace.estuary.bean.exception.fetch.FetcherTimeoutException
 import com.neighborhood.aka.laplace.estuary.core.akkaUtil.SyncDaemonCommand.ExternalSuspendTimedCommand
@@ -120,7 +120,6 @@ final class OplogFetcherManager(
 
   = {
     super.postRestart(reason)
-    self ! SyncControllerMessage(OplogFetcherStart)
     this.start
   }
 
@@ -158,9 +157,8 @@ final class OplogFetcherManager(
   override def supervisorStrategy = {
     AllForOneStrategy() {
       case e: FetcherTimeoutException => {
-        fetcherChangeStatus(Status.ERROR)
-        log.error(s"direct fetcher crashed,exception:$e,cause:${e.getCause},processing SupervisorStrategy,id:$syncTaskId")
-        Escalate
+        log.error(s"direct fetcher crashed,try restart,exception:$e,cause:${e.getCause},processing SupervisorStrategy,id:$syncTaskId")
+        Restart
       }
       case e: Exception => {
         fetcherChangeStatus(Status.ERROR)

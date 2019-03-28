@@ -107,7 +107,7 @@ final class SimpleOplogFetcher(
       }
     } catch {
       case e: MongoExecutionTimeoutException => throw new FetcherTimeoutException(s"fetcher timeout when fetch oplog,id:$syncTaskId")
-      case e: _ => throw e
+      case e: Throwable => throw e
     }
     context.parent ! OplogFetcherFree //空闲
   }
@@ -172,6 +172,10 @@ final class SimpleOplogFetcher(
     throw e
   }
 
+  override def postRestart(reason: Throwable): Unit = {
+    super.postRestart(reason)
+    start
+  }
 
 }
 

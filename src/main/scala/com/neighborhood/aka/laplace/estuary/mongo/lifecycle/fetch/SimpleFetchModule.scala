@@ -35,7 +35,7 @@ final class SimpleFetchModule(
   def start(): Unit = {
     logger.info(s"simple fetch module start,id:$syncTaskId")
     val ts = System.currentTimeMillis()
-    assert(mongoConnection.isConnected)
+    if (mongoConnection.isConnected) mongoConnection.connect()
     iterator = Option(mongoOffset.fold(mongoConnection.getOplogIterator())(mongoConnection.getOplogIterator(_)))
     isStart_ = true
     logger.info(s"simple fetch module start complete ,using:${System.currentTimeMillis() - ts},id:$syncTaskId")

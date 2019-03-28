@@ -3,6 +3,8 @@ package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.fetch
 import java.util.Calendar
 
 import akka.actor.{ActorRef, Props}
+import com.mongodb.MongoExecutionTimeoutException
+import com.neighborhood.aka.laplace.estuary.bean.exception.fetch.FetcherTimeoutException
 import com.neighborhood.aka.laplace.estuary.core.akkaUtil.SyncDaemonCommand.ExternalSuspendTimedCommand
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.DataSourceFetcherPrototype
@@ -15,6 +17,7 @@ import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.fetch.OplogFetcherEv
 import com.neighborhood.aka.laplace.estuary.mongo.source.{MongoConnection, MongoSourceManagerImp}
 import com.neighborhood.aka.laplace.estuary.mongo.util.OplogOffsetHandler
 import org.bson.BsonTimestamp
+
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
 import scala.util.Try
@@ -116,26 +119,31 @@ final class SimpleOplogFetcher4sda(
     */
   private def handleFetchTask: Unit = {
     context.parent ! OplogFetcherBusy //忙碌
-    sendFetchMessage(self, delay, OplogFetcherFetch) //发送下一次拉取的指令
-    simpleFetchModule.fetch.fold(context.parent ! OplogFetcherFree) {
-      doc =>
-        val isSuspend = Option(doc.get("ts")).map(_.asInstanceOf[BsonTimestamp]).map { ts =>
-          val re = ts.getTime > (suspendTs.get() / 1000)
-          //          log.info(s"$re,${ts.getTime}")
-          re
-        }.getOrElse(false) //判断是否需要挂起
-        if (isSuspend) {
-          switch2Suspend()
-        } else {
-          val curr = System.currentTimeMillis()
-          sendData(doc)
-          sendCost(System.currentTimeMillis() - lastFetchTimestamp)
-          sendCount(1)
-          lastFetchTimestamp = curr //更新一下时间
-          context.parent ! OplogFetcherFree //空闲
-        }
+    try {
+      simpleFetchModule.fetch.fold(context.parent ! OplogFetcherFree) {
+        doc =>
+          val isSuspend = Option(doc.get("ts")).map(_.asInstanceOf[BsonTimestamp]).map { ts =>
+            val re = ts.getTime > (suspendTs.get() / 1000)
+            //          log.info(s"$re,${ts.getTime}")
+            re
+          }.getOrElse(false) //判断是否需要挂起
+          if (isSuspend) {
+            switch2Suspend()
+          } else {
+            val curr = System.currentTimeMillis()
+            sendData(doc)
+            sendCost(System.currentTimeMillis() - lastFetchTimestamp)
+            sendCount(1)
+            lastFetchTimestamp = curr //更新一下时间
+            context.parent ! OplogFetcherFree //空闲
+          }
+      }
+      sendFetchMessage(self, delay, OplogFetcherFetch) //发送下一次拉取的指令
+    } catch {
+      case e: MongoExecutionTimeoutException => throw new FetcherTimeoutException(s"fetcher timeout when fetch oplog,id:$syncTaskId", cause = e)
+      case e: RuntimeException => throw new FetcherTimeoutException(s"fetcher timeout when fetch oplog,id:$syncTaskId", cause = e)
+      case e: Throwable => throw e
     }
-
   }
 
   private def switch2Suspend(): Unit = {
@@ -221,6 +229,11 @@ final class SimpleOplogFetcher4sda(
     val re = date.getTime
     log.info(s"init suspend ts:$re,id:$syncTaskId")
     re
+  }
+
+  override def postRestart(reason: Throwable): Unit = {
+    super.postRestart(reason)
+    start
   }
 }
 

@@ -33,7 +33,7 @@ final class MongoConnection(
   override def connect(): Unit = {
     lock.lock()
     try {
-      mongoClient = initDbInstance
+      if (connectStatus.compareAndSet(false, true)) mongoClient = initDbInstance
       connectStatus.set(true)
     } catch {
       case e: Exception => throw e
@@ -69,7 +69,9 @@ final class MongoConnection(
   }
 
 
-  override def isConnected: Boolean = connectStatus.get()
+  override def isConnected: Boolean = {
+    connectStatus.get()
+  }
 
   override def fork: MongoConnection = new MongoConnection(mongoBeanImp)
 
