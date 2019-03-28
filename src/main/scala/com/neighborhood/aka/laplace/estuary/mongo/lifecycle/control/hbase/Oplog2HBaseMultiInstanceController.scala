@@ -237,7 +237,7 @@ final class Oplog2HBaseMultiInstanceController(
     controllerChangeStatus(Status.OFFLINE)
     log.info(s"start init all workers,id:$syncTaskId")
     initWorkers
-    taskManager.start
+    if (!taskManager.isStart) taskManager.start
     TaskManager.putTaskManager(syncTaskId, taskManager)
   }
 
@@ -248,7 +248,7 @@ final class Oplog2HBaseMultiInstanceController(
     log.info(s"syncController processing postStop ,id:$syncTaskId")
     if (!schedulingCommandPool.isShutdown) Try(schedulingCommandPool.shutdownNow())
     TaskManager.removeTaskManager(syncTaskId) // 这步很必要
-    taskManager.close
+    if (taskManager.isStart) taskManager.close
     if (!resourceManager.sink.isTerminated) resourceManager.sink.close
     if (resourceManager.source.isConnected) resourceManager.source.disconnect()
 
@@ -262,7 +262,7 @@ final class Oplog2HBaseMultiInstanceController(
     controllerChangeStatus(Status.RESTARTING)
     context.become(receive)
     super.preRestart(reason, message)
-    taskManager.close
+    if (taskManager.isStart) taskManager.close
     log.info(s"syncController processing preRestart complete,id:$syncTaskId")
   }
 

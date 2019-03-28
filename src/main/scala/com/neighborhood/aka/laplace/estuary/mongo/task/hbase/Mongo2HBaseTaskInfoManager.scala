@@ -151,12 +151,14 @@ final class Mongo2HBaseTaskInfoManager(
     logger.info(s"mongo 2 hbase task manager start,id:$syncTaskId")
     startSource
     startSink
+    super.start
   }
 
   override def close: Unit = {
     logger.info(s"mongo 2 hbase task manager close,id:$syncTaskId")
     closeSink
     closeSource
+    super.close
   }
 
   private def buildMappingFormat: MappingFormat[OplogClassifier, HBasePut[MongoOffset]] = {

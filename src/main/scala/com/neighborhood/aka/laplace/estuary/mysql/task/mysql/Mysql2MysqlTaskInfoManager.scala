@@ -206,6 +206,7 @@ final class Mysql2MysqlTaskInfoManager(
     tableMappingRule
     sinkMysqlTableSchemaHolder
     batchMappingFormat
+    super.start
   }
 
   /**
@@ -216,6 +217,7 @@ final class Mysql2MysqlTaskInfoManager(
     logger.info(s"mysql 2 mysql task manager processing start,id:$syncTaskId")
     closeSource
     closeSink
+    super.close
   }
 
   /**

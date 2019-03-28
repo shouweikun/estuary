@@ -41,6 +41,7 @@ trait MongoSourceManagerImp extends SourceManager[MongoConnection] {
     logger.info(s"close source,id:$syncTaskId")
     super.closeSource
     positionHandler.close()
+    logger.info(s"close source complete,id:$syncTaskId")
   }
 
   def positionHandler: OplogOffsetHandler = positionHandler_

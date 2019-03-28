@@ -63,9 +63,10 @@ final class OplogFetcherManager(
     case SyncControllerMessage(OplogPowerAdapterDelayFetch(x)) => dispatchUpdateDelayMessage(x)
     case SyncControllerMessage(OplogFetcherUpdateDelay(x)) => dispatchUpdateDelayMessage(x)
     case FetcherMessage(OplogFetcherCheckActive) => handleCheckActiveTask
+    case OplogFetcherCheckActive => handleCheckActiveTask
     case OplogFetcherActiveChecked(ts) => lastActive = ts
     case FetcherMessage(OplogFetcherActiveChecked(ts)) => lastActive = ts
-//    case m@ExternalSuspendTimedCommand(_, _) => context.child(directFetcherName).map(ref => ref ! m)
+    //    case m@ExternalSuspendTimedCommand(_, _) => context.child(directFetcherName).map(ref => ref ! m)
     case OplogFetcherFree => fetcherChangeStatus(Status.FREE)
     case OplogFetcherBusy => fetcherChangeStatus(Status.BUSY)
     case OplogFetcherSuspend => {
@@ -82,7 +83,11 @@ final class OplogFetcherManager(
   private def handleCheckActiveTask: Unit = {
     val now = System.currentTimeMillis()
     val diff = now - lastActive
-    if (diff > 90 * 1000) throw new RuntimeException(s"$diff seconds passed which gt 90s ,but direct fetcher has no response,id:$syncTaskId")
+    diff match {
+      case x if (x > 24 * 60 * 1000) => throw new RuntimeException(s"$diff milliseconds passed which gt 90s ,but direct fetcher has no response,should be restart,id:$syncTaskId")
+      case x if (x > 90 * 1000) => log.warning(s"$diff milliseconds passed which gt 90s ,but direct fetcher has no response,id:$syncTaskId")
+      case _ =>
+    }
     dispatchMessageToDirectFetcher(OplogFetcherCheckActive)
     context.system.scheduler.scheduleOnce(SettingConstant.CHECK_ACTIVE_INTERVAL second, self, OplogFetcherCheckActive)
   }

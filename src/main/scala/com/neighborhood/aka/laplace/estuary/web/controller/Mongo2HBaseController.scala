@@ -31,7 +31,7 @@ final class Mongo2HBaseController extends SyncTaskController[Mongo2HBaseTaskRequ
   }
 
 
-  @ApiOperation(value = "开始一个新的mysql2mysql任务", httpMethod = "POST", notes = "")
+  @ApiOperation(value = "开始一个新的mongo2Hbase任务", httpMethod = "POST", notes = "")
   @RequestMapping(value = Array("/new/sync"), method = Array(RequestMethod.POST))
   def createNewSyncTask(@RequestBody requestBody: Mongo2HBaseTaskRequestBean) = {
     ValidationUtils.notblank(requestBody.getMongo2HBaseRunningInfo.getSyncTaskId, "syncTaskId cannot be null")

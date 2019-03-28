@@ -1,7 +1,7 @@
 package com.neighborhood.aka.laplace.estuary.core.task
 
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.{AtomicLong, AtomicReference}
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong, AtomicReference}
 
 import akka.actor.ActorRef
 import com.neighborhood.aka.laplace.estuary.bean.identity.BaseExtractBean
@@ -27,6 +27,7 @@ trait TaskManager {
 
   def positionHandler: PositionHandler[_]
 
+  lazy val startStatus = new AtomicBoolean();
 
   /**
     * batch转换模块
@@ -161,18 +162,21 @@ trait TaskManager {
     */
   def isSendingHeartbeat: Boolean = true
 
+  def isStart:Boolean = startStatus.get()
   /**
     * 初始化/启动
     */
   def start: Unit = {
-
+    startStatus.set(true)
   }
 
   /**
     * 关闭
     * 当与资源管理器eg:SinkManager和SourceManager绑定时，将资源关闭交给这个方法
     */
-  def close: Unit = {}
+  def close: Unit = {
+    startStatus.set(false)
+  }
 
   /**
     * 计数器的引用

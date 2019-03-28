@@ -147,6 +147,7 @@ final class Mongo2KafkaTaskInfoManager(
     logger.info(s"task manager start,id:$syncTaskId")
     startSource
     startSink
+    super.start
   }
 
   private def buildMappingFormat: MappingFormat[OplogClassifier, KafkaMessage] = {

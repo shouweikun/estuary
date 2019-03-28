@@ -84,6 +84,7 @@ final class SimpleOplogFetcher4sda(
     case SyncControllerMessage(OplogFetcherStart) => start
     case FetcherMessage(OplogFetcherCheckActive) => sender() ! OplogFetcherActiveChecked()
     case OplogFetcherCheckActive => sender() ! OplogFetcherActiveChecked()
+    case FetcherMessage(OplogFetcherCheckActive) => sender() ! OplogFetcherActiveChecked()
     case ExternalSuspendTimedCommand(_, ts) => handleUpdateHandleFetcherSuspendTimed(ts)
   }
 

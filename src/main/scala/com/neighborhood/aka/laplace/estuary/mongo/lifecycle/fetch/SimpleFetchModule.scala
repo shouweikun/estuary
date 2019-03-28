@@ -34,13 +34,16 @@ final class SimpleFetchModule(
     */
   def start(): Unit = {
     logger.info(s"simple fetch module start,id:$syncTaskId")
+    val ts = System.currentTimeMillis()
     assert(mongoConnection.isConnected)
     iterator = Option(mongoOffset.fold(mongoConnection.getOplogIterator())(mongoConnection.getOplogIterator(_)))
     isStart_ = true
+    logger.info(s"simple fetch module start complete ,using:${System.currentTimeMillis() - ts},id:$syncTaskId")
   }
 
   /**
     * 拉取数据
+    *
     * @return
     */
   def fetch: Option[Document] = iterator.fold(throw new RuntimeException(s"iter is null when fetch oplog doc,id:$syncTaskId")) { iter => if (iter.hasNext) Option(iter.next()) else None }
