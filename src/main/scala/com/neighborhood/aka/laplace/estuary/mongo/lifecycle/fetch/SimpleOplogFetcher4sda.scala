@@ -119,7 +119,6 @@ final class SimpleOplogFetcher4sda(
     sendFetchMessage(self, delay, OplogFetcherFetch) //发送下一次拉取的指令
     simpleFetchModule.fetch.fold(context.parent ! OplogFetcherFree) {
       doc =>
-
         val isSuspend = Option(doc.get("ts")).map(_.asInstanceOf[BsonTimestamp]).map { ts =>
           val re = ts.getTime > (suspendTs.get() / 1000)
           //          log.info(s"$re,${ts.getTime}")

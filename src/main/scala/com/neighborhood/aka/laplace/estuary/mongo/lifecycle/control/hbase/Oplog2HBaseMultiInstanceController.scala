@@ -41,6 +41,7 @@ final class Oplog2HBaseMultiInstanceController(
   override val sourceBean: MongoSourceBeanImp = allTaskInfoBean.sourceBean
   override val sinkBean: HBaseBeanImp = allTaskInfoBean.sinkBean
 
+  val childBeanMap: collection.mutable.HashMap[String, Mongo2HBaseAllTaskInfoBean] = new collection.mutable.HashMap[String, Mongo2HBaseAllTaskInfoBean]
   /**
     * 同步任务id
     */
@@ -92,7 +93,7 @@ final class Oplog2HBaseMultiInstanceController(
     case SyncControllerMessage(OplogControllerCollectChildInfo) => collectChildInfo
     case m@ExternalSuspendCommand(`syncTaskId`) => context.children.foreach(ref => ref ! m)
     case m@ExternalResumeCommand(`syncTaskId`) => context.children.foreach(ref => ref ! m)
-    case m@ExternalSuspendTimedCommand(`syncTaskId`, _) => context.children.foreach(ref => ref ! m)
+    case m@ExternalSuspendTimedCommand(`syncTaskId`, ts) => handleSetSuspendTime(ts, m)
     case msg => log.warning(s"syncController online unhandled message:${msg},id:$syncTaskId")
   }
 
@@ -135,10 +136,12 @@ final class Oplog2HBaseMultiInstanceController(
           batchThreshold = taskBean.batchThreshold,
           batcherNum = taskBean.batcherNum,
           sinkerNum = taskBean.sinkerNum,
-          fetcherNameToLoad = taskBean.fetcherNameToLoad
+          fetcherNameToLoad = taskBean.fetcherNameToLoad,
+          suspendTs = taskBean.suspendTs
         )
         val spTotalInfoBean = allTaskInfoBean.copy(sourceBean = spSourceBean, taskRunningInfoBean = spTaskBean)
         val props = Oplog2HBaseController.props(spTotalInfoBean).withDispatcher("akka.controller-dispatcher")
+        childBeanMap.put(newTaskName, spTotalInfoBean)
         context.actorOf(props, newTaskName)
     }
   }
@@ -155,6 +158,10 @@ final class Oplog2HBaseMultiInstanceController(
     }
   }
 
+  def handleSetSuspendTime(ts: Long, m: ExternalSuspendTimedCommand): Unit = {
+    childBeanMap.foreach { case (k, v) => v.taskRunningInfoBean.suspendTs = Option(ts) }
+    context.children.foreach(ref => ref ! m)
+  }
 
   def collectChildInfo: Unit = {
     val tem = 3
