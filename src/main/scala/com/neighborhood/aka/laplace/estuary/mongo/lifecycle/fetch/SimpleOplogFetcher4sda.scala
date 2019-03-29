@@ -63,6 +63,8 @@ final class SimpleOplogFetcher4sda(
   private val suspendTs = taskManager.fetchSuspendTs
   suspendTs.set(getSuspendTs())
 
+  var noSendTs = getNoSendPeriodTs()
+
   /**
     * 位置处理器
     */
@@ -118,6 +120,7 @@ final class SimpleOplogFetcher4sda(
     *
     */
   private def handleFetchTask: Unit = {
+    val curr = System.currentTimeMillis()
     context.parent ! OplogFetcherBusy //忙碌
     try {
       simpleFetchModule.fetch.fold(context.parent ! OplogFetcherFree) {
@@ -130,9 +133,8 @@ final class SimpleOplogFetcher4sda(
           if (isSuspend) {
             switch2Suspend()
           } else {
-            val curr = System.currentTimeMillis()
             sendData(doc)
-            sendCost(System.currentTimeMillis() - lastFetchTimestamp)
+            sendCost(curr - lastFetchTimestamp)
             sendCount(1)
             lastFetchTimestamp = curr //更新一下时间
             context.parent ! OplogFetcherFree //空闲
@@ -231,9 +233,30 @@ final class SimpleOplogFetcher4sda(
     re
   }
 
+  private def getNoSendPeriodTs(): Long = {
+
+    val cal = Calendar.getInstance()
+    cal.set(Calendar.SECOND, 0)
+    cal.set(Calendar.MINUTE, 0)
+    cal.set(Calendar.HOUR_OF_DAY, 8)
+    cal.set(Calendar.MILLISECOND, 0)
+    val date = cal.getTime
+    val re = date.getTime
+    log.info(s"init NoSendPeriod ts:$re,id:$syncTaskId")
+    re
+  }
+
+  /**
+    * ********************* Actor生命周期 *******************
+    */
+  override def preStart(): Unit = {
+    log.info(s"fetcher switch to offline,id:$syncTaskId")
+
+  }
+
   override def postRestart(reason: Throwable): Unit = {
     super.postRestart(reason)
-    start
+    if (taskManager.isStart) start
   }
 }
 

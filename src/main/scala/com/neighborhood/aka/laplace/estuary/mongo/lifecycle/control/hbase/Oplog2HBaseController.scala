@@ -466,7 +466,7 @@ final class Oplog2HBaseController(
     log.info(s"syncController processing postStop ,id:$syncTaskId")
     if (!schedulingCommandPool.isShutdown) Try(schedulingCommandPool.shutdownNow())
     TaskManager.removeTaskManager(syncTaskId) // 这步很必要
-    taskManager.close
+    if (taskManager.isStart) taskManager.close
     if (!resourceManager.sink.isTerminated) resourceManager.sink.close
     if (resourceManager.source.isConnected) resourceManager.source.disconnect()
 
@@ -481,6 +481,8 @@ final class Oplog2HBaseController(
     context.become(receive)
     super.preRestart(reason, message)
     taskManager.close
+
+
     log.info(s"syncController processing preRestart complete,id:$syncTaskId")
   }
 
