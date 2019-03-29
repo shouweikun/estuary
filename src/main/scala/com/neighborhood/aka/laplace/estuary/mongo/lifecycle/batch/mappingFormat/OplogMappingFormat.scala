@@ -44,6 +44,9 @@ trait OplogMappingFormat[B] extends MappingFormat[OplogClassifier, B] {
   }
 
   protected def getJsonValue(o: Document): String = {
-    if (isBson) mongoDocumentToJson.docToBson(o) else mongoDocumentToJson.docToJson(o)
+    val json = if (isBson) mongoDocumentToJson.docToBson(o) else mongoDocumentToJson.docToJson(o)
+    val dBObject = com.mongodb.BasicDBObject.parse(json)
+    Option(dBObject.getString("_id")).orElse(Option(dBObject.getString("id"))).foreach(x => dBObject.put("_id", x))
+    dBObject.toJson()
   }
 }

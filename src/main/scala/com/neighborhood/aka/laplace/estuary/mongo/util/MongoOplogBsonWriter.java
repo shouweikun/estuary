@@ -3,6 +3,7 @@ package com.neighborhood.aka.laplace.estuary.mongo.util;
 import org.bson.BSONException;
 import org.bson.json.JsonWriter;
 import org.bson.json.JsonWriterSettings;
+import org.bson.types.ObjectId;
 
 import java.io.Writer;
 import java.lang.reflect.Method;
@@ -55,11 +56,17 @@ public class MongoOplogBsonWriter extends JsonWriter {
     }
 
     @Override
+    public void doWriteObjectId(ObjectId objectId) {
+        super.doWriteObjectId(objectId);
+    }
+
+    @Override
     protected void doWriteDateTime(long value) {
         try {
             this.writeStartDocument();
             writeNameHelper("$date");
-            String result = String.valueOf(value);
+            Date date=new Date(value);
+            String result =sdf.format(date);
             getWriter().write(result);
             this.writeEndDocument();
         } catch (Exception e) {
