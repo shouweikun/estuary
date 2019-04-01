@@ -4,7 +4,6 @@ import java.util.concurrent.{ExecutorService, Executors}
 
 import akka.actor.SupervisorStrategy.{Escalate, Restart}
 import akka.actor.{ActorRef, AllForOneStrategy, Props}
-import com.mongodb.MongoExecutionTimeoutException
 import com.neighborhood.aka.laplace.estuary.bean.exception.control.WorkerCannotFindException
 import com.neighborhood.aka.laplace.estuary.bean.exception.fetch.FetcherTimeoutException
 import com.neighborhood.aka.laplace.estuary.core.akkaUtil.SyncDaemonCommand._

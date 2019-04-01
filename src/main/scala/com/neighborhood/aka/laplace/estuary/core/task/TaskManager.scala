@@ -274,7 +274,7 @@ trait TaskManager {
     */
   lazy val fetchDelay: AtomicLong = new AtomicLong(0)
 
-  lazy val fetchSuspendTs: AtomicLong = new AtomicLong(0)
+  lazy val fetchSuspendTs: AtomicLong = new AtomicLong(-1)
 
   /**
     * 打包阈值

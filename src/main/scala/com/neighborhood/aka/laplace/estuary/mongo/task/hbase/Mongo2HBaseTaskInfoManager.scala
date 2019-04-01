@@ -1,5 +1,7 @@
 package com.neighborhood.aka.laplace.estuary.mongo.task.hbase
 
+import java.util.concurrent.atomic.AtomicLong
+
 import akka.actor.ActorRef
 import com.neighborhood.aka.laplace.estuary.bean.key.PartitionStrategy
 import com.neighborhood.aka.laplace.estuary.bean.support.HBasePut
@@ -53,6 +55,8 @@ final class Mongo2HBaseTaskInfoManager(
     */
   override def eventCollector: Option[ActorRef] = None //todo
 
+  override lazy val fetchSuspendTs: AtomicLong
+  = taskInfo.suspendTs
 
   /**
     * 传入的配置

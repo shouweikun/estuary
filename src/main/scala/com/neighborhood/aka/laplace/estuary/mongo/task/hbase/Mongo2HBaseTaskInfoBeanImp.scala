@@ -1,6 +1,7 @@
 package com.neighborhood.aka.laplace.estuary.mongo.task.hbase
 
 import java.util.Date
+import java.util.concurrent.atomic.AtomicLong
 
 import com.neighborhood.aka.laplace.estuary.bean.identity.{BaseExtractBean, DataSyncType}
 import com.neighborhood.aka.laplace.estuary.bean.key.PartitionStrategy
@@ -25,10 +26,9 @@ final case class Mongo2HBaseTaskInfoBeanImp(
                                              val batcherNum: Int = 15,
                                              val sinkerNum: Int = 15,
                                              val logEnabled: Boolean = true,
-                                             val fetcherNameToLoad: Map[String, String],
-                                             var suspendTs: Option[Long] = None
+                                             val fetcherNameToLoad: Map[String, String]
                                            ) extends BaseExtractBean {
-
+  lazy val suspendTs: AtomicLong = new AtomicLong(-1)
   /**
     * 数据同步形式
     */

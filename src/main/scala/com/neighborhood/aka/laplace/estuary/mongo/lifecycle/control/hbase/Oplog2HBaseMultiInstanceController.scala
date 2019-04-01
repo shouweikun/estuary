@@ -136,8 +136,7 @@ final class Oplog2HBaseMultiInstanceController(
           batchThreshold = taskBean.batchThreshold,
           batcherNum = taskBean.batcherNum,
           sinkerNum = taskBean.sinkerNum,
-          fetcherNameToLoad = taskBean.fetcherNameToLoad,
-          suspendTs = taskBean.suspendTs
+          fetcherNameToLoad = taskBean.fetcherNameToLoad
         )
         val spTotalInfoBean = allTaskInfoBean.copy(sourceBean = spSourceBean, taskRunningInfoBean = spTaskBean)
         val props = Oplog2HBaseController.props(spTotalInfoBean).withDispatcher("akka.controller-dispatcher")
@@ -159,7 +158,7 @@ final class Oplog2HBaseMultiInstanceController(
   }
 
   def handleSetSuspendTime(ts: Long, m: ExternalSuspendTimedCommand): Unit = {
-    childBeanMap.foreach { case (k, v) => v.taskRunningInfoBean.suspendTs = Option(ts) }
+    childBeanMap.foreach { case (_, v) => v.taskRunningInfoBean.suspendTs.set(ts) }
     context.children.foreach(ref => ref ! m)
   }
 

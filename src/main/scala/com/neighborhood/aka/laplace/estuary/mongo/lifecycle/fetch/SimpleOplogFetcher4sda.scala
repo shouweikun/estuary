@@ -61,9 +61,7 @@ final class SimpleOplogFetcher4sda(
   private var lastFetchTimestamp = System.currentTimeMillis()
 
   private val suspendTs = taskManager.fetchSuspendTs
-  suspendTs.set(getSuspendTs())
-
-  var noSendTs = getNoSendPeriodTs()
+  private var noSendTs = getNoSendPeriodTs()
 
   /**
     * 位置处理器
@@ -232,8 +230,8 @@ final class SimpleOplogFetcher4sda(
     cal.set(Calendar.MILLISECOND, 0)
     val date = cal.getTime
     val re = date.getTime
-    log.info(s"init suspend ts:$re,id:$syncTaskId")
     re
+  
   }
 
   private def getNoSendPeriodTs(): Long = {
@@ -254,7 +252,8 @@ final class SimpleOplogFetcher4sda(
     */
   override def preStart(): Unit = {
     log.info(s"fetcher switch to offline,id:$syncTaskId")
-
+    lazy val ts = getSuspendTs()
+    if (suspendTs.compareAndSet(-1, ts)) log.info(s"set suspend ts:$ts,id:$syncTaskId")
   }
 
   override def postRestart(reason: Throwable): Unit = {
