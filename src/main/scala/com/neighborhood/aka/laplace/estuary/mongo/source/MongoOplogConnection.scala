@@ -172,7 +172,7 @@ final class MongoConnection(
     val query = new BasicDBObject();
     logger.info(s"query start from ${mongoOffset.mongoTsSecond}:${mongoOffset.mongoTsInc}")
     query.put("ts", new BasicDBObject("$gte", new BsonTimestamp(mongoOffset.mongoTsSecond, mongoOffset.mongoTsInc)))
-    query.put("op", new BasicDBObject("$in", List("i", "u", "d").asJava))
+    query.put("op", new BasicDBObject("$in", List("i", "u", "d", "n").asJava))
 
     /*
             用来过滤掉因为集群的sharding操作对oplog进行的修改, 参考文档: https://www.mongodb.com/blog/post/tailing-mongodb-oplog-sharded-clusters

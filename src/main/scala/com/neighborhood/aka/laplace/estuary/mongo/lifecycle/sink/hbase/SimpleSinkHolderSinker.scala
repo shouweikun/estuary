@@ -17,9 +17,9 @@ import scala.util.Try
   * @author neighborhood.aka.laplace
   */
 private[hbase] class SimpleSinkHolderSinker(
-                                   val taskManager: HBaseSinkManager with TaskManager,
-                                   override val num: Int
-                                 ) extends SourceDataSinkerPrototype[HBaseSinkFunc, SinkHolder] {
+                                             val taskManager: HBaseSinkManager with TaskManager,
+                                             override val num: Int
+                                           ) extends SourceDataSinkerPrototype[HBaseSinkFunc, SinkHolder] {
 
 
   /**
@@ -82,7 +82,7 @@ private[hbase] class SimpleSinkHolderSinker(
     *
     * @param count
     */
- override protected def sendCount(count: => Long): Unit = if (isCounting) this.processingCounter.fold(log.warning(s"cannot find processingCounter when send sink Count,id:$syncTaskId"))(ref => ref ! SinkerMessage(OplogProcessingCounterUpdateCount(count)))
+  override protected def sendCount(count: => Long): Unit = if (isCounting) this.processingCounter.fold(log.warning(s"cannot find processingCounter when send sink Count,id:$syncTaskId"))(ref => ref ! SinkerMessage(OplogProcessingCounterUpdateCount(count)))
 
   /**
     * 发送耗时
@@ -106,6 +106,15 @@ private[hbase] class SimpleSinkHolderSinker(
     */
   override def processError(e: Throwable, message: lifecycle.WorkerMessage): Unit = throw e
 
+  /**
+    * 重载的原因是想在controller处停止资源sink，而不是在这里停止
+    */
+  override def postStop(): Unit = {
+    log.debug(s"sinker$num processing postStop,id:$syncTaskId")
+    //    if (!sinkFunc.isTerminated) sinkFunc.close
+    //    sinkTaskPool.environment.shutdown()
+    //logPositionHandler.logPositionManage
+  }
 }
 
 object SimpleSinkHolderSinker {

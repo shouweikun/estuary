@@ -469,18 +469,18 @@ final class Oplog2HBaseController(
     if (taskManager.isStart) taskManager.close
     if (!resourceManager.sink.isTerminated) resourceManager.sink.close
     if (resourceManager.source.isConnected) resourceManager.source.disconnect()
-
+    taskManager.close
   }
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit
 
   = {
     log.info(s"syncController processing preRestart,id:$syncTaskId")
-    //默认的话是会调用postStop，preRestart可以保存当前状态s
+    //默认的话是会调用postStop，preRestart可以保存当前状态
     controllerChangeStatus(Status.RESTARTING)
     context.become(receive)
     super.preRestart(reason, message)
-    taskManager.close
+
 
 
     log.info(s"syncController processing preRestart complete,id:$syncTaskId")

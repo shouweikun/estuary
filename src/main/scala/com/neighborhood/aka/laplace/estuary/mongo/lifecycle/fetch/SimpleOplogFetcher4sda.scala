@@ -123,23 +123,26 @@ final class SimpleOplogFetcher4sda(
     val curr = System.currentTimeMillis()
     context.parent ! OplogFetcherBusy //忙碌
     try {
-      simpleFetchModule.fetch.fold(context.parent ! OplogFetcherFree) {
-        doc =>
-          val isSuspend = Option(doc.get("ts")).map(_.asInstanceOf[BsonTimestamp]).map { ts =>
-            val re = ts.getTime > (suspendTs.get() / 1000)
-            //          log.info(s"$re,${ts.getTime}")
-            re
-          }.getOrElse(false) //判断是否需要挂起
-          if (isSuspend) {
-            switch2Suspend()
-          } else {
-            sendData(doc)
-            sendCost(curr - lastFetchTimestamp)
-            sendCount(1)
-            lastFetchTimestamp = curr //更新一下时间
-            context.parent ! OplogFetcherFree //空闲
-          }
-      }
+      simpleFetchModule.fetch
+        .fold(context.parent ! OplogFetcherFree) {
+          doc =>
+            val isSuspend = Option(doc.get("ts"))
+              .map(_.asInstanceOf[BsonTimestamp])
+              .map { ts => ts.getTime > (suspendTs.get() / 1000) }
+              .getOrElse(false) //判断是否需要挂起
+          lazy val isNoneOp = Option(doc.get("op")).map(_.toString).map(_.equals("n")).getOrElse(false)
+            if (isSuspend) {
+              switch2Suspend()
+            } else {
+              if (!isNoneOp) {
+                sendData(doc)
+                sendCost(curr - lastFetchTimestamp)
+                sendCount(1)
+              }
+              lastFetchTimestamp = curr //更新一下时间
+              context.parent ! OplogFetcherFree //空闲
+            }
+        }
       sendFetchMessage(self, delay, OplogFetcherFetch) //发送下一次拉取的指令
     } catch {
       case e: MongoExecutionTimeoutException => throw new FetcherTimeoutException(s"fetcher timeout when fetch oplog,id:$syncTaskId", cause = e)
