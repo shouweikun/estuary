@@ -63,7 +63,7 @@ final class Oplog2HBaseMultiInstanceController(
 
   override def receive: Receive = {
     case ExternalStartCommand => switch2Online
-    case ExternalRestartCommand(`syncTaskId`) => restartBySupervisor
+    case m@ExternalRestartCommand(`syncTaskId`) => context.children.foreach(ref => ref ! m)
     case OplogControllerStart => switch2Online
     case SyncControllerMessage(OplogControllerStart) => switch2Online
       (OplogControllerStart)
@@ -85,8 +85,8 @@ final class Oplog2HBaseMultiInstanceController(
     * @return
     */
   override def online: Receive = {
-    case ExternalRestartCommand(`syncTaskId`) => restartBySupervisor
-    case OplogControllerStopAndRestart => restartBySupervisor
+    case m@ExternalRestartCommand(`syncTaskId`) => context.children.foreach(ref => ref ! m)
+    case m@OplogControllerStopAndRestart => context.children.foreach(ref => ref ! m)
     case ListenerMessage(msg) => log.warning(s"syncController online unhandled message:$msg,id:$syncTaskId")
     case SinkerMessage(msg) => log.warning(s"syncController online unhandled message:${SinkerMessage(msg)},id:$syncTaskId")
     case SyncControllerMessage(OplogControllerCheckRunningInfo) => checkInfo

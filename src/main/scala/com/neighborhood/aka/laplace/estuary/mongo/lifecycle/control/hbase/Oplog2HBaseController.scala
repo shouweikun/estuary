@@ -104,6 +104,7 @@ final class Oplog2HBaseController(
     */
   override def online: Receive = {
     case ExternalRestartCommand(`syncTaskId`) => restartBySupervisor
+    case ExternalRestartCommand(x)if(syncTaskId.contains(x)) => restartBySupervisor
     case ExternalSuspendCommand(_) => suspendFetcher
     case ExternalResumeCommand(_) => resumeFetcher
     case m@ExternalSuspendTimedCommand(_, x) => handleTimedSuspend(x)
@@ -466,10 +467,9 @@ final class Oplog2HBaseController(
     log.info(s"syncController processing postStop ,id:$syncTaskId")
     if (!schedulingCommandPool.isShutdown) Try(schedulingCommandPool.shutdownNow())
     TaskManager.removeTaskManager(syncTaskId) // 这步很必要
-    if (taskManager.isStart) taskManager.close
-    if (!resourceManager.sink.isTerminated) resourceManager.sink.close
-    if (resourceManager.source.isConnected) resourceManager.source.disconnect()
+    //    if (taskManager.isStart) taskManager.close
     taskManager.close
+    log.info(s"syncController process postStop success,id:$syncTaskId")
   }
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit
@@ -480,9 +480,6 @@ final class Oplog2HBaseController(
     controllerChangeStatus(Status.RESTARTING)
     context.become(receive)
     super.preRestart(reason, message)
-
-
-
     log.info(s"syncController processing preRestart complete,id:$syncTaskId")
   }
 
@@ -491,7 +488,6 @@ final class Oplog2HBaseController(
   = {
     log.info(s"syncController processing postRestart,id:$syncTaskId")
     log.info(s"syncController will restart in ${SettingConstant.TASK_RESTART_DELAY} seconds,id:$syncTaskId")
-
     context.system.scheduler.scheduleOnce(SettingConstant.TASK_RESTART_DELAY seconds, self, SyncControllerMessage(OplogControllerStart))
     //可以恢复之前的状态，默认会调用
     super.postRestart(reason)

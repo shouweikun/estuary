@@ -10,6 +10,8 @@ import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.OplogSinkerComm
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.OplogSinkerEvent.OplogSinkerOffsetCollected
 import com.neighborhood.aka.laplace.estuary.mongo.source.MongoOffset
 
+import scala.util.Try
+
 /**
   * Created by john_liu on 2019/3/15.
   *
@@ -148,6 +150,10 @@ class DefaultOplogKeyHBaseSinkerManager(
     */
   override def processError(e: Throwable, message: lifecycle.WorkerMessage): Unit = ???
 
+  override def postStop(): Unit = {
+    super.postStop()
+    Try(handleOplogCheckFlush)
+  }
 }
 
 object DefaultOplogKeyHBaseSinkerManager {
