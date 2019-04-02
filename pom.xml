@@ -6,7 +6,7 @@
 
     <groupId>com.neighborhood.aka.laplace</groupId>
     <artifactId>estuary</artifactId>
-    <version>3.0.5-hbase-test</version>
+    <version>3.0.6-hbase-test</version>
 
     <parent>
         <groupId>org.springframework.boot</groupId>

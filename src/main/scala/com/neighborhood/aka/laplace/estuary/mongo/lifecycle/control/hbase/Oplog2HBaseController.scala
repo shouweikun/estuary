@@ -125,7 +125,10 @@ final class Oplog2HBaseController(
     super.restartBySupervisor
   }
 
-  def handleTimedSuspend(ts: Long): Unit = taskManager.fetchSuspendTs.set(ts)
+  def handleTimedSuspend(ts: Long): Unit = {
+    taskManager.fetchSuspendTs.set(ts)
+    log.info(s"update suspendTs to:$ts,id:$syncTaskId")
+  }
 
   /** *
     * 挂起fetcher
