@@ -187,7 +187,7 @@ final class Oplog2HBaseMultiInstanceController(
     taskManager.fetchDelay.set(-1)
     taskManager.sinkerLogPosition.set(childTaskManagers.map(_.sinkerLogPosition.get()).mkString("\n"))
 
-    if (childTaskManagers.exists(x => x.fetcherStatus.get() == Status.SUSPEND)) taskManager.fetcherStatus.set(Status.SUSPEND)
+    if (childTaskManagers.exists(x => x.fetcherStatus.get() == Status.SUSPEND)) taskManager.fetcherStatus.set(Status.SUSPEND) else taskManager.fetcherStatus.set(Status.ONLINE)
 
   }
 

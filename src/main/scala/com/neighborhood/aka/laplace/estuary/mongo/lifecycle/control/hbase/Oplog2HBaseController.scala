@@ -103,7 +103,7 @@ final class Oplog2HBaseController(
     */
   override def online: Receive = {
     case ExternalRestartCommand(`syncTaskId`) => restartBySupervisor
-    case ExternalRestartCommand(x)if(syncTaskId.contains(x)) => restartBySupervisor
+    case ExternalRestartCommand(x) if (syncTaskId.contains(x)) => restartBySupervisor
     case ExternalSuspendCommand(_) => suspendFetcher
     case ExternalResumeCommand(_) => resumeFetcher
     case m@ExternalSuspendTimedCommand(_, x) => handleTimedSuspend(x)
@@ -114,6 +114,15 @@ final class Oplog2HBaseController(
     case SyncControllerMessage(OplogControllerCheckRunningInfo) => checkInfo
     case PowerAdapterMessage(x: OplogPowerAdapterDelayFetch) => sendFetchDelay(x)
     case msg => log.warning(s"syncController online unhandled message:${msg},id:$syncTaskId")
+  }
+
+
+  /**
+    * 利用监督机制重启
+    */
+  override protected def restartBySupervisor = {
+    handleTimedSuspend(-1) //确保调用重启以后，ts重新初始化
+    super.restartBySupervisor
   }
 
   def handleTimedSuspend(ts: Long): Unit = taskManager.fetchSuspendTs.set(ts)
