@@ -3,15 +3,16 @@ package com.neighborhood.aka.laplace.estuary.core.sink.hdfs
 import java.util.concurrent.atomic.AtomicBoolean
 
 import com.neighborhood.aka.laplace.estuary.core.sink.SinkFunc
+import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.FileSystem
 import org.slf4j.LoggerFactory
 
 /**
   * Created by john_liu on 2019/4/4.
   */
-trait HdfsSinkFunc[A] extends SinkFunc {
+trait HdfsSinkFunc extends SinkFunc {
 
-  protected lazy val logger = LoggerFactory.getLogger(classOf[HdfsSinkFunc[A]])
+  protected lazy val logger = LoggerFactory.getLogger(classOf[HdfsSinkFunc])
   protected lazy val fs: FileSystem = initFileSystem
 
   protected def basePath: String = ""
@@ -24,7 +25,7 @@ trait HdfsSinkFunc[A] extends SinkFunc {
     * @return FileSystem
     */
   def initFileSystem: FileSystem = {
-    val hadoopConf: org.apache.hadoop.conf.Configuration = ???
+    val hadoopConf: org.apache.hadoop.conf.Configuration = new Configuration()
     FileSystem.get(hadoopConf)
   }
 
