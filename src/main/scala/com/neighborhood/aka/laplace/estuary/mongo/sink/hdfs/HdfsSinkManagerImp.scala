@@ -7,5 +7,10 @@ import com.neighborhood.aka.laplace.estuary.core.task.SinkManager
   * Created by john_liu on 2019/4/12.
   */
 trait HdfsSinkManagerImp extends SinkManager[HdfsSinkFunc] {
-
+  /**
+    * 构建数据汇
+    *
+    * @return sink
+    */
+  override def buildSink: HdfsSinkFunc = ???
 }

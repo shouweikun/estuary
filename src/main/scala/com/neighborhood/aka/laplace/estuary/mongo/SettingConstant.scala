@@ -24,6 +24,7 @@ object SettingConstant {
   val CHECK_HBASE_FLUSH_INTERVAL = 5 //s
   val CHECK_SEND_OFFSET_INTERVAL = 20 //s
   val CHECK_COLLECT_OFFSET_INTERVAL = 10//s
+  val CHECK_HDFS_FLUSH_INTERVAL = 5 //s
 
   //列族名称
   object HBASE_CF {
