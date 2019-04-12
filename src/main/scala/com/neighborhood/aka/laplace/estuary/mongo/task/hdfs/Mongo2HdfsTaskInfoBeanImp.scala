@@ -11,7 +11,8 @@ import com.neighborhood.aka.laplace.estuary.mongo.source.MongoOffset
   * Created by john_liu on 2019/2/28.
   */
 final case class Mongo2HdfsTaskInfoBeanImp(
-                                            val syncTaskId: String
+                                            val syncTaskId: String,
+                                            val offsetZookeeperServer: String
                                           )(
                                             val mongoOffset: MongoOffset = MongoOffset((System.currentTimeMillis() / 1000).toInt, 0),
                                             val isCosting: Boolean = true,

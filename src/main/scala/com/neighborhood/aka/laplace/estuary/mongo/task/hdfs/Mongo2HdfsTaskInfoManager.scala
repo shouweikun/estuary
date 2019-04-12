@@ -10,7 +10,7 @@ import com.neighborhood.aka.laplace.estuary.core.trans.MappingFormat
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.OplogClassifier
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.batch.mappingFormat.OplogHdfsMappingFormat
 import com.neighborhood.aka.laplace.estuary.mongo.sink.Hdfs.{HdfsBeanImp, HdfsSinkManagerImp}
-import com.neighborhood.aka.laplace.estuary.mongo.sink.hdfs.HdfsBeanImp
+import com.neighborhood.aka.laplace.estuary.mongo.sink.hdfs.{HdfsBeanImp, HdfsSinkManagerImp}
 import com.neighborhood.aka.laplace.estuary.mongo.source.{MongoOffset, MongoSourceBeanImp, MongoSourceManagerImp}
 import com.neighborhood.aka.laplace.estuary.mongo.util.MongoDocumentToJson
 import com.typesafe.config.Config
@@ -22,9 +22,9 @@ import org.slf4j.{Logger, LoggerFactory}
   * @author neighborhood.aka.laplace
   */
 final class Mongo2HdfsTaskInfoManager(
-                                        private val allTaskInfoBean: Mongo2HdfsAllTaskInfoBean,
-                                        _config: Config
-                                      ) extends HdfsSinkManagerImp with MongoSourceManagerImp with TaskManager {
+                                       private val allTaskInfoBean: Mongo2HdfsAllTaskInfoBean,
+                                       _config: Config
+                                     ) extends HdfsSinkManagerImp with MongoSourceManagerImp with TaskManager {
   override protected lazy val logger: Logger = LoggerFactory.getLogger(classOf[Mongo2HdfsTaskInfoManager])
   /**
     * 数据汇bean
@@ -45,7 +45,7 @@ final class Mongo2HdfsTaskInfoManager(
   /**
     * batch转换模块
     */
-  override lazy val batchMappingFormat: Option[MappingFormat[OplogClassifier, HdfsPut[MongoOffset]]] = Option(buildMappingFormat)
+  override lazy val batchMappingFormat = ???
 
   override val offsetZookeeperServer: String = taskInfo.offsetZookeeperServer
 
@@ -56,8 +56,6 @@ final class Mongo2HdfsTaskInfoManager(
     */
   override def eventCollector: Option[ActorRef] = None //todo
 
-  override lazy val fetchSuspendTs: AtomicLong
-  = taskInfo.suspendTs
 
   /**
     * 传入的配置
