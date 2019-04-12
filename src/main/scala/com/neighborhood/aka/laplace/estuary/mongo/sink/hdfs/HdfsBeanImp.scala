@@ -1,4 +1,4 @@
-package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.hdfs
+package com.neighborhood.aka.laplace.estuary.mongo.sink.hdfs
 
 import com.neighborhood.aka.laplace.estuary.bean.datasink.HdfsBean
 
