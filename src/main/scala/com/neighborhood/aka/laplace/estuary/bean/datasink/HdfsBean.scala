@@ -5,5 +5,5 @@ package com.neighborhood.aka.laplace.estuary.bean.datasink
   */
 trait HdfsBean {
 
-
+  def hdfsBasePath: String
 }
