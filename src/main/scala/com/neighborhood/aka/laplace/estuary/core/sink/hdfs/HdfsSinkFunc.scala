@@ -2,7 +2,9 @@ package com.neighborhood.aka.laplace.estuary.core.sink.hdfs
 
 import java.util.concurrent.atomic.AtomicBoolean
 
+import com.neighborhood.aka.laplace.estuary.bean.support.HdfsMessage
 import com.neighborhood.aka.laplace.estuary.core.sink.SinkFunc
+import com.neighborhood.aka.laplace.estuary.mongo.source.MongoOffset
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.FileSystem
 import org.slf4j.LoggerFactory
@@ -56,4 +58,8 @@ trait HdfsSinkFunc extends SinkFunc {
     *
     */
   override def isTerminated: Boolean = connectStatus.get()
+
+  def send(hdfsMessage: HdfsMessage[MongoOffset]) = {
+    //todo 实现hdfs插入功能
+  }
 }

@@ -1,5 +1,7 @@
 package com.neighborhood.aka.laplace.estuary.mongo.sink.hdfs
 
+import java.util.concurrent.atomic.AtomicBoolean
+
 import com.neighborhood.aka.laplace.estuary.core.sink.hdfs.HdfsSinkFunc
 import com.neighborhood.aka.laplace.estuary.core.task.SinkManager
 
@@ -12,5 +14,9 @@ trait HdfsSinkManagerImp extends SinkManager[HdfsSinkFunc] {
     *
     * @return sink
     */
-  override def buildSink: HdfsSinkFunc = ???
+  override def buildSink: HdfsSinkFunc = {
+    new HdfsSinkImp
+  }
+
+  lazy val sinkAbnormal = new AtomicBoolean(false)
 }
