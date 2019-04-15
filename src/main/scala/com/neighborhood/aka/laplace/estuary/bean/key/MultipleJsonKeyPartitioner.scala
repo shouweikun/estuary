@@ -35,6 +35,7 @@ class MultipleJsonKeyPartitioner extends Partitioner {
       case x: OplogKey => {
         x.getPartitionStrategy match {
           case PartitionStrategy.PRIMARY_KEY => math.abs(partitionByPrimaryKey(x.getMongoOpsUuid))
+          case PartitionStrategy.DATABASE_TABLE => math.abs(partitionByDbAndTable(x.getDbName,x.getTableName))
           case _ => ???
         }
       }

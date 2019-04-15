@@ -63,5 +63,4 @@ final class OplogHdfsSpecialInfoSender(
 object OplogHdfsSpecialInfoSender {
   def props(sinker: ActorRef, taskManager: TaskManager): Props = Props(new OplogHdfsSpecialInfoSender(sinker, taskManager))
 
-  )
 }

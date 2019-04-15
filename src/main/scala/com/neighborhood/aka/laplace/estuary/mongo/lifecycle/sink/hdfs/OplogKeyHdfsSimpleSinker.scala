@@ -26,7 +26,7 @@ import scala.util.Try
 final class OplogKeyHdfsSimpleSinker(
                                       override val taskManager: HdfsSinkManagerImp with TaskManager,
                                       override val num: Int
-                                     ) extends SourceDataSinkerPrototype[HdfsSinkImp, HdfsMessage[MongoOffset]] {
+                                     ) extends SourceDataSinkerPrototype[HdfsSinkFunc, HdfsMessage[MongoOffset]] {
   /**
     * 资源管理器
     */
