@@ -4,7 +4,7 @@ import akka.actor.SupervisorStrategy.{Restart, Stop}
 import akka.actor.{Actor, ActorLogging, ActorRef, InvalidActorNameException, OneForOneStrategy, Props}
 import com.neighborhood.aka.laplace.estuary.bean.exception.other.WorkerInitialFailureException
 import com.neighborhood.aka.laplace.estuary.core.akkaUtil.SyncDaemonCommand._
-import com.neighborhood.aka.laplace.estuary.core.task.{Mongo2HBaseSyncTask, Mongo2KafkaSyncTask, Mysql2MysqlSyncTask}
+import com.neighborhood.aka.laplace.estuary.core.task.{Mongo2HBaseSyncTask, Mongo2HdfsSyncTask, Mongo2KafkaSyncTask, Mysql2MysqlSyncTask}
 
 import scala.util.Try
 
@@ -25,6 +25,7 @@ final class SyncDaemon extends Actor with ActorLogging {
       case Mysql2MysqlSyncTask(props, name) => startNewTask(props, name)
       case Mongo2KafkaSyncTask(props, name) => startNewTask(props, name)
       case Mongo2HBaseSyncTask(props, name) => startNewTask(props, name)
+      case Mongo2HdfsSyncTask(props, name) => startNewTask(props, name)
       case x => log.error(s"$x is ${x.taskType} which is not supported currently")
     }
     case ExternalRestartCommand(syncTaskId) => restartTask(syncTaskId)

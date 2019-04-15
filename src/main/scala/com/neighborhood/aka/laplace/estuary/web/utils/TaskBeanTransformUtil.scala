@@ -5,6 +5,7 @@ import com.neighborhood.aka.laplace.estuary.mongo.sink.hbase.HBaseBeanImp
 import com.neighborhood.aka.laplace.estuary.mongo.sink.kafka.OplogKeyKafkaBeanImp
 import com.neighborhood.aka.laplace.estuary.mongo.source.{MongoOffset, MongoSourceBeanImp}
 import com.neighborhood.aka.laplace.estuary.mongo.task.hbase.{Mongo2HBaseAllTaskInfoBean, Mongo2HBaseTaskInfoBeanImp}
+import com.neighborhood.aka.laplace.estuary.mongo.task.hdfs.Mongo2HdfsAllTaskInfoBean
 import com.neighborhood.aka.laplace.estuary.mongo.task.kafka.{Mongo2KafkaAllTaskInfoBean, Mongo2KafkaTaskInfoBeanImp}
 import com.neighborhood.aka.laplace.estuary.mysql.sink.MysqlSinkBeanImp
 import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlSourceBeanImp
@@ -14,6 +15,10 @@ import com.neighborhood.aka.laplace.estuary.web.bean._
 import scala.collection.JavaConverters._
 
 object TaskBeanTransformUtil {
+
+  def convertMongo2HdfsRequest2Mongo2HdfsTaskInfo(request: Mongo2HBaseTaskRequestBean): Mongo2HdfsAllTaskInfoBean = {
+    ???
+  }
 
   def convertMongo2HBaseRequest2Mongo2HBaseTaskInfo(request: Mongo2HBaseTaskRequestBean): Mongo2HBaseAllTaskInfoBean = {
     Mongo2HBaseAllTaskInfoBean(

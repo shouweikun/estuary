@@ -28,4 +28,8 @@ package object task {
 
   final case class Mongo2HBaseSyncTask(override val props: Props,
                                        override val name: String) extends SyncTask
+
+  final case class Mongo2HdfsSyncTask(override val props: Props,
+                                      override val name: String) extends SyncTask
+
 }
