@@ -18,6 +18,14 @@ final case class HdfsMessage[A <: ComparableOffset[A]](
 
   val ts = System.currentTimeMillis()
 
+  override def toString: String =
+    s"""{
+      |"dbName":"$dbName",
+      |"tableName":"$tableName",
+      |"value":$value,
+      |"offset":${offset.toString}
+      |}""".stripMargin
+
 }
 
 object HdfsMessage {
