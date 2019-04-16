@@ -7,9 +7,9 @@ public class Mongo2HdfsTaskRequestBean extends TaskRequestBean {
 
     private boolean isMulti = false;
 
-    private Mongo2HBaseRunningInfoRequestBean mongo2HBaseRunningInfo;
+    private Mongo2HdfsRunningInfoRequestBean mongo2HdfsRunningInfo;
     private MongoSourceRequestBean mongoSource;
-    private HBaseSinkRequestBean hbaseSink;
+    private HdfsSinkRequestBean hdfsSink;
 
     public boolean isMulti() {
         return isMulti;
@@ -19,12 +19,12 @@ public class Mongo2HdfsTaskRequestBean extends TaskRequestBean {
         isMulti = multi;
     }
 
-    public Mongo2HBaseRunningInfoRequestBean getMongo2HBaseRunningInfo() {
-        return mongo2HBaseRunningInfo;
+    public Mongo2HdfsRunningInfoRequestBean getMongo2HdfsRunningInfo() {
+        return mongo2HdfsRunningInfo;
     }
 
-    public void setMongo2HBaseRunningInfo(Mongo2HBaseRunningInfoRequestBean mongo2HBaseRunningInfo) {
-        this.mongo2HBaseRunningInfo = mongo2HBaseRunningInfo;
+    public void setMongo2HdfsRunningInfo(Mongo2HdfsRunningInfoRequestBean mongo2HdfsRunningInfo) {
+        this.mongo2HdfsRunningInfo = mongo2HdfsRunningInfo;
     }
 
     public MongoSourceRequestBean getMongoSource() {
@@ -35,11 +35,11 @@ public class Mongo2HdfsTaskRequestBean extends TaskRequestBean {
         this.mongoSource = mongoSource;
     }
 
-    public HBaseSinkRequestBean getHbaseSink() {
-        return hbaseSink;
+    public HdfsSinkRequestBean getHdfsSink() {
+        return hdfsSink;
     }
 
-    public void setHbaseSink(HBaseSinkRequestBean hbaseSink) {
-        this.hbaseSink = hbaseSink;
+    public void setHdfsSink(HdfsSinkRequestBean hdfsSink) {
+        this.hdfsSink = hdfsSink;
     }
 }

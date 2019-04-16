@@ -1,7 +1,7 @@
 package com.neighborhood.aka.laplace.estuary.web.controller
 
-import com.neighborhood.aka.laplace.estuary.web.bean.{Mongo2HBaseTaskRequestBean, Mongo2HdfsTaskRequestBean}
-import com.neighborhood.aka.laplace.estuary.web.service.{Mongo2HBaseService, Mongo2HdfsService}
+import com.neighborhood.aka.laplace.estuary.web.bean.Mongo2HdfsTaskRequestBean
+import com.neighborhood.aka.laplace.estuary.web.service.Mongo2HdfsService
 import com.neighborhood.aka.laplace.estuary.web.utils.ValidationUtils
 import io.swagger.annotations.ApiOperation
 import org.springframework.beans.factory.annotation.{Autowired, Qualifier}
@@ -34,9 +34,9 @@ final class Mongo2HdfsController extends SyncTaskController[Mongo2HdfsTaskReques
   @ApiOperation(value = "开始一个新的mongo2Hdfs任务", httpMethod = "POST", notes = "")
   @RequestMapping(value = Array("/new/sync"), method = Array(RequestMethod.POST))
   def createNewSyncTask(@RequestBody requestBody: Mongo2HdfsTaskRequestBean) = {
-    ValidationUtils.notblank(requestBody.getMongo2HBaseRunningInfo.getSyncTaskId, "syncTaskId cannot be null")
-    ValidationUtils.notblank(requestBody.getMongo2HBaseRunningInfo.getOffsetZookeeperServers, "offsetZookeeperServers cannot be null")
-    syncService.startNewOneTaskKeepConfig(requestBody.getMongo2HBaseRunningInfo.getSyncTaskId, requestBody)
+    ValidationUtils.notblank(requestBody.getMongo2HdfsRunningInfo.getSyncTaskId, "syncTaskId cannot be null")
+    ValidationUtils.notblank(requestBody.getMongo2HdfsRunningInfo.getOffsetZookeeperServers, "offsetZookeeperServers cannot be null")
+    syncService.startNewOneTaskKeepConfig(requestBody.getMongo2HdfsRunningInfo.getSyncTaskId, requestBody)
   }
 
 

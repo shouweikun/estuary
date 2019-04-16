@@ -45,10 +45,10 @@ final class Mongo2HdfsService extends SyncService[Mongo2HdfsTaskRequestBean] {
     //    val taskInfoBean = TaskBeanTransformUtil.convertMongo2HdfsRequest2Mongo2HdfsTaskInfo(taskRequestBean)
     //    val props = if (taskRequestBean.isMulti) Oplog2HBaseMultiInstanceController.props(taskInfoBean) else Oplog2HBaseController.props(taskInfoBean)
     //
-    //    ActorRefHolder.syncDaemon ! ExternalStartCommand(Mongo2HBaseSyncTask(props, taskRequestBean.getMongo2HBaseRunningInfo.getSyncTaskId))
+    //    ActorRefHolder.syncDaemon ! ExternalStartCommand(Mongo2HBaseSyncTask(props, taskRequestBean.getMongo2HdfsRunningInfo.getSyncTaskId))
     //    s"""
     //      {
-    //       "syncTaskId":"${taskRequestBean.getMongo2HBaseRunningInfo.getSyncTaskId}",
+    //       "syncTaskId":"${taskRequestBean.getMongo2HdfsRunningInfo.getSyncTaskId}",
     //       "status":"submitted"
     //      }
     //    """.stripMargin
@@ -66,7 +66,7 @@ final class Mongo2HdfsService extends SyncService[Mongo2HdfsTaskRequestBean] {
     */
   def startNewOneTask4Sda(taskRequestBean: Mongo2HdfsTaskRequestBean): String = {
     customRequest4Sda(taskRequestBean)
-    val syncTaskId = taskRequestBean.getMongo2HBaseRunningInfo.getSyncTaskId
+    val syncTaskId = taskRequestBean.getMongo2HdfsRunningInfo.getSyncTaskId
     val ip = InetAddress.getLocalHost().getHostAddress
     val bean = taskRequestBean
     val taskType = "MONGO_TO_HBASE_SDA"
@@ -80,7 +80,7 @@ final class Mongo2HdfsService extends SyncService[Mongo2HdfsTaskRequestBean] {
       bean = bean,
       databaseName = database
     )(save)
-    startNewOneTaskKeepConfig(taskRequestBean.getMongo2HBaseRunningInfo.getSyncTaskId, taskRequestBean)
+    startNewOneTaskKeepConfig(taskRequestBean.getMongo2HdfsRunningInfo.getSyncTaskId, taskRequestBean)
   }
 
   /**
@@ -90,7 +90,7 @@ final class Mongo2HdfsService extends SyncService[Mongo2HdfsTaskRequestBean] {
     * @param taskRequestBean Mongo2HBaseTaskRequestBean
     */
   private def customRequest4Sda(taskRequestBean: Mongo2HdfsTaskRequestBean): Unit = {
-    if (taskRequestBean.getMongo2HBaseRunningInfo.getFetcherNameToLoad == null) taskRequestBean.getMongo2HBaseRunningInfo.setFetcherNameToLoad(new java.util.HashMap[String, String])
-    taskRequestBean.getMongo2HBaseRunningInfo.getFetcherNameToLoad.put("directFetcher", "com.neighborhood.aka.laplace.estuary.mongo.lifecycle.fetch.SimpleOplogFetcher4sda")
+    if (taskRequestBean.getMongo2HdfsRunningInfo.getFetcherNameToLoad == null) taskRequestBean.getMongo2HdfsRunningInfo.setFetcherNameToLoad(new java.util.HashMap[String, String])
+    taskRequestBean.getMongo2HdfsRunningInfo.getFetcherNameToLoad.put("directFetcher", "com.neighborhood.aka.laplace.estuary.mongo.lifecycle.fetch.SimpleOplogFetcher4sda")
   }
 }
