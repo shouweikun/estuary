@@ -28,10 +28,7 @@ final case class MongoOffset(
   def formatString = s"($mongoTsSecond,$mongoTsInc)"
 
   override def toString: String =
-    s"""{
-      |"mongoTsSecond":$mongoTsSecond,
-      |"mongoTsInc":$mongoTsInc
-      |}""".stripMargin
+    s"""{"mongoTsSecond":$mongoTsSecond,"mongoTsInc":$mongoTsInc}""".stripMargin
 
 
 }
