@@ -29,7 +29,6 @@ trait HdfsSinkFunc extends SinkFunc {
 
   private lazy val outputHolder = new ConcurrentHashMap[String, Tuple2[String,FSDataOutputStream]]()
 
-  private val format = new SimpleDateFormat("yyyyMMdd")
   /**
     * 初始化HDFS系统
     *
@@ -84,6 +83,7 @@ trait HdfsSinkFunc extends SinkFunc {
     */
   private def getOutputStream(dbName:String,tableName:String,ts:Int):FSDataOutputStream={
     val key = s"$dbName.$tableName"
+    val format = new SimpleDateFormat("yyyyMMdd")
     val nowdate= format.format(new Date(ts*1000))
     if(outputHolder.contains(key)){
       val outputStream = outputHolder.get(key)
