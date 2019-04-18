@@ -26,7 +26,7 @@ import scala.util.Try
 final class OplogKeyHdfsSimpleSinker(
                                       override val taskManager: HdfsSinkManagerImp with TaskManager,
                                       override val num: Int
-                                     ) extends SourceDataSinkerPrototype[HdfsSinkFunc, HdfsMessage[MongoOffset]] {
+                                    ) extends SourceDataSinkerPrototype[HdfsSinkFunc, HdfsMessage[MongoOffset]] {
   /**
     * 资源管理器
     */
@@ -61,7 +61,7 @@ final class OplogKeyHdfsSimpleSinker(
     if (!input.isAbnormal) {
       sink.send(input)
       positionRecorder.map(ref => ref ! input.offset) //发送offset
-      sendCost(System.currentTimeMillis() - input.offset.mongoTsSecond*1000)//TODO 需要一个从mongo获取到数据到时间
+      sendCost(System.currentTimeMillis() - input.ts)
     }
     sendCount(1)
   }
