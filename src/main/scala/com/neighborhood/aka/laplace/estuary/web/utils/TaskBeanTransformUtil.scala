@@ -16,7 +16,7 @@ import scala.collection.JavaConverters._
 
 object TaskBeanTransformUtil {
 
-  def convertMongo2HdfsRequest2Mongo2HdfsTaskInfo(request: Mongo2HBaseTaskRequestBean): Mongo2HdfsAllTaskInfoBean = {
+  def convertMongo2HdfsRequest2Mongo2HdfsTaskInfo(request: Mongo2HdfsTaskRequestBean): Mongo2HdfsAllTaskInfoBean = {
     ???
   }
 

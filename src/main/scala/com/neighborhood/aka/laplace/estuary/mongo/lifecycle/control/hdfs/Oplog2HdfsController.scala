@@ -3,7 +3,7 @@ package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.control.hdfs
 import java.util.concurrent.{ExecutorService, Executors}
 
 import akka.actor.SupervisorStrategy.{Escalate, Restart}
-import akka.actor.{ActorRef, AllForOneStrategy}
+import akka.actor.{ActorRef, AllForOneStrategy, Props}
 import com.neighborhood.aka.laplace.estuary.bean.exception.control.WorkerCannotFindException
 import com.neighborhood.aka.laplace.estuary.bean.exception.fetch.FetcherTimeoutException
 import com.neighborhood.aka.laplace.estuary.core.akkaUtil.SyncDaemonCommand._
@@ -529,5 +529,7 @@ final class Oplog2HdfsController(
   }
 
 }
-
+object Oplog2HdfsController {
+  def props(allTaskInfoBean: Mongo2HdfsAllTaskInfoBean): Props = Props(new Oplog2HdfsController(allTaskInfoBean))
+}
 
