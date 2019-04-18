@@ -3,7 +3,7 @@ package com.neighborhood.aka.laplace.estuary.web.service
 import java.net.InetAddress
 
 import com.neighborhood.aka.laplace.estuary.core.akkaUtil.SyncDaemonCommand.ExternalStartCommand
-import com.neighborhood.aka.laplace.estuary.core.task.Mongo2HBaseSyncTask
+import com.neighborhood.aka.laplace.estuary.core.task.{Mongo2HBaseSyncTask, Mongo2HdfsSyncTask}
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.control.hbase.{Oplog2HBaseController, Oplog2HBaseMultiInstanceController}
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.control.hdfs.Oplog2HdfsController
 import com.neighborhood.aka.laplace.estuary.web.akkaUtil.ActorRefHolder
@@ -45,7 +45,7 @@ final class Mongo2HdfsService extends SyncService[Mongo2HdfsTaskRequestBean] {
     val taskInfoBean = TaskBeanTransformUtil.convertMongo2HdfsRequest2Mongo2HdfsTaskInfo(taskRequestBean)
     val props = Oplog2HdfsController.props(taskInfoBean)
 
-    ActorRefHolder.syncDaemon ! ExternalStartCommand(Mongo2HBaseSyncTask(props, taskRequestBean.getMongo2HdfsRunningInfo.getSyncTaskId))
+    ActorRefHolder.syncDaemon ! ExternalStartCommand(Mongo2HdfsSyncTask(props, taskRequestBean.getMongo2HdfsRunningInfo.getSyncTaskId))
     s"""
       {
        "syncTaskId":"${taskRequestBean.getMongo2HdfsRunningInfo.getSyncTaskId}",
