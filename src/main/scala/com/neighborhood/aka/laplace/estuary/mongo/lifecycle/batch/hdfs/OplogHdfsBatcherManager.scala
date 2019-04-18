@@ -1,7 +1,7 @@
 package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.batch.hdfs
 
 import akka.actor.SupervisorStrategy.Escalate
-import akka.actor.{ActorRef, AllForOneStrategy}
+import akka.actor.{ActorRef, AllForOneStrategy, Props}
 import akka.routing.{ConsistentHashingGroup, RoundRobinGroup}
 import com.neighborhood.aka.laplace.estuary.bean.key.{OplogKey, PartitionStrategy}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
@@ -185,4 +185,6 @@ final class OplogHdfsBatcherManager(
   }
 
 }
-
+object OplogHdfsBatcherManager {
+  def props(taskManager: MongoSourceManagerImp with TaskManager, sinker: ActorRef): Props = Props(new OplogHdfsBatcherManager(taskManager, sinker))
+}

@@ -2,9 +2,14 @@ package com.neighborhood.aka.laplace.estuary.mongo.task.hdfs
 
 import akka.actor.ActorRef
 import com.neighborhood.aka.laplace.estuary.bean.key.PartitionStrategy
+import com.neighborhood.aka.laplace.estuary.bean.support.HdfsMessage
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
+import com.neighborhood.aka.laplace.estuary.core.trans.MappingFormat
+import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.OplogClassifier
+import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.batch.mappingFormat.Oplog2HdfsMessageMappingFormat
 import com.neighborhood.aka.laplace.estuary.mongo.sink.hdfs.{HdfsBeanImp, HdfsSinkManagerImp}
 import com.neighborhood.aka.laplace.estuary.mongo.source.{MongoOffset, MongoSourceBeanImp, MongoSourceManagerImp}
+import com.neighborhood.aka.laplace.estuary.mongo.util.MongoDocumentToJson
 import com.typesafe.config.Config
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -158,5 +163,8 @@ final class Mongo2HdfsTaskInfoManager(
 
 
 
-  private def buildMappingFormat = ???
+  private def buildMappingFormat: MappingFormat[OplogClassifier, HdfsMessage[MongoOffset]] = {
+    if (logIsEnabled) logger.info(s"start to build build mapping formart,id:$syncTaskId")
+    new Oplog2HdfsMessageMappingFormat(source, syncTaskId, new MongoDocumentToJson)
+  }
 }

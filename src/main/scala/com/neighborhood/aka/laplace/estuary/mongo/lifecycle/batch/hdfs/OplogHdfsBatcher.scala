@@ -1,7 +1,7 @@
 package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.batch.hdfs
 
 import akka.actor.{ActorRef, Props}
-import com.neighborhood.aka.laplace.estuary.bean.support.HBasePut
+import com.neighborhood.aka.laplace.estuary.bean.support.HdfsMessage
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.BatcherMessage
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.SourceDataBatcherPrototype
@@ -21,12 +21,12 @@ final class OplogHdfsBatcher(
                               override val taskManager: TaskManager,
                               override val sinker: ActorRef,
                               override val num: Int
-                            ) extends SourceDataBatcherPrototype[OplogClassifier, HBasePut[MongoOffset]] {
+                            ) extends SourceDataBatcherPrototype[OplogClassifier, HdfsMessage[MongoOffset]] {
 
   /**
     * mappingFormat
     */
-  override val mappingFormat: MappingFormat[OplogClassifier, HBasePut[MongoOffset]] = taskManager.batchMappingFormat.get.asInstanceOf[MappingFormat[OplogClassifier, HBasePut[MongoOffset]]]
+  override val mappingFormat: MappingFormat[OplogClassifier, HdfsMessage[MongoOffset]] = taskManager.batchMappingFormat.get.asInstanceOf[MappingFormat[OplogClassifier, HdfsMessage[MongoOffset]]]
   /**
     * processingCounter
     */
@@ -51,18 +51,18 @@ final class OplogHdfsBatcher(
     * @param oplogClassifier
     */
   private def handleBatchTask(oplogClassifier: OplogClassifier): Unit = {
-    val hbasePut = transAndSend(oplogClassifier)
-    if (!hbasePut.isAbnormal) {
+    val hdfsMessage = transAndSend(oplogClassifier)
+    if (!hdfsMessage.isAbnormal) {
       sendCost(System.currentTimeMillis() - oplogClassifier.fetchTimeStamp)
     }
     sendCount(1)
   }
 
   @inline
-  private def transAndSend(oplogClassifier: OplogClassifier): HBasePut[MongoOffset] = {
-    val hbasePut = transform(oplogClassifier)
-    sinker ! hbasePut
-    hbasePut
+  private def transAndSend(oplogClassifier: OplogClassifier): HdfsMessage[MongoOffset] = {
+    val hdfsMessage = transform(oplogClassifier)
+    sinker ! hdfsMessage
+    hdfsMessage
   }
 
   @inline

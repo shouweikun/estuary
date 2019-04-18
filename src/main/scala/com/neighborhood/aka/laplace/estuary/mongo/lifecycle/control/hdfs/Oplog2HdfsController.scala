@@ -18,6 +18,7 @@ import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.adapt.OplogPowerAdap
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.adapt.OplogPowerAdapterCommand.{OplogPowerAdapterComputeCost, OplogPowerAdapterControl, OplogPowerAdapterDelayFetch}
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.batch.OplogBatcherCommand
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.batch.OplogBatcherCommand.OplogBatcherCheckHeartbeats
+import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.batch.hdfs.OplogHdfsBatcherManager
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.control.OplogControllerCommand._
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.count.OplogProcessingCounter
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.count.OplogProcessingCounterCommand.OplogProcessingCounterComputeCount
@@ -27,6 +28,7 @@ import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.record.OplogPosition
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.record.OplogRecorderCommand.OplogRecorderSavePosition
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.OplogSinkerCommand
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.OplogSinkerCommand.{OplogSinkerCheckFlush, OplogSinkerCollectOffset, OplogSinkerSendOffset}
+import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.hdfs.{OplogKeyHdfsSimpleSinker, OplogKeyHdfsSinkerManager}
 import com.neighborhood.aka.laplace.estuary.mongo.sink.hdfs.HdfsBeanImp
 import com.neighborhood.aka.laplace.estuary.mongo.source.{MongoConnection, MongoSourceBeanImp}
 import com.neighborhood.aka.laplace.estuary.mongo.task.hdfs.{Mongo2HdfsAllTaskInfoBean, Mongo2HdfsTaskInfoBeanImp, Mongo2HdfsTaskInfoManager}
@@ -190,12 +192,13 @@ final class Oplog2HdfsController(
 
     //初始化binlogSinker
     log.info(s"initialize sinker,id:$syncTaskId")
-    //todo
+    val sinker = context.actorOf(OplogKeyHdfsSinkerManager.props(taskManager),sinkerName)
 
     taskManager.wait4SinkerList() //必须要等待
     //初始化batcher
     log.info(s"initialize batcher,id:$syncTaskId")
-    val oplogBatcher = ??? //todo
+    val oplogBatcher = context
+      .actorOf(OplogHdfsBatcherManager.props(taskManager, sinker).withDispatcher("akka.batcher-dispatcher"), batcherName)
     initFetcher(oplogBatcher)
   }
 
