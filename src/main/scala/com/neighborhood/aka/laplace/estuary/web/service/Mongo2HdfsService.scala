@@ -3,8 +3,9 @@ package com.neighborhood.aka.laplace.estuary.web.service
 import java.net.InetAddress
 
 import com.neighborhood.aka.laplace.estuary.core.akkaUtil.SyncDaemonCommand.ExternalStartCommand
-import com.neighborhood.aka.laplace.estuary.core.task.Mongo2HBaseSyncTask
+import com.neighborhood.aka.laplace.estuary.core.task.{Mongo2HBaseSyncTask, Mongo2HdfsSyncTask}
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.control.hbase.{Oplog2HBaseController, Oplog2HBaseMultiInstanceController}
+import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.control.hdfs.Oplog2HdfsController
 import com.neighborhood.aka.laplace.estuary.web.akkaUtil.ActorRefHolder
 import com.neighborhood.aka.laplace.estuary.web.bean.Mongo2HdfsTaskRequestBean
 import com.neighborhood.aka.laplace.estuary.web.utils.TaskBeanTransformUtil
@@ -41,27 +42,26 @@ final class Mongo2HdfsService extends SyncService[Mongo2HdfsTaskRequestBean] {
     * @return 任务启动信息
     */
   override protected def startNewOneTask(taskRequestBean: Mongo2HdfsTaskRequestBean): String = {
-    ???
-    //    val taskInfoBean = TaskBeanTransformUtil.convertMongo2HdfsRequest2Mongo2HdfsTaskInfo(taskRequestBean)
-    //    val props = if (taskRequestBean.isMulti) Oplog2HBaseMultiInstanceController.props(taskInfoBean) else Oplog2HBaseController.props(taskInfoBean)
-    //
-    //    ActorRefHolder.syncDaemon ! ExternalStartCommand(Mongo2HBaseSyncTask(props, taskRequestBean.getMongo2HdfsRunningInfo.getSyncTaskId))
-    //    s"""
-    //      {
-    //       "syncTaskId":"${taskRequestBean.getMongo2HdfsRunningInfo.getSyncTaskId}",
-    //       "status":"submitted"
-    //      }
-    //    """.stripMargin
+    val taskInfoBean = TaskBeanTransformUtil.convertMongo2HdfsRequest2Mongo2HdfsTaskInfo(taskRequestBean)
+    val props = Oplog2HdfsController.props(taskInfoBean)
+
+    ActorRefHolder.syncDaemon ! ExternalStartCommand(Mongo2HdfsSyncTask(props, taskRequestBean.getMongo2HdfsRunningInfo.getSyncTaskId))
+    s"""
+      {
+       "syncTaskId":"${taskRequestBean.getMongo2HdfsRunningInfo.getSyncTaskId}",
+       "status":"submitted"
+      }
+    """.stripMargin
   }
 
   /**
-    * 启动一个新的sda mongo2Hbase任务
+    * 启动一个新的sda mongo2Hdfs任务
     *
     * 1.sda定制
     * 2.保存任务信息
     * 3.启动
     *
-    * @param taskRequestBean Mongo2HBaseTaskRequestBean
+    * @param taskRequestBean Mongo2HdfsTaskRequestBean
     * @return 任务启动情况
     */
   def startNewOneTask4Sda(taskRequestBean: Mongo2HdfsTaskRequestBean): String = {

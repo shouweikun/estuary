@@ -2,10 +2,11 @@ package com.neighborhood.aka.laplace.estuary.web.utils
 
 import com.neighborhood.aka.laplace.estuary.bean.credential.{MongoCredentialBean, MysqlCredentialBean}
 import com.neighborhood.aka.laplace.estuary.mongo.sink.hbase.HBaseBeanImp
+import com.neighborhood.aka.laplace.estuary.mongo.sink.hdfs.HdfsBeanImp
 import com.neighborhood.aka.laplace.estuary.mongo.sink.kafka.OplogKeyKafkaBeanImp
 import com.neighborhood.aka.laplace.estuary.mongo.source.{MongoOffset, MongoSourceBeanImp}
 import com.neighborhood.aka.laplace.estuary.mongo.task.hbase.{Mongo2HBaseAllTaskInfoBean, Mongo2HBaseTaskInfoBeanImp}
-import com.neighborhood.aka.laplace.estuary.mongo.task.hdfs.Mongo2HdfsAllTaskInfoBean
+import com.neighborhood.aka.laplace.estuary.mongo.task.hdfs.{Mongo2HdfsAllTaskInfoBean, Mongo2HdfsTaskInfoBeanImp}
 import com.neighborhood.aka.laplace.estuary.mongo.task.kafka.{Mongo2KafkaAllTaskInfoBean, Mongo2KafkaTaskInfoBeanImp}
 import com.neighborhood.aka.laplace.estuary.mysql.sink.MysqlSinkBeanImp
 import com.neighborhood.aka.laplace.estuary.mysql.source.MysqlSourceBeanImp
@@ -16,8 +17,12 @@ import scala.collection.JavaConverters._
 
 object TaskBeanTransformUtil {
 
-  def convertMongo2HdfsRequest2Mongo2HdfsTaskInfo(request: Mongo2HBaseTaskRequestBean): Mongo2HdfsAllTaskInfoBean = {
-    ???
+  def convertMongo2HdfsRequest2Mongo2HdfsTaskInfo(request: Mongo2HdfsTaskRequestBean): Mongo2HdfsAllTaskInfoBean = {
+    Mongo2HdfsAllTaskInfoBean(
+      sinkBean = HdfsSinkRequestBeanToHBaseBean(request.getHdfsSink),
+      sourceBean = mongoSourceRequestBeanToMongoSourceBean(request.getMongoSource),
+      taskRunningInfoBean = Mongo2HdfsRunningInfoRequestBeanToMongo2HdfsTaskInfoBean(request.getMongo2HdfsRunningInfo)
+    )
   }
 
   def convertMongo2HBaseRequest2Mongo2HBaseTaskInfo(request: Mongo2HBaseTaskRequestBean): Mongo2HBaseAllTaskInfoBean = {
@@ -102,9 +107,28 @@ object TaskBeanTransformUtil {
       fetcherNameToLoad = mongo2HBaseRunningInfoRequestBean.getFetcherNameToLoad.asScala.toMap
     )
   }
+  private def Mongo2HdfsRunningInfoRequestBeanToMongo2HdfsTaskInfoBean(mongo2HdfsRunningInfoRequestBean: Mongo2HdfsRunningInfoRequestBean): Mongo2HdfsTaskInfoBeanImp = {
+    Mongo2HdfsTaskInfoBeanImp(
+      syncTaskId = mongo2HdfsRunningInfoRequestBean.getSyncTaskId,
+      offsetZookeeperServer = mongo2HdfsRunningInfoRequestBean.getOffsetZookeeperServers
+    )(
+      mongoOffset = MongoOffset(
+        mongoTsSecond = mongo2HdfsRunningInfoRequestBean.getMongoTsSecond,
+        mongoTsInc = mongo2HdfsRunningInfoRequestBean.getMongoTsInc
+      ),
+      batcherNum = if (mongo2HdfsRunningInfoRequestBean.getBatcherNum <= 0) 15 else mongo2HdfsRunningInfoRequestBean.getBatcherNum,
+      sinkerNum = if (mongo2HdfsRunningInfoRequestBean.getSinkerNum <= 0) 15 else mongo2HdfsRunningInfoRequestBean.getBatcherNum,
+      partitionStrategy = mongo2HdfsRunningInfoRequestBean.getPartitionStrategy,
+      batchThreshold = mongo2HdfsRunningInfoRequestBean.getBatchThreshold,
+      fetcherNameToLoad = mongo2HdfsRunningInfoRequestBean.getFetcherNameToLoad.asScala.toMap
+    )
+  }
 
   private def HBaseSinkRequestBeanToHBaseBean(hBaseSinkRequestBean: HBaseSinkRequestBean): HBaseBeanImp = {
     HBaseBeanImp(hBaseSinkRequestBean.getHbaseZookeeperQuorum, hBaseSinkRequestBean.getHabseZookeeperPropertyClientPort)
+  }
+  private def HdfsSinkRequestBeanToHBaseBean(hdfsSinkRequestBean: HdfsSinkRequestBean): HdfsBeanImp = {
+    HdfsBeanImp(hdfsSinkRequestBean.getHdfsBasePath)
   }
 
   private def mongoSourceRequestBeanToMongoSourceBean(mongoSourceRequestBean: MongoSourceRequestBean): MongoSourceBeanImp = {
