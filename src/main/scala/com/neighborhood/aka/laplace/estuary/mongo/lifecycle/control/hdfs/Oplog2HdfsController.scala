@@ -28,7 +28,7 @@ import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.record.OplogPosition
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.record.OplogRecorderCommand.OplogRecorderSavePosition
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.OplogSinkerCommand
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.OplogSinkerCommand.{OplogSinkerCheckFlush, OplogSinkerCollectOffset, OplogSinkerSendOffset}
-import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.hdfs.{OplogKeyHdfsSimpleSinker, OplogKeyHdfsSinkerManager}
+import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.hdfs.{OplogKeyHdfsByNameSinkerManager, OplogKeyHdfsSimpleSinker, OplogKeyHdfsSinkerManager}
 import com.neighborhood.aka.laplace.estuary.mongo.sink.hdfs.HdfsBeanImp
 import com.neighborhood.aka.laplace.estuary.mongo.source.{MongoConnection, MongoSourceBeanImp}
 import com.neighborhood.aka.laplace.estuary.mongo.task.hdfs.{Mongo2HdfsAllTaskInfoBean, Mongo2HdfsTaskInfoBeanImp, Mongo2HdfsTaskInfoManager}
@@ -192,7 +192,7 @@ final class Oplog2HdfsController(
 
     //初始化binlogSinker
     log.info(s"initialize sinker,id:$syncTaskId")
-    val sinker = context.actorOf(OplogKeyHdfsSinkerManager.props(taskManager),sinkerName)
+    val sinker = context.actorOf(OplogKeyHdfsByNameSinkerManager.props(taskManager),sinkerName)
 
     taskManager.wait4SinkerList() //必须要等待
     //初始化batcher

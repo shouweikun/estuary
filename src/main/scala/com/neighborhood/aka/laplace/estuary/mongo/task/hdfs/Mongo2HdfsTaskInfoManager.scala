@@ -7,7 +7,7 @@ import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.core.trans.MappingFormat
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.OplogClassifier
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.batch.mappingFormat.Oplog2HdfsMessageMappingFormat
-import com.neighborhood.aka.laplace.estuary.mongo.sink.hdfs.{HdfsBeanImp, HdfsSinkManagerImp}
+import com.neighborhood.aka.laplace.estuary.mongo.sink.hdfs.{HdfsBeanImp, HdfsSinkImp, HdfsSinkManagerImp}
 import com.neighborhood.aka.laplace.estuary.mongo.source.{MongoOffset, MongoSourceBeanImp, MongoSourceManagerImp}
 import com.neighborhood.aka.laplace.estuary.mongo.util.MongoDocumentToJson
 import com.typesafe.config.Config
@@ -42,7 +42,7 @@ final class Mongo2HdfsTaskInfoManager(
   /**
     * batch转换模块
     */
-  override lazy val batchMappingFormat = ???
+  override lazy val batchMappingFormat = Option(buildMappingFormat)
 
   override val offsetZookeeperServer: String = taskInfo.offsetZookeeperServer
 
@@ -143,6 +143,15 @@ final class Mongo2HdfsTaskInfoManager(
 
   override val fetcherNameToLoad = taskInfo.fetcherNameToLoad
 
+
+  /**
+    * 构建数据汇
+    *
+    * @return sink
+    */
+  override def buildSink = {
+    new HdfsSinkImp(allTaskInfoBean.sinkBean.hdfsBasePath)
+  }
 
   /**
     * 初始化/启动

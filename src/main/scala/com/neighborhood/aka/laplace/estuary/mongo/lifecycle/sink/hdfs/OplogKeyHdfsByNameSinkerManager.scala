@@ -114,6 +114,6 @@ final class OplogKeyHdfsByNameSinkerManager(
 }
 
 object OplogKeyHdfsByNameSinkerManager {
-  def props(taskManager:HdfsSinkManagerImp with TaskManager):Props = Props(new OplogKeyHdfsSinkerManager(taskManager))
+  def props(taskManager:HdfsSinkManagerImp with TaskManager):Props = Props(new OplogKeyHdfsByNameSinkerManager(taskManager))
 }
 
