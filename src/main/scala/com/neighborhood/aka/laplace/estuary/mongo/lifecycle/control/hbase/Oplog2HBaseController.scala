@@ -171,6 +171,12 @@ final class Oplog2HBaseController(
     */
   override def initWorkers: Unit = {
     log.info(s"Oplog2HBaseController start init workers,id:$syncTaskId")
+
+    context.children.foreach(context.stop(_))
+    while (context.children.size != 0) {
+      log.warning(s"cleaning child workers..............,id:$syncTaskId")
+      Thread.sleep(200)
+    }
     //初始化processingCounter
     log.info(s"initialize processingCounter,id:$syncTaskId")
     val processingCounter = context.actorOf(OplogProcessingCounter.props(taskManager), processingCounterName)

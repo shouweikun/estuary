@@ -91,7 +91,9 @@ class DefaultOplogKeyHBaseSinkerManager(
     val values = map.values
     val keys = map.keySet
     values.foreach(_.flush())
-    if (logEnabled) log.info(s"this flush cost is ${System.currentTimeMillis() - ts},tables:${keys.mkString(",")},id:$syncTaskId")
+    val cost = System.currentTimeMillis() - ts
+    if(cost>600)log.warning(s"this flush cost is ${cost},tables:${keys.mkString(",")},id:$syncTaskId")
+    else if (logEnabled) log.info(s"this flush cost is ${cost},tables:${keys.mkString(",")},id:$syncTaskId")
   }
 
   def handleOplogSinkerSendOffset: Unit = {
@@ -132,6 +134,7 @@ class DefaultOplogKeyHBaseSinkerManager(
   override protected def initSinkers: Unit = {
     log.info(s"DefaultOplogKeyHBaseSinkerManager start init sinkers,id:$syncTaskId")
     val sinkerList = (1 to sinkerNum).map(num => context.actorOf(SimpleHBasePutSinker.props(taskManager, num).withDispatcher("akka.sinker-dispatcher"))).toList
+    log.info(s"DefaultOplogKeyHBaseSinkerManager init sinkers finished,id:$syncTaskId")
     taskManager.sinkerList = sinkerList //很重要
   }
 

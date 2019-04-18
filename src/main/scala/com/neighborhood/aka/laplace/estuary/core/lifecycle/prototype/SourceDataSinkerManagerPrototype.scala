@@ -133,7 +133,7 @@ trait SourceDataSinkerManagerPrototype[B <: SinkFunc] extends ActorPrototype wit
   }
 
   override def postRestart(reason: Throwable): Unit = {
-    log.info(s"sinker processing preRestart,id:$syncTaskId")
+    log.info(s"sinker processing postRestart,id:$syncTaskId")
     sinkerChangeStatus(Status.RESTARTING)
     super.postRestart(reason)
   }
