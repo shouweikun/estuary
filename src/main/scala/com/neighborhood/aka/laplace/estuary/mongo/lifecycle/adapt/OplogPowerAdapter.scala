@@ -97,7 +97,7 @@ abstract class OplogPowerAdapter(
       //      case _ => 10000  //做实验用
       //      case (_, x, _, _) if (x > 500000) => math.max(3000000, delayDuration) //3s 休眠
       //      case (_, x, _, _) if (x > 100000) => math.max(2000000, delayDuration) //2s 休眠
-      //      case (_, x, _, _) if (x > 50000) => math.max(1000000, delayDuration) //1s 休眠
+            case (_, _, y, _) if (y> 5000) => math.max(10000, delayDuration) //10ms 休眠
       case (_, x, _, _) if (x > 400) => math.max(200000, delayDuration) ////200ms 休眠
       //      case (w, _, _, _) if (w < 1000 * 1) => 0 //0s 快速拉取数据
       //      case (_, x, y, z) if (x > 150 || y > 10000 || z > 800) => math.max(100000, delayDuration) //100ms 防止数据太大
