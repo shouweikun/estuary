@@ -27,7 +27,7 @@ trait HdfsSinkFunc extends SinkFunc {
 
   protected lazy val connectStatus = new AtomicBoolean(false)
 
-  private lazy val outputHolder = new ConcurrentHashMap[String, Tuple2[String,FSDataOutputStream]]()
+  private lazy val outputHolder = new ConcurrentHashMap[String, (String,FSDataOutputStream)]()
 
   /**
     * 初始化HDFS系统
@@ -73,6 +73,7 @@ trait HdfsSinkFunc extends SinkFunc {
   def send(hdfsMessage: HdfsMessage[MongoOffset]) = {
     val fsDataOutputStream = getOutputStream(hdfsMessage.dbName,hdfsMessage.tableName,hdfsMessage.offset.mongoTsSecond)
     fsDataOutputStream.write(hdfsMessage.toString.getBytes);
+    fsDataOutputStream.write("\n".getBytes());
   }
 
   /**
@@ -85,8 +86,9 @@ trait HdfsSinkFunc extends SinkFunc {
   private def getOutputStream(dbName:String,tableName:String,ts:Int):FSDataOutputStream={
     val key = s"$dbName.$tableName"
     val format = new SimpleDateFormat("yyyyMMdd")
-    val nowdate= format.format(new Date(ts*1000))
-    if(outputHolder.contains(key)){
+    val nowdate= format.format(new Date(ts*1000l))
+//    logger.info(s"*********key:$key,nowdate:$ts,outputHolder:${outputHolder.toString}")
+    if(outputHolder.containsKey(key)){
       val outputStream = outputHolder.get(key)
       if(outputStream._1!=nowdate){
         outputStream._2.flush()
@@ -94,6 +96,7 @@ trait HdfsSinkFunc extends SinkFunc {
         val path = new Path(s"$basePath/$dbName/$tableName/$nowdate/${System.currentTimeMillis()}")
         val newOutput = fs.create(path);
         outputHolder.put(key,(nowdate,newOutput))
+        logger.info(s"create newOutput-day key:$key,,nowdate:$nowdate,ts:$ts")
         newOutput
       }else{
         outputStream._2
@@ -102,6 +105,7 @@ trait HdfsSinkFunc extends SinkFunc {
       val path = new Path(s"$basePath/$dbName/$tableName/$nowdate/${System.currentTimeMillis()}")
       val newOutput = fs.create(path);
       outputHolder.put(key,(nowdate,newOutput))
+      logger.info(s"create newOutput key:$key,,nowdate:$nowdate,ts:$ts")
       newOutput
     }
   }
