@@ -23,10 +23,10 @@ import org.bson.Document
   * @author neighborhood.aka.laplace
   */
 final class OplogHdfsBatcherManager(
-                                      override val taskManager: MongoSourceManagerImp with TaskManager,
-                                      override val sinker: ActorRef
+                                     override val taskManager: MongoSourceManagerImp with TaskManager,
+                                     override val sinker: ActorRef
 
-                                    ) extends SourceDataBatcherManagerPrototype[MongoConnection, KafkaSinkFunc[OplogKey, String]] {
+                                   ) extends SourceDataBatcherManagerPrototype[MongoConnection, KafkaSinkFunc[OplogKey, String]] {
 
   val partitionStrategy = taskManager.partitionStrategy
 
@@ -68,7 +68,7 @@ final class OplogHdfsBatcherManager(
     taskManager.wait4SinkerList() //必须要等待,一定要等sinkerList创建完毕才行
     //val batcherTypeName = taskManager.batcherNameToLoad.get(batcherName).getOrElse(OplogKafkaBatcher.name) // todo 支持动态加载
     val paths: List[String] = (1 to batcherNum).map {
-      index => OplogHdfsBatcher.props(taskManager, taskManager.sinkerList((index - 1) % (taskManager.sinkerList.size)), index)
+      index => OplogHdfsBatcher.props(taskManager, taskManager.sinkerList((index - 1) % (taskManager.sinkerList.size)), index).withDispatcher("akka.batcher-dispatcher")
     }.map(context.actorOf(_)).map(_.path.toString).toList
     lazy val roundRobin = context.actorOf(new RoundRobinGroup(paths).props().withDispatcher("akka.batcher-dispatcher"), "router")
     lazy val consistentHashing = context.actorOf(new ConsistentHashingGroup(paths, virtualNodesFactor = SettingConstant.HASH_MAPPING_VIRTUAL_NODES_FACTOR).props().withDispatcher("akka.batcher-dispatcher"), routerName)
@@ -185,6 +185,7 @@ final class OplogHdfsBatcherManager(
   }
 
 }
+
 object OplogHdfsBatcherManager {
   def props(taskManager: MongoSourceManagerImp with TaskManager, sinker: ActorRef): Props = Props(new OplogHdfsBatcherManager(taskManager, sinker))
 }
