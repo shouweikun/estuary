@@ -68,7 +68,8 @@ trait HdfsSinkFunc extends SinkFunc {
     * 检测，是否关闭
     *
     */
-  override def isTerminated: Boolean = connectStatus.get()
+  override def
+  isTerminated: Boolean = connectStatus.get()
 
   def send(hdfsMessage: HdfsMessage[MongoOffset]) = {
     val fsDataOutputStream = getOutputStream(hdfsMessage.dbName,hdfsMessage.tableName,hdfsMessage.offset.mongoTsSecond)

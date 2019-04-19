@@ -63,7 +63,7 @@ final class Oplog2HBaseMultiInstanceController(
 
   override def receive: Receive = {
     case ExternalStartCommand => switch2Online
-    case m@ExternalRestartCommand(`syncTaskId`) => context.children.foreach(ref => ref ! m)
+    case m@ExternalRestartCommand(`syncTaskId`) => handleExternalRestart(m)
     case OplogControllerStart => switch2Online
     case SyncControllerMessage(OplogControllerStart) => switch2Online
       (OplogControllerStart)
@@ -85,7 +85,7 @@ final class Oplog2HBaseMultiInstanceController(
     * @return
     */
   override def online: Receive = {
-    case m@ExternalRestartCommand(`syncTaskId`) => context.children.foreach(ref => ref ! m)
+    case m@ExternalRestartCommand(`syncTaskId`) => handleExternalRestart(m)
     case m@OplogControllerStopAndRestart => context.children.foreach(ref => ref ! m)
     case ListenerMessage(msg) => log.warning(s"syncController online unhandled message:$msg,id:$syncTaskId")
     case SinkerMessage(msg) => log.warning(s"syncController online unhandled message:${SinkerMessage(msg)},id:$syncTaskId")
@@ -159,6 +159,11 @@ final class Oplog2HBaseMultiInstanceController(
 
   def handleSetSuspendTime(ts: Long, m: ExternalSuspendTimedCommand): Unit = {
     childBeanMap.foreach { case (_, v) => v.taskRunningInfoBean.suspendTs.set(ts) }
+    context.children.foreach(ref => ref ! m)
+  }
+
+  def handleExternalRestart(m: ExternalRestartCommand): Unit = {
+    childBeanMap.foreach { case (_, v) => v.taskRunningInfoBean.suspendTs.set(-1) }
     context.children.foreach(ref => ref ! m)
   }
 
