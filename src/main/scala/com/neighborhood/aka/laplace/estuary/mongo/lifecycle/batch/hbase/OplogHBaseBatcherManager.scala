@@ -73,6 +73,7 @@ final class OplogHBaseBatcherManager(
     lazy val roundRobin = context.actorOf(new RoundRobinGroup(paths).props().withDispatcher("akka.batcher-dispatcher"), "router")
     lazy val consistentHashing = context.actorOf(new ConsistentHashingGroup(paths, virtualNodesFactor = SettingConstant.HASH_MAPPING_VIRTUAL_NODES_FACTOR).props().withDispatcher("akka.batcher-dispatcher"), routerName)
     partitionStrategy match { //暂未支持其他分区等级
+      case  _=>   roundRobin //先强行roundRobin
       case PartitionStrategy.PRIMARY_KEY => consistentHashing
       case PartitionStrategy.DATABASE_TABLE => consistentHashing
       case PartitionStrategy.MOD => roundRobin
