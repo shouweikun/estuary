@@ -54,6 +54,9 @@ final class OplogHdfsBatcher(
     val hdfsMessage = transAndSend(oplogClassifier)
     if (!hdfsMessage.isAbnormal) {
       sendCost(System.currentTimeMillis() - oplogClassifier.fetchTimeStamp)
+      if(System.currentTimeMillis() - oplogClassifier.fetchTimeStamp>1000){
+        log.warning(s"*********messageSize:${hdfsMessage.value.length}")
+      }
     }
     sendCount(1)
   }
