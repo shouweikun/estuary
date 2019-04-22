@@ -73,7 +73,7 @@ final class OplogKeyHdfsSimpleSinker(
     */
   override protected def handleSinkTask[I <: HdfsMessage[MongoOffset]](input: I): Try[_] = Try {
     if (!input.isAbnormal) {
-      val removeOld = lastOffset.map(offset => input.offset.mongoTsSecond - offset.mongoTsSecond >= flushInterval).getOrElse(false)
+      val removeOld = lastOffset.map(offset => input.offset.mongoTsSecond - offset.mongoTsSecond >= flushInterval).getOrElse(true)
       if (removeOld) {
         log.warning(s"try to close old fsstream key:${input.dbName}.${input.tableName},newMongoOffset:${input.offset},oldMongoOffset:${lastOffset}")
         sink.closeOutputStreamByKey(s"${input.dbName}.${input.tableName}")
