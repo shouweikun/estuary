@@ -77,13 +77,13 @@ final class OplogKeyHdfsSimpleSinker(
       if (removeOld) {
         log.warning(s"try to close old fsstream key:${input.dbName}.${input.tableName},newMongoOffset:${input.offset},oldMongoOffset:${lastOffset}")
         sink.closeOutputStreamByKey(s"${input.dbName}.${input.tableName}")
-
+        lastOffset = Option(input.offset)
       }
       sink.send(input)
       val ts = System.currentTimeMillis()
       sendCost(ts - input.ts)
       lastFlushTs = ts
-      lastOffset = Option(input.offset)
+
     }
     sendCount(1)
   }
