@@ -12,6 +12,8 @@ import com.neighborhood.aka.laplace.estuary.core.sink.kafka.KafkaSinkFunc
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.adapt.OplogPowerAdapterCommand.OplogPowerAdapterUpdateCost
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.count.OplogProcessingCounterCommand.OplogProcessingCounterUpdateCount
+import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.OplogSinkerCommand.OplogSinkerCollectOffset
+import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.OplogSinkerEvent.OplogSinkerOffsetCollected
 import com.neighborhood.aka.laplace.estuary.mongo.sink.hdfs.{HdfsSinkImp, HdfsSinkManagerImp}
 import com.neighborhood.aka.laplace.estuary.mongo.sink.kafka.OplogKeyKafkaSinkManagerImp
 import com.neighborhood.aka.laplace.estuary.mongo.source.MongoOffset
@@ -51,6 +53,9 @@ final class OplogKeyHdfsSimpleSinker(
 
   lazy val sinkAbnormal = taskManager.sinkAbnormal
 
+  private var lastOffset: Option[MongoOffset] = None
+
+
   /**
     * 处理Batcher转换过的数据
     *
@@ -60,8 +65,8 @@ final class OplogKeyHdfsSimpleSinker(
   override protected def handleSinkTask[I <: HdfsMessage[MongoOffset]](input: I): Try[_] = Try {
     if (!input.isAbnormal) {
       sink.send(input)
-      positionRecorder.map(ref => ref ! input.offset) //发送offset
       sendCost(System.currentTimeMillis() - input.ts)
+      lastOffset = Option(input.offset)
     }
     sendCount(1)
   }
@@ -79,6 +84,8 @@ final class OplogKeyHdfsSimpleSinker(
   override def receive: Receive = {
     case BatcherMessage(hdfsMessage: HdfsMessage[MongoOffset]) => handleSinkTask(hdfsMessage)
     case hdfsMessage: HdfsMessage[MongoOffset] => handleSinkTask(hdfsMessage)
+    case SinkerMessage(OplogSinkerCollectOffset) => lastOffset.map(x => sender() ! OplogSinkerOffsetCollected(x))
+    case OplogSinkerCollectOffset => lastOffset.map(x => sender() ! OplogSinkerOffsetCollected(x))
   }
 
 
