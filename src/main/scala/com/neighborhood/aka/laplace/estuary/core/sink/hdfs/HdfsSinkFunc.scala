@@ -115,7 +115,7 @@ trait HdfsSinkFunc extends SinkFunc {
         outputStream._2
       }
     }else{
-      val path = new Path(s"$basePath/$dbName/$tableName/$nowdate/${System.currentTimeMillis()}")
+      val path = new Path(s"$basePath/$dbName/$tableName/etl_tx_dt=$nowdate/${System.currentTimeMillis()}")
       val newOutput = fs.create(path);
       outputHolder.put(key,(nowdate,newOutput))
       logger.info(s"create newOutput key:$key,,nowdate:$nowdate,ts:$ts")
