@@ -13,16 +13,17 @@ final case class HdfsMessage[A <: ComparableOffset[A]](
                                                      val tableName: String,
                                                      val value: String,
                                                      val offset: A,
+                                                     val eventType:String,
                                                      val isAbnormal: Boolean = false
                                                    ) {
 
   val ts = System.currentTimeMillis()
 
   override def toString: String =
-    s"""{"dbName":"$dbName","tableName":"$tableName","value":$value,"offset":${offset.toString}}""".stripMargin
+    s"""{"dbName":"$dbName","tableName":"$tableName","value":$value,"offset":${offset.toString},"eventType":"$eventType"}""".stripMargin
 
 }
 
 object HdfsMessage {
-  def abnormal[A <: ComparableOffset[A]](dbName:String,tableName:String,offset:A): HdfsMessage[A] = HdfsMessage(dbName,tableName,null,offset,true)
+  def abnormal[A <: ComparableOffset[A]](dbName:String,tableName:String,offset:A,eventType:String): HdfsMessage[A] = HdfsMessage(dbName,tableName,null,offset,eventType,true)
 }

@@ -20,14 +20,15 @@ final class Oplog2HdfsMessageMappingFormat(
     val oplog = x.toOplog
     val tableName = oplog.getTableName
     val dbName = oplog.getDbName
+    val eventType = oplog.getOperateType
     val docOption = getRealDoc(oplog)
     lazy val mongoOffset = MongoOffset(oplog.getTimestamp.getTime, oplog.getTimestamp.getInc)
     if (docOption.isEmpty) {
-      HdfsMessage.abnormal(dbName, tableName, mongoOffset)
+      HdfsMessage.abnormal(dbName, tableName, mongoOffset,eventType)
     } else {
       val doc = docOption.get
       val value = getJsonValue(doc)
-      HdfsMessage(dbName, tableName, value, mongoOffset)
+      HdfsMessage(dbName, tableName, value, mongoOffset,eventType)
     }
   }
 }
