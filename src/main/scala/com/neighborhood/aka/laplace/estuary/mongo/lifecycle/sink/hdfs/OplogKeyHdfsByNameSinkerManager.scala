@@ -4,8 +4,8 @@ package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.hdfs
 import akka.actor.{ActorRef, Props}
 import com.neighborhood.aka.laplace.estuary.bean.support.HdfsMessage
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
-import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, SinkerMessage, SyncControllerMessage}
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.SourceDataSinkerManagerPrototype
+import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, SinkerMessage, SyncControllerMessage}
 import com.neighborhood.aka.laplace.estuary.core.sink.hdfs.HdfsSinkFunc
 import com.neighborhood.aka.laplace.estuary.core.task.{SinkManager, TaskManager}
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.OplogSinkerCommand.{OplogSinkerCheckFlush, OplogSinkerCollectOffset, OplogSinkerSendOffset, OplogSinkerStart}
@@ -70,6 +70,8 @@ final class OplogKeyHdfsByNameSinkerManager(
     case SinkerMessage(OplogSinkerOffsetCollected(offset: MongoOffset)) => handleOplogSinkerOffsetCollected(offset)
     case OplogSinkerOffsetCollected(offset: MongoOffset) => handleOplogSinkerOffsetCollected(offset)
     case SyncControllerMessage(OplogSinkerCollectOffset) => dispatchOplogSinkerCollectOffset
+    case SinkerMessage(OplogSinkerCheckFlush) => context.children.foreach(ref => ref ! OplogSinkerCheckFlush)
+    case OplogSinkerCheckFlush => context.children.foreach(ref => ref ! OplogSinkerCheckFlush)
     case _ => //暂时不做其他处理
   }
 

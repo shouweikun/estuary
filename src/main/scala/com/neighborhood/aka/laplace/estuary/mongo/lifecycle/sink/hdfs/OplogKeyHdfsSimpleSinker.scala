@@ -9,7 +9,7 @@ import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, Sink
 import com.neighborhood.aka.laplace.estuary.core.sink.hdfs.HdfsSinkFunc
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.adapt.OplogPowerAdapterCommand.OplogPowerAdapterUpdateCost
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.count.OplogProcessingCounterCommand.OplogProcessingCounterUpdateCount
-import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.OplogSinkerCommand.OplogSinkerCollectOffset
+import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.OplogSinkerCommand.{OplogSinkerCheckFlush, OplogSinkerCollectOffset}
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.OplogSinkerEvent.OplogSinkerOffsetCollected
 import com.neighborhood.aka.laplace.estuary.mongo.sink.hdfs.HdfsSinkManagerImp
 import com.neighborhood.aka.laplace.estuary.mongo.source.MongoOffset
@@ -53,6 +53,17 @@ final class OplogKeyHdfsSimpleSinker(
   val flushInterval = taskManager.hdfsFileFlushInterval
   private var lastOffset: Option[MongoOffset] = None
 
+  private var lastFlushTs: Long = System.currentTimeMillis()
+
+  def handleFlush: Unit = {
+    lazy val ts = System.currentTimeMillis()
+    if (-lastFlushTs > 2 * 60 * 1000) {
+      sink.closeOutputStreamByKey(self.path.name)
+      log.info(s"cause last flush ts = $lastFlushTs, now :$ts  which diff > 2min,flush it ,name:${self.path.name},id:$syncTaskId")
+      lastFlushTs = ts
+
+    }
+  }
 
   /**
     * 处理Batcher转换过的数据
@@ -69,7 +80,9 @@ final class OplogKeyHdfsSimpleSinker(
 
       }
       sink.send(input)
-      sendCost(System.currentTimeMillis() - input.ts)
+      val ts = System.currentTimeMillis()
+      sendCost(ts - input.ts)
+      lastFlushTs = ts
       lastOffset = Option(input.offset)
     }
     sendCount(1)
@@ -90,6 +103,8 @@ final class OplogKeyHdfsSimpleSinker(
     case hdfsMessage: HdfsMessage[MongoOffset] => handleSinkTask(hdfsMessage)
     case SinkerMessage(OplogSinkerCollectOffset) => lastOffset.map(x => sender() ! OplogSinkerOffsetCollected(x))
     case OplogSinkerCollectOffset => lastOffset.map(x => sender() ! OplogSinkerOffsetCollected(x))
+    case SinkerMessage(OplogSinkerCheckFlush) => handleFlush
+    case OplogSinkerCheckFlush => handleFlush
   }
 
 
