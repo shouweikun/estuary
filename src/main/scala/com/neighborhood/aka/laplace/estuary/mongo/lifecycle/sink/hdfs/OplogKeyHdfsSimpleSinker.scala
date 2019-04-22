@@ -2,21 +2,19 @@ package com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.hdfs
 
 
 import akka.actor.Props
-import com.neighborhood.aka.laplace.estuary.bean.key.OplogKey
-import com.neighborhood.aka.laplace.estuary.bean.support.{HdfsMessage, KafkaMessage}
+import com.neighborhood.aka.laplace.estuary.bean.support.HdfsMessage
 import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.SourceDataSinkerPrototype
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, SinkerMessage}
 import com.neighborhood.aka.laplace.estuary.core.sink.hdfs.HdfsSinkFunc
-import com.neighborhood.aka.laplace.estuary.core.sink.kafka.KafkaSinkFunc
 import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.adapt.OplogPowerAdapterCommand.OplogPowerAdapterUpdateCost
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.count.OplogProcessingCounterCommand.OplogProcessingCounterUpdateCount
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.OplogSinkerCommand.OplogSinkerCollectOffset
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.OplogSinkerEvent.OplogSinkerOffsetCollected
-import com.neighborhood.aka.laplace.estuary.mongo.sink.hdfs.{HdfsSinkImp, HdfsSinkManagerImp}
-import com.neighborhood.aka.laplace.estuary.mongo.sink.kafka.OplogKeyKafkaSinkManagerImp
+import com.neighborhood.aka.laplace.estuary.mongo.sink.hdfs.HdfsSinkManagerImp
 import com.neighborhood.aka.laplace.estuary.mongo.source.MongoOffset
+import org.apache.hadoop.fs.FSDataOutputStream
 
 import scala.util.Try
 
@@ -55,6 +53,8 @@ final class OplogKeyHdfsSimpleSinker(
 
   private var lastOffset: Option[MongoOffset] = None
 
+  private var fsStream: Option[FSDataOutputStream] = None
+
 
   /**
     * 处理Batcher转换过的数据
@@ -64,7 +64,8 @@ final class OplogKeyHdfsSimpleSinker(
     */
   override protected def handleSinkTask[I <: HdfsMessage[MongoOffset]](input: I): Try[_] = Try {
     if (!input.isAbnormal) {
-      sink.send(input)
+      if (fsStream.isEmpty) fsStream = Option(sink.getOutputStream(input.dbName, input.tableName, input.offset.mongoTsSecond))
+      fsStream.foreach(s => sink.send(input, s))
       sendCost(System.currentTimeMillis() - input.ts)
       lastOffset = Option(input.offset)
     }
