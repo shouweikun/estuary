@@ -104,7 +104,7 @@ final class MongoConnection(
     val o = oplog.getCurrentDocument
     if ("u".equals(oplog.getOperateType()) && o != null && o.containsKey("$set")) {
       Try {
-        logger.warn(s"try to handle update event for oplog id:${oplog.getId},ts:${oplog.getTimestamp.getTime}${oplog.getTimestamp.getInc},ns:${oplog.getDbName}")
+//        logger.warn(s"try to handle update event for oplog id:${oplog.getId},ts:${oplog.getTimestamp.getTime}${oplog.getTimestamp.getInc},ns:${oplog.getDbName}")
         val o2Iter: MongoCursor[Document] = mongoClient
           .getDatabase(oplog.getDbName())
           .getCollection(oplog.getTableName())
