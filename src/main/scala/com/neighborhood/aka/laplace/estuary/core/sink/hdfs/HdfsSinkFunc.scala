@@ -77,6 +77,19 @@ trait HdfsSinkFunc extends SinkFunc {
   }
 
   /**
+    * 关闭outputstram
+    * @param key
+    */
+  def closeOutputStreamByKey(key:String): Unit ={
+    if(outputHolder.containsKey(key)){
+      val stream = outputHolder.get(key)._2
+      stream.flush()
+      stream.close()
+      outputHolder.remove(key)
+    }
+  }
+
+  /**
     * 获取插入hdfs的stream
     * @param dbName
     * @param tableName
