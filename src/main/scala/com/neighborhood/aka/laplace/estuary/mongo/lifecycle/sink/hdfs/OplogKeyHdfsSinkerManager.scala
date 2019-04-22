@@ -9,6 +9,7 @@ import com.neighborhood.aka.laplace.estuary.core.sink.hdfs.HdfsSinkFunc
 import com.neighborhood.aka.laplace.estuary.core.task.{SinkManager, TaskManager}
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.OplogSinkerCommand.OplogSinkerStart
 import com.neighborhood.aka.laplace.estuary.mongo.sink.hdfs.HdfsSinkManagerImp
+import com.neighborhood.aka.laplace.estuary.mongo.task.hdfs.Mongo2HdfsTaskInfoManager
 
 /**
   * Created by john_liu on 2019/3/2.
@@ -70,7 +71,7 @@ final class OplogKeyHdfsSinkerManager(
     log.info(s"oplog sinker manager start to init sinkers,id:$syncTaskId")
     val sinkerList = (0 until sinkerNum) map {
       case index =>
-        val props = OplogKeyHdfsSimpleSinker.props(taskManager, index).withDispatcher("akka.sinker-dispatcher")
+        val props = OplogKeyHdfsSimpleSinker.props(taskManager.asInstanceOf[Mongo2HdfsTaskInfoManager], index).withDispatcher("akka.sinker-dispatcher")
         context.actorOf(props)
     } toList
 

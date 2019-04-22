@@ -12,6 +12,7 @@ import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.OplogSinkerComm
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.OplogSinkerEvent.OplogSinkerOffsetCollected
 import com.neighborhood.aka.laplace.estuary.mongo.sink.hdfs.HdfsSinkManagerImp
 import com.neighborhood.aka.laplace.estuary.mongo.source.MongoOffset
+import com.neighborhood.aka.laplace.estuary.mongo.task.hdfs.Mongo2HdfsTaskInfoManager
 
 /**
   * Created by john_liu on 2019/3/2.
@@ -109,7 +110,7 @@ final class OplogKeyHdfsByNameSinkerManager(
     */
   private def getOrCreateSinker(key: String): ActorRef = {
 
-    def create: ActorRef = context.actorOf(OplogKeyHdfsSimpleSinker.props(taskManager, (System.currentTimeMillis() / 1000).toInt).withDispatcher("akka.sinker-dispatcher"), key)
+    def create: ActorRef = context.actorOf(OplogKeyHdfsSimpleSinker.props(taskManager.asInstanceOf[Mongo2HdfsTaskInfoManager], (System.currentTimeMillis() / 1000).toInt).withDispatcher("akka.sinker-dispatcher"), key)
 
     context.child(key).getOrElse(create)
 

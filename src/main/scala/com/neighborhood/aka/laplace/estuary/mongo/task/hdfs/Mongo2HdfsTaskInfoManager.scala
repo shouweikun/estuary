@@ -39,6 +39,8 @@ final class Mongo2HdfsTaskInfoManager(
   override lazy val taskInfo: Mongo2HdfsTaskInfoBeanImp = allTaskInfoBean.taskRunningInfoBean
 
   override val logIsEnabled = taskInfo.logEnabled
+
+  val hdfsFileFlushInterval = sinkBean.fileFlushInterval
   /**
     * batch转换模块
     */
@@ -169,7 +171,6 @@ final class Mongo2HdfsTaskInfoManager(
     closeSource
     super.close
   }
-
 
 
   private def buildMappingFormat: MappingFormat[OplogClassifier, HdfsMessage[MongoOffset]] = {

@@ -28,7 +28,7 @@ import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.record.OplogPosition
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.record.OplogRecorderCommand.OplogRecorderSavePosition
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.OplogSinkerCommand
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.OplogSinkerCommand.{OplogSinkerCheckFlush, OplogSinkerCollectOffset, OplogSinkerSendOffset}
-import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.hdfs.{OplogKeyHdfsByNameSinkerManager, OplogKeyHdfsSimpleSinker, OplogKeyHdfsSinkerManager}
+import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.hdfs.OplogKeyHdfsByNameSinkerManager
 import com.neighborhood.aka.laplace.estuary.mongo.sink.hdfs.HdfsBeanImp
 import com.neighborhood.aka.laplace.estuary.mongo.source.{MongoConnection, MongoSourceBeanImp}
 import com.neighborhood.aka.laplace.estuary.mongo.task.hdfs.{Mongo2HdfsAllTaskInfoBean, Mongo2HdfsTaskInfoBeanImp, Mongo2HdfsTaskInfoManager}

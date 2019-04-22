@@ -7,14 +7,13 @@ import com.neighborhood.aka.laplace.estuary.core.lifecycle
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.prototype.SourceDataSinkerPrototype
 import com.neighborhood.aka.laplace.estuary.core.lifecycle.{BatcherMessage, SinkerMessage}
 import com.neighborhood.aka.laplace.estuary.core.sink.hdfs.HdfsSinkFunc
-import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.adapt.OplogPowerAdapterCommand.OplogPowerAdapterUpdateCost
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.count.OplogProcessingCounterCommand.OplogProcessingCounterUpdateCount
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.OplogSinkerCommand.OplogSinkerCollectOffset
 import com.neighborhood.aka.laplace.estuary.mongo.lifecycle.sink.OplogSinkerEvent.OplogSinkerOffsetCollected
 import com.neighborhood.aka.laplace.estuary.mongo.sink.hdfs.HdfsSinkManagerImp
 import com.neighborhood.aka.laplace.estuary.mongo.source.MongoOffset
-import org.apache.hadoop.fs.FSDataOutputStream
+import com.neighborhood.aka.laplace.estuary.mongo.task.hdfs.Mongo2HdfsTaskInfoManager
 
 import scala.util.Try
 
@@ -24,7 +23,7 @@ import scala.util.Try
   * @author neighborhood.aka.laplace
   */
 final class OplogKeyHdfsSimpleSinker(
-                                      override val taskManager: HdfsSinkManagerImp with TaskManager,
+                                      override val taskManager: Mongo2HdfsTaskInfoManager,
                                       override val num: Int
                                     ) extends SourceDataSinkerPrototype[HdfsSinkFunc, HdfsMessage[MongoOffset]] {
   /**
@@ -51,9 +50,8 @@ final class OplogKeyHdfsSimpleSinker(
 
   lazy val sinkAbnormal = taskManager.sinkAbnormal
 
+  val flushInterval = taskManager.hdfsFileFlushInterval
   private var lastOffset: Option[MongoOffset] = None
-
-  private var fsStream: Option[FSDataOutputStream] = None
 
 
   /**
@@ -64,8 +62,9 @@ final class OplogKeyHdfsSimpleSinker(
     */
   override protected def handleSinkTask[I <: HdfsMessage[MongoOffset]](input: I): Try[_] = Try {
     if (!input.isAbnormal) {
-      if (fsStream.isEmpty) fsStream = Option(sink.getOutputStream(input.dbName, input.tableName, input.offset.mongoTsSecond))
-      fsStream.foreach(s => sink.send(input, s))
+      val removeOld = lastOffset.map(offset => input.offset.mongoTsSecond - offset.mongoTsSecond >= flushInterval).getOrElse(false)
+      if (removeOld) sink.closeOutputStreamByKey(s"${input.dbName}.${input.tableName}")
+      sink.send(input)
       sendCost(System.currentTimeMillis() - input.ts)
       lastOffset = Option(input.offset)
     }
@@ -111,5 +110,5 @@ final class OplogKeyHdfsSimpleSinker(
 }
 
 object OplogKeyHdfsSimpleSinker {
-  def props(taskManager: HdfsSinkManagerImp with TaskManager, num: Int): Props = Props(new OplogKeyHdfsSimpleSinker(taskManager, num))
+  def props(taskManager: Mongo2HdfsTaskInfoManager, num: Int): Props = Props(new OplogKeyHdfsSimpleSinker(taskManager, num))
 }
