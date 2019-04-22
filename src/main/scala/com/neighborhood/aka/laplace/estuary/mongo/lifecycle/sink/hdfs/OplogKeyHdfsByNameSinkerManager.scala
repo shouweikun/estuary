@@ -71,6 +71,7 @@ final class OplogKeyHdfsByNameSinkerManager(
     case SinkerMessage(OplogSinkerOffsetCollected(offset: MongoOffset)) => handleOplogSinkerOffsetCollected(offset)
     case OplogSinkerOffsetCollected(offset: MongoOffset) => handleOplogSinkerOffsetCollected(offset)
     case SyncControllerMessage(OplogSinkerCollectOffset) => dispatchOplogSinkerCollectOffset
+    case SyncControllerMessage(OplogSinkerCheckFlush) => context.children.foreach(ref => ref ! OplogSinkerCheckFlush)
     case SinkerMessage(OplogSinkerCheckFlush) => context.children.foreach(ref => ref ! OplogSinkerCheckFlush)
     case OplogSinkerCheckFlush => context.children.foreach(ref => ref ! OplogSinkerCheckFlush)
     case _ => //暂时不做其他处理
