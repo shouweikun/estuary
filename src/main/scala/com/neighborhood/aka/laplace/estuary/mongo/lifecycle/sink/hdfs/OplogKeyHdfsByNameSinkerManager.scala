@@ -68,6 +68,7 @@ final class OplogKeyHdfsByNameSinkerManager(
     case BatcherMessage(x: HdfsMessage[MongoOffset]) => getOrCreateSinker(s"${x.dbName}.${x.tableName}") ! x
     case SinkerMessage(OplogSinkerSendOffset) => handleOplogSinkerSendOffset
     case SinkerMessage(OplogSinkerOffsetCollected(offset: MongoOffset)) => handleOplogSinkerOffsetCollected(offset)
+    case OplogSinkerOffsetCollected(offset: MongoOffset) => handleOplogSinkerOffsetCollected(offset)
     case SyncControllerMessage(OplogSinkerCollectOffset) => dispatchOplogSinkerCollectOffset
     case _ => //暂时不做其他处理
   }
