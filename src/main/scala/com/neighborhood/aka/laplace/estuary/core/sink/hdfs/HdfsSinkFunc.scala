@@ -27,7 +27,7 @@ trait HdfsSinkFunc extends SinkFunc {
 
   protected lazy val connectStatus = new AtomicBoolean(false)
 
-  private lazy val outputHolder = new ConcurrentHashMap[String, (String, FSDataOutputStream)]()
+  private lazy val outputHolder = new ConcurrentHashMap[String, (String,FSDataOutputStream)]()
 
   /**
     * 初始化HDFS系统
@@ -37,8 +37,8 @@ trait HdfsSinkFunc extends SinkFunc {
   def initFileSystem: FileSystem = {
     val hadoopConf: org.apache.hadoop.conf.Configuration = new Configuration()
     hadoopConf.set("fs.hdfs.impl", "org.apache.hadoop.hdfs.DistributedFileSystem");
-    val HDFS_PATH = "hdfs://p2.hadoop.dc.finupgroup.com:8020";
-    FileSystem.get(new URI(HDFS_PATH), hadoopConf, "mongo_sync");
+    val HDFS_PATH="hdfs://p2.hadoop.dc.finupgroup.com:8020";
+    FileSystem.get(new URI(HDFS_PATH),hadoopConf,"mongo_sync");
   }
 
   override def close: Unit = this.synchronized {
@@ -70,41 +70,41 @@ trait HdfsSinkFunc extends SinkFunc {
   override def
   isTerminated: Boolean = connectStatus.get()
 
-  def send(hdfsMessage: HdfsMessage[MongoOffset], fsDataOutputStream: FSDataOutputStream) = {
+  def send(hdfsMessage: HdfsMessage[MongoOffset]) = {
+    val fsDataOutputStream = getOutputStream(hdfsMessage.dbName,hdfsMessage.tableName,hdfsMessage.offset.mongoTsSecond)
     fsDataOutputStream.write(hdfsMessage.toString.getBytes);
     fsDataOutputStream.write("\n".getBytes());
   }
 
   /**
     * 获取插入hdfs的stream
-    *
     * @param dbName
     * @param tableName
     * @param ts
     * @return
     */
-  def getOutputStream(dbName: String, tableName: String, ts: Int, oldOutputStream: Option[FSDataOutputStream] = None): FSDataOutputStream = {
+  private def getOutputStream(dbName:String,tableName:String,ts:Int):FSDataOutputStream={
     val key = s"$dbName.$tableName"
     val format = new SimpleDateFormat("yyyyMMdd")
-    val nowdate = format.format(new Date(ts * 1000l))
+    val nowdate= format.format(new Date(ts*1000l))
     //    logger.info(s"*********key:$key,nowdate:$ts,outputHolder:${outputHolder.toString}")
-    if (oldOutputStream.isEmpty) {
+    if(outputHolder.containsKey(key)){
       val outputStream = outputHolder.get(key)
-      if (outputStream._1 != nowdate) {
+      if(outputStream._1!=nowdate){
         outputStream._2.flush()
         outputStream._2.close()
         val path = new Path(s"$basePath/$dbName/$tableName/$nowdate/${System.currentTimeMillis()}")
         val newOutput = fs.create(path);
-        outputHolder.put(key, (nowdate, newOutput))
+        outputHolder.put(key,(nowdate,newOutput))
         logger.info(s"create newOutput-day key:$key,,nowdate:$nowdate,ts:$ts")
         newOutput
-      } else {
+      }else{
         outputStream._2
       }
-    } else {
+    }else{
       val path = new Path(s"$basePath/$dbName/$tableName/$nowdate/${System.currentTimeMillis()}")
       val newOutput = fs.create(path);
-      outputHolder.put(key, (nowdate, newOutput))
+      outputHolder.put(key,(nowdate,newOutput))
       logger.info(s"create newOutput key:$key,,nowdate:$nowdate,ts:$ts")
       newOutput
     }
