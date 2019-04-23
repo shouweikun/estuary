@@ -57,7 +57,7 @@ final class OplogKeyHdfsSimpleSinker(
 
   def handleFlush: Unit = {
     lazy val ts = System.currentTimeMillis()
-    if (-lastFlushTs > 2 * 60 * 1000) {
+    if (ts-lastFlushTs > 2 * 60 * 1000) {
       sink.closeOutputStreamByKey(self.path.name)
       log.info(s"cause last flush ts = $lastFlushTs, now :$ts  which diff > 2min,flush it ,name:${self.path.name},id:$syncTaskId")
       lastFlushTs = ts
