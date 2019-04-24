@@ -2,6 +2,7 @@ package com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.control
 
 import akka.actor.Props
 import com.neighborhood.aka.laplace.estuary.core.sink.mysql.MysqlSinkFunc
+import com.neighborhood.aka.laplace.estuary.core.task.TaskManager
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.adapt.MysqlBinlogInOrderPowerAdapter
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.batch.MysqlBinlogInOrderBatcherManager
 import com.neighborhood.aka.laplace.estuary.mysql.lifecycle.reborn.batch.imp.MysqlBinlogInOrderBatcherMysqlManager
@@ -25,9 +26,20 @@ import com.neighborhood.aka.laplace.estuary.web.service.Mysql2MysqlService
   * @author neighborhood.aka.laplace
   */
 final class MysqlBinlogInOrderMysqlController4Sda(
-                                                   var totalTaskInfo: Mysql2MysqlAllTaskInfoBean
+                                                   @volatile var totalTaskInfo: Mysql2MysqlAllTaskInfoBean
                                                  ) extends MysqlBinlogInOrderController[MysqlSinkFunc](totalTaskInfo.taskRunningInfoBean, totalTaskInfo.sourceBean, totalTaskInfo.sinkBean) {
   log.info(s"we get totalTaskInfo:${totalTaskInfo},id:$syncTaskId")
+
+
+  /**
+    * 资源管理器，一次同步任务所有的resource都由resourceManager负责
+    */
+  override lazy val resourceManager: Mysql2MysqlTaskInfoManager = super.resourceManager.asInstanceOf[Mysql2MysqlTaskInfoManager]
+
+  /**
+    * 任务管理器
+    */
+  override lazy val taskManager: TaskManager = resourceManager
 
   /**
     * 1.初始化HeartBeatsListener
@@ -89,6 +101,7 @@ final class MysqlBinlogInOrderMysqlController4Sda(
   override def buildManager: Mysql2MysqlTaskInfoManager = {
 
     log.info(s"start build manager,current filter pattern is  ${totalTaskInfo.sourceBean.filterPattern},id:$syncTaskId")
+    updateBeanInfo
     Mysql2MysqlTaskInfoManager(totalTaskInfo, config)
   }
 
@@ -98,14 +111,11 @@ final class MysqlBinlogInOrderMysqlController4Sda(
     * 在postRestart时调用
     */
   private def updateBeanInfo: Unit = {
-    log.info(s"cause restart happend,try to update bean info,id:$syncTaskId")
+    log.info(s"cause restart happened,try to update bean info,id:$syncTaskId")
     Mysql2MysqlService.ref.getNewTaskInfoBeanAndUpdate(syncTaskId).fold(log.warning(s"update bean info failed,id:$syncTaskId"))(x => totalTaskInfo = x)
+    log.info(s"filter pattern after update is ${totalTaskInfo.sourceBean.filterPattern}")
   }
 
-  /**
-    * 资源管理器，一次同步任务所有的resource都由resourceManager负责
-    */
-  override lazy val resourceManager: Mysql2MysqlTaskInfoManager = super.resourceManager.asInstanceOf[Mysql2MysqlTaskInfoManager]
 
   override def postRestart(reason: Throwable): Unit = {
     super.postRestart(reason)

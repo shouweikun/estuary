@@ -22,7 +22,8 @@ import com.neighborhood.aka.laplace.estuary.mysql.task.mysql.Mysql2MysqlTaskInfo
   * @since 2019-01-09
   * @author nbhd.aka.neighborhood
   */
-abstract class MysqlBinlogInOrderSpecialInfoSender[R](
+abstract class
+MysqlBinlogInOrderSpecialInfoSender[R](
                                                        override val sinker: ActorRef,
                                                        override val taskManager: MysqlSourceManagerImp with TaskManager
                                                      ) extends SourceDataSpecialBatcherPrototype {

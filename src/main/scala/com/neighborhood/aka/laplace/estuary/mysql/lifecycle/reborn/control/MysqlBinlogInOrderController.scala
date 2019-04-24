@@ -65,7 +65,7 @@ abstract class MysqlBinlogInOrderController[B <: SinkFunc](override val taskBean
   /**
     * 数据库连接
     */
-  val mysqlConnection: MysqlConnection = resourceManager.source
+  lazy val mysqlConnection: MysqlConnection = resourceManager.source
   /**
     * 同步任务标识
     */
@@ -73,15 +73,15 @@ abstract class MysqlBinlogInOrderController[B <: SinkFunc](override val taskBean
   /**
     * 是否计数
     */
-  val isCounting: Boolean = taskManager.isCounting
+  lazy val isCounting: Boolean = taskManager.isCounting
   /**
     * 是否计算耗时
     */
-  val isCosting: Boolean = taskManager.isCosting
+  lazy val isCosting: Boolean = taskManager.isCosting
   /**
     * 是否进行功率控制
     */
-  val isPowerAdapted: Boolean = taskManager.isPowerAdapted
+  lazy val isPowerAdapted: Boolean = taskManager.isPowerAdapted
 
 
   override def errorCountThreshold: Int = 3
