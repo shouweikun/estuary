@@ -60,7 +60,7 @@ abstract class MysqlBinlogInOrderController[B <: SinkFunc](override val taskBean
   /**
     * 任务管理器
     */
-  def taskManager: TaskManager = resourceManager
+  lazy val taskManager: TaskManager = resourceManager
 
   /**
     * 数据库连接

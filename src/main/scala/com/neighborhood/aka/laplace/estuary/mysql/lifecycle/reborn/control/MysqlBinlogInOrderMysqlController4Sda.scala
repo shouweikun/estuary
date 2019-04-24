@@ -86,7 +86,12 @@ final class MysqlBinlogInOrderMysqlController4Sda(
     * @return 构造好的资源管理器
     *
     */
-  override def buildManager: Mysql2MysqlTaskInfoManager = Mysql2MysqlTaskInfoManager(totalTaskInfo, config)
+  override def buildManager: Mysql2MysqlTaskInfoManager = {
+
+    log.info(s"start build manager,current filter pattern is  ${totalTaskInfo.sourceBean.filterPattern},id:$syncTaskId")
+    Mysql2MysqlTaskInfoManager(totalTaskInfo, config)
+  }
+
 
   /**
     * 更新bean信息
