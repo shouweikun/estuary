@@ -100,7 +100,7 @@ final class MysqlBinlogInOrderMysqlController4Sda(
     */
   override def buildManager: Mysql2MysqlTaskInfoManager = {
 
-    log.info(s"start build manager,current filter pattern is  ${totalTaskInfo.sourceBean.filterPattern},id:$syncTaskId")
+    log.info(s"start build manager,current filter pattern is ${totalTaskInfo.sourceBean.filterPattern},id:$syncTaskId")
     updateBeanInfo
     Mysql2MysqlTaskInfoManager(totalTaskInfo, config)
   }
@@ -112,7 +112,7 @@ final class MysqlBinlogInOrderMysqlController4Sda(
     */
   private def updateBeanInfo: Unit = {
     log.info(s"cause restart happened,try to update bean info,id:$syncTaskId")
-    Mysql2MysqlService.ref.getNewTaskInfoBeanAndUpdate(syncTaskId).fold(log.warning(s"update bean info failed,id:$syncTaskId"))(x => totalTaskInfo = x)
+    Mysql2MysqlService.ref.getNewTaskInfoBeanAndUpdate(totalTaskInfo.syncTaskId).fold(log.warning(s"update bean info failed,id:$syncTaskId"))(x => totalTaskInfo = x)
     log.info(s"filter pattern after update is ${totalTaskInfo.sourceBean.filterPattern}")
   }
 
